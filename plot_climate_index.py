@@ -239,7 +239,7 @@ def create_plot(file_list,plot_data,plot_times,title_text,units_text,location,ou
 
         # Plot the data #
 
-        plot_date(dates,plot_data[ifile.fname],color='red',lw=2.0,label=ifile.dataset,linestyle='-',marker='None')
+        ax1.plot_date(dates,numpy.array(plot_data[ifile.fname]),color='red',lw=2.0,label=ifile.dataset,linestyle='-',marker='None')
  
         del date1
 	del date2
