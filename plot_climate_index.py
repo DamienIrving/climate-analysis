@@ -47,16 +47,6 @@ import math
 
 ## Define global variables ##
 
-NINO1 = cdms2.selectors.Selector(latitude=(-10,-5,'cc'),longitude=(270,280,'cc'))   # the 'cc' means a closed interval [] e.g. [260,270]
-NINO2 = cdms2.selectors.Selector(latitude=(-5,0,'cc'),longitude=(270,280,'cc'))
-NINO12 = cdms2.selectors.Selector(latitude=(-10,0,'cc'),longitude=(270,280,'cc'))
-NINO3 = cdms2.selectors.Selector(latitude=(-5,5,'cc'),longitude=(210,270,'cc'))
-NINO34 = cdms2.selectors.Selector(latitude=(-5,5,'cc'),longitude=(190,240,'cc'))
-NINO4 = cdms2.selectors.Selector(latitude=(-5,5,'cc'),longitude=(160,210,'cc'))
-EMI_A = cdms2.selectors.Selector(latitude=(-10,10,'cc'),longitude=(165,220,'cc'))
-EMI_B = cdms2.selectors.Selector(latitude=(-15,5,'cc'),longitude=(250,290,'cc'))
-EMI_C = cdms2.selectors.Selector(latitude=(-10,20,'cc'),longitude=(125,145,'cc'))
-
 
 color_list = ['red','blue','green','yellow']
 
@@ -65,7 +55,7 @@ class InputFile(object):
     patterns = [
         ('monthly_timeseries',
          True, #meaning the model file
-         re.compile(r'(?P<variable_name>\S+)_(?P<dataset>\S+)_(?P<level>\S+)_(?P<timescale>\S+)_(?P<grid>\S+).nc')),        
+         re.compile(r'(?P<variable_name>\S+)_(?P<dataset>\S+)_(?P<index_class>\S+)_(?P<timescale>\S+)_(?P<grid>\S+).txt')),        
     ]
     def __init__(self, fname):
         self.fname = fname
@@ -95,27 +85,6 @@ class InputFile(object):
                 raise
 
 
-def define_region(region_name):
-    
-    # map string region to selector object
-    if isinstance(region_name, basestring):
-        if region_name in globals():
-            region = globals()[region_name]
-	else:
-            print "Region is not defined in code"
-            sys.exit(1)
-    
-    for selector_component in region.components():
-        if selector_component.id == 'lat':
-            minlat = selector_component.spec[0]
-            maxlat = selector_component.spec[1]
-        elif selector_component.id == 'lon':
-            minlon = selector_component.spec[0]
-            maxlon = selector_component.spec[1]
-
-    return region,minlat,maxlat,minlon,maxlon
-
-
 def get_times(time_axis,window):
     """Adjusts time axis according to window"""
 
@@ -142,57 +111,50 @@ def get_times(time_axis,window):
     return start_year,start_month,end_year,end_month
 
 
-def calc_Nino(file_list,index,window):
+def extract_Nino(file_list,index,window):
     """Calculates SST indices"""
 
-    # Get the region information #
-
-    region,minlat,maxlat,minlon,maxlon = define_region(index)
-
-    # Calculate the index #
+    # Extract the index #
 
     plot_data = {}
-    plot_names = {}
     plot_times = {}
     
     for ifile in file_list:
-    
+        
+	# Initialise data variables #
+	
+	years = []
+	months = []
+	anomaly_data = {}
+	anomaly_data['NINO12'] = []
+	anomaly_data['NINO3'] = []
+	anomaly_data['NINO34'] = []
+	anomaly_data['NINO4'] = []
+	
         # Read the input file, read the data and flatten the spatial dimension #
-    
-        try:
-            fin=cdms2.open(ifile.fname,'r')
-	except cdms2.CDMSError:
-            print 'Unable to open file: ', ifile
-            continue
-
-        var_all=fin(ifile.variable_name,region,order='tyx')
-	var_base=fin(ifile.variable_name,region,time=('1981-01-01','2010-12-31'),order='tyx')
-
-	ntime_all,nlats,nlons = numpy.shape(var_all)
-	ntime_base,nlats,nlons = numpy.shape(var_base)
-
-        var_all_flat = numpy.reshape(var_all,(int(ntime_all),int(nlats * nlons)))
-	var_base_flat = numpy.reshape(var_base,(int(ntime_base),int(nlats * nlons)))
-	
-        # Calculate the index #
-		
-	all_timeseries = numpy.mean(var_all_flat,axis=1)
-	climatology_timeseries = numpy.mean(var_base_flat,axis=1)
-	climatology_mean = numpy.mean(climatology_timeseries)
-	
-	anomaly_timeseries = all_timeseries - climatology_mean	
-	smooth_anomaly_timeseries = genutil.filters.runningaverage(anomaly_timeseries,window)
-
-        # Adjust time axis start and end according to window #
-
-        time = fin.getAxis('time').asComponentTime()	
-	start_year,start_month,end_year,end_month = get_times(time,window)
+   
+        fin = open(ifile.fname,'r')
+	line = fin.readline()
+	count = 0.0
+	while line:
+	    if count != 0.0:
+		year,month,temp1,anom_NINO12,temp2,anom_NINO3,temp3,anom_NINO4,temp4,anom_NINO34 = line.split()
+		years.append(int(year))
+		months.append(int(month))
+		anomaly_data['NINO12'].append(float(anom_NINO12))
+		anomaly_data['NINO3'].append(float(anom_NINO3))
+		anomaly_data['NINO4'].append(float(anom_NINO4))
+		anomaly_data['NINO34'].append(float(anom_NINO34))
+	    
+	    count = count + 1
+	    line = fin.readline()
+	    
 	
 	# Define output values for plotting #
 	
 	# Data	
-        plot_data[ifile.fname] = smooth_anomaly_timeseries
-	plot_times[ifile.fname] = [start_year,start_month,end_year,end_month]
+        plot_data[ifile.fname] = anomaly_data[index]
+	plot_times[ifile.fname] = [years[0],months[0],years[-1],months[-1]]
     
 	# Title
 	if window > 1.0:
@@ -218,6 +180,7 @@ def create_plot(file_list,plot_data,plot_times,title_text,units_text,location,ou
 
     # Plot the data for each dataset #
 
+    count = 0
     for ifile in file_list:
 
 	# Intialise year and month variables #
@@ -239,8 +202,9 @@ def create_plot(file_list,plot_data,plot_times,title_text,units_text,location,ou
 
         # Plot the data #
 
-        ax1.plot_date(dates,numpy.array(plot_data[ifile.fname]),color='red',lw=2.0,label=ifile.dataset,linestyle='-',marker='None')
- 
+        ax1.plot_date(dates,numpy.array(plot_data[ifile.fname]),color=color_list[count],lw=2.0,label=ifile.dataset,linestyle='-',marker='None')
+        
+	count = count + 1 
         del date1
 	del date2
 	del delta
@@ -286,9 +250,9 @@ def create_plot(file_list,plot_data,plot_times,title_text,units_text,location,ou
 
 
 function_for_index = {
-    'NINO':        calc_Nino,
-#    'IEMI':        calc_IEMI,
-#    'SAM':         calc_SAM,
+    'NINO':        extract_Nino,
+#    'IEMI':        extract_IEMI,
+#    'SAM':         extract_SAM,
                 	  }     
 
 def main(file_list,index,outfile_name,location,window):
@@ -298,11 +262,11 @@ def main(file_list,index,outfile_name,location,window):
     
     ## Initialise relevant function ##
     
-    calc_index = function_for_index[index[0:4]]
+    extract_index = function_for_index[index[0:4]]
 
     ## Calculate the index ##
 
-    plot_data, plot_times, title_text, units_text = calc_index(file_list,index,window)
+    plot_data, plot_times, title_text, units_text = extract_index(file_list,index,window)
     
     ## Create the plot ##
     
@@ -352,7 +316,9 @@ if __name__ == '__main__':
 	    10: center 
 	
 	Example
-	    cdat plot_climate_index.py -w 5 NINO34 ts_Merra_surface_monthly_native.nc
+	    /opt/cdat/bin/cdat plot_climate_index.py -w 5 NINO34 /work/dbirving/processed/indices/ts_Merra_NINO_monthly_native.nc
+	    /work/dbirving/processed/indices/tos_ERSSTv3B_NINO_monthly_native.txt
+	    /work/dbirving/processed/indices/tos_OISSTv2_NINO_monthly_native.txt
 	    
 	Author
             Damien Irving, 22 Jun 2012.
