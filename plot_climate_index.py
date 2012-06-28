@@ -37,7 +37,7 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 from pylab import *
 
-from matplotlib.dates import YEARLY, DateFormatter, rrulewrapper, RRuleLocator, drange
+from matplotlib.dates import YEARLY, MONTHLY, DateFormatter, rrulewrapper, RRuleLocator, drange
 import datetime
 
 import numpy
@@ -137,7 +137,7 @@ def extract_Nino(file_list,index,window):
 	line = fin.readline()
 	count = 0.0
 	while line:
-	    if count != 0.0:
+	    if count > 0.5:   #change to 4.5
 		year,month,temp1,anom_NINO12,temp2,anom_NINO3,temp3,anom_NINO4,temp4,anom_NINO34 = line.split()
 		years.append(int(year))
 		months.append(int(month))
@@ -146,7 +146,7 @@ def extract_Nino(file_list,index,window):
 		anomaly_data['NINO4'].append(float(anom_NINO4))
 		anomaly_data['NINO34'].append(float(anom_NINO34))
 	    
-	    count = count + 1
+	    count = count + 1.0
 	    line = fin.readline()
 	    
 	
@@ -170,7 +170,7 @@ def extract_Nino(file_list,index,window):
     return plot_data,plot_times,title_text,units_text
     
     
-def create_plot(file_list,plot_data,plot_times,title_text,units_text,location,outfile_name):
+def create_plot(file_list,plot_data,plot_times,title_text,units_text,location,outfile_name,setx,sety):
     """Creates the plot"""
 
     # Start the figure #
@@ -218,19 +218,53 @@ def create_plot(file_list,plot_data,plot_times,title_text,units_text,location,ou
     
     # Define aspects of the time axis #
 
-    rule_major = rrulewrapper(YEARLY, bymonth=1, interval=5)
+    if setx:
+        time_range = setx[2] - setx[0]
+    else:
+        time_range = int(end_year) - int(start_year)
+    
+    if time_range < 4:
+        rule_major = rrulewrapper(MONTHLY, interval=3)
+        rule_minor = rrulewrapper(MONTHLY, interval=1)
+	major_label = '%b %y'
+	minor_label = ''
+    elif time_range < 20:
+        rule_major = rrulewrapper(YEARLY, bymonth=1, interval=1)
+        rule_minor = rrulewrapper(MONTHLY, interval=1)
+	major_label = '%Y'
+	minor_label = ''
+    else:
+        rule_major = rrulewrapper(YEARLY, bymonth=1, interval=5)
+	rule_minor = rrulewrapper(YEARLY, bymonth=1, interval=1)
+	major_label = '%Y'
+	minor_label = ''
+        
     loc_major = RRuleLocator(rule_major)
-    formatter_major = DateFormatter('%Y')    # '%m/%d/%y' capital Y for 4-digit year and b or B for full month name
+    formatter_major = DateFormatter(major_label)    # '%m/%d/%y' capital Y for 4-digit year and b or B for full month name
 
-    rule_minor = rrulewrapper(YEARLY, bymonth=1, interval=1)
     loc_minor = RRuleLocator(rule_minor)
-    formatter_minor = DateFormatter('')    # '%m/%d/%y'
+    formatter_minor = DateFormatter(minor_label)    # '%m/%d/%y'
  
     ax1.xaxis.set_major_locator(loc_major)
     ax1.xaxis.set_major_formatter(formatter_major)
     ax1.xaxis.set_minor_locator(loc_minor)
     ax1.xaxis.set_minor_formatter(formatter_minor)
-     
+    
+    if setx: 
+        date_start = datetime.date( setx[0], setx[1], 16 ) 
+        date_end = datetime.date( setx[2], setx[3], 16 )
+        
+	if sety:
+	    ax1.axis([date_start,date_end,sety[0],sety[1]])
+	else:
+	    x1,x2,y1,y2 = ax1.axis()
+	    ax1.axis([date_start,date_end,y1,y2])
+    
+    elif sety:
+         x1,x2,y1,y2 = ax1.axis()
+	 ax1.axis([x1,x2,sety[0],sety[1]])
+	 
+	 
     # Plot labels (including title, axis labels and legend) #
 
     labels = ax1.get_xticklabels()
@@ -255,7 +289,7 @@ function_for_index = {
 #    'SAM':         extract_SAM,
                 	  }     
 
-def main(file_list,index,outfile_name,location,window):
+def main(file_list,index,outfile_name,location,window,setx,sety):
     """Run the program"""
 
     file_list = [InputFile(f) for f in file_list]
@@ -270,7 +304,7 @@ def main(file_list,index,outfile_name,location,window):
     
     ## Create the plot ##
     
-    create_plot(file_list,plot_data,plot_times,title_text,units_text,location,outfile_name)
+    create_plot(file_list,plot_data,plot_times,title_text,units_text,location,outfile_name,setx,sety)
     
 
 if __name__ == '__main__':
@@ -284,13 +318,15 @@ if __name__ == '__main__':
     parser.add_option("-l", "--legend", dest="legend",default=2,type='int',help="Location of the figure legend [defualt = 2]")
     parser.add_option("-o", "--outfile",dest="outfile",type='str',default=None,help="Name of output file [default = None]")
     parser.add_option("-w", "--window",dest="window",type='int',default=1,help="window for running average [default = 1]")
+    parser.add_option("-x", "--setx",dest="setx",default=None,help="Comma separated list of time axis bounds (start_year,start_month,end_year,end_month) [default = None]")
+    parser.add_option("-y", "--sety",dest="sety",default=None,help="Comma separated list of y axis bounds (min,max) [default = None]")
     
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
     if options.manual == True or len(sys.argv) == 1:
 	print """
 	Usage:
-            python plot_climate_index.py [-M] [-h] [-l] [-o] [-w] {index} {input file 1} {input file 2} ... {input file N}
+            python plot_climate_index.py [-M] [-h] [-l] [-o] [-w] [-r] {index} {input file 1} {input file 2} ... {input file N}
 
 	Options
             -M  ->  Display this on-line manual page and exit
@@ -298,6 +334,8 @@ if __name__ == '__main__':
 	    -l  ->  Location of the legend [default = 2]
 	    -o  ->  Name of the output file [default = None = image is just shown instead]
 	    -w  ->  Window for running average [default = 1]
+	    -x  ->  Comma separated list of time axis bounds (start_year,start_month,end_year,end_month) [default = None]
+            -y  ->  Comma separated list of y axis bounds (min,max) [default = None]
 
         Pre-defined indices
             NINO1, NINO2, NINO12, NINO3, NINO34, NINO4
@@ -316,7 +354,7 @@ if __name__ == '__main__':
 	    10: center 
 	
 	Example
-	    /opt/cdat/bin/cdat plot_climate_index.py -w 5 NINO34 /work/dbirving/processed/indices/ts_Merra_NINO_monthly_native.nc
+	    /opt/cdat/bin/cdat plot_climate_index.py -w 5 NINO34 /work/dbirving/processed/indices/ts_Merra_NINO_monthly_native.txt
 	    /work/dbirving/processed/indices/tos_ERSSTv3B_NINO_monthly_native.txt
 	    /work/dbirving/processed/indices/tos_OISSTv2_NINO_monthly_native.txt
 	    
@@ -328,12 +366,23 @@ if __name__ == '__main__':
 	"""
 	sys.exit(0)
     
-            
-    file_list = args[1:]
-    index = args[0]     
+    else:
+        
+	if options.setx:
+	    setx = [int(s) for s in options.setx.split(',')]
+	else:
+	    setx = None
+	
+	if options.sety:
+	    sety = [int(s) for s in options.sety.split(',')]
+	else:
+	    sety = None
+	    
+        file_list = args[1:]
+        index = args[0]     
 
-    print 'Input_files:',file_list
-    print 'Index:',index 
+        print 'Input_files:',file_list
+        print 'Index:',index 
 
-    main(file_list,index,options.outfile,options.legend,options.window)
+        main(file_list,index,options.outfile,options.legend,options.window,setx,sety)
     

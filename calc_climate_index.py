@@ -18,7 +18,7 @@ Copyright CSIRO, 2012
 """
 
 
-__version__= '$Revision$'
+__version__= '$Revision$'   ## Get this working for Git
 
 
 ### Import required modules ###
@@ -28,7 +28,6 @@ from optparse import OptionParser
 import re
 import os
 import sys
-from datetime import datetime
 
 import cdms2 
 import genutil
@@ -38,11 +37,12 @@ import matplotlib.font_manager as font_manager
 from pylab import *
 
 from matplotlib.dates import YEARLY, DateFormatter, rrulewrapper, RRuleLocator, drange
-import datetime
 
 import numpy
 import numpy.ma as ma
 import math
+
+from datetime import datetime
 
 
 ## Define global variables ##
@@ -56,6 +56,9 @@ NINO4 = cdms2.selectors.Selector(latitude=(-5,5,'cc'),longitude=(160,210,'cc'))
 EMI_A = cdms2.selectors.Selector(latitude=(-10,10,'cc'),longitude=(165,220,'cc'))
 EMI_B = cdms2.selectors.Selector(latitude=(-15,5,'cc'),longitude=(250,290,'cc'))
 EMI_C = cdms2.selectors.Selector(latitude=(-10,20,'cc'),longitude=(125,145,'cc'))
+
+
+version_info = 'Created %s using %s \n' %(datetime.utcnow().isoformat(),__file__) #,__version__)  #%(datetime.utcnow().isoformat(), sys.argv[0])
 
 
 ## Define relevant functions and classes ##
@@ -116,6 +119,70 @@ def define_region(region_name):
     return region,minlat,maxlat,minlon,maxlon
 
 
+def calc_IEMI(ifile,outfile_name):
+    """Calculates the Improved ENSO Modoki Index"""
+    
+    # Read the input file #
+
+    try:
+        fin=cdms2.open(ifile.fname,'r')
+    except cdms2.CDMSError:
+        print 'Unable to open file: ', ifile
+	sys.exit(0)
+    
+    # Get the time axis information #
+    
+    time = fin.getAxis('time').asComponentTime()
+    years = []
+    months = []
+    
+    for ii in range(0,len(time)):
+        years.append(int(str(time[ii]).split('-')[0]))
+	months.append(int(str(time[ii]).split('-')[1]))
+    
+    # Calculate the index #
+    
+    regions = ['EMI_A','EMI_B','EMI_C']
+    anomaly_timeseries = {}
+    
+    for reg in regions: 
+        
+	region = globals()[reg]
+	
+	var_all=fin(ifile.variable_name,region,order='tyx')
+        var_base=fin(ifile.variable_name,region,time=('1981-01-01','2010-12-31'),order='tyx')
+
+        ntime_all,nlats,nlons = numpy.shape(var_all)
+        ntime_base,nlats,nlons = numpy.shape(var_base)
+
+        var_all_flat = numpy.reshape(var_all,(int(ntime_all),int(nlats * nlons)))    # Flattens the spatial dimension
+        var_base_flat = numpy.reshape(var_base,(int(ntime_base),int(nlats * nlons)))
+
+       # Calculate the index #
+
+        all_timeseries = numpy.mean(var_all_flat,axis=1)
+        climatology_timeseries = numpy.mean(var_base_flat,axis=1)
+        climatology_mean = numpy.mean(climatology_timeseries)
+
+        anomaly_timeseries[reg] = all_timeseries - climatology_mean	
+
+
+    IEMI_timeseries = 3*anomaly_timeseries['EMI_A'] - 2*anomaly_timeseries['EMI_B'] - anomaly_timeseries['EMI_C']
+
+
+    # Write the text file output #
+
+    fout = open(outfile_name,'w')
+    fout.write('Improved ENSO Modoki Index \n')
+    fout.write('Base period = 1981-2010 \n')  
+    fout.write(version_info)
+    fout.write(' YR   MON  IEMI \n') 
+
+    for ii in range(0,len(time)):
+        print >> fout, '%4i %3i %7.2f' %(years[ii],months[ii],IEMI_timeseries[ii])
+    
+    fout.close()
+    
 
 def calc_Nino(ifile,outfile_name):
     """Calculates the NINO SST indices"""
@@ -176,6 +243,9 @@ def calc_Nino(ifile,outfile_name):
     # Write the text file output #
 
     fout = open(outfile_name,'w')
+    fout.write('Nino indices \n')
+    fout.write('Base period = 1981-2010 \n')  
+    fout.write(version_info)
     fout.write(' YR   MON  NINO1+2  ANOM   NINO3    ANOM   NINO4    ANOM   NINO3.4  ANOM \n') 
 
     for ii in range(0,len(time)):
@@ -189,7 +259,7 @@ def calc_Nino(ifile,outfile_name):
  
 function_for_index = {
     'NINO':        calc_Nino,
-#    'IEMI':        calc_IEMI,
+    'IEMI':        calc_IEMI,
 #    'SAM':         calc_SAM,
                 	  }     
 
