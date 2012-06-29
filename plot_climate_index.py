@@ -111,9 +111,24 @@ def get_times(time_axis,window):
     return start_year,start_month,end_year,end_month
 
 
-def extract_Nino(file_list,index,window):
-    """Calculates SST indices"""
+def set_units(index):
+    """Sets the units for the plot"""
+    
+    if index[0:4] == 'NINO':
+        units = 'Anomaly (deg C)'
+    elif index == 'IEMI':
+        units = 'Something'
+    elif index == 'SAM':
+        units = 'Something'
+    else:
+        print 'Index not recognised'
+        sys.exit(0)
+    
+    return units
 
+
+def extract_data(file_list,index,window):
+    
     # Extract the index #
 
     plot_data = {}
@@ -125,59 +140,62 @@ def extract_Nino(file_list,index,window):
 	
 	years = []
 	months = []
-	anomaly_data = {}
-	anomaly_data['NINO12'] = []
-	anomaly_data['NINO3'] = []
-	anomaly_data['NINO34'] = []
-	anomaly_data['NINO4'] = []
+	data = []
 	
         # Read the input file, read the data and flatten the spatial dimension #
    
         fin = open(ifile.fname,'r')
 	line = fin.readline()
-	count = 0.0
+	switch = False
 	while line:
-	    if count > 0.5:   #change to 4.5
-		year,month,temp1,anom_NINO12,temp2,anom_NINO3,temp3,anom_NINO4,temp4,anom_NINO34 = line.split()
+	
+	    if line.split()[0] == 'YR':
+	        loc = line.split().index(index)
+		if index[0:4] == 'NINO':
+		    loc = loc + 1
+		switch = True
+
+	    elif switch: 
+		year = line.split()[0]
+		month = line.split()[1]
+		temp_data = line.split()[loc]
 		years.append(int(year))
 		months.append(int(month))
-		anomaly_data['NINO12'].append(float(anom_NINO12))
-		anomaly_data['NINO3'].append(float(anom_NINO3))
-		anomaly_data['NINO4'].append(float(anom_NINO4))
-		anomaly_data['NINO34'].append(float(anom_NINO34))
-	    
-	    count = count + 1.0
+		data.append(float(temp_data))
+	        
 	    line = fin.readline()
 	    
 	
 	# Define output values for plotting #
 	
 	# Data	
-        plot_data[ifile.fname] = anomaly_data[index]
+        plot_data[ifile.fname] = data
 	plot_times[ifile.fname] = [years[0],months[0],years[-1],months[-1]]
     
-	# Title
-	if window > 1.0:
-	    add_on = ' ('+str(window)+' month running mean)'
-	else:
-	    add_on = ''
-	title_text = index+add_on 
 
-        # Units
-	units_text = 'Anomaly (deg C)'
+    return plot_data,plot_times
 
-
-    return plot_data,plot_times,title_text,units_text
     
-    
-def create_plot(file_list,plot_data,plot_times,title_text,units_text,location,outfile_name,setx,sety):
+def create_plot(file_list,plot_data,plot_times,window,index,location,outfile_name,setx,sety):
     """Creates the plot"""
 
     # Start the figure #
     
     fig = plt.figure()
     ax1 = fig.add_axes([0.1,0.1,0.85,0.8])  #left side, bottom, right side, top
-
+    
+    
+    # Set the title and units #
+    
+    if window > 1.0:
+	add_on = ' ('+str(window)+' month running mean)'
+    else:
+	add_on = ''
+    title_text = index+add_on 
+    
+    units_text = set_units(index)
+    
+    
     # Plot the data for each dataset #
 
     count = 0
@@ -283,28 +301,18 @@ def create_plot(file_list,plot_data,plot_times,title_text,units_text,location,ou
         plt.show()
 
 
-function_for_index = {
-    'NINO':        extract_Nino,
-#    'IEMI':        extract_IEMI,
-#    'SAM':         extract_SAM,
-                	  }     
-
 def main(file_list,index,outfile_name,location,window,setx,sety):
     """Run the program"""
 
     file_list = [InputFile(f) for f in file_list]
     
-    ## Initialise relevant function ##
-    
-    extract_index = function_for_index[index[0:4]]
-
     ## Calculate the index ##
 
-    plot_data, plot_times, title_text, units_text = extract_index(file_list,index,window)
+    plot_data, plot_times = extract_data(file_list,index,window)
     
     ## Create the plot ##
     
-    create_plot(file_list,plot_data,plot_times,title_text,units_text,location,outfile_name,setx,sety)
+    create_plot(file_list,plot_data,plot_times,window,index,location,outfile_name,setx,sety)
     
 
 if __name__ == '__main__':

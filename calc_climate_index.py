@@ -32,12 +32,6 @@ import sys
 import cdms2 
 import genutil
 
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as font_manager
-from pylab import *
-
-from matplotlib.dates import YEARLY, DateFormatter, rrulewrapper, RRuleLocator, drange
-
 import numpy
 import numpy.ma as ma
 import math
@@ -119,6 +113,90 @@ def define_region(region_name):
     return region,minlat,maxlat,minlon,maxlon
 
 
+def calc_monthly_anomaly(complete_timeseries,base_timeseries,months):
+    """Calculates the monthly anomaly"""  # assumes that the base_timeseries starts in January
+    
+    # Calculate the monthly climatology #
+    
+    ntime_base = len(base_timeseries)
+    monthly_climatology = numpy.zeros(12)
+    for i in range(0,12):
+        monthly_climatology[i] = numpy.mean(base_timeseries[i:ntime_base:12])
+    
+    # Calculate the monthly anomaly #
+    
+    ntime_complete = len(complete_timeseries)
+    monthly_anomaly = numpy.zeros(ntime_complete)
+    for i in range(0,ntime_complete):
+	month_index = months[i]
+	monthly_anomaly[i] = complete_timeseries[i] - monthly_climatology[month_index-1]
+    
+    
+    return monthly_anomaly 
+
+
+def calc_SAM(ifile,outfile_name):
+    """Calculates an index of the Southern Annular Mode"""
+    
+    # Read the input file #
+
+    try:
+        fin=cdms2.open(ifile.fname,'r')
+    except cdms2.CDMSError:
+        print 'Unable to open file: ', ifile
+	sys.exit(0)
+    
+    # Get the time axis information #
+    
+    time = fin.getAxis('time').asComponentTime()
+    years = []
+    months = []
+    
+    for ii in range(0,len(time)):
+        years.append(int(str(time[ii]).split('-')[0]))
+	months.append(int(str(time[ii]).split('-')[1]))
+    
+    # Read data, extract the required latitudes, calculate zonal mean anomalies #
+        
+    latitude = fin.getAxis('latitude')
+    var_complete=fin(ifile.variable_name,order='tyx')
+    var_base=fin(ifile.variable_name,time=('1981-01-01','2010-12-31'),order='tyx')
+    
+    lats = [-40,-65]
+    anomaly_timeseries = {}
+    
+    for lat in lats: 
+    
+	index, value = min(enumerate(latitude), key=lambda x: abs(x[1]-float(lat)))
+	print 'File latitude for', lat, '=', value
+
+	var_complete = numpy.squeeze(var_complete[:,index,:])
+	var_base = numpy.squeeze(var_base[:,index,:])
+
+	complete_timeseries = numpy.mean(var_complete,axis=1)
+	base_timeseries = numpy.mean(var_base,axis=1)
+
+	anomaly_timeseries[lat] = calc_monthly_anomaly(complete_timeseries,base_timeseries,months)
+
+    
+    SAM_timeseries = anomaly_timeseries[-40] - anomaly_timeseries[-65]
+
+
+    # Write the text file output #
+
+    fout = open(outfile_name,'w')
+    fout.write('SAM Index (as per Marshall 2003 and Gong & Wang 1999) \n')
+    fout.write('Base period = 1981-2010 \n')  
+    fout.write(version_info)
+    fout.write('Input file = '+ifile.fname+'\n')
+    fout.write(' YR   MON  SAM \n') 
+
+    for ii in range(0,len(time)):
+        print >> fout, '%4i %3i %7.2f' %(years[ii],months[ii],SAM_timeseries[ii])
+    
+    fout.close()
+
+
 def calc_IEMI(ifile,outfile_name):
     """Calculates the Improved ENSO Modoki Index"""
     
@@ -149,22 +227,21 @@ def calc_IEMI(ifile,outfile_name):
         
 	region = globals()[reg]
 	
-	var_all=fin(ifile.variable_name,region,order='tyx')
+	var_complete=fin(ifile.variable_name,region,order='tyx')
         var_base=fin(ifile.variable_name,region,time=('1981-01-01','2010-12-31'),order='tyx')
 
-        ntime_all,nlats,nlons = numpy.shape(var_all)
+        ntime_complete,nlats,nlons = numpy.shape(var_complete)
         ntime_base,nlats,nlons = numpy.shape(var_base)
 
-        var_all_flat = numpy.reshape(var_all,(int(ntime_all),int(nlats * nlons)))    # Flattens the spatial dimension
+        var_complete_flat = numpy.reshape(var_complete,(int(ntime_complete),int(nlats * nlons)))    # Flattens the spatial dimension
         var_base_flat = numpy.reshape(var_base,(int(ntime_base),int(nlats * nlons)))
 
        # Calculate the index #
 
-        all_timeseries = numpy.mean(var_all_flat,axis=1)
-        climatology_timeseries = numpy.mean(var_base_flat,axis=1)
-        climatology_mean = numpy.mean(climatology_timeseries)
-
-        anomaly_timeseries[reg] = all_timeseries - climatology_mean	
+        complete_timeseries = numpy.mean(var_complete_flat,axis=1)
+        base_timeseries = numpy.mean(var_base_flat,axis=1)
+        
+	anomaly_timeseries[reg] = calc_monthly_anomaly(complete_timeseries,base_timeseries,months)	
 
 
     IEMI_timeseries = 3*anomaly_timeseries['EMI_A'] - 2*anomaly_timeseries['EMI_B'] - anomaly_timeseries['EMI_C']
@@ -176,6 +253,7 @@ def calc_IEMI(ifile,outfile_name):
     fout.write('Improved ENSO Modoki Index \n')
     fout.write('Base period = 1981-2010 \n')  
     fout.write(version_info)
+    fout.write('Input file = '+ifile.fname+'\n')
     fout.write(' YR   MON  IEMI \n') 
 
     for ii in range(0,len(time)):
@@ -215,29 +293,30 @@ def calc_Nino(ifile,outfile_name):
 
         region,minlat,maxlat,minlon,maxlon = define_region(index)
 
-        var_all=fin(ifile.variable_name,region,order='tyx')
+        var_complete=fin(ifile.variable_name,region,order='tyx')
 	var_base=fin(ifile.variable_name,region,time=('1981-01-01','2010-12-31'),order='tyx')
 
-	ntime_all,nlats,nlons = numpy.shape(var_all)
+	ntime_complete,nlats,nlons = numpy.shape(var_complete)
 	ntime_base,nlats,nlons = numpy.shape(var_base)
 
-        var_all_flat = numpy.reshape(var_all,(int(ntime_all),int(nlats * nlons)))    # Flattens the spatial dimension
+        var_complete_flat = numpy.reshape(var_complete,(int(ntime_complete),int(nlats * nlons)))    # Flattens the spatial dimension
 	var_base_flat = numpy.reshape(var_base,(int(ntime_base),int(nlats * nlons)))
 
         # Calculate the index #
 
-	all_timeseries = numpy.mean(var_all_flat,axis=1)
-	climatology_timeseries = numpy.mean(var_base_flat,axis=1)
-	climatology_mean = numpy.mean(climatology_timeseries)
+	complete_timeseries = numpy.mean(var_complete_flat,axis=1)
+	base_timeseries = numpy.mean(var_base_flat,axis=1)
+	
+	monthly_anomaly_timeseries = calc_monthly_anomaly(complete_timeseries,base_timeseries,months)	
 
-	anomaly_timeseries = all_timeseries - climatology_mean	
+        # Write the data into arrays that get printed to file #
 
-        if all_timeseries[0] > 200.0:
-            raw_data[index] = all_timeseries - 273.15
+        if complete_timeseries[0] > 200.0:
+            raw_data[index] = complete_timeseries - 273.15
 	else:
-	    raw_data[index] = all_timeseries
+	    raw_data[index] = complete_timeseries
         
-	anomaly_data[index] = anomaly_timeseries
+	anomaly_data[index] = monthly_anomaly_timeseries
 
 
     # Write the text file output #
@@ -246,7 +325,8 @@ def calc_Nino(ifile,outfile_name):
     fout.write('Nino indices \n')
     fout.write('Base period = 1981-2010 \n')  
     fout.write(version_info)
-    fout.write(' YR   MON  NINO1+2  ANOM   NINO3    ANOM   NINO4    ANOM   NINO3.4  ANOM \n') 
+    fout.write('Input file = '+ifile.fname+'\n')
+    fout.write(' YR   MON  NINO12   ANOM   NINO3    ANOM   NINO4    ANOM   NINO34   ANOM \n') 
 
     for ii in range(0,len(time)):
         print >> fout, '%4i %3i %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f %7.2f' %(years[ii],months[ii],
@@ -260,7 +340,7 @@ def calc_Nino(ifile,outfile_name):
 function_for_index = {
     'NINO':        calc_Nino,
     'IEMI':        calc_IEMI,
-#    'SAM':         calc_SAM,
+    'SAM':         calc_SAM,
                 	  }     
 
 def main(index,infile_name,outfile_name):
@@ -302,7 +382,10 @@ if __name__ == '__main__':
 
         Pre-defined indices
             NINO, IEMI, SAM
-        	    		
+        
+	Note
+	    The base period is hard-wired as 1981-01-01 to 2010-12-31
+	
 	Example
 	    /opt/cdat/bin/cdat calc_climate_index.py NINO /work/dbirving/datasets/Merra/data/ts_Merra_surface_monthly_native.nc 
 	    /work/dbirving/processed/indices/ts_Merra_NINO_monthly_native.txt
