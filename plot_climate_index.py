@@ -51,14 +51,15 @@ import math
 color_list = ['red','blue','green','yellow']
 
 
-class InputFile(object):
+class InputFile(object, order='primary'):
     patterns = [
         ('monthly_timeseries',
          True, #meaning the model file
-         re.compile(r'(?P<variable_name>\S+)_(?P<dataset>\S+)_(?P<index_class>\S+)_(?P<timescale>\S+)_(?P<grid>\S+).txt')),        
+         re.compile(r'(?P<variable_name>\S+)_(?P<dataset>\S+)_(?P<index>\S+)_(?P<timescale>\S+)_(?P<grid>\S+).txt')),        
     ]
     def __init__(self, fname):
         self.fname = fname
+	self.order = order
         self.atts = {}
 
         basename = os.path.basename(fname)
@@ -117,9 +118,9 @@ def set_units(index):
     if index[0:4] == 'NINO':
         units = 'Anomaly (deg C)'
     elif index == 'IEMI':
-        units = 'Something'
+        units = 'Degrees Celcius'
     elif index == 'SAM':
-        units = 'Something'
+        units = 'Pa'
     else:
         print 'Index not recognised'
         sys.exit(0)
@@ -176,14 +177,15 @@ def extract_data(file_list,index,window):
     return plot_data,plot_times
 
     
-def create_plot(file_list,plot_data,plot_times,window,index,location,outfile_name,setx,sety):
+def create_plot(file_list,second_plot,plot_data,plot_times,window,index,location,outfile_name,setx,setyp):
     """Creates the plot"""
 
     # Start the figure #
     
     fig = plt.figure()
     ax1 = fig.add_axes([0.1,0.1,0.85,0.8])  #left side, bottom, right side, top
-    
+    if second_plot:
+        ax2 = ax1.twinx()
     
     # Set the title and units #
     
@@ -220,8 +222,11 @@ def create_plot(file_list,plot_data,plot_times,window,index,location,outfile_nam
 
         # Plot the data #
 
-        ax1.plot_date(dates,numpy.array(plot_data[ifile.fname]),color=color_list[count],lw=2.0,label=ifile.dataset,linestyle='-',marker='None')
-        
+        if ifile.order == 'primary':
+            ax1.plot_date(dates,numpy.array(plot_data[ifile.fname]),color=color_list[count],lw=2.0,label=ifile.dataset,linestyle='-',marker='None')
+        else:
+	    ax2.plot_date(dates,numpy.array(plot_data[ifile.fname]),color=color_list[count],lw=2.0,label=ifile.dataset,linestyle='-',marker='None')
+	
 	count = count + 1 
         del date1
 	del date2
@@ -272,23 +277,33 @@ def create_plot(file_list,plot_data,plot_times,window,index,location,outfile_nam
         date_start = datetime.date( setx[0], setx[1], 16 ) 
         date_end = datetime.date( setx[2], setx[3], 16 )
         
-	if sety:
-	    ax1.axis([date_start,date_end,sety[0],sety[1]])
+	if setyp:
+	    ax1.axis([date_start,date_end,setyp[0],setyp[1]])
 	else:
 	    x1,x2,y1,y2 = ax1.axis()
 	    ax1.axis([date_start,date_end,y1,y2])
-    
-    elif sety:
-         x1,x2,y1,y2 = ax1.axis()
-	 ax1.axis([x1,x2,sety[0],sety[1]])
-	 
+        
+	if setys:
+	    ax2.axis([date_start,date_end,setys[0],setys[1]])
+	else:
+	    x1,x2,y1,y2 = ax2.axis()
+	    ax2.axis([date_start,date_end,y1,y2])
+	
+    elif setyp or setys:
+         if setyp:
+	     x1,x2,y1,y2 = ax1.axis()
+	     ax1.axis([x1,x2,setyp[0],setyp[1]])
+	 if setys:
+	     x1,x2,y1,y2 = ax2.axis()
+	     ax2.axis([x1,x2,setys[0],setys[1]])
+	     
 	 
     # Plot labels (including title, axis labels and legend) #
 
     labels = ax1.get_xticklabels()
     plt.setp(labels, rotation=0, fontsize=10)
 
-    plt.ylabel(units_text)
+    ax1.ylabel(units_text)
     ax1.set_title(title_text)
     font = font_manager.FontProperties(size='medium')
     ax1.legend(loc=location) #prop=font,numpoints=1,labelspacing=0.3)  #,ncol=2)
@@ -301,18 +316,26 @@ def create_plot(file_list,plot_data,plot_times,window,index,location,outfile_nam
         plt.show()
 
 
-def main(file_list,index,outfile_name,location,window,setx,sety):
+def main(primary_file_list,secondary_file_list,index,outfile_name,location,window,setx,setyp,setys):
     """Run the program"""
-
-    file_list = [InputFile(f) for f in file_list]
     
+    primary_file_list = [InputFile(f) for f in primary_file_list]
+    
+    if secondary_file_list:
+        secondary_file_list = [InputFile(f, order='secondary') for f in secondary_file_list]
+        file_list = primary_file_list + secondary_file_list
+	second_plot = True
+    else:
+        file_list = primary_file_list
+	second_plot = False
+
     ## Calculate the index ##
 
     plot_data, plot_times = extract_data(file_list,index,window)
     
     ## Create the plot ##
-    
-    create_plot(file_list,plot_data,plot_times,window,index,location,outfile_name,setx,sety)
+        
+    create_plot(file_list,second_plot,plot_data,plot_times,window,index,location,outfile_name,setx,setyp,setys)
     
 
 if __name__ == '__main__':
@@ -325,9 +348,11 @@ if __name__ == '__main__':
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
     parser.add_option("-l", "--legend", dest="legend",default=2,type='int',help="Location of the figure legend [defualt = 2]")
     parser.add_option("-o", "--outfile",dest="outfile",type='str',default=None,help="Name of output file [default = None]")
+    parser.add_option("-s", "--secondary",dest="secondary",default=None,help="Comma separated list files to be plotted on the secondary y axis [default = None]")
     parser.add_option("-w", "--window",dest="window",type='int',default=1,help="window for running average [default = 1]")
     parser.add_option("-x", "--setx",dest="setx",default=None,help="Comma separated list of time axis bounds (start_year,start_month,end_year,end_month) [default = None]")
-    parser.add_option("-y", "--sety",dest="sety",default=None,help="Comma separated list of y axis bounds (min,max) [default = None]")
+    parser.add_option("--setyp",dest="setyp",default=None,help="Comma separated list of primary y axis bounds (min,max) [default = None]")
+    parser.add_option("--setys",dest="setys",default=None,help="Comma separated list of secondary y axis bounds (min,max) [default = None]")
     
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
@@ -341,9 +366,11 @@ if __name__ == '__main__':
             -h  ->  Display a help/usage message and exit
 	    -l  ->  Location of the legend [default = 2]
 	    -o  ->  Name of the output file [default = None = image is just shown instead]
+	    -s  ->  Comma separated list files to be plotted on the secondary y axis [default = None]
 	    -w  ->  Window for running average [default = 1]
 	    -x  ->  Comma separated list of time axis bounds (start_year,start_month,end_year,end_month) [default = None]
-            -y  ->  Comma separated list of y axis bounds (min,max) [default = None]
+            -setyp  ->  Comma separated list of primary y axis bounds (min,max) [default = None]
+	    -setys  ->  Comma separated list of secondary y axis bounds (min,max) [default = None]
 
         Pre-defined indices
             NINO1, NINO2, NINO12, NINO3, NINO34, NINO4
@@ -376,21 +403,31 @@ if __name__ == '__main__':
     
     else:
         
+	if options.secondary:
+	    secondary_file_list = [int(s) for s in options.secondary.split(',')]
+	else:
+	    secondary_file_list = None
+	
 	if options.setx:
 	    setx = [int(s) for s in options.setx.split(',')]
 	else:
 	    setx = None
 	
-	if options.sety:
-	    sety = [int(s) for s in options.sety.split(',')]
+	if options.setyp:
+	    setyp = [int(s) for s in options.setyp.split(',')]
 	else:
-	    sety = None
+	    setyp = None
+	
+	if options.setys:
+	    setys = [int(s) for s in options.setys.split(',')]
+	else:
+	    setys = None
 	    
-        file_list = args[1:]
+        primary_file_list = args[1:]
         index = args[0]     
 
         print 'Input_files:',file_list
         print 'Index:',index 
 
-        main(file_list,index,options.outfile,options.legend,options.window,setx,sety)
+        main(primary_file_list,secondary_file_list,index,options.outfile,options.legend,options.window,setx,setyp,setys)
     
