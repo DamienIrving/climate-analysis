@@ -118,7 +118,7 @@ def set_units(index,orig_units,axis):
     elif index == 'IEMI':
         units = 'Anomaly (deg C)'
     elif index == 'SAMI':
-        units = 'Pa'
+        units = 'Monthly SAM index'
     else:
         print 'Index not recognised'
         sys.exit(0)
@@ -373,7 +373,7 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
     ax1.legend(loc=3,prop=font,ncol=2) #prop=font,numpoints=1,labelspacing=0.3)  #,ncol=2)
     
     if file_list_dims[1] > 0:
-        ax2.set_ylabel(units_text_ax2, fontsize='medium')
+        ax2.set_ylabel(units_text_ax2, fontsize='medium', rotation=270)
         font = font_manager.FontProperties(size='medium')
         ax2.legend(loc=1,prop=font) #prop=font,numpoints=1,labelspacing=0.3)  #,ncol=2)
     
