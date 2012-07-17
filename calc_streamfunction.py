@@ -71,7 +71,7 @@ def xy_axis_check(axis1, axis2):
         sys.exit('Input files do not all have the same %s axis' %(axis1.id))
 
 	
-def main(fname_u, vname_u, fname_v, vname_v, fname_out):
+def main(fname_u, vname_u, fname_v, vname_v, fname_out, python):
     """Run the program"""
 
     ### Read the input data ###
@@ -122,46 +122,95 @@ def main(fname_u, vname_u, fname_v, vname_v, fname_out):
     
     
     ### Create output file ###
-
-    global_atts = {'title': 'Streamfunction',
-		   'contact': 'Damien Irving (d.irving@student.unimelb.edu.au)',
-		   'history': 'Calculated streamfunction from U and V wind',
-		   'sourcefiles': '%s, %s' %(fname_u,fname_v),
-		   'created': 'Created %s using %s' %(datetime.utcnow().isoformat(), sys.argv[0])
-		  }
-
-    outfile = cdms2.open(fname_out,'w')
-
-    for key, value in global_atts.iteritems():
-	setattr(outfile, key, value)
-
-    axisInTime = outfile.copyAxis(u.getTime())
-    axisInLat = outfile.copyAxis(u.getLatitude())   # infile_u['latitude']
-    axisInLon = outfile.copyAxis(u.getLongitude())  # infile_u['longitude']
     
-
-    var = sf
-    var = MV2.array(var)
-    var = var.astype(numpy.float32)
-    var.setAxisList([axisInTime,axisInLat,axisInLon])
-    var.id = 'sf'
-
-    var_atts = {'name': 'Streamfunction',
-        	 'standard_name': 'sf',
-        	 'original_name': 'sf',
-        	 'units': 'm2 s-1',
-		 'history': 'Calculated streamfunction from U and V wind'
-		} 
-
-    for key, value in var_atts.iteritems():
-	setattr(var, key, value)
-
+    if python == False:
     
-    outfile.write(var)  
+	## Use cdms2 method ##
+
+	global_atts = {'title': 'Streamfunction',
+		       'contact': 'Damien Irving (d.irving@student.unimelb.edu.au)',
+		       'history': 'Calculated streamfunction from U and V wind',
+		       'sourcefiles': '%s, %s' %(fname_u,fname_v),
+		       'created': 'Created %s using %s' %(datetime.utcnow().isoformat(), sys.argv[0])
+		      }
+
+	outfile = cdms2.open(fname_out,'w')
+
+	for key, value in global_atts.iteritems():
+	    setattr(outfile, key, value)
+
+	axisInTime = outfile.copyAxis(u.getTime())
+	axisInLat = outfile.copyAxis(u.getLatitude())   # infile_u['latitude']
+	axisInLon = outfile.copyAxis(u.getLongitude())  # infile_u['longitude']
+
+
+	var = sf
+	var = MV2.array(var)
+	var = var.astype(numpy.float32)
+	var.setAxisList([axisInTime,axisInLat,axisInLon])
+	var.id = 'sf'
+
+	var_atts = {'name': 'Streamfunction',
+        	     'standard_name': 'sf',
+        	     'original_name': 'sf',
+        	     'units': 'm2 s-1',
+		     'history': 'Calculated streamfunction from U and V wind'
+		    } 
+
+	for key, value in var_atts.iteritems():
+	    setattr(var, key, value)
+
+
+	outfile.write(var)  
+
+    else:    
     
-    outfile.close()
-    infile_u.close()
-    infile_v.close()
+	## Use python method ##
+
+	import Scientific.IO.NetCDF
+	from Scientific.IO.NetCDF import NetCDFFile
+
+	outfile = NetCDFFile(fname_out, 'w') 
+
+	# Global attributes #
+
+	setattr(outfile,'Title','Streamfunction')
+	setattr(outfile,'contact','Damien Irving (d.irving@student.unimelb.edu.au)')
+	setattr(outfile,'history','Calculated streamfunction from U and V wind')
+	sourcefile_text = '%s, %s' %(fname_u,fname_v)
+	setattr(outfile,'sourcefiles',sourcefile_text)
+	creation_text = 'Created %s using %s' %(datetime.utcnow().isoformat(), sys.argv[0])
+	setattr(outfile,'created',creation_text)
+
+	# Dimensions #
+
+	outfile.createDimension('time',None)
+	outfile.createDimension('latitude',nlats)
+	outfile.createDimension('longitude',nlons)
+
+	times = outfile.createVariable('time',dtype('float32').char,('time',))
+	lats = outfile.createVariable('latitude',dtype('float32').char,('latitude',))
+	lons = outfile.createVariable('longitude',dtype('float32').char,('longitude',))
+
+	times[:] = u.getTime()
+	lats[:] = lat_u
+	lons[:] = lon_u    # What about the variable attributes?? use attList = dir(NetCDFVariable)  OR  attData = getattr(var,  attName) 
+
+	# Variable #
+
+	streamf = outfile.createVariable('sf',dtype('float32').char,('time','latitude','longitude'))
+	streamf.units = 'm2 s-1'
+	streamf.name = 'Streamfunction'
+	streamf.history = 'Calculated streamfunction from U and V wind'
+	streamf.standard_name = 'sf'
+
+	sf = sf.astype(numpy.float32)
+	streamf[:] = sf
+
+
+	outfile.close()
+	infile_u.close()
+	infile_v.close()
 
 
 if __name__ == '__main__':
@@ -172,17 +221,19 @@ if __name__ == '__main__':
     parser = OptionParser(usage=usage)
 
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
+    parser.add_option("-p", "--python",action="store_true",dest="python",default=False,help="use python (not cdms2) to create output file")
 
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
     if options.manual == True or len(sys.argv) == 1:
 	print """
 	Usage:
-            calc_streamfunction.py [-M] [-h] {u_file} {u_name} {v_file} {v_name} {output_file}
+            calc_streamfunction.py [-M] [-h] [-p] {u_file} {u_name} {v_file} {v_name} {output_file}
 
 	Options
             -M -> Display this on-line manual page and exit
             -h -> Display a help/usage message and exit
+	    -p -> Use python (not cdms2) to create output file"
 
 	Description
             Takes as input the u and v wind and outputs the streamfunction    
@@ -208,4 +259,4 @@ if __name__ == '__main__':
 
     fname_u, vname_u, fname_u, vname_u, fname_out = args  
     
-    main(fname_u, vname_u, fname_u, vname_u, fname_out)
+    main(fname_u, vname_u, fname_u, vname_u, fname_out, options.python)
