@@ -149,7 +149,7 @@ def main(fname_u, vname_u, fname_v, vname_v, fname_out):
     var_atts = {'name': 'Streamfunction',
         	 'standard_name': 'sf',
         	 'original_name': 'sf',
-        	 'units': '%',
+        	 'units': 'm2 s-1',
 		 'history': 'Calculated streamfunction from U and V wind'
 		} 
 
