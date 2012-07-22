@@ -18,19 +18,20 @@ __version__= '$Revision$'
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-
 from mpl_toolkits.basemap import Basemap
-from scipy import interpolate
-#import pylab
 
+from scipy import interpolate
 import numpy
 import numpy.ma as ma
+
 import cdms2
+
+import optparse
+from optparse import OptionParser
 import re
 import sys
 import os
-
-from cct.landsea import mask_ocean
+from datetime import datetime
 
 
 ### Define globals ###
@@ -59,14 +60,16 @@ def multiplot(ifiles,variables,title,
               #Output file name default is 'title'.png
               ofile=None,
               #can use a pre-defined region or override with min/max lat/lon, 
-              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,projection='cyl'
+              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,projection='cyl',
               #colourbar settings
               colourbar_colour='jet',ticks=None,discrete_segments=None,units=None,convert=False,extend="neither",
               #resolution of image
               res='l',area_threshold=1.,
-	      # wind vectors
+	      #contours
+	      draw_contours=False,contour_files=None,contour_variables=None,contour_ticks=None,
+	      #wind vectors
 	      draw_vectors=False,uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,
-	      # stippling
+	      #stippling
 	      draw_stippling=False,stipple_files=None,stipple_variables=None,
               #Headings if using mutiple plots in a single plot
               row_headings=None,inline_row_headings=False,
@@ -78,8 +81,7 @@ def multiplot(ifiles,variables,title,
               #Width of image in inches (individual image)
               #so single imgage would be 6 inches wide or image with two columns would be 12 inches wide etc.)
               image_size=6,
-              maskoceans=False,
-              shpoverlays=[]):
+	      textsize=18):
 
     """Takes all the input arguments and determines the correct call to matrixplot"""
 
@@ -88,6 +90,7 @@ def multiplot(ifiles,variables,title,
 
     file_matrix = numpy.array(ifiles)
     var_matrix = numpy.array(variables)
+
 
     ## Reshape the file, variable and header lists according to the plot dimensions ##
     
@@ -103,9 +106,35 @@ def multiplot(ifiles,variables,title,
     if img_headings:
         img_headings = numpy.reshape(img_headings,(dimensions))
 
+
     ## Call matrixplot, accounting for the special cases that require additional data (i.e. wind vectors or stippling) ##
 
-    if draw_vectors:
+    
+    if draw_contours:
+
+	contour_files = str2list(contour_files)
+	contour_variables = str2list(contour_variables)
+
+	confile_matrix = numpy.array(contour_files)
+	convar_matrix = numpy.array(contour_variables)
+	confile_matrix = numpy.reshape(confile_matrix,(dimensions))
+	convar_matrix = numpy.reshape(convar_matrix,(dimensions))
+	
+	matrixplot(file_matrix,var_matrix,title,
+        	   ofile,
+        	   region,minlat,minlon,maxlat,maxlon,projection,
+        	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
+        	   res,area_threshold,
+		   draw_contours,confile_matrix,convar_matrix,contour_ticks,
+		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,
+		   draw_stippling,stipple_files,stipple_variables,
+        	   row_headings,inline_row_headings,col_headings,img_headings,
+        	   draw_axis,delat,delon,equator,
+		   contour,
+        	   image_size,
+		   textsize) 
+	
+    elif draw_vectors:
 
 	uwnd_files = str2list(uwnd_files)
 	uwnd_variables = str2list(uwnd_variables)
@@ -128,14 +157,14 @@ def multiplot(ifiles,variables,title,
         	   region,minlat,minlon,maxlat,maxlon,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
         	   res,area_threshold,
+		   draw_contours,contour_files,contour_variables,contour_ticks,
 		   draw_vectors,ufile_matrix,uvar_matrix,vfile_matrix,vvar_matrix,
 		   draw_stippling,stipple_files,stipple_variables,
         	   row_headings,inline_row_headings,col_headings,img_headings,
         	   draw_axis,delat,delon,equator,
 		   contour,
         	   image_size,
-                   maskoceans,
-                   shpoverlays) 
+		   textsize) 
     
     elif draw_stippling:
 
@@ -152,13 +181,14 @@ def multiplot(ifiles,variables,title,
         	   region,minlat,minlon,maxlat,maxlon,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
         	   res,area_threshold,
+		   draw_contours,contour_files,contour_variables,contour_ticks,
 		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,
 		   draw_stippling,stipfile_matrix,stipvar_matrix,
         	   row_headings,inline_row_headings,col_headings,img_headings,
         	   draw_axis,delat,delon,equator,
 		   contour,
         	   image_size,
-                   maskoceans) 
+		   textsize) 
 	
     else:
         
@@ -167,14 +197,14 @@ def multiplot(ifiles,variables,title,
         	   region,minlat,minlon,maxlat,maxlon,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
         	   res,area_threshold,
+		   draw_contours,contour_files,contour_variables,contour_ticks,
 		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,
 		   draw_stippling,stipple_files,stipple_variables,
         	   row_headings,inline_row_headings,col_headings,img_headings,
         	   draw_axis,delat,delon,equator,
 		   contour,
         	   image_size,
-                   maskoceans,
-                   shpoverlays) 
+		   textsize) 
 
 
 def matrixplot(ifiles,variables,title,
@@ -187,6 +217,8 @@ def matrixplot(ifiles,variables,title,
               colourbar_colour='jet',ticks=None,discrete_segments=None,units=None,convert=False,extend="neither",
               #resolution of image
               res='l',area_threshold=1.,
+	      #contours
+	      draw_contours=False,contour_files=None,contour_variables=None,contour_ticks=None,
 	      # wind vectors
 	      draw_vectors=False,uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,
 	      # stippling
@@ -200,37 +232,11 @@ def matrixplot(ifiles,variables,title,
               #Width of image in inches (individual image)
               #so single imgage would be 6 inches wide or image with two columns would be 12 inches wide etc.)
               image_size=6,
-              #Mask oceans
-              maskoceans=False,
-              shpoverlays=[],
               #Change text size
               textsize=18):
-    """
-    Takes all the input arguments and determines the correct call to matrixplot
-    @param ifiles: Matrix of files to plot positions in matrix will be positions in image
-    @type ifiles: Matrix of coresponding variables of file matrix
-    @param variables: Matrix of coresponding variables of file matrix
-    @type variables: List or str
-    @param title: Title of plot
-    @type title: str
-    @param ofile: Path and filename of output file, default 'title'.png where title is previous variable
-    @type ofile: str
-    @param region: cdms.Selector defining a region, inbuilt regions are WORLD, PACIFIC, AUSTRALIA
-    @type region: cdms.Selector
-    @param minlat: Minimum Latitude (Overrides region param)
-    @type minlat: float
-    @param minlon: Minimum Longitude (Overrides region param)
-    @type minlon: float
-    @param maxlat: Maximum Latitude (Overrides region param)
-    @type maxlat: float
-    @param maxlon: Maximum Longitude (Overrides region param)
-    @type maxlon: float
+	      
+    """Takes all the input arguments and determines the correct call to matrixplot"""
 
-    @param row_headings: List of sub headings for rows
-    @type row_headings: List or str
-    @param col_headings: List of sub headings for columns
-    @type col_headings: List or str
-    """
 
     ## Perform initial checks ##
 
@@ -427,7 +433,7 @@ def matrixplot(ifiles,variables,title,
         cbarbuffer = 4*vpadding
 
 
-    ## Create the plot ##
+    ## Create the plot, one thumbnail at a time ##
 
     fig=plt.figure(figsize=(width,height))
     fig.suptitle(title,y=(1-titlepos),size=20)
@@ -435,22 +441,9 @@ def matrixplot(ifiles,variables,title,
     #for row,ifile in enumerate(ifiles):
     for row in range(nrows):
         for col in range(ncols):
+	
 
-            ## Print row and column headings, if there are going to be individual image headings as well
-	    
-	    if img_headings is not None:
-	    
-		if(col == 0 and row_headings):
-                    fig.text(hpadding,colourbar+cbarbuffer+(row*(pheight+vpadding))+pheight/2.,row_headings[row],size=rowcolfsize,rotation='vertical',horizontalalignment='left',verticalalignment="center")
-
-        	if(row == nrows-1 and col_headings):
-                    fig.text(row_heading+(col*(pwidth+hpadding))+pwidth/2.,
-                             colourbar+cbarbuffer+vpadding+(row*(pheight+vpadding))+pheight,
-                             col_headings[col],
-                             size=rowcolfsize,
-                             rotation='horizontal',
-                             horizontalalignment='center')
-
+            # Open file and extract data #
 
             #Skip image if blank or set to "N/A or n/a"
             if (not os.path.exists(ifiles[row][col])) or (not variables[row,col]) or variables[row,col].lower() == "n/a" :
@@ -458,10 +451,15 @@ def matrixplot(ifiles,variables,title,
                     print "WARNING skipping position '(%s,%s)' : file '%s' and variable '%s'" % (row,col,ifiles[row][col],variables[row,col])
                 continue
 
+            #Otherwise open
             fin = cdms2.open(ifiles[row,col],'r')
 	    tVar = fin(variables[row,col],squeeze=1)
 	    fin.close()
 	    
+	    
+	    # Make any necessary modifications to the data #
+	    
+	    #White mask for stippling disagreement
 	    if draw_stippling:
 	        fin_stip = cdms2.open(stipple_files[row,col],'r')
 	        stipple = fin_stip(stipple_variables[row,col])
@@ -471,19 +469,21 @@ def matrixplot(ifiles,variables,title,
 	   
 	        fin_stip.close()
 	    
-	    
-	    # Unit conversion
+	    #Unit conversion
 	    if convert:
 		if tVar.units == 'kg m-2 s-1' and units[0] == 'm':
 	            tVar = tVar*86400
 		if tVar.units[0] == 'K' and units[0] == 'C' and ma.max(tVar) > 70.0:
 	            tVar = tVar - 273.16
-		
+	    
+	    #Data must be two dimensional 
             if (re.match('^t',tVar.getOrder())):
-                print "WARNING data has a time axis, results displayed will be a mean of time axis"
-                tVar = tVar.mean(axis=0)
+                print "WARNING data has a time axis, results displayed will be the first time step"
+                tVar = tVar[0,:,:]
             
-
+            
+	    # Plot the axes and map #
+	    
             map = Basemap(llcrnrlon=minlon,llcrnrlat=minlat,urcrnrlon=maxlon,urcrnrlat=maxlat,\
                           resolution=res,area_thresh=area_threshold,projection=projection)
         
@@ -498,13 +498,10 @@ def matrixplot(ifiles,variables,title,
                                           xres, yres,
                                           order=0)
 					  
-            if maskoceans:
-                lons, lats = map.makegrid(xres, yres)
-                datout = mask_ocean(datout, lats=lats[:, 0],
-                                            lons=lons[0])
-		im = map.imshow(datout,colourmap,vmin=min_level,vmax=max_level)
-            
-	    elif contour: 
+					  
+            # Plot the primary data (i.e. the data that uses the colourbar) #
+	                
+	    if contour: 
 	        latsq = tVar.getLatitude()
 	        lonsq = tVar.getLongitude()
 	        x,y = map(*numpy.meshgrid(lonsq,latsq))
@@ -527,24 +524,22 @@ def matrixplot(ifiles,variables,title,
 		im = map.imshow(datout_masked,colourmap,vmin=min_level,vmax=max_level)
 #                im = map.imshow(datout,colourmap,vmin=min_level,vmax=max_level)
 	    
-	    
-            if not shpoverlays:
-                map.drawcoastlines()
+            map.drawcoastlines()
 
-            for ishp, shpfile in enumerate(shpoverlays):
-                ret = map.readshapefile(shpfile, 'shpfile%d' % ishp)
-                if ret[1] == 1: # points
-                    pts = getattr(map, 'shpfile%d' % ishp)
-                    xs = [pt[0] for pt in pts]
-                    ys = [pt[1] for pt in pts]
-                    map.scatter(xs, ys)
-                        
 
-           #Image headings overrides col headings
-            if img_headings is not None:
-                plt.title(img_headings[row][col],size=14)
+            # Plot the secondary data #
     
-            if draw_vectors:
+            if draw_contours:
+	        fin = cdms2.open(contour_files[row,col],'r')
+	        data = fin(contour_variables[row,col],squeeze=1)      # region
+	        fin.close()
+		
+		latsq_contour = data.getLatitude()
+	        lonsq_contour = data.getLongitude()
+	        x,y = map(*numpy.meshgrid(lonsq_contour,latsq_contour))
+	    	im = map.contour(x,y,data,contour_ticks)
+	    
+	    elif draw_vectors:
                 fin = cdms2.open(uwnd_files[row,col],'r')
 	        uas = fin(uwnd_variables[row,col],squeeze=1)      # region
 	        fin.close()
@@ -604,9 +599,23 @@ def matrixplot(ifiles,variables,title,
 #			    lats=numpy.array([lat])
 #			    x,y = map(*numpy.meshgrid(lons,lats))
 #	                    map.plot(x,y,marker='|',markersize=3.0,markeredgewidth=0.6,markerfacecolor='black',markeredgecolor='black')
-#	   
-	    # Print individual image headings, or if there are none print the row and clolumn headings
-            if img_headings is not None:
+	   
+
+	    # Print the headings #
+	    
+	    if img_headings is not None:
+	    
+		if(col == 0 and row_headings):
+                    fig.text(hpadding,colourbar+cbarbuffer+(row*(pheight+vpadding))+pheight/2.,row_headings[row],size=rowcolfsize,rotation='vertical',horizontalalignment='left',verticalalignment="center")
+
+        	if(row == nrows-1 and col_headings):
+                    fig.text(row_heading+(col*(pwidth+hpadding))+pwidth/2.,
+                             colourbar+cbarbuffer+vpadding+(row*(pheight+vpadding))+pheight,
+                             col_headings[col],
+                             size=rowcolfsize,
+                             rotation='horizontal',
+                             horizontalalignment='center')
+
                 plt.title(img_headings[row][col],size=14)
             
 	    else:
@@ -620,7 +629,9 @@ def matrixplot(ifiles,variables,title,
                     else:
                         plt.ylabel(row_headings[row],size=18)
 	    
-           
+	    
+            # Draw the gridlines #
+	               
 	    if(draw_axis):
                 labels=[0,0,0,0]
 
@@ -629,7 +640,7 @@ def matrixplot(ifiles,variables,title,
                 if (row == 0):
                     labels[3]=1
 
-                # draw parallels
+                #draw parallels
                 if delat: 
                     circles = numpy.arange(minlat,maxlat,delat).tolist()
                     map.drawparallels(circles,labels=labels,fontsize=8,linewidth=0.5)
@@ -641,7 +652,9 @@ def matrixplot(ifiles,variables,title,
                     meridians = numpy.arange(minlon,maxlon,delon)
                     map.drawmeridians(meridians,labels=labels,fontsize=8,linewidth=0.5)
 
-    # colour bar
+
+    ## Plot the colour bar ##
+    
     #cax = plt.axes([0.15,0.035,0.7,0.03]) # setup colorbar axes.
     cax = plt.axes([0.15,vpadding*2,0.7,colourbar])   # used to be vpadding*2
     plt.xticks(fontsize=12)
@@ -650,6 +663,7 @@ def matrixplot(ifiles,variables,title,
     cb = plt.colorbar(mappable=im,cax=cax,orientation='horizontal',ticks=ticks,extend=extend) # draw colorbar
     if units:
         cb.set_label(units)
+
 
     plt.axes(ax)  # make the original axes current again
     plt.savefig(ofile)#,dpi=300)
@@ -869,26 +883,66 @@ if __name__ == '__main__':
     parser = OptionParser(usage=usage)
 
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
-    parser.add_option("-r", "--region",dest="region",type='string',default='WORLD360',help="select season")
-    parser.add_option("-u", "--units",dest="units",type='string',default=False,help="units [conversion will occur if necessary]")
-    parser.add_option("-o", "--obs", dest="obs",default=None,help="List of comma seperated observational data files [defualt = none]")
-    parser.add_option("-l", "--legend", dest="legend",default=2,type='int',help="Location of the figure legend [defualt = 2]")
+    parser.add_option("--ofile",dest="ofile",type='string',default=None,help="name of output file [default = 'title'.png]")
+    parser.add_option("--region",dest="region",type='string',default='WORLD_GREENWICH',help="name of region to plot [default = WORLD_GREENWICH]")
+    parser.add_option("--minlat", dest="minlat",type='float',default=None,help="Minimum latitude [defualt = none]")
+    parser.add_option("--minlon", dest="minlon",type='float',default=None,help="Minimum longitude [defualt = none]")
     
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
     if options.manual == True or len(sys.argv) == 1:
 	print """
 	Usage:
-            python plot_map.py [-M] [-h] [-r] [-u] [-o] [-l] {input file 1} {input file 2} ... {input file N} {output file}
+            python plot_map.py [-M] [-h] [options] {infile1,infile2,...} {invar1,invar2,...} {title} {nrow,ncol}
 
-	Options
+	General Options
             -M  -> Display this on-line manual page and exit
             -h  -> Display a help/usage message and exit
-	    -r  -> Select region [default = WORLD360] 
-	    -u  -> Units (program will automatically convert from 'kg m-2 s-1' to 'mm day-1' and 'K' to 'C')
-	    -o  -> List of comma separated observational files 
-	    -l  -> Location of the legend [default = 2]
-        	    
+        	    		
+	Options for the multiplot function
+            ifiles                List of comma separated input files, in an order such that positions in the matrix start bottom left and fill row by row [required] 
+            variables             List of comma seperated variable names corresponding to the input files [required]
+            title                 Title of plot [required]
+            dimensions            List of comma seperated matrix dimensions (rows,columns)
+            --ofile               Name of output file [default = 'title'.png]
+            --region              Selector defining a region. Inbuilt regions are WORLD_GRENEWICH, WORLD_DATELINE, AUSTRALIA, AUS_NZ [default = WORLD_DATELINE]
+            --minlat              User can override the pre-defined region by specifying bounds
+            --minlon              " "
+            --maxlat              " "
+            --maxlon              " " 
+            --colourbar_colour    Selector defining a matplotlib colorbar (e.g. 'jet','jet_r','hot','Blues') [default = 'jet']
+            --units               Units of the data - appears as a label below the colourbar
+            --ticks               List of comma seperataed tick marks to appear on the colour bar
+            --discrete_segments   List of comma seperated hexadecimal segment colours (e.g. #FF0B0B,#D5BA00,...) to appear on the colour bar
+                                  (this will override colourbar_colour and there must be one less discrete segment than number of ticks), OR
+				  A single integer specifing how many segments you want (the program will figure out the rest)
+            --convert             Selector for automatic unit conversion (it will convert 'kg m-2 s-1' to 'mm day-1' or 'K' to 'C')
+            --extend              Selector for arrow points at either end of colourbar. Can be 'both', 'neither, 'min' or 'max' [default = 'neither']
+            --resolution          Resolution of the background map. Can he 'h' (high), 'm' (medium) or 'l' (low) [default='l']
+            --area_threshold      Threshold (in km) for the smallest resolved feature on the background map [default = 1]
+	    --draw_contours       Switch for drawing contours on the plot [default = False]
+            --contour_files       List of input contour files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
+            --contour_variables   List of comma seperated variable names corresponding to the input contour files [default = None] 
+            --contour_ticks       List of comma seperataed tick marks, or just the number of contour lines
+            --draw_vectors        Switch for drawing wind vectors on the plot [default = False]
+            --uwnd_files          List of input zonal surface wind files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
+            --uwnd_variables      List of comma seperated variable names corresponding to the input zonal surface wind files [default = None] 
+            --vwnd_files          List of input meridional surface wind files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
+            --vwnd_variables      List of comma seperated variable names corresponding to the input meridional surface wind files [default = None] 
+            --draw_stippling      Switch for drawing stippling on the plot [default = False]
+            --stipple_files       List of input stippling files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
+            --stipple_variables   List of comma seperated variable names corresponding to the input stippling files [default = None] 
+            --row_headings        List of comma seperated row headings (order bottom to top) [default = None]
+	    --inline_row_headings List of comma seperated inline row headings for each individual plot, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None] 
+            --col_headings        List of comma seperated column headings (order left to right) [default = None]
+            --img_headings        List of comma seperated headings for each individual plot, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
+            --draw_axis           Switch for drawing lat/lon gridlines on plot [default = False]
+            --delat               Interval (in degrees latitude) between meridional gridlines [default = 20]
+            --delon               Interval (in degrees longitude) between zonal gridlines [default = 40]
+            --equator             Switch for drawing an extra grid line marking the equator [default = False]
+            --contour             Switch for drawing a contour plot (default = False, which simply fills each grid cell with the appropriate shading)
+            --image_size          Width of individual images (in inches) [default = 6]
+
 	Environment
 	    abyss.earthsci.unimelb.edu.au
 	        /opt/cdat/bin/python
@@ -901,71 +955,118 @@ if __name__ == '__main__':
                 module load python/2.5.1;
                 export PYTHONPATH=/tools/cdat/5.0.0/lib/python2.5/site-packages/;
                 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tools/cdat/5.0.0/Externals/lib
-		
-	Options for the multiplot function
-            ifiles              List of input files, in an order such that positions in the matrix start bottom left and fill row by row [required] 
-            variables           List of comma seperated variable names corresponding to the input files
-            title               Title of plot
-            dimensions          List of comma seperated matrix dimensions (rows,columns)
-            ofile               Name of output file [default = 'title'.png]
-            region              Selector defining a region. Inbuilt regions are WORLD_GRENEWICH, WORLD_DATELINE, AUSTRALIA, AUS_NZ [default = WORLD_DATELINE]
-            minlat              User can override the pre-defined region by specifying bounds
-            minlon              " "
-            maxlat              " "
-            maxlon              " " 
-            colourbar_colour    Selector defining a matplotlib colorbar (e.g. 'jet','jet_r','hot','Blues')
-            units               Units of the data - appears as a label below the colourbar
-            ticks               List of comma seperataed tick marks to appear on the colour bar
-            discrete_segments   List of comma seperated hexadecimal segment colours (e.g. #FF0B0B,#D5BA00,...) to appear on the colour bar
-                                This will override colourbar_colour and there must be one less discrete segment than number of ticks
-            convert             Selector for automatic unit conversion (it will convert 'kg m-2 s-1' to 'mm day-1' or 'K' to 'C')
-            extend              Selector for arrow points at either end of colourbar. Can be 'both', 'neither, 'min' or 'max' [default = 'neither']
-            resolution          Resolution of the background map. Can he 'h' (high), 'm' (medium) or 'l' (low)
-            area_threshold      Threshold (in km) for the smallest resolved feature on the background map
-            draw_vectors        Switch for drawing wind vectors on the plot [default = False]
-            uwnd_files          List of input zonal surface wind files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = none]
-            uwnd_variables      List of comma seperated variable names corresponding to the input zonal surface wind files [default = none] 
-            vwnd_files          List of input meridional surface wind files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = none]
-            vwnd_variables      List of comma seperated variable names corresponding to the input meridional surface wind files [default = none] 
-            draw_stippling      Switch for drawing stippling on the plot [default = False]
-            stipple_files       List of input stippling files (containing 1s and 0s to indicate stippling and no stippling respectively), in an order such that positions in the matrix start bottom left and fill row by row [defualt = none]
-            stipple_variables   List of comma seperated variable names corresponding to the input stippling files [default = none] 
-            row_headings        List of comma seperated row headings (order bottom to top) [default = none] 
-            col_headings        List of comma seperated column headings (order left to right) [default = none]
-            img_headings        List of comma seperated headings for each individual plot, in an order such that positions in the matrix start bottom left and fill row by row [defualt = none]
-            draw_axis           Switch for drawing lat/lon gridlines on plot [default = False]
-            delat               Interval (in degrees latitude) between meridional gridlines [default = 20]
-            delon               Interval (in degrees longitude) between zonal gridlines [default = 40]
-            equator             Switch for drawing an extra grid line marking the equator [default = False]
-            contour             Switch for drawing a contour plot (default = False, which simply fills each grid cell with the appropriate shading)
-            image_size          Width of individual images (in inches) [default = 6]
-
-	Example
-	
-	Note
 
 	Bugs
             Please report any problems to: d.irving@student.unimelb.edu.au
 	"""
 	sys.exit(0)
     
-    
-    if options.obs:
-        obs_list = [str(s) for s in options.obs.split(',')]
     else:
-        obs_list = None
-        
-    model_list = args[0:-1]
-    outfile = args[-1]
     
-    main(model_list,obs_list,outfile,options.region,options.units,options.legend)
+	file_list = [str(s) for s in args[0].split(',')]
+	var_list = [str(s) for s in args[1].split(',')]
+	title = args[2]
+	dimensions = [int(s) for s in options.dimensions.split(',')]
 
+	print options
+
+	if options.ticks:
+            ticks = [float(s) for s in options.ticks.split(',')]
+	else:
+            ticks = None
+
+	if options.discrete_segments:
+            discrete_segments = [str(s) for s in options.discrete_segments.split(',')]
+	else:
+            discrete_segments = None
+
+	if options.contour_files:
+            contour_files = [str(s) for s in options.contour_files.split(',')]
+	else:
+            contour_files = None
+
+	if options.contour_variables:
+            contour_variables = [str(s) for s in options.contour_variables.split(',')]
+	else:
+            contour_variables = None
+
+	if options.contour_ticks:
+            contour_ticks = [float(s) for s in options.contour_ticks.split(',')]
+	else:
+            contour_ticks = None
+
+	if options.uwnd_files:
+            uwnd_files = [str(s) for s in options.uwnd_files.split(',')]
+	else:
+            uwnd_files = None
+
+	if options.uwnd_variables:
+            uwnd_variables = [str(s) for s in options.uwnd_variables.split(',')]
+	else:
+            uwnd_variables = None
+
+	if options.vwnd_files:
+            vwnd_files = [str(s) for s in options.vwnd_files.split(',')]
+	else:
+            vwnd_files = None
+
+	if options.vwnd_variables:
+            vwnd_variables = [str(s) for s in options.vwnd_variables.split(',')]
+	else:
+            vwnd_variables = None
+
+	if options.stipple_files:
+            stipple_files = [str(s) for s in options.stipple_files.split(',')]
+	else:
+            stipple_files = None
+
+	if options.stipple_variables:
+            stipple_variables = [str(s) for s in options.stipple_variables.split(',')]
+	else:
+            stipple_variables = None
+
+	if options.row_headings:
+            row_headings = [str(s) for s in options.row_headings.split(',')]
+	else:
+            row_headings = None
+
+	if options.inline_row_headings:
+            inline_row_headings = [str(s) for s in options.inline_row_headings.split(',')]
+	else:
+            inline_row_headings = None
+
+	if options.col_headings:
+            col_headings = [str(s) for s in options.col_headings.split(',')]
+	else:
+            col_headings = None
+
+	if options.img_headings:
+            img_headings = [str(s) for s in options.img_headings.split(',')]
+	else:
+            img_headings = None
+
+
+	multiplot(file_list,var_list,title,
+        	  dimensions=dimensions,
+		  ofile=options.ofile,
+		  region=options.region,minlat=options.minlat,minlon=options.minlon,maxlat=options.maxlat,maxlon=options.maxlon,projection=options.projection,
+        	  colourbar_colour=options.colourbar_colour,ticks=ticks,discrete_segments=discrete_segments,units=options.units,convert=options.convert,extend=options.extend,
+        	  res=options.res,area_threshold=options.area_threshold,
+		  draw_contours=options.draw_contours,contour_files=contour_files,contour_variables=contour_variables,contour_ticks=contour_ticks,
+		  draw_vectors=options.draw_vectors,uwnd_files=uwnd_files,uwnd_variables=uwnd_variables,vwnd_files=vwnd_files,vwnd_variables=vwnd_variables,
+		  draw_stippling=options.draw_stippling,stipple_files=stipple_files,stipple_variables=stipple_variables,
+        	  row_headings=row_headings,inline_row_headings=inline_row_headings,
+        	  col_headings=col_headings,img_headings=img_headings,
+        	  draw_axis=options.draw_axis,delat=options.delat,delon=options.delon,equator=options.equator,
+		  contour=options.contour,
+        	  image_size=options.image_size,
+		  textsize=options.text_size):
 
 
 ####################
 ###  Example plot ##
 ####################
-#
+#d
 ##path = '/cs/datastore/csdar/irv033/projections/tas/ann_se/'
 ##infile_list = [path+'tas_proj.global.ensemble_all.2030.sresa2.ann.nc',path+'tas_proj.global.ensemble_all.2055.sresa2.ann.nc',
 ##path+'tas_proj.global.ensemble_all.2090.sresa2.ann.nc',path+'tas_proj.global.ensemble_all.2030.sresa1b.ann.nc',
