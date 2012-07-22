@@ -36,11 +36,94 @@ from datetime import datetime
 
 ### Define globals ###
 
+#Regions
 AUSTRALIA = cdms2.selectors.Selector(latitude=(-45,-10,'cc'),longitude=(110,160,'cc'))
 AUS_NZ = cdms2.selectors.Selector(latitude=(-50,0,'cc'),longitude=(100,185,'cc'))
 WORLD_GREENWICH = cdms2.selectors.Selector(latitude=(-90,90,'cc'),longitude=(-180,180,'cc'))
 WORLD_DATELINE = cdms2.selectors.Selector(latitude=(-90,90,'cc'),longitude=(0,360,'cc'))
 
+#Colours
+blue1,blue2,blue3,blue4,blue5, = ['#EAF4FF','#DFEFFF','#BFDFFF','#95CAFF','#55AAFF']
+blue6,blue7,blue8,blue9,blue10 = ['#0B85FF','#006AD5','#004080','#002B55','#001B35']
+
+brown1,brown2,brown3,brown4,brown5, = ['#FFFAEA','#FFF8DF','#FFEFBF','#FFE495','#FFD555']
+brown6,brown7,brown8,brown9,brown10 = ['#FFC20B','#D59F00','#806000','#554000','#352800']
+
+hot1,hot2,hot3,hot4,hot5, = ['#FFFFEA','#FFFFDF','#FFFF95','#FFFF0B','#FFAA0B']
+hot6,hot7,hot8,hot9,hot10 = ['#FF660B','#FF0B0B','#800000','#550000','#350000']
+
+red1,red2,red3,red4,red5, = ['#FFEAEA','#FFDFDF','#FFBFBF','#FF9595','#FF5555']
+red6,red7,red8,red9,red10 = ['#FF0B0B','#D50000','#800000','#550000','#350000']
+
+jet0,jet1,jet2,jet3,jet4,jet5,jet6 = ['#001B35','#000080','#0000D5','#006AD5','#55AAFF','#55FFFF','#55FFAA']
+jet7,jet8,jet9,jet10,jet11,jet12 = ['#D5FF55','#FFD555','#FF850B','#D51B00','#800000','#350000']
+
+IPCCrain1,IPCCrain2,IPCCrain3,IPCCrain4,IPCCrain5,IPCCrain6 = ['#FFF295','#FFD555','#FF850B','#D55000','#D50000','#550040']
+IPCCrain7,IPCCrain8,IPCCrain9,IPCCrain10,IPCCrain11,IPCCrain12 = ['#600080','#000080','#0000D5','#0B85FF','#55AAFF','#95CAFF']
+
+
+
+grey = '#CCCCCC'
+white = '#FFFFFF'
+
+
+
+green1 = '#F4FFEA' 
+green2 = '#EFFFDF'
+green3 = '#DFFFBF'
+green4 = '#CAFF95'
+green5 = '#AAFF55'
+green6 = '#85FF0B'
+green7 = '#6AD500'
+green8 = '#408000'
+green9 = '#2B5500'
+green10 = '#1B3500'
+
+purple1 = '#F4EAFF'
+purple2 = '#EFDFFF'
+purple3 = '#DFBFFF'
+purple4 = '#CA95FF'
+purple5 = '#AA55FF'
+purple6 = '#850BFF'
+purple7 = '#6A00D5'
+purple8 = '#400080'
+purple9 = '#2B0055'
+purple10 = '#1B0035'
+
+grey1 = '#FFFFFF'
+grey2 = '#EBEBEB'
+grey3 = '#E6E6E6'
+grey4 = '#DCDCDC'
+grey5 = '#D2D2D2'
+grey6 = '#CCCCCC'
+grey7 = '#787878'
+grey8 = '#666666'
+grey9 = '#4B4B4B'
+grey10 = '#333333'
+grey11 = '#1E1E1E'
+grey12 = '#000000'
+
+
+stjeta1 = '#AF251C'
+stjeta2 = '#DA251D'
+stjeta3 = '#DA462C'
+stjeta4 = '#DA673B'
+stjeta5 = '#E17F32'
+stjeta6 = '#E79728'
+stjeta7 = '#F3C614'
+stjeta8 = '#FFF500'
+stjeta9 = '#D5E403'
+stjeta10 = '#ABD305'
+stjeta11 = '#94CB5B'
+stjeta12 = '#8ECB97'
+stjeta13 = '#88CAD2'
+stjeta14 = '#214681'
+stjeta15 = '#40407B'
+stjeta16 = '#5F3A74'
+stjeta17 = '#765089'
+stjeta18 = '#9168A1'
+stjeta19 = '#96578C'
+stjeta20 = '#974578'
 
 ### Define functions ###
 
@@ -887,13 +970,20 @@ if __name__ == '__main__':
     parser.add_option("--region",dest="region",type='string',default='WORLD_GREENWICH',help="name of region to plot [default = WORLD_GREENWICH]")
     parser.add_option("--minlat", dest="minlat",type='float',default=None,help="Minimum latitude [defualt = none]")
     parser.add_option("--minlon", dest="minlon",type='float',default=None,help="Minimum longitude [defualt = none]")
+    parser.add_option("--maxlat", dest="maxlat",type='float',default=None,help="Maximun latitude [defualt = none]")
+    parser.add_option("--maxlon", dest="maxlon",type='float',default=None,help="Maximum longitude [defualt = none]")
+    parser.add_option("--colourbar_colour", dest="colourbar_colour",type='string',default='jet',help="Colourbar name [defualt = jet]")
+    parser.add_option("--units", dest="units",type='string',default=None,help="Units")
+    parser.add_option("--ticks", dest="ticks",type='string',default=None,help="List of comma seperataed tick marks to appear on the colour bar")
+    parser.add_option("--discrete_segments", dest="discrete_segments",type='string',default=None,help="List of comma seperated hexadecimal segment colours (e.g. #FF0B0B,#D5BA00,...) to appear on the colour bar")
+    parser.add_option("--convert", dest="units",type='string',default=None,help="Units")
     
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
     if options.manual == True or len(sys.argv) == 1:
 	print """
 	Usage:
-            python plot_map.py [-M] [-h] [options] {infile1,infile2,...} {invar1,invar2,...} {title} {nrow,ncol}
+            python plot_map.py [-M] [-h] [options] {ifile1,ifile2,...} {variable1,variable2,...} {title} {nrow,ncol}
 
 	General Options
             -M  -> Display this on-line manual page and exit
