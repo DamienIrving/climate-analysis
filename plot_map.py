@@ -55,54 +55,23 @@ hot6,hot7,hot8,hot9,hot10 = ['#FF660B','#FF0B0B','#800000','#550000','#350000']
 red1,red2,red3,red4,red5, = ['#FFEAEA','#FFDFDF','#FFBFBF','#FF9595','#FF5555']
 red6,red7,red8,red9,red10 = ['#FF0B0B','#D50000','#800000','#550000','#350000']
 
+green1,green2,green3,green4,green5, = ['#F4FFEA','#EFFFDF','#DFFFBF','#CAFF95','#AAFF55']
+green6,green7,green8,green9,green10 = ['#85FF0B','#6AD500','#408000','#2B5500','#1B3500']
+
+purple1,purple2,purple3,purple4,purple5, = ['#F4EAFF','#EFDFFF','#DFBFFF','#CA95FF','#AA55FF']
+purple6,purple7,purple8,purple9,purple10 = ['#850BFF','#6A00D5','#400080','#2B0055','#1B0035']
+
+grey1,grey2,grey3,grey4,grey5,grey6 = ['#FFFFFF','#EBEBEB','#E6E6E6','#DCDCDC','#D2D2D2','#CCCCCC']
+grey7,grey8,grey9,grey10,grey11,grey12 = ['#787878','#666666','#4B4B4B','#333333','#1E1E1E','#000000']
+
 jet0,jet1,jet2,jet3,jet4,jet5,jet6 = ['#001B35','#000080','#0000D5','#006AD5','#55AAFF','#55FFFF','#55FFAA']
 jet7,jet8,jet9,jet10,jet11,jet12 = ['#D5FF55','#FFD555','#FF850B','#D51B00','#800000','#350000']
 
 IPCCrain1,IPCCrain2,IPCCrain3,IPCCrain4,IPCCrain5,IPCCrain6 = ['#FFF295','#FFD555','#FF850B','#D55000','#D50000','#550040']
 IPCCrain7,IPCCrain8,IPCCrain9,IPCCrain10,IPCCrain11,IPCCrain12 = ['#600080','#000080','#0000D5','#0B85FF','#55AAFF','#95CAFF']
 
-
-
 grey = '#CCCCCC'
 white = '#FFFFFF'
-
-
-
-green1 = '#F4FFEA' 
-green2 = '#EFFFDF'
-green3 = '#DFFFBF'
-green4 = '#CAFF95'
-green5 = '#AAFF55'
-green6 = '#85FF0B'
-green7 = '#6AD500'
-green8 = '#408000'
-green9 = '#2B5500'
-green10 = '#1B3500'
-
-purple1 = '#F4EAFF'
-purple2 = '#EFDFFF'
-purple3 = '#DFBFFF'
-purple4 = '#CA95FF'
-purple5 = '#AA55FF'
-purple6 = '#850BFF'
-purple7 = '#6A00D5'
-purple8 = '#400080'
-purple9 = '#2B0055'
-purple10 = '#1B0035'
-
-grey1 = '#FFFFFF'
-grey2 = '#EBEBEB'
-grey3 = '#E6E6E6'
-grey4 = '#DCDCDC'
-grey5 = '#D2D2D2'
-grey6 = '#CCCCCC'
-grey7 = '#787878'
-grey8 = '#666666'
-grey9 = '#4B4B4B'
-grey10 = '#333333'
-grey11 = '#1E1E1E'
-grey12 = '#000000'
-
 
 stjeta1 = '#AF251C'
 stjeta2 = '#DA251D'
@@ -124,6 +93,7 @@ stjeta17 = '#765089'
 stjeta18 = '#9168A1'
 stjeta19 = '#96578C'
 stjeta20 = '#974578'
+
 
 ### Define functions ###
 
@@ -158,7 +128,7 @@ def multiplot(ifiles,variables,title,
               row_headings=None,inline_row_headings=False,
               col_headings=None,img_headings=None,
               #Axis options to draw lat/lon lines
-              draw_axis=False,delat=20,delon=40,equator=False,
+              draw_axis=False,delat=30,delon=30,equator=False,
 	      #contour plot
 	      contour=False,
               #Width of image in inches (individual image)
@@ -309,7 +279,7 @@ def matrixplot(ifiles,variables,title,
               #Headings if using mutiple plots in a single plot
               row_headings=None,inline_row_headings=False,col_headings=None,img_headings=None,
               #Axis options to draw lat/lon lines
-              draw_axis=False,delat=20,delon=40,equator=False,
+              draw_axis=False,delat=30,delon=30,equator=False,
 	      #contour plot
 	      contour=False,
               #Width of image in inches (individual image)
@@ -427,8 +397,11 @@ def matrixplot(ifiles,variables,title,
     #colourmap can be defined forcing it to a discrete map
     
     if(discrete_segments):
-
-        #Segments can be non-linear and are scaled to tick options if defined
+        if discrete_segments[0] in globals():
+            for i in range(0,len(discrete_segments)):
+	        discrete_segments[i] = globals()[discrete_segments[i]]
+        
+	#Segments can be non-linear and are scaled to tick options if defined
         if ticks:
             if isinstance(discrete_segments,list):
                 #colours = [matplotlib.colors.hex2color(seg) for seg in discrete_segments]
@@ -967,16 +940,50 @@ if __name__ == '__main__':
 
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
     parser.add_option("--ofile",dest="ofile",type='string',default=None,help="name of output file [default = 'title'.png]")
-    parser.add_option("--region",dest="region",type='string',default='WORLD_GREENWICH',help="name of region to plot [default = WORLD_GREENWICH]")
+    parser.add_option("--contour",action="store_true",dest="contour",default=False,help="Switch for drawing contour plot [default = False]")
+    #Map details
+    parser.add_option("--region",dest="region",type='string',default='WORLD_DATELINE',help="name of region to plot [default = WORLD_DATELINE]")
     parser.add_option("--minlat", dest="minlat",type='float',default=None,help="Minimum latitude [defualt = none]")
     parser.add_option("--minlon", dest="minlon",type='float',default=None,help="Minimum longitude [defualt = none]")
     parser.add_option("--maxlat", dest="maxlat",type='float',default=None,help="Maximun latitude [defualt = none]")
     parser.add_option("--maxlon", dest="maxlon",type='float',default=None,help="Maximum longitude [defualt = none]")
+    parser.add_option("--resolution", dest="resolution",type='string',default='c',help="Resolution of the background map [default='l']")
+    parser.add_option("--area_threshold", dest="area_threshold",type='float',default=1.,help="Threshold (in km) for the smallest resolved feature [default = 1]")	
+    parser.add_option("--draw_axis",action="store_true",dest="draw_axis",default=False,help="Switch for drawing lat/lon gridlines on plot [default = False]")
+    parser.add_option("--delat", dest="delat",type='float',default=30.,help="Interval between meridional gridlines [default = 30]")
+    parser.add_option("--delon", dest="delon",type='float',default=30.,help="Interval between zonal gridlines [default = 30]")
+    parser.add_option("--equator",action="store_true",dest="equator",default=False,help="Switch for drawing an extra grid line marking the equator [default = False]")
+    parser.add_option("--image_size", dest="image_size",type='float',default=6.,help="Size of image [default = 6]")
+    parser.add_option("--projection",dest="projection",type='string',default='cyl',help="map projection [default = cyl]")
+    #Colourbar
     parser.add_option("--colourbar_colour", dest="colourbar_colour",type='string',default='jet',help="Colourbar name [defualt = jet]")
     parser.add_option("--units", dest="units",type='string',default=None,help="Units")
     parser.add_option("--ticks", dest="ticks",type='string',default=None,help="List of comma seperataed tick marks to appear on the colour bar")
-    parser.add_option("--discrete_segments", dest="discrete_segments",type='string',default=None,help="List of comma seperated hexadecimal segment colours (e.g. #FF0B0B,#D5BA00,...) to appear on the colour bar")
-    parser.add_option("--convert", dest="units",type='string',default=None,help="Units")
+    parser.add_option("--discrete_segments", dest="discrete_segments",type='string',default=None,help="List of comma seperated colours to appear on the colour bar")
+    parser.add_option("--convert",action="store_true",dest="convert",default=False,help="Unit converstion [default = False]")
+    parser.add_option("--extend", dest="extend",type='string',default='neither',help="Selector for arrow points at either end of colourbar [default = 'neither']")
+    #Contours
+    parser.add_option("--draw_contours",action="store_true",dest="draw_contours",default=False,help="Switch for drawing contours on the plot [default = False]")
+    parser.add_option("--contour_files", dest="contour_files",type='string',default=None,help="List of input contour files")
+    parser.add_option("--contour_variables", dest="contour_variables",type='string',default=None,help="List of input contour variables")
+    parser.add_option("--contour_ticks", dest="contour_ticks",type='string',default=None,help="List of comma seperataed tick marks, or just the number of contour lines")
+    #Wind
+    parser.add_option("--draw_vectors",action="store_true",dest="draw_vectors",default=False,help="Switch for drawing wind vectors on the plot [default = False]")
+    parser.add_option("--uwnd_files", dest="uwnd_files",type='string',default=None,help="List of input zonal wind files")
+    parser.add_option("--uwnd_variables", dest="uwnd_variables",type='string',default=None,help="List of input zonal wind variables")
+    parser.add_option("--vwnd_files", dest="vwnd_files",type='string',default=None,help="List of input zonal wind files")
+    parser.add_option("--vwnd_variables", dest="vwnd_variables",type='string',default=None,help="List of input zonal wind variables")
+    #Stippling
+    parser.add_option("--draw_stippling",action="store_true",dest="draw_stippling",default=False,help="Switch for drawing stippling on the plot [default = False]")
+    parser.add_option("--stipple_files", dest="stipple_files",type='string',default=None,help="List of input stippling files")
+    parser.add_option("--stipple_variables", dest="stipple_variables",type='string',default=None,help="List of input stippling variables")
+    #Headings
+    parser.add_option("--row_headings", dest="row_headings",type='string',default=None,help="List of comma seperated row headings")
+    parser.add_option("--inline_row_headings", dest="inline_row_headings",type='string',default=None,help="List of comma seperated inline row headings")
+    parser.add_option("--col_headings", dest="col_headings",type='string',default=None,help="List of comma seperated column headings")
+    parser.add_option("--img_headings", dest="img_headings",type='string',default=None,help="List of comma seperated image headings")
+    parser.add_option("--textsize", dest="textsize",type='float',default=18.,help="Size of the column and row headings")
+    
     
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
@@ -1008,7 +1015,7 @@ if __name__ == '__main__':
 				  A single integer specifing how many segments you want (the program will figure out the rest)
             --convert             Selector for automatic unit conversion (it will convert 'kg m-2 s-1' to 'mm day-1' or 'K' to 'C')
             --extend              Selector for arrow points at either end of colourbar. Can be 'both', 'neither, 'min' or 'max' [default = 'neither']
-            --resolution          Resolution of the background map. Can he 'h' (high), 'm' (medium) or 'l' (low) [default='l']
+            --resolution          Resolution of the background map. Can be 'h' (high), 'm' (medium), 'l' (low) or 'c' (coarse) [default='l']
             --area_threshold      Threshold (in km) for the smallest resolved feature on the background map [default = 1]
 	    --draw_contours       Switch for drawing contours on the plot [default = False]
             --contour_files       List of input contour files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
@@ -1027,11 +1034,13 @@ if __name__ == '__main__':
             --col_headings        List of comma seperated column headings (order left to right) [default = None]
             --img_headings        List of comma seperated headings for each individual plot, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
             --draw_axis           Switch for drawing lat/lon gridlines on plot [default = False]
-            --delat               Interval (in degrees latitude) between meridional gridlines [default = 20]
-            --delon               Interval (in degrees longitude) between zonal gridlines [default = 40]
+            --delat               Interval (in degrees latitude) between meridional gridlines [default = 30]
+            --delon               Interval (in degrees longitude) between zonal gridlines [default = 30]
             --equator             Switch for drawing an extra grid line marking the equator [default = False]
-            --contour             Switch for drawing a contour plot (default = False, which simply fills each grid cell with the appropriate shading)
+            --contour             Switch for drawing a contour plot [default = False, which simply fills each grid cell with the appropriate shading]
             --image_size          Width of individual images (in inches) [default = 6]
+	    --projection          Map projection [default = cyl]
+	    --textsize            Size of the row and column headers [default = 18]
 
 	Environment
 	    abyss.earthsci.unimelb.edu.au
@@ -1056,9 +1065,9 @@ if __name__ == '__main__':
 	file_list = [str(s) for s in args[0].split(',')]
 	var_list = [str(s) for s in args[1].split(',')]
 	title = args[2]
-	dimensions = [int(s) for s in options.dimensions.split(',')]
+	dimensions = [int(s) for s in args[3].split(',')]
 
-	print options
+	#print options
 
 	if options.ticks:
             ticks = [float(s) for s in options.ticks.split(',')]
@@ -1141,7 +1150,7 @@ if __name__ == '__main__':
 		  ofile=options.ofile,
 		  region=options.region,minlat=options.minlat,minlon=options.minlon,maxlat=options.maxlat,maxlon=options.maxlon,projection=options.projection,
         	  colourbar_colour=options.colourbar_colour,ticks=ticks,discrete_segments=discrete_segments,units=options.units,convert=options.convert,extend=options.extend,
-        	  res=options.res,area_threshold=options.area_threshold,
+        	  res=options.resolution,area_threshold=options.area_threshold,
 		  draw_contours=options.draw_contours,contour_files=contour_files,contour_variables=contour_variables,contour_ticks=contour_ticks,
 		  draw_vectors=options.draw_vectors,uwnd_files=uwnd_files,uwnd_variables=uwnd_variables,vwnd_files=vwnd_files,vwnd_variables=vwnd_variables,
 		  draw_stippling=options.draw_stippling,stipple_files=stipple_files,stipple_variables=stipple_variables,
@@ -1150,7 +1159,7 @@ if __name__ == '__main__':
         	  draw_axis=options.draw_axis,delat=options.delat,delon=options.delon,equator=options.equator,
 		  contour=options.contour,
         	  image_size=options.image_size,
-		  textsize=options.text_size):
+		  textsize=options.textsize)
 
 
 ####################
