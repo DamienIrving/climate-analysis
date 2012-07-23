@@ -1,0 +1,46 @@
+### Merra data download, 20 June 2012 ###
+
+## Location ##  
+
+http://disc.sci.gsfc.nasa.gov/daac-bin/DataHoldings.pl
+http://disc.sci.gsfc.nasa.gov/daac-bin/FTPSubset.pl
+
+# Process
+
+Use the links on the above site 
+wget --content-disposition -i wget_2CUzuIUq
+
+
+## Documentation ##
+
+
+## Variables - Monthly IAU 2d atmospheric single-level diagnostics (tavgM_2d_slv_Nx) ## 
+
+Sea level pressure (originally slp, now psl)
+Geopotential height, 250hPa (originally H, now gz)
+Eastward wind component, 250 hPa (originally U, now ua)
+Northward wind velocity, 250 hPa (originally V, now va)
+Vertical pressure velocity, 250 hPa (originally OMEGA)
+
+
+
+## Post processing ##
+
+# Commands #
+
+cdo mergetime
+cdo chname
+cdo iften mask.nc infile.nc outfile.nc
+cdo sellonlatbox,0,359.9,-90,90       # For having longitude values 0 to 360, instead of -180 to 180
+ncatted -O -a units,psl,c,c,Pa        # Adding a units attribute (for psl in this case)
+ncatted -O -a comments,psl,d,,        # Removing pointless attributes (comments in psl in this case)
+
+
+# Variables #
+
+Streamfunction (sf)
+
+
+# Notes #
+
+I got the ocean mask file from NCI (/projects/ua4/)
