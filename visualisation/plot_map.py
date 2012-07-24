@@ -18,7 +18,7 @@ __version__= '$Revision$'
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap
+from mpl_toolkits.basemap import Basemap, shiftgrid
 
 from scipy import interpolate
 import numpy
@@ -113,7 +113,7 @@ def multiplot(ifiles,variables,title,
               #Output file name default is 'title'.png
               ofile=None,
               #can use a pre-defined region or override with min/max lat/lon, 
-              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,projection='cyl',
+              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-25,lonX=-120,projection='cyl',
               #colourbar settings
               colourbar_colour='jet',ticks=None,discrete_segments=None,units=None,convert=False,extend="neither",
               #resolution of image
@@ -175,7 +175,7 @@ def multiplot(ifiles,variables,title,
 	
 	matrixplot(file_matrix,var_matrix,title,
         	   ofile,
-        	   region,minlat,minlon,maxlat,maxlon,projection,
+        	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
         	   res,area_threshold,
 		   draw_contours,confile_matrix,convar_matrix,contour_ticks,
@@ -207,7 +207,7 @@ def multiplot(ifiles,variables,title,
 
 	matrixplot(file_matrix,var_matrix,title,
         	   ofile,
-        	   region,minlat,minlon,maxlat,maxlon,projection,
+        	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
         	   res,area_threshold,
 		   draw_contours,contour_files,contour_variables,contour_ticks,
@@ -231,7 +231,7 @@ def multiplot(ifiles,variables,title,
 	
 	matrixplot(file_matrix,var_matrix,title,
         	   ofile,
-        	   region,minlat,minlon,maxlat,maxlon,projection,
+        	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
         	   res,area_threshold,
 		   draw_contours,contour_files,contour_variables,contour_ticks,
@@ -247,7 +247,7 @@ def multiplot(ifiles,variables,title,
         
 	matrixplot(file_matrix,var_matrix,title,
         	   ofile,
-        	   region,minlat,minlon,maxlat,maxlon,projection,
+        	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
         	   res,area_threshold,
 		   draw_contours,contour_files,contour_variables,contour_ticks,
@@ -265,7 +265,7 @@ def matrixplot(ifiles,variables,title,
               #Output file name default is 'title'.png
               ofile=None,
               #can use a pre-defined region or override with min/max lat/lon, 
-              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,projection='cyl',
+              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-25,lonX=-120,projection='cyl',
               #colourbar settings
               colourbar_colour='jet',ticks=None,discrete_segments=None,units=None,convert=False,extend="neither",
               #resolution of image
@@ -510,6 +510,9 @@ def matrixplot(ifiles,variables,title,
             #Otherwise open
             fin = cdms2.open(ifiles[row,col],'r')
 	    tVar = fin(variables[row,col],squeeze=1)
+	    tVar_lon = tVar.getLongitude()[:]
+	    tVar_lat = tVar.getLatitude()[:]
+	    
 	    fin.close()
 	    
 	    
@@ -540,17 +543,26 @@ def matrixplot(ifiles,variables,title,
             
 	    # Plot the axes and map #
 	    
-            map = Basemap(llcrnrlon=minlon,llcrnrlat=minlat,urcrnrlon=maxlon,urcrnrlat=maxlat,\
-                          resolution=res,area_thresh=area_threshold,projection=projection)
-        
+	    if projection == 'cyl':
+        	map = Basemap(llcrnrlon=minlon,llcrnrlat=minlat,urcrnrlon=maxlon,urcrnrlat=maxlat,\
+                              resolution=res,area_thresh=area_threshold,projection='cyl')
+            elif projection == 'nsper':
+	        h = 3000000  #height of satellite
+		map = Basemap(projection='nsper',lon_0=lonX,lat_0=latX,satellite_height=h*1000.,resolution=res,area_thresh=area_threshold)
+		tVar,tVar_lon = shiftgrid(180.,tVar,tVar_lon,start=False)
+	    else:
+	        print 'Map projection not recognised'
+		sys.exit(0)
+		
+
             #Setup axis and draw figure
             xres = 100
             yres = 100
             ax = fig.add_axes([row_heading+(col*(pwidth+hpadding)),colourbar+cbarbuffer+(row*(pheight+vpadding)),pwidth,pheight]) 
-
-            datout = map.transform_scalar(tVar.data, 
-                                          tVar.getLongitude()[:],     #fin['latitude']
-                                          tVar.getLatitude()[:],
+            
+            datout = map.transform_scalar(tVar, 
+                                          tVar_lon,     #fin['latitude']
+                                          tVar_lat,
                                           xres, yres,
                                           order=0)
 					  
@@ -558,16 +570,14 @@ def matrixplot(ifiles,variables,title,
             # Plot the primary data (i.e. the data that uses the colourbar) #
 	                
 	    if contour: 
-	        latsq = tVar.getLatitude()
-	        lonsq = tVar.getLongitude()
-	        x,y = map(*numpy.meshgrid(lonsq,latsq))
+	        x,y = map(*numpy.meshgrid(tVar_lon,tVar_lat))
 	    	im = map.contourf(x,y,tVar,ticks,cmap=colourmap,extend=extend)
 		
 	    else:
                 if draw_stippling:
 		    maskout = map.transform_scalar(mask.data, 
-                                          tVar.getLongitude()[:],
-                                          tVar.getLatitude()[:],
+                                          tVar_lon,
+                                          tVar_lat,
                                           xres, yres,
                                           order=0)
 		
@@ -587,21 +597,33 @@ def matrixplot(ifiles,variables,title,
     
             if draw_contours:
 	        fin = cdms2.open(contour_files[row,col],'r')
-	        data = fin(contour_variables[row,col],squeeze=1)      # region
+	        contour_data = fin(contour_variables[row,col],squeeze=1)
+		contour_lat = contour_data.getLatitude()[:]
+	        contour_lon = contour_data.getLongitude()[:]      
 	        fin.close()
 		
-		latsq_contour = data.getLatitude()
-	        lonsq_contour = data.getLongitude()
-	        x,y = map(*numpy.meshgrid(lonsq_contour,latsq_contour))
-	    	im = map.contour(x,y,data,contour_ticks)
+		if projection == 'nsper':
+		    contour_data,contour_lon = shiftgrid(180.,contour_data,contour_lon,start=False)
+		
+	        x,y = map(*numpy.meshgrid(contour_lon,contour_lat))
+		im2 = map.contour(x,y,contour_data,contour_ticks,colors='k')
+		plt.clabel(im2, fontsize=4, inline=1, fmt='%1.1f')     #levels[1::2] for label every second level
+	    
+	        #Thicken the zero contour
+		try:
+		    index = contour_ticks.index(0)
+		    zc = im2.collections[index]
+                    plt.setp(zc, linewidth=2)
+	        except ValueError:
+		    continue
 	    
 	    elif draw_vectors:
                 fin = cdms2.open(uwnd_files[row,col],'r')
-	        uas = fin(uwnd_variables[row,col],squeeze=1)      # region
+	        uas = fin(uwnd_variables[row,col],squeeze=1)      
 	        fin.close()
 	    
 		fin = cdms2.open(vwnd_files[row,col],'r')
-	        vas = fin(vwnd_variables[row,col],squeeze=1)     # region
+	        vas = fin(vwnd_variables[row,col],squeeze=1)     
         	fin.close()
 
                 latsq2=uas.getLatitude()
@@ -609,7 +631,11 @@ def matrixplot(ifiles,variables,title,
 		
 		lonsq2=uas.getLongitude()
 	        lonsq2.units = 'degrees_east'
-
+                
+		if projection == 'nsper':
+		    uas,lonsq2 = shiftgrid(180.,uas,lonsq2,start=False)
+		    vas,lonsq2 = shiftgrid(180.,vas,lonsq2,start=False)
+		
         	x,y = map(*numpy.meshgrid(lonsq2,latsq2))
         	map.quiver(x,y,uas,vas,width=0.001,scale=650,headwidth=2,headlength=3)
 	    
@@ -623,6 +649,9 @@ def matrixplot(ifiles,variables,title,
 		
 		lonsq3=stipple.getLongitude()
 	        lonsq3.units = 'degrees_east'
+		
+		if projection == 'nsper':
+		    stipple,lonsq3 = shiftgrid(180.,stipple,lonsq3,start=False)
 		
 		ndots = numpy.sum(stipple)
 		            
@@ -947,6 +976,8 @@ if __name__ == '__main__':
     parser.add_option("--minlon", dest="minlon",type='float',default=None,help="Minimum longitude [defualt = none]")
     parser.add_option("--maxlat", dest="maxlat",type='float',default=None,help="Maximun latitude [defualt = none]")
     parser.add_option("--maxlon", dest="maxlon",type='float',default=None,help="Maximum longitude [defualt = none]")
+    parser.add_option("--latX", dest="latX",type='float',default=-25.,help="Latitude centre point of map projection [defualt = -25]")
+    parser.add_option("--lonX", dest="lonX",type='float',default=-120.,help="Longitude centre point of map projection [defualt = -120]")
     parser.add_option("--resolution", dest="resolution",type='string',default='c',help="Resolution of the background map [default='l']")
     parser.add_option("--area_threshold", dest="area_threshold",type='float',default=1.,help="Threshold (in km) for the smallest resolved feature [default = 1]")	
     parser.add_option("--draw_axis",action="store_true",dest="draw_axis",default=False,help="Switch for drawing lat/lon gridlines on plot [default = False]")
@@ -1002,11 +1033,14 @@ if __name__ == '__main__':
             title                 Title of plot [required]
             dimensions            List of comma seperated matrix dimensions (rows,columns)
             --ofile               Name of output file [default = 'title'.png]
-            --region              Selector defining a region. Inbuilt regions are WORLD_GRENEWICH, WORLD_DATELINE, AUSTRALIA, AUS_NZ [default = WORLD_DATELINE]
+            --region              Selector defining a region (for cylindrical projection). Inbuilt regions are WORLD_GRENEWICH, WORLD_DATELINE, AUSTRALIA, AUS_NZ [default = WORLD_DATELINE]
             --minlat              User can override the pre-defined region by specifying bounds
             --minlon              " "
             --maxlat              " "
             --maxlon              " " 
+	    --latX                Latitude centre point of map projection (for near-sided perspective projection) [default = -25]
+	    --lonX                Longitude centre point of map projection (for near-sided perspective projection) [default = -120]
+	    --projection          Map projection. Inbuilt options are equidistant cylindrical ('cyl') and near-sided perspective ('nsper') [default = cyl]
             --colourbar_colour    Selector defining a matplotlib colorbar (e.g. 'jet','jet_r','hot','Blues') [default = 'jet']
             --units               Units of the data - appears as a label below the colourbar
             --ticks               List of comma seperataed tick marks to appear on the colour bar
@@ -1039,7 +1073,6 @@ if __name__ == '__main__':
             --equator             Switch for drawing an extra grid line marking the equator [default = False]
             --contour             Switch for drawing a contour plot [default = False, which simply fills each grid cell with the appropriate shading]
             --image_size          Width of individual images (in inches) [default = 6]
-	    --projection          Map projection [default = cyl]
 	    --textsize            Size of the row and column headers [default = 18]
 
 	Environment
@@ -1148,7 +1181,7 @@ if __name__ == '__main__':
 	multiplot(file_list,var_list,title,
         	  dimensions=dimensions,
 		  ofile=options.ofile,
-		  region=options.region,minlat=options.minlat,minlon=options.minlon,maxlat=options.maxlat,maxlon=options.maxlon,projection=options.projection,
+		  region=options.region,minlat=options.minlat,minlon=options.minlon,maxlat=options.maxlat,maxlon=options.maxlon,latX=options.latX,lonX=options.lonX,projection=options.projection,
         	  colourbar_colour=options.colourbar_colour,ticks=ticks,discrete_segments=discrete_segments,units=options.units,convert=options.convert,extend=options.extend,
         	  res=options.resolution,area_threshold=options.area_threshold,
 		  draw_contours=options.draw_contours,contour_files=contour_files,contour_variables=contour_variables,contour_ticks=contour_ticks,
