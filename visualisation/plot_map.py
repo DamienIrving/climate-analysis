@@ -20,6 +20,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, shiftgrid
 
+import matplotlib.colors
+
 from scipy import interpolate
 import numpy
 import numpy.ma as ma
@@ -113,7 +115,7 @@ def multiplot(ifiles,variables,title,
               #Output file name default is 'title'.png
               ofile=None,
               #can use a pre-defined region or override with min/max lat/lon, 
-              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-25,lonX=-120,projection='cyl',
+              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-20,lonX=-125,projection='cyl',
               #colourbar settings
               colourbar_colour='jet',ticks=None,discrete_segments=None,units=None,convert=False,extend="neither",
               #resolution of image
@@ -265,7 +267,7 @@ def matrixplot(ifiles,variables,title,
               #Output file name default is 'title'.png
               ofile=None,
               #can use a pre-defined region or override with min/max lat/lon, 
-              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-25,lonX=-120,projection='cyl',
+              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-20,lonX=-125,projection='cyl',
               #colourbar settings
               colourbar_colour='jet',ticks=None,discrete_segments=None,units=None,convert=False,extend="neither",
               #resolution of image
@@ -403,13 +405,13 @@ def matrixplot(ifiles,variables,title,
         
 	#Segments can be non-linear and are scaled to tick options if defined
         if ticks:
-            if isinstance(discrete_segments,list):
-                #colours = [matplotlib.colors.hex2color(seg) for seg in discrete_segments]
-                #colourmap = matplotlib.colors.ListedColormap.from_list('custom', colours, N=len(ticks))
-                #nSegments = len(discrete_segments)
-                colourmap = custom_colourmap(discrete_segments,ticks)
+	    if len(discrete_segments) != (len(ticks)-1):
+	        print 'Number of input colour segments does not match number of ticks - check extension setting'
+		sys.exit(1)
+	    if isinstance(discrete_segments,list):
+                colourmap = matplotlib.colors.ListedColormap(discrete_segments[:], 'indexed')
             else:
-                colourmap = nonlinear_colourmap(colourmap,ticks)
+		colourmap = nonlinear_colourmap(colourmap,ticks)
         else:     
             if isinstance(discrete_segments,list):
                colourmap = matplotlib.colors.ListedColormap(colors, name='custom_discrete')
@@ -492,7 +494,7 @@ def matrixplot(ifiles,variables,title,
     ## Create the plot, one thumbnail at a time ##
 
     fig=plt.figure(figsize=(width,height))
-    fig.suptitle(title,y=(1-titlepos),size=20)
+    fig.suptitle(title.replace('_',' '),y=(1-titlepos),size=20)
 
     #for row,ifile in enumerate(ifiles):
     for row in range(nrows):
@@ -544,8 +546,13 @@ def matrixplot(ifiles,variables,title,
 	    # Plot the axes and map #
 	    
 	    if projection == 'cyl':
-        	map = Basemap(llcrnrlon=minlon,llcrnrlat=minlat,urcrnrlon=maxlon,urcrnrlat=maxlat,\
+		map = Basemap(llcrnrlon=minlon,llcrnrlat=minlat,urcrnrlon=maxlon,urcrnrlat=maxlat,\
                               resolution=res,area_thresh=area_threshold,projection='cyl')
+		tVar,tVar_lon = shiftgrid(0.,tVar,tVar_lon,start=True)
+	    elif projection == 'robin':	
+		map = Basemap(lon_0=0.,\
+                              resolution=res,area_thresh=area_threshold,projection='robin')
+	        tVar,tVar_lon = shiftgrid(180.,tVar,tVar_lon,start=False)
             elif projection == 'nsper':
 	        h = 3000000  #height of satellite
 		map = Basemap(projection='nsper',lon_0=lonX,lat_0=latX,satellite_height=h*1000.,resolution=res,area_thresh=area_threshold)
@@ -560,6 +567,7 @@ def matrixplot(ifiles,variables,title,
             yres = 100
             ax = fig.add_axes([row_heading+(col*(pwidth+hpadding)),colourbar+cbarbuffer+(row*(pheight+vpadding)),pwidth,pheight]) 
             
+	    
             datout = map.transform_scalar(tVar, 
                                           tVar_lon,     #fin['latitude']
                                           tVar_lat,
@@ -602,12 +610,14 @@ def matrixplot(ifiles,variables,title,
 	        contour_lon = contour_data.getLongitude()[:]      
 	        fin.close()
 		
-		if projection == 'nsper':
+		if projection == 'cyl':
+		    contour_data,contour_lon = shiftgrid(0.,contour_data,contour_lon,start=True)
+		else:
 		    contour_data,contour_lon = shiftgrid(180.,contour_data,contour_lon,start=False)
-		
-	        x,y = map(*numpy.meshgrid(contour_lon,contour_lat))
+		    
+		x,y = map(*numpy.meshgrid(contour_lon,contour_lat))
 		im2 = map.contour(x,y,contour_data,contour_ticks,colors='k')
-		plt.clabel(im2, fontsize=4, inline=1, fmt='%1.1f')     #levels[1::2] for label every second level
+		plt.clabel(im2, fontsize=5, inline=1, fmt='%1.1f')     #levels[1::2] for label every second level
 	    
 	        #Thicken the zero contour
 		try:
@@ -857,50 +867,6 @@ def cmap_map(function,cmap):
     return matplotlib.colors.LinearSegmentedColormap('colormap',cdict,1024)
 
 
-def custom_colourmap(colours,bounds):
-
-    red = []
-    green = []
-    blue = []
-    cdict = {}
-
-    convert = matplotlib.colors.ColorConverter()
-
-    for c in colours:
-        r,g,b = convert.to_rgb(c)
-        red.append(r)
-        green.append(g)
-        blue.append(b)
-
-    indices = bounds[:]
-    #indices.append(bounds[-1]+1)
-    #indices.insert(0,bounds[0]-1)
-
-    #Normalise
-    indices = [i - indices[0] for i in indices]
-    indices = [i/(indices[-1]*1.0) for i in indices]
-   
-    for key in ('red','green','blue'):
-        A = numpy.zeros((len(indices),3), float)
-        A[:,0] = indices
-        if key == "red":
-           colors = red
-        elif key == "green":
-            colors = green
-        elif key == "blue":
-            colors = blue
-
-        A[1:,1] = colors
-        A[:-1,2] = colors
-        # Create a tuple for the dictionary.
-        L = []
-        for l in A:
-            L.append(tuple(l))
-        cdict[key] = tuple(L)
-    # Return colormap object.
-    return matplotlib.colors.LinearSegmentedColormap('colormap',cdict,1024)
-
-
 def nonlinear_colourmap(cmap, bounds):
     """
     Return a discrete colormap from the continuous colormap cmap.
@@ -976,8 +942,8 @@ if __name__ == '__main__':
     parser.add_option("--minlon", dest="minlon",type='float',default=None,help="Minimum longitude [defualt = none]")
     parser.add_option("--maxlat", dest="maxlat",type='float',default=None,help="Maximun latitude [defualt = none]")
     parser.add_option("--maxlon", dest="maxlon",type='float',default=None,help="Maximum longitude [defualt = none]")
-    parser.add_option("--latX", dest="latX",type='float',default=-25.,help="Latitude centre point of map projection [defualt = -25]")
-    parser.add_option("--lonX", dest="lonX",type='float',default=-120.,help="Longitude centre point of map projection [defualt = -120]")
+    parser.add_option("--latX", dest="latX",type='float',default=-20.,help="Latitude centre point of map projection [defualt = -20]")
+    parser.add_option("--lonX", dest="lonX",type='float',default=-125.,help="Longitude centre point of map projection [defualt = -125]")
     parser.add_option("--resolution", dest="resolution",type='string',default='c',help="Resolution of the background map [default='l']")
     parser.add_option("--area_threshold", dest="area_threshold",type='float',default=1.,help="Threshold (in km) for the smallest resolved feature [default = 1]")	
     parser.add_option("--draw_axis",action="store_true",dest="draw_axis",default=False,help="Switch for drawing lat/lon gridlines on plot [default = False]")
