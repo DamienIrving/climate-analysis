@@ -207,7 +207,7 @@ def extract_data(file_list,file_list_dims,windowp,windows):
     return plot_data,plot_times
 
     
-def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,outfile_name,setx,setyp,setys,ybuffer):
+def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,outfile_name,setx,setyp,setys,ybuffer,legloc):
     """Creates the plot"""
 
     # Start the figure #
@@ -217,9 +217,9 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
     if file_list_dims[1] > 0:
         ax2 = ax1.twinx()
     
-    # Set the title and units #   ### FIX TO ACCOUNT FOR SECOND PLOT
+    # Set the title and units #   
 
-    title_text = 'Climate indices'
+    title_text = 'Climate indices'  ### FIX TO ACCOUNT FOR SECOND PLOT
     
     
     # Plot the data for each dataset #
@@ -261,8 +261,8 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
         # Plot the data #
         
 	timeseries = plot_data[ifile.fname]
-	if ifile.index == 'IEMI':
-	    timeseries = timeseries * -1
+#	if ifile.index == 'IEMI':
+#	    timeseries = timeseries * -1
 	label = ifile.index+', '+ifile.dataset
 	if count < file_list_dims[0]:
 	    units_text_ax1 = set_units(ifile.index,units_text_ax1,'Primary')
@@ -284,11 +284,11 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
   
     # Plot guidelines #
  
-    ax1.axhline(y=0.0,linestyle='-',color='0.8')
+    #ax1.axhline(y=0.0,linestyle='-',color='0.8')
     
     if units_text_ax1 == 'Anomaly (deg C)':
-        ax1.axhline(y=0.5,linestyle='--',color='0.8')
-        ax1.axhline(y=-0.5,linestyle='--',color='0.8')
+        ax1.axhline(y=0.5,linestyle='--',color='0.5')
+        ax1.axhline(y=-0.5,linestyle='--',color='0.5')
     
     # Define aspects of the time axis #
 
@@ -349,7 +349,7 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
         
 	if setys:
 	    ax2.axis([date_start,date_end,setys[0],setys[1]])
-	else:
+	elif file_list_dims[1] > 0:
 	    x1,x2,y1,y2 = ax2.axis()
 	    ax2.axis([date_start,date_end,y1,y2])
 	
@@ -370,7 +370,10 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
     ax1.set_ylabel(units_text_ax1,fontsize='medium')
     ax1.set_title(title_text)
     font = font_manager.FontProperties(size='medium')
-    ax1.legend(loc=3,prop=font,ncol=2) #prop=font,numpoints=1,labelspacing=0.3)  #,ncol=2)
+    ax1.legend(loc=legloc,prop=font,ncol=2) #prop=font,numpoints=1,labelspacing=0.3)  #,ncol=2)
+    ax1.grid(True,'major',color='0.5')
+    ax1.grid(True,'minor',color='0.7')
+    #ax1.xaxis.grid(True)
     
     if file_list_dims[1] > 0:
         ax2.set_ylabel(units_text_ax2, fontsize='medium', rotation=270)
@@ -385,7 +388,7 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
         plt.show()
 
 
-def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer):
+def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,legloc):
     """Run the program"""
     
     primary_file_list = [InputFile(f) for f in primary_file_list]
@@ -404,7 +407,7 @@ def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx
     
     ## Create the plot ##
         
-    create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,outfile_name,setx,setyp,setys,ybuffer)
+    create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,outfile_name,setx,setyp,setys,ybuffer,legloc)
     
 
 if __name__ == '__main__':
@@ -417,9 +420,10 @@ if __name__ == '__main__':
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
     parser.add_option("-o", "--outfile",dest="outfile",type='str',default=None,help="Name of output file [default = None]")
     parser.add_option("-s", "--secondary",dest="secondary",default=None,help="Comma separated list files to be plotted on the secondary y axis [default = None]")
+    parser.add_option("-l", "--legend",dest="legend",default=3,type='int',help="Location of the figure legend [defualt = 3]")
     parser.add_option("-b", "--buffer",dest="buffer",type='float',default=4.0,help="Scale factor for y axis upper buffer [default = 4]")
-    parser.add_option("--windowp",dest="windowp",type='int',default=1,help="window for primary axis running average [default = 1]")
-    parser.add_option("--windows",dest="windows",type='int',default=1,help="window for secondary axis running average [default = 1]")
+    parser.add_option("--wp",dest="windowp",type='int',default=1,help="window for primary axis running average [default = 1]")
+    parser.add_option("--ws",dest="windows",type='int',default=1,help="window for secondary axis running average [default = 1]")
     parser.add_option("-x", "--setx",dest="setx",default=None,help="Comma separated list of time axis bounds (start_year,start_month,end_year,end_month) [default = None]")
     parser.add_option("--setyp",dest="setyp",default=None,help="Comma separated list of primary y axis bounds (min,max) [default = None]")
     parser.add_option("--setys",dest="setys",default=None,help="Comma separated list of secondary y axis bounds (min,max) [default = None]")
@@ -429,27 +433,37 @@ if __name__ == '__main__':
     if options.manual == True or len(sys.argv) == 1:
 	print """
 	Usage:
-            python plot_climate_index.py [-M] [-h] [-l] [-o] [-r] {input file 1} {input file 2} ... {input file N}
+            python plot_climate_index.py [-h] [options] {input file 1} {input file 2} ... {input file N}
 
 	Options
             -M  ->  Display this on-line manual page and exit
             -h  ->  Display a help/usage message and exit
 	    -o  ->  Name of the output file [default = None = image is just shown instead]
+	    -l  ->  Location of the legend [default = 3]
 	    -b  ->  Scale factor for y axis upper buffer [default = 4]
 	    -s  ->  Comma separated list files to be plotted on the secondary y axis [default = None]
 	    -x  ->  Comma separated list of time axis bounds (start_year,start_month,end_year,end_month) [default = None]
-            -wp  ->  Window for primary axis running average [default = 1]
-	    -ws  ->  Window for secondary axis running average [default = 1]
-	    -setyp  ->  Comma separated list of primary y axis bounds (min,max) [default = None]
-	    -setys  ->  Comma separated list of secondary y axis bounds (min,max) [default = None]
+            --wp  ->  Window for primary axis running average [default = 1]
+	    --ws  ->  Window for secondary axis running average [default = 1]
+	    --setyp  ->  Comma separated list of primary y axis bounds (min,max) [default = None]
+	    --setys  ->  Comma separated list of secondary y axis bounds (min,max) [default = None]
+	
+	Legend options
+	    1: upper right
+	    2: upper left
+	    3: lower left
+	    4: lower_right
+	    5: right
+	    6: center left
+	    7: center right
+	    8: lower center
+	    9: upper center
+	    10: center 
 	
 	Example
-	    /opt/cdat/bin/cdat plot_climate_index.py -w 5 /work/dbirving/processed/indices/ts_Merra_NINO34_monthly_native-ocean.txt
+	    /opt/cdat/bin/cdat plot_climate_index.py -windowp 5 /work/dbirving/processed/indices/ts_Merra_NINO34_monthly_native-ocean.txt
 	    /work/dbirving/processed/indices/tos_ERSSTv3B_NINO34_monthly_native.txt
 	    /work/dbirving/processed/indices/tos_OISSTv2_NINO34_monthly_native.txt
-	
-	Note
-	    The sign of the improved ENSO Modoki Index is automatically reversed to match the Nino indices
 	    
 	Author
             Damien Irving, 22 Jun 2012.
@@ -472,17 +486,17 @@ if __name__ == '__main__':
 	    setx = None
 	
 	if options.setyp:
-	    setyp = [int(s) for s in options.setyp.split(',')]
+	    setyp = [float(s) for s in options.setyp.split(',')]
 	else:
 	    setyp = None
 	
 	if options.setys:
-	    setys = [int(s) for s in options.setys.split(',')]
+	    setys = [float(s) for s in options.setys.split(',')]
 	else:
 	    setys = None
 	    
         primary_file_list = args[:]   
 
 
-        main(primary_file_list,secondary_file_list,options.outfile,options.windowp,options.windows,setx,setyp,setys,options.buffer)
+        main(primary_file_list,secondary_file_list,options.outfile,options.windowp,options.windows,setx,setyp,setys,options.buffer,options.legend)
     

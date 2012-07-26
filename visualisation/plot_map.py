@@ -727,6 +727,81 @@ def matrixplot(ifiles,variables,title,
 	    
             # Draw the gridlines #
 	               
+	    if draw_enso:
+	        E125,E145,E160,W170,W150,W140,W120,W110,W90,W80,W70=[125,145,160,190,210,220,240,250,270,280,290]
+		
+		#nino4
+                map.plot([E160,W150],[-5,-5],linestyle='--',color='0.5')    #bottom
+		map.plot([E160,W150],[5,5],linestyle='--',color='0.5')      #top
+		map.plot([E160,E160],[-5,5],linestyle='--',color='0.5')     #right
+		map.plot([W150,W150],[-5,5],linestyle='--',color='0.5')     #left
+		#nino3.4
+                map.plot([W120,W170],[-5,-5],linestyle='--',color='0.5')    #bottom
+		map.plot([W120,W170],[5,5],linestyle='--',color='0.5')      #top
+		map.plot([W120,W120],[-5,5],linestyle='--',color='0.5')     #right
+		map.plot([W170,W170],[-5,5],linestyle='--',color='0.5')     #left
+		#nino3
+                map.plot([W90,W150],[-5,-5],linestyle='--',color='0.5')     #bottom
+		map.plot([W90,W150],[5,5],linestyle='--',color='0.5')       #top
+		map.plot([W90,W90],[-5,5],linestyle='--',color='0.5')       #right
+		map.plot([W150,W150],[-5,5],linestyle='--',color='0.5')     #left
+		#nino1+2
+                map.plot([W80,W90],[-10,-10],linestyle='--',color='0.5')      #bottom
+		map.plot([W80,W90],[0,0],linestyle='--',color='0.5')        #top
+		map.plot([W80,W80],[-10,0],linestyle='--',color='0.5')       #right
+		map.plot([W90,W90],[-10,0],linestyle='--',color='0.5')       #left
+	        #IEMI-A
+                map.plot([E165,W140],[-10,-10],linestyle='-',color='0.5')   #bottom
+		map.plot([E165,W140],[10,10],linestyle='-',color='0.5')     #top
+		map.plot([E165,E165],[-10,10],linestyle='-',color='0.5')    #right
+		map.plot([W140,W140],[-10,10],linestyle='-',color='0.5')    #left
+	        #IEMI-B
+                map.plot([W70,W110],[-15,-15],linestyle='-',color='0.5')    #bottom
+		map.plot([W70,W110],[5,5],linestyle='-',color='0.5')        #top
+		map.plot([W70,W70],[-15,5],linestyle='-',color='0.5')       #right
+		map.plot([W110,W110],[-15,5],linestyle='-',color='0.5')     #left
+	        #IEMI-C
+                map.plot([E125,E145],[-10,-10],linestyle='-',color='0.5')   #bottom
+		map.plot([E125,E145],[20,20],linestyle='-',color='0.5')     #top
+		map.plot([E125,E125],[-10,20],linestyle='-',color='0.5')    #right
+		map.plot([E145,E145],[-10,20],linestyle='-',color='0.5')    #left
+	    
+	    
+	      #  map.plot([160E,150W],[-5,-5],linestyle='--',color='0.5')    #bottom
+#		map.plot([160E,150W],[5,5],linestyle='--',color='0.5')      #top
+#		map.plot([160E,160E],[-5,5],linestyle='--',color='0.5')     #right
+#		map.plot([150W,150W],[-5,5],linestyle='--',color='0.5')     #left
+#		#nino3.4
+#                map.plot([120W,170W],[-5,-5],linestyle='--',color='0.5')    #bottom
+#		map.plot([120W,170W],[5,5],linestyle='--',color='0.5')      #top
+#		map.plot([120W,120W],[-5,5],linestyle='--',color='0.5')     #right
+#		map.plot([170W,170W],[-5,5],linestyle='--',color='0.5')     #left
+#		#nino3
+#                map.plot([90W,150W],[-5,-5],linestyle='--',color='0.5')     #bottom
+#		map.plot([90W,150W],[5,5],linestyle='--',color='0.5')       #top
+#		map.plot([90W,90W],[-5,5],linestyle='--',color='0.5')       #right
+#		map.plot([150W,150W],[-5,5],linestyle='--',color='0.5')     #left
+#		#nino1+2
+#                map.plot([80W,90W],[-5,-5],linestyle='--',color='0.5')      #bottom
+#		map.plot([80W,90W],[5,5],linestyle='--',color='0.5')        #top
+#		map.plot([80W,80W],[-5,5],linestyle='--',color='0.5')       #right
+#		map.plot([90W,90W],[-5,5],linestyle='--',color='0.5')       #left
+#	        #IEMI-A
+#                map.plot([165E,140W],[-10,-10],linestyle='-',color='0.5')   #bottom
+#		map.plot([165E,140W],[10,10],linestyle='-',color='0.5')     #top
+#		map.plot([165E,165E],[-10,10],linestyle='-',color='0.5')    #right
+#		map.plot([140W,140W],[-10,10],linestyle='-',color='0.5')    #left
+#	        #IEMI-B
+#                map.plot([70W,110W],[-15,-15],linestyle='-',color='0.5')    #bottom
+#		map.plot([70W,110W],[5,5],linestyle='-',color='0.5')        #top
+#		map.plot([70W,70W],[-15,5],linestyle='-',color='0.5')       #right
+#		map.plot([110W,110W],[-15,5],linestyle='-',color='0.5')     #left
+#	        #IEMI-C
+#                map.plot([125E,145E],[-10,-10],linestyle='-',color='0.5')   #bottom
+#		map.plot([125E,145E],[20,20],linestyle='-',color='0.5')     #top
+#		map.plot([125E,125E],[-10,20],linestyle='-',color='0.5')    #right
+#		map.plot([145E,145E],[-10,20],linestyle='-',color='0.5')    #left
+	    
 	    if(draw_axis):
                 labels=[0,0,0,0]
 
