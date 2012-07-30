@@ -130,7 +130,7 @@ def multiplot(ifiles,variables,title,
               row_headings=None,inline_row_headings=False,
               col_headings=None,img_headings=None,
               #Axis options to draw lat/lon lines
-              draw_axis=False,delat=30,delon=30,equator=False,
+              draw_axis=False,delat=30,delon=30,equator=False,enso=False,
 	      #contour plot
 	      contour=False,
               #Width of image in inches (individual image)
@@ -184,7 +184,7 @@ def multiplot(ifiles,variables,title,
 		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,
 		   draw_stippling,stipple_files,stipple_variables,
         	   row_headings,inline_row_headings,col_headings,img_headings,
-        	   draw_axis,delat,delon,equator,
+        	   draw_axis,delat,delon,equator,enso,
 		   contour,
         	   image_size,
 		   textsize) 
@@ -216,7 +216,7 @@ def multiplot(ifiles,variables,title,
 		   draw_vectors,ufile_matrix,uvar_matrix,vfile_matrix,vvar_matrix,
 		   draw_stippling,stipple_files,stipple_variables,
         	   row_headings,inline_row_headings,col_headings,img_headings,
-        	   draw_axis,delat,delon,equator,
+        	   draw_axis,delat,delon,equator,enso,
 		   contour,
         	   image_size,
 		   textsize) 
@@ -240,7 +240,7 @@ def multiplot(ifiles,variables,title,
 		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,
 		   draw_stippling,stipfile_matrix,stipvar_matrix,
         	   row_headings,inline_row_headings,col_headings,img_headings,
-        	   draw_axis,delat,delon,equator,
+        	   draw_axis,delat,delon,equator,enso,
 		   contour,
         	   image_size,
 		   textsize) 
@@ -256,7 +256,7 @@ def multiplot(ifiles,variables,title,
 		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,
 		   draw_stippling,stipple_files,stipple_variables,
         	   row_headings,inline_row_headings,col_headings,img_headings,
-        	   draw_axis,delat,delon,equator,
+        	   draw_axis,delat,delon,equator,enso,
 		   contour,
         	   image_size,
 		   textsize) 
@@ -281,7 +281,7 @@ def matrixplot(ifiles,variables,title,
               #Headings if using mutiple plots in a single plot
               row_headings=None,inline_row_headings=False,col_headings=None,img_headings=None,
               #Axis options to draw lat/lon lines
-              draw_axis=False,delat=30,delon=30,equator=False,
+              draw_axis=False,delat=30,delon=30,equator=False,enso=False,
 	      #contour plot
 	      contour=False,
               #Width of image in inches (individual image)
@@ -549,6 +549,9 @@ def matrixplot(ifiles,variables,title,
 		map = Basemap(llcrnrlon=minlon,llcrnrlat=minlat,urcrnrlon=maxlon,urcrnrlat=maxlat,\
                               resolution=res,area_thresh=area_threshold,projection='cyl')
 		tVar,tVar_lon = shiftgrid(0.,tVar,tVar_lon,start=True)
+	    elif projection == 'cyl-default':
+	        map = Basemap(resolution=res,area_thresh=area_threshold,projection='cyl')
+		tVar,tVar_lon = shiftgrid(180.,tVar,tVar_lon,start=False)
 	    elif projection == 'robin':	
 		map = Basemap(lon_0=0.,\
                               resolution=res,area_thresh=area_threshold,projection='robin')
@@ -726,81 +729,6 @@ def matrixplot(ifiles,variables,title,
 	    
 	    
             # Draw the gridlines #
-	               
-	    if draw_enso:
-	        E125,E145,E160,W170,W150,W140,W120,W110,W90,W80,W70=[125,145,160,190,210,220,240,250,270,280,290]
-		
-		#nino4
-                map.plot([E160,W150],[-5,-5],linestyle='--',color='0.5')    #bottom
-		map.plot([E160,W150],[5,5],linestyle='--',color='0.5')      #top
-		map.plot([E160,E160],[-5,5],linestyle='--',color='0.5')     #right
-		map.plot([W150,W150],[-5,5],linestyle='--',color='0.5')     #left
-		#nino3.4
-                map.plot([W120,W170],[-5,-5],linestyle='--',color='0.5')    #bottom
-		map.plot([W120,W170],[5,5],linestyle='--',color='0.5')      #top
-		map.plot([W120,W120],[-5,5],linestyle='--',color='0.5')     #right
-		map.plot([W170,W170],[-5,5],linestyle='--',color='0.5')     #left
-		#nino3
-                map.plot([W90,W150],[-5,-5],linestyle='--',color='0.5')     #bottom
-		map.plot([W90,W150],[5,5],linestyle='--',color='0.5')       #top
-		map.plot([W90,W90],[-5,5],linestyle='--',color='0.5')       #right
-		map.plot([W150,W150],[-5,5],linestyle='--',color='0.5')     #left
-		#nino1+2
-                map.plot([W80,W90],[-10,-10],linestyle='--',color='0.5')      #bottom
-		map.plot([W80,W90],[0,0],linestyle='--',color='0.5')        #top
-		map.plot([W80,W80],[-10,0],linestyle='--',color='0.5')       #right
-		map.plot([W90,W90],[-10,0],linestyle='--',color='0.5')       #left
-	        #IEMI-A
-                map.plot([E165,W140],[-10,-10],linestyle='-',color='0.5')   #bottom
-		map.plot([E165,W140],[10,10],linestyle='-',color='0.5')     #top
-		map.plot([E165,E165],[-10,10],linestyle='-',color='0.5')    #right
-		map.plot([W140,W140],[-10,10],linestyle='-',color='0.5')    #left
-	        #IEMI-B
-                map.plot([W70,W110],[-15,-15],linestyle='-',color='0.5')    #bottom
-		map.plot([W70,W110],[5,5],linestyle='-',color='0.5')        #top
-		map.plot([W70,W70],[-15,5],linestyle='-',color='0.5')       #right
-		map.plot([W110,W110],[-15,5],linestyle='-',color='0.5')     #left
-	        #IEMI-C
-                map.plot([E125,E145],[-10,-10],linestyle='-',color='0.5')   #bottom
-		map.plot([E125,E145],[20,20],linestyle='-',color='0.5')     #top
-		map.plot([E125,E125],[-10,20],linestyle='-',color='0.5')    #right
-		map.plot([E145,E145],[-10,20],linestyle='-',color='0.5')    #left
-	    
-	    
-	      #  map.plot([160E,150W],[-5,-5],linestyle='--',color='0.5')    #bottom
-#		map.plot([160E,150W],[5,5],linestyle='--',color='0.5')      #top
-#		map.plot([160E,160E],[-5,5],linestyle='--',color='0.5')     #right
-#		map.plot([150W,150W],[-5,5],linestyle='--',color='0.5')     #left
-#		#nino3.4
-#                map.plot([120W,170W],[-5,-5],linestyle='--',color='0.5')    #bottom
-#		map.plot([120W,170W],[5,5],linestyle='--',color='0.5')      #top
-#		map.plot([120W,120W],[-5,5],linestyle='--',color='0.5')     #right
-#		map.plot([170W,170W],[-5,5],linestyle='--',color='0.5')     #left
-#		#nino3
-#                map.plot([90W,150W],[-5,-5],linestyle='--',color='0.5')     #bottom
-#		map.plot([90W,150W],[5,5],linestyle='--',color='0.5')       #top
-#		map.plot([90W,90W],[-5,5],linestyle='--',color='0.5')       #right
-#		map.plot([150W,150W],[-5,5],linestyle='--',color='0.5')     #left
-#		#nino1+2
-#                map.plot([80W,90W],[-5,-5],linestyle='--',color='0.5')      #bottom
-#		map.plot([80W,90W],[5,5],linestyle='--',color='0.5')        #top
-#		map.plot([80W,80W],[-5,5],linestyle='--',color='0.5')       #right
-#		map.plot([90W,90W],[-5,5],linestyle='--',color='0.5')       #left
-#	        #IEMI-A
-#                map.plot([165E,140W],[-10,-10],linestyle='-',color='0.5')   #bottom
-#		map.plot([165E,140W],[10,10],linestyle='-',color='0.5')     #top
-#		map.plot([165E,165E],[-10,10],linestyle='-',color='0.5')    #right
-#		map.plot([140W,140W],[-10,10],linestyle='-',color='0.5')    #left
-#	        #IEMI-B
-#                map.plot([70W,110W],[-15,-15],linestyle='-',color='0.5')    #bottom
-#		map.plot([70W,110W],[5,5],linestyle='-',color='0.5')        #top
-#		map.plot([70W,70W],[-15,5],linestyle='-',color='0.5')       #right
-#		map.plot([110W,110W],[-15,5],linestyle='-',color='0.5')     #left
-#	        #IEMI-C
-#                map.plot([125E,145E],[-10,-10],linestyle='-',color='0.5')   #bottom
-#		map.plot([125E,145E],[20,20],linestyle='-',color='0.5')     #top
-#		map.plot([125E,125E],[-10,20],linestyle='-',color='0.5')    #right
-#		map.plot([145E,145E],[-10,20],linestyle='-',color='0.5')    #left
 	    
 	    if(draw_axis):
                 labels=[0,0,0,0]
@@ -821,6 +749,53 @@ def matrixplot(ifiles,variables,title,
                 if delon:
                     meridians = numpy.arange(minlon,maxlon,delon)
                     map.drawmeridians(meridians,labels=labels,fontsize=8,linewidth=0.5)
+
+            if enso:
+	        if projection == 'cyl':
+		    E125,E145,E160,E165,E180,W180,W170,W150,W140,W120,W110,W90,W80,W70=[125,145,160,165,180,180,190,210,220,240,250,270,280,290]
+		else:
+		    E125,E145,E160,E165,E180,W180,W170,W150,W140,W120,W110,W90,W80,W70=[125,145,160,165,180,-180,-170,-150,-140,-120,-110,-90,-80,-70]
+
+			
+		#IEMI-A
+		map.plot([W180,W140],[-10,-10],linestyle='-',color='0.5')   #bottom
+		map.plot([E165,E180],[-10,-10],linestyle='-',color='0.5')
+		map.plot([W180,W140],[10,10],linestyle='-',color='0.5')   #top
+		map.plot([E165,E180],[10,10],linestyle='-',color='0.5')	
+		map.plot([E165,E165],[-10,10],linestyle='-',color='0.5')    #right
+		map.plot([W140,W140],[-10,10],linestyle='-',color='0.5')    #left
+                #IEMI-B
+                map.plot([W70,W110],[-15,-15],linestyle='-',color='0.5')    #bottom
+		map.plot([W70,W110],[5,5],linestyle='-',color='0.5')        #top
+		map.plot([W70,W70],[-15,5],linestyle='-',color='0.5')       #right
+		map.plot([W110,W110],[-15,5],linestyle='-',color='0.5')     #left
+	        #IEMI-C
+                map.plot([E125,E145],[-10,-10],linestyle='-',color='0.5')   #bottom
+		map.plot([E125,E145],[20,20],linestyle='-',color='0.5')     #top
+		map.plot([E125,E125],[-10,20],linestyle='-',color='0.5')    #right
+		map.plot([E145,E145],[-10,20],linestyle='-',color='0.5')    #left
+		#nino4
+                map.plot([E160,E180],[-5,-5],linestyle='--',color='green',lw=1)    #bottom
+		map.plot([W180,W150],[-5,-5],linestyle='--',color='green',lw=1)
+		map.plot([E160,E180],[5,5],linestyle='--',color='green',lw=1)    #top
+		map.plot([W180,W150],[5,5],linestyle='--',color='green',lw=1)
+		map.plot([E160,E160],[-5,5],linestyle='--',color='green',lw=1)     #right
+		map.plot([W150,W150],[-5,5],linestyle='--',color='green',lw=1)     #left
+		#nino3.4
+                map.plot([W120,W170],[-5,-5],linestyle='--',color='orange',lw=1)    #bottom
+		map.plot([W120,W170],[5,5],linestyle='--',color='orange',lw=1)      #top
+		map.plot([W120,W120],[-5,5],linestyle='--',color='orange',lw=1)     #right
+		map.plot([W170,W170],[-5,5],linestyle='--',color='orange',lw=1)     #left
+		#nino3
+                map.plot([W90,W150],[-5,-5],linestyle='--',color='aqua',lw=1)     #bottom
+		map.plot([W90,W150],[5,5],linestyle='--',color='aqua',lw=1)       #top
+		map.plot([W90,W90],[-5,5],linestyle='--',color='aqua',lw=1)       #right
+		map.plot([W150,W150],[-5,5],linestyle='--',color='aqua',lw=1)     #left
+		#nino1+2
+                map.plot([W80,W90],[-10,-10],linestyle='--',color='0.5',lw=1)      #bottom
+		map.plot([W80,W90],[0,0],linestyle='--',color='0.5',lw=1)        #top
+		map.plot([W80,W80],[-10,0],linestyle='--',color='0.5',lw=1)       #right
+		map.plot([W90,W90],[-10,0],linestyle='--',color='0.5',lw=1)       #left
 
 
     ## Plot the colour bar ##
@@ -1025,6 +1000,7 @@ if __name__ == '__main__':
     parser.add_option("--delat", dest="delat",type='float',default=30.,help="Interval between meridional gridlines [default = 30]")
     parser.add_option("--delon", dest="delon",type='float',default=30.,help="Interval between zonal gridlines [default = 30]")
     parser.add_option("--equator",action="store_true",dest="equator",default=False,help="Switch for drawing an extra grid line marking the equator [default = False]")
+    parser.add_option("--enso",action="store_true",dest="enso",default=False,help="Switch for drawing an extra grid lines marking ENSO regions [default = False]")
     parser.add_option("--image_size", dest="image_size",type='float',default=6.,help="Size of image [default = 6]")
     parser.add_option("--projection",dest="projection",type='string',default='cyl',help="map projection [default = cyl]")
     #Colourbar
@@ -1112,6 +1088,7 @@ if __name__ == '__main__':
             --delat               Interval (in degrees latitude) between meridional gridlines [default = 30]
             --delon               Interval (in degrees longitude) between zonal gridlines [default = 30]
             --equator             Switch for drawing an extra grid line marking the equator [default = False]
+	    --enso                Switch for drawing an extra grid line marking enso regions [default = False]
             --contour             Switch for drawing a contour plot [default = False, which simply fills each grid cell with the appropriate shading]
             --image_size          Width of individual images (in inches) [default = 6]
 	    --textsize            Size of the row and column headers [default = 18]
@@ -1230,7 +1207,7 @@ if __name__ == '__main__':
 		  draw_stippling=options.draw_stippling,stipple_files=stipple_files,stipple_variables=stipple_variables,
         	  row_headings=row_headings,inline_row_headings=inline_row_headings,
         	  col_headings=col_headings,img_headings=img_headings,
-        	  draw_axis=options.draw_axis,delat=options.delat,delon=options.delon,equator=options.equator,
+        	  draw_axis=options.draw_axis,delat=options.delat,delon=options.delon,equator=options.equator,enso=options.enso,
 		  contour=options.contour,
         	  image_size=options.image_size,
 		  textsize=options.textsize)
