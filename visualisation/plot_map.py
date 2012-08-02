@@ -2,7 +2,7 @@
 
 """
 SVN INFO: $Id$
-Filename:     plot_seasonal_cycle.py
+Filename:     plot_map.py
 Description:  Creates a spatial plot     
 
 Input:        List of netCDF files to plot
@@ -75,27 +75,6 @@ IPCCrain7,IPCCrain8,IPCCrain9,IPCCrain10,IPCCrain11,IPCCrain12 = ['#600080','#00
 grey = '#CCCCCC'
 white = '#FFFFFF'
 
-stjeta1 = '#AF251C'
-stjeta2 = '#DA251D'
-stjeta3 = '#DA462C'
-stjeta4 = '#DA673B'
-stjeta5 = '#E17F32'
-stjeta6 = '#E79728'
-stjeta7 = '#F3C614'
-stjeta8 = '#FFF500'
-stjeta9 = '#D5E403'
-stjeta10 = '#ABD305'
-stjeta11 = '#94CB5B'
-stjeta12 = '#8ECB97'
-stjeta13 = '#88CAD2'
-stjeta14 = '#214681'
-stjeta15 = '#40407B'
-stjeta16 = '#5F3A74'
-stjeta17 = '#765089'
-stjeta18 = '#9168A1'
-stjeta19 = '#96578C'
-stjeta20 = '#974578'
-
 
 ### Define functions ###
 
@@ -123,7 +102,7 @@ def multiplot(ifiles,variables,title,
 	      #contours
 	      draw_contours=False,contour_files=None,contour_variables=None,contour_ticks=None,
 	      #wind vectors
-	      draw_vectors=False,uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,
+	      draw_vectors=False,uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,thin=1,
 	      #stippling
 	      draw_stippling=False,stipple_files=None,stipple_variables=None,
               #Headings if using mutiple plots in a single plot
@@ -181,7 +160,7 @@ def multiplot(ifiles,variables,title,
         	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
         	   res,area_threshold,
 		   draw_contours,confile_matrix,convar_matrix,contour_ticks,
-		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,
+		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,thin,
 		   draw_stippling,stipple_files,stipple_variables,
         	   row_headings,inline_row_headings,col_headings,img_headings,
         	   draw_axis,delat,delon,equator,enso,
@@ -213,7 +192,7 @@ def multiplot(ifiles,variables,title,
         	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
         	   res,area_threshold,
 		   draw_contours,contour_files,contour_variables,contour_ticks,
-		   draw_vectors,ufile_matrix,uvar_matrix,vfile_matrix,vvar_matrix,
+		   draw_vectors,ufile_matrix,uvar_matrix,vfile_matrix,vvar_matrix,thin,
 		   draw_stippling,stipple_files,stipple_variables,
         	   row_headings,inline_row_headings,col_headings,img_headings,
         	   draw_axis,delat,delon,equator,enso,
@@ -237,7 +216,7 @@ def multiplot(ifiles,variables,title,
         	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
         	   res,area_threshold,
 		   draw_contours,contour_files,contour_variables,contour_ticks,
-		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,
+		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,thin,
 		   draw_stippling,stipfile_matrix,stipvar_matrix,
         	   row_headings,inline_row_headings,col_headings,img_headings,
         	   draw_axis,delat,delon,equator,enso,
@@ -253,7 +232,7 @@ def multiplot(ifiles,variables,title,
         	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
         	   res,area_threshold,
 		   draw_contours,contour_files,contour_variables,contour_ticks,
-		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,
+		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,thin,
 		   draw_stippling,stipple_files,stipple_variables,
         	   row_headings,inline_row_headings,col_headings,img_headings,
         	   draw_axis,delat,delon,equator,enso,
@@ -275,7 +254,7 @@ def matrixplot(ifiles,variables,title,
 	      #contours
 	      draw_contours=False,contour_files=None,contour_variables=None,contour_ticks=None,
 	      # wind vectors
-	      draw_vectors=False,uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,
+	      draw_vectors=False,uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,thin=1,
 	      # stippling
 	      draw_stippling=False,stipple_files=None,stipple_variables=None,
               #Headings if using mutiple plots in a single plot
@@ -650,7 +629,10 @@ def matrixplot(ifiles,variables,title,
 		    vas,lonsq2 = shiftgrid(180.,vas,lonsq2,start=False)
 		
         	x,y = map(*numpy.meshgrid(lonsq2,latsq2))
-        	map.quiver(x,y,uas,vas,width=0.001,scale=650,headwidth=2,headlength=3)
+        	t = int(thin)
+		map.quiver(x[::t,::t],y[::t,::t],uas[::t,::t],vas[::t,::t],width=0.001,scale=650,headwidth=2,headlength=3)
+		# could use quiverkey function here to define a legend for the quiver
+		# see http://matplotlib.sourceforge.net/examples/pylab_examples/quiver_demo.html
 	    
 	    elif draw_stippling:
 	        fin = cdms2.open(stipple_files[row,col],'r')
@@ -1021,6 +1003,7 @@ if __name__ == '__main__':
     parser.add_option("--uwnd_variables", dest="uwnd_variables",type='string',default=None,help="List of input zonal wind variables")
     parser.add_option("--vwnd_files", dest="vwnd_files",type='string',default=None,help="List of input zonal wind files")
     parser.add_option("--vwnd_variables", dest="vwnd_variables",type='string',default=None,help="List of input zonal wind variables")
+    parser.add_option("--thin", dest="thin",type='int',default=1,help="Thinning factor for plotting wind vectors [defualt = 1]")
     #Stippling
     parser.add_option("--draw_stippling",action="store_true",dest="draw_stippling",default=False,help="Switch for drawing stippling on the plot [default = False]")
     parser.add_option("--stipple_files", dest="stipple_files",type='string',default=None,help="List of input stippling files")
@@ -1077,6 +1060,7 @@ if __name__ == '__main__':
             --uwnd_variables      List of comma seperated variable names corresponding to the input zonal surface wind files [default = None] 
             --vwnd_files          List of input meridional surface wind files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
             --vwnd_variables      List of comma seperated variable names corresponding to the input meridional surface wind files [default = None] 
+	    --thin                Thinning factor for plotting wind vectors (e.g. 2 = every second vector; 3 = every third) [default = 1]
             --draw_stippling      Switch for drawing stippling on the plot [default = False]
             --stipple_files       List of input stippling files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
             --stipple_variables   List of comma seperated variable names corresponding to the input stippling files [default = None] 
@@ -1203,7 +1187,7 @@ if __name__ == '__main__':
         	  colourbar_colour=options.colourbar_colour,ticks=ticks,discrete_segments=discrete_segments,units=options.units,convert=options.convert,extend=options.extend,
         	  res=options.resolution,area_threshold=options.area_threshold,
 		  draw_contours=options.draw_contours,contour_files=contour_files,contour_variables=contour_variables,contour_ticks=contour_ticks,
-		  draw_vectors=options.draw_vectors,uwnd_files=uwnd_files,uwnd_variables=uwnd_variables,vwnd_files=vwnd_files,vwnd_variables=vwnd_variables,
+		  draw_vectors=options.draw_vectors,uwnd_files=uwnd_files,uwnd_variables=uwnd_variables,vwnd_files=vwnd_files,vwnd_variables=vwnd_variables,thin=options.thin,
 		  draw_stippling=options.draw_stippling,stipple_files=stipple_files,stipple_variables=stipple_variables,
         	  row_headings=row_headings,inline_row_headings=inline_row_headings,
         	  col_headings=col_headings,img_headings=img_headings,
