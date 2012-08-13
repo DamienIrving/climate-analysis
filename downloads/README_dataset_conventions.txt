@@ -1,5 +1,10 @@
 ### Conventions for observational datasets ###
 
+Note that where possible, the Climate and Forecast Metadata Convention should
+be followed (CF compliance):
+http://cf-pcmdi.llnl.gov/
+http://badc.nerc.ac.uk/help/formats/netcdf/index_cf.html
+
 
 ## File name format ##
 
@@ -21,6 +26,9 @@ va = northward wind component
 psl = sea level pressure
 sftlf = land area fraction
 sftof = sea area fraction
+
+sf = streamfunction
+vp = velocity potential
 
 
 ## File attributes ##

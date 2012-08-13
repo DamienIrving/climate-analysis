@@ -20,7 +20,7 @@ Sea level pressure (originally slp, now psl)
 Geopotential height, 250hPa (originally H, now gz)
 Eastward wind component, 250 hPa (originally U, now ua)
 Northward wind velocity, 250 hPa (originally V, now va)
-Vertical pressure velocity, 250 hPa (originally OMEGA)
+Omega (=dp/dt; or vertical pressure velocity), 500 hPa (originally omega500, now wap)
 
 
 
