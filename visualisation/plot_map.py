@@ -96,11 +96,11 @@ def multiplot(ifiles,variables,title,
               #can use a pre-defined region or override with min/max lat/lon, 
               region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-20,lonX=-125,projection='cyl',
               #colourbar settings
-              colourbar_colour='jet',ticks=None,discrete_segments=None,units=None,convert=False,extend="neither",
+              colourbar_colour='jet',ticks=None,discrete_segments=None,units=None,convert=False,scale=None,extend="neither",
               #resolution of image
               res='l',area_threshold=1.,
 	      #contours
-	      draw_contours=False,contour_files=None,contour_variables=None,contour_ticks=None,
+	      draw_contours=False,contour_files=None,contour_variables=None,contour_ticks=None,contour_scale=None,
 	      #wind vectors
 	      draw_vectors=False,uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,thin=1,
 	      #stippling
@@ -157,9 +157,9 @@ def multiplot(ifiles,variables,title,
 	matrixplot(file_matrix,var_matrix,title,
         	   ofile,
         	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
-        	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
+        	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
         	   res,area_threshold,
-		   draw_contours,confile_matrix,convar_matrix,contour_ticks,
+		   draw_contours,confile_matrix,convar_matrix,contour_ticks,contour_scale,
 		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,thin,
 		   draw_stippling,stipple_files,stipple_variables,
         	   row_headings,inline_row_headings,col_headings,img_headings,
@@ -189,9 +189,9 @@ def multiplot(ifiles,variables,title,
 	matrixplot(file_matrix,var_matrix,title,
         	   ofile,
         	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
-        	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
+        	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
         	   res,area_threshold,
-		   draw_contours,contour_files,contour_variables,contour_ticks,
+		   draw_contours,contour_files,contour_variables,contour_ticks,contour_scale,
 		   draw_vectors,ufile_matrix,uvar_matrix,vfile_matrix,vvar_matrix,thin,
 		   draw_stippling,stipple_files,stipple_variables,
         	   row_headings,inline_row_headings,col_headings,img_headings,
@@ -213,9 +213,9 @@ def multiplot(ifiles,variables,title,
 	matrixplot(file_matrix,var_matrix,title,
         	   ofile,
         	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
-        	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
+        	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
         	   res,area_threshold,
-		   draw_contours,contour_files,contour_variables,contour_ticks,
+		   draw_contours,contour_files,contour_variables,contour_ticks,contour_scale,
 		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,thin,
 		   draw_stippling,stipfile_matrix,stipvar_matrix,
         	   row_headings,inline_row_headings,col_headings,img_headings,
@@ -229,9 +229,9 @@ def multiplot(ifiles,variables,title,
 	matrixplot(file_matrix,var_matrix,title,
         	   ofile,
         	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
-        	   colourbar_colour,ticks,discrete_segments,units,convert,extend,
+        	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
         	   res,area_threshold,
-		   draw_contours,contour_files,contour_variables,contour_ticks,
+		   draw_contours,contour_files,contour_variables,contour_ticks,contour_scale,
 		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,thin,
 		   draw_stippling,stipple_files,stipple_variables,
         	   row_headings,inline_row_headings,col_headings,img_headings,
@@ -248,11 +248,11 @@ def matrixplot(ifiles,variables,title,
               #can use a pre-defined region or override with min/max lat/lon, 
               region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-20,lonX=-125,projection='cyl',
               #colourbar settings
-              colourbar_colour='jet',ticks=None,discrete_segments=None,units=None,convert=False,extend="neither",
+              colourbar_colour='jet',ticks=None,discrete_segments=None,units=None,convert=False,scale=None,extend="neither",
               #resolution of image
               res='l',area_threshold=1.,
 	      #contours
-	      draw_contours=False,contour_files=None,contour_variables=None,contour_ticks=None,
+	      draw_contours=False,contour_files=None,contour_variables=None,contour_ticks=None,contour_scale=None,
 	      # wind vectors
 	      draw_vectors=False,uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,thin=1,
 	      # stippling
@@ -516,6 +516,10 @@ def matrixplot(ifiles,variables,title,
 		if tVar.units[0] == 'K' and units[0] == 'C' and ma.max(tVar) > 70.0:
 	            tVar = tVar - 273.16
 	    
+	    #Apply scale factor
+	    if scale:
+	        tVar = tVar*scale
+	    
 	    #Data must be two dimensional 
             if (re.match('^t',tVar.getOrder())):
                 print "WARNING data has a time axis, results displayed will be the first time step"
@@ -596,6 +600,9 @@ def matrixplot(ifiles,variables,title,
 		    contour_data,contour_lon = shiftgrid(0.,contour_data,contour_lon,start=True)
 		else:
 		    contour_data,contour_lon = shiftgrid(180.,contour_data,contour_lon,start=False)
+		
+		if contour_scale:
+		    contour_data = contour_data*contour_scale
 		    
 		x,y = map(*numpy.meshgrid(contour_lon,contour_lat))
 		im2 = map.contour(x,y,contour_data,contour_ticks,colors='k')
@@ -991,12 +998,14 @@ if __name__ == '__main__':
     parser.add_option("--ticks", dest="ticks",type='string',default=None,help="List of comma seperataed tick marks to appear on the colour bar")
     parser.add_option("--discrete_segments", dest="discrete_segments",type='string',default=None,help="List of comma seperated colours to appear on the colour bar")
     parser.add_option("--convert",action="store_true",dest="convert",default=False,help="Unit converstion [default = False]")
+    parser.add_option("--scale", dest="scale",type='float',default=None,help="Scale (or multiplication) factor [defualt = None]")
     parser.add_option("--extend", dest="extend",type='string',default='neither',help="Selector for arrow points at either end of colourbar [default = 'neither']")
     #Contours
     parser.add_option("--draw_contours",action="store_true",dest="draw_contours",default=False,help="Switch for drawing contours on the plot [default = False]")
     parser.add_option("--contour_files", dest="contour_files",type='string',default=None,help="List of input contour files")
     parser.add_option("--contour_variables", dest="contour_variables",type='string',default=None,help="List of input contour variables")
     parser.add_option("--contour_ticks", dest="contour_ticks",type='string',default=None,help="List of comma seperataed tick marks, or just the number of contour lines")
+    parser.add_option("--contour_scale", dest="contour_scale",type='float',default=None,help="Scale (or multiplication) factor for contour data [defualt = None]")
     #Wind
     parser.add_option("--draw_vectors",action="store_true",dest="draw_vectors",default=False,help="Switch for drawing wind vectors on the plot [default = False]")
     parser.add_option("--uwnd_files", dest="uwnd_files",type='string',default=None,help="List of input zonal wind files")
@@ -1048,6 +1057,7 @@ if __name__ == '__main__':
                                   (this will override colourbar_colour and there must be one less discrete segment than number of ticks), OR
 				  A single integer specifing how many segments you want (the program will figure out the rest)
             --convert             Selector for automatic unit conversion (it will convert 'kg m-2 s-1' to 'mm day-1' or 'K' to 'C')
+	    --scale               Scale (or multiplication) factor for input data [default = None]
             --extend              Selector for arrow points at either end of colourbar. Can be 'both', 'neither, 'min' or 'max' [default = 'neither']
             --resolution          Resolution of the background map. Can be 'h' (high), 'm' (medium), 'l' (low) or 'c' (coarse) [default='l']
             --area_threshold      Threshold (in km) for the smallest resolved feature on the background map [default = 1]
@@ -1055,7 +1065,8 @@ if __name__ == '__main__':
             --contour_files       List of input contour files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
             --contour_variables   List of comma seperated variable names corresponding to the input contour files [default = None] 
             --contour_ticks       List of comma seperataed tick marks, or just the number of contour lines
-            --draw_vectors        Switch for drawing wind vectors on the plot [default = False]
+            --contour_scale       Scale (or multiplication) factor for contour data [default = None]
+	    --draw_vectors        Switch for drawing wind vectors on the plot [default = False]
             --uwnd_files          List of input zonal surface wind files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
             --uwnd_variables      List of comma seperated variable names corresponding to the input zonal surface wind files [default = None] 
             --vwnd_files          List of input meridional surface wind files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
@@ -1184,9 +1195,9 @@ if __name__ == '__main__':
         	  dimensions=dimensions,
 		  ofile=options.ofile,
 		  region=options.region,minlat=options.minlat,minlon=options.minlon,maxlat=options.maxlat,maxlon=options.maxlon,latX=options.latX,lonX=options.lonX,projection=options.projection,
-        	  colourbar_colour=options.colourbar_colour,ticks=ticks,discrete_segments=discrete_segments,units=options.units,convert=options.convert,extend=options.extend,
+        	  colourbar_colour=options.colourbar_colour,ticks=ticks,discrete_segments=discrete_segments,units=options.units,convert=options.convert,scale=options.scale,extend=options.extend,
         	  res=options.resolution,area_threshold=options.area_threshold,
-		  draw_contours=options.draw_contours,contour_files=contour_files,contour_variables=contour_variables,contour_ticks=contour_ticks,
+		  draw_contours=options.draw_contours,contour_files=contour_files,contour_variables=contour_variables,contour_ticks=contour_ticks,contour_scale=options.contour_scale,
 		  draw_vectors=options.draw_vectors,uwnd_files=uwnd_files,uwnd_variables=uwnd_variables,vwnd_files=vwnd_files,vwnd_variables=vwnd_variables,thin=options.thin,
 		  draw_stippling=options.draw_stippling,stipple_files=stipple_files,stipple_variables=stipple_variables,
         	  row_headings=row_headings,inline_row_headings=inline_row_headings,
