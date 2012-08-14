@@ -207,16 +207,26 @@ def extract_data(file_list,file_list_dims,windowp,windows):
     return plot_data,plot_times
 
     
-def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,outfile_name,setx,setyp,setys,ybuffer,legloc):
+def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,outfile_name,setx,setyp,setys,ybuffer,legloc,nrows):
     """Creates the plot"""
 
     # Start the figure #
     
-    fig = plt.figure()
-    ax1 = fig.add_axes([0.1,0.1,0.78,0.8])  #left side, bottom, right side, top
+    plt.figure()
+    ax1a = plt.subplot(nrows,1,1)  # rows, columns, plot number
     if file_list_dims[1] > 0:
-        ax2 = ax1.twinx()
+        ax1b = ax1a.twinx()
     
+    if nrows > 1:
+        ax2a = plt.subplot(nrows,1,2,sharey=ax1a)  
+        if file_list_dims[1] > 0:
+            ax2b = ax2a.twinx()
+    
+    if nrows > 2:
+        ax3a = plt.subplot(nrows,1,3,sharey=ax1a)
+        if file_list_dims[1] > 0:
+            ax3b = ax3a.twinx()
+        
     # Set the title and units #   
 
     title_text = 'Climate indices'  ### FIX TO ACCOUNT FOR SECOND PLOT
@@ -225,16 +235,16 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
     # Plot the data for each dataset #
 
     count = 0
-    units_text_ax1 = 'temp'
-    units_text_ax2 = 'temp'
+    units_text_ax1a = 'temp'
+    units_text_ax1b = 'temp'
     min_year = 1e10
     max_year = -1e10
     min_time = 1e10
     max_time = -1e10
-    min_y_ax1 = 1e10
-    max_y_ax1 = -1e10
-    min_y_ax2 = 1e10
-    max_y_ax2 = -1e10
+    min_y_ax1a = 1e10
+    max_y_ax1a = -1e10
+    min_y_ax1b = 1e10
+    max_y_ax1b = -1e10
     
     for ifile in file_list:
 
@@ -247,35 +257,95 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
 	    end_month = end_month - 12
 	    end_year = end_year + 1
 
-        # Create time values #
+        # Create time values and subset data if necessary #
+
+        timeseries_complete = plot_data[ifile.fname] #read in timeseries data
 
 	date1 = datetime.date( int(start_year), int(start_month), 16 )
 	date2 = datetime.date( int(end_year), int(end_month), 16 )
 	delta = datetime.timedelta(minutes=43830)   # timedelta doesn't take monnths. For a 365.25 day year, the average month length is 43830 minutes 
         
-	dates = drange(date1, date2, delta)
-        
+	dates_complete = drange(date1, date2, delta)
+	
+	if setx:
+	    start_year,start_month,end_year,end_month = setx
+	    end_month = end_month + 1
+	    if end_month > 12.0:
+	        end_month = end_month - 12
+	        end_year = end_year + 1
+	    
+	    date1_user = datetime.date( setx[0], setx[1], 16 ) 
+            date2_user = datetime.date( setx[2], setx[3], 16 )
+	    
+	    new_start = len(dates_complete) - len(drange(date1_user,date2,delta))
+	    new_end = len(drange(date1,date2_user,delta))
+	    
+	    dates = dates_complete[new_start:new_end]
+	    timeseries = timeseries_complete[new_start:new_end]	
+	
+	else:
+	    dates = dates_complete
+	    timeseries = timeseries_complete
+	    
+	    
 	max_time,min_time = hi_lo(dates,max_time,min_time)
-        max_year,min_year = hi_lo(range(int(start_year),int(end_year)+1),max_year,min_year) 
+	max_year,min_year = hi_lo(range(int(start_year),int(end_year)+1),max_year,min_year) 
 
         # Plot the data #
         
-	timeseries = plot_data[ifile.fname]
-#	if ifile.index == 'IEMI':
-#	    timeseries = timeseries * -1
 	label = ifile.index+', '+ifile.dataset
 	if count < file_list_dims[0]:
-	    units_text_ax1 = set_units(ifile.index,units_text_ax1,'Primary')
-	    max_y_ax1,min_y_ax1 = hi_lo(timeseries,max_y_ax1,min_y_ax1)
+	    units_text_ax1a = set_units(ifile.index,units_text_ax1a,'Primary')
+	    max_y_ax1a,min_y_ax1a = hi_lo(timeseries,max_y_ax1a,min_y_ax1a)
 	    
-	    ax1.plot_date(dates,numpy.array(timeseries),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-            
+	    if nrows == 1:
+	        ax1a.plot_date(dates,numpy.array(timeseries),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+	    elif nrows == 2:
+	        xlen = math.floor(len(dates)/2)
+		dates_1a = dates[0:xlen]
+		dates_2a = dates[xlen:xlen*2]
+		timeseries_1a = timeseries[0:xlen]
+		timeseries_2a = timeseries[xlen:xlen*2]
+		ax1a.plot_date(dates_1a,numpy.array(timeseries_1a),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+		ax2a.plot_date(dates_2a,numpy.array(timeseries_2a),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+            elif nrows == 2:
+	        xlen = math.floor(len(dates)/3)
+		dates_1a = dates[0:xlen]
+		dates_2a = dates[xlen:xlen*2]
+		dates_3a = dates[xlen*2:xlen*3]
+		timeseries_1a = timeseries[0:xlen]
+		timeseries_2a = timeseries[xlen:xlen*2]
+		timeseries_3a = timeseries[xlen*2:xlen*3]
+		ax1a.plot_date(dates_1a,numpy.array(timeseries_1a),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+		ax2a.plot_date(dates_2a,numpy.array(timeseries_2a),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+		ax3a.plot_date(dates_3a,numpy.array(timeseries_3a),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+
 	else:
-	    units_text_ax2 = set_units(ifile.index,units_text_ax2,'Secondary')
-	    max_y_ax2,min_y_ax2 = hi_lo(timeseries,max_y_ax2,min_y_ax2)
-	    
-	    ax2.plot_date(dates,numpy.array(timeseries),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+	    units_text_ax1b = set_units(ifile.index,units_text_ax1b,'Secondary')
+	    max_y_ax1b,min_y_ax1b = hi_lo(timeseries,max_y_ax1b,min_y_ax1b)
 	
+	    if nrows == 1:
+	        ax1b.plot_date(dates,numpy.array(timeseries),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+	    elif nrows == 2:
+	        xlen = math.floor(len(dates)/2)
+		dates_1b = dates[0:xlen]
+		dates_2b = dates[xlen:xlen*2]
+		timeseries_1b = timeseries[0:xlen]
+		timeseries_2b = timeseries[xlen:xlen*2]
+		ax1b.plot_date(dates_1b,numpy.array(timeseries_1b),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+		ax2b.plot_date(dates_2b,numpy.array(timeseries_2b),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+            elif nrows == 2:
+	        xlen = math.floor(len(dates)/3)
+		dates_1b = dates[0:xlen]
+		dates_2b = dates[xlen:xlen*2]
+		dates_3b = dates[xlen*2:xlen*3]
+		timeseries_1b = timeseries[0:xlen]
+		timeseries_2b = timeseries[xlen:xlen*2]
+		timeseries_3b = timeseries[xlen*2:xlen*3]
+		ax1b.plot_date(dates_1b,numpy.array(timeseries_1b),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+		ax2b.plot_date(dates_2b,numpy.array(timeseries_2b),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+		ax3b.plot_date(dates_3b,numpy.array(timeseries_3b),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+
 	count = count + 1 
         del date1
 	del date2
@@ -284,18 +354,24 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
   
     # Plot guidelines #
  
-    #ax1.axhline(y=0.0,linestyle='-',color='0.8')
+    #ax1a.axhline(y=0.0,linestyle='-',color='0.8')
     
-    if units_text_ax1 == 'Anomaly (deg C)':
-        ax1.axhline(y=0.5,linestyle='--',color='0.5')
-        ax1.axhline(y=-0.5,linestyle='--',color='0.5')
-    
-    # Define aspects of the time axis #
+    if units_text_ax1a == 'Anomaly (deg C)':
+        ax1a.axhline(y=0.5,linestyle='--',color='0.5')
+        ax1a.axhline(y=-0.5,linestyle='--',color='0.5')
+        if nrows > 1:
+	    ax2a.axhline(y=0.5,linestyle='--',color='0.5')
+            ax2a.axhline(y=-0.5,linestyle='--',color='0.5')
+	if nrows > 2:
+	    ax3a.axhline(y=0.5,linestyle='--',color='0.5')
+            ax3a.axhline(y=-0.5,linestyle='--',color='0.5')
+	
+    # Define labelling rules for the time axis #
 
     if setx:
-        time_range = setx[2] - setx[0]
+        time_range = (setx[2] - setx[0]) / nrows
     else:
-        time_range = int(max_year) - int(min_year)
+        time_range = (int(max_year) - int(min_year)) / nrows
     
     if time_range < 4:
         rule_major = rrulewrapper(MONTHLY, interval=3)
@@ -307,9 +383,14 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
         rule_minor = rrulewrapper(MONTHLY, interval=1)
 	major_label = '%Y'
 	minor_label = ''
-    else:
+    elif time_range < 50:
         rule_major = rrulewrapper(YEARLY, bymonth=1, interval=5)
 	rule_minor = rrulewrapper(YEARLY, bymonth=1, interval=1)
+	major_label = '%Y'
+	minor_label = ''
+    else:
+        rule_major = rrulewrapper(YEARLY, bymonth=1, interval=20)
+	rule_minor = rrulewrapper(YEARLY, bymonth=1, interval=5)
 	major_label = '%Y'
 	minor_label = ''
         
@@ -319,66 +400,106 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
     loc_minor = RRuleLocator(rule_minor)
     formatter_minor = DateFormatter(minor_label)    # '%m/%d/%y'
  
-    ax1.xaxis.set_major_locator(loc_major)
-    ax1.xaxis.set_major_formatter(formatter_major)
-    ax1.xaxis.set_minor_locator(loc_minor)
-    ax1.xaxis.set_minor_formatter(formatter_minor)
+    ax1a.xaxis.set_major_locator(loc_major)
+    ax1a.xaxis.set_major_formatter(formatter_major)
+    ax1a.xaxis.set_minor_locator(loc_minor)
+    ax1a.xaxis.set_minor_formatter(formatter_minor)
+    if nrows > 1:
+        ax2a.xaxis.set_major_locator(loc_major)
+        ax2a.xaxis.set_major_formatter(formatter_major)
+        ax2a.xaxis.set_minor_locator(loc_minor)
+        ax2a.xaxis.set_minor_formatter(formatter_minor)
+    if nrows > 2:
+        ax3a.xaxis.set_major_locator(loc_major)
+        ax3a.xaxis.set_major_formatter(formatter_major)
+        ax3a.xaxis.set_minor_locator(loc_minor)
+        ax3a.xaxis.set_minor_formatter(formatter_minor)
     
-    # Define the range of the axes #
+    # Define the range of the y axis #
     
-    y_maximum_ax1 = max(abs(max_y_ax1),abs(min_y_ax1))
-    y_buffer_ax1 = (2 * y_maximum_ax1) * 0.03 
-    ax1.axis([min_time,max_time,(-y_maximum_ax1 - y_buffer_ax1),(y_maximum_ax1 + ybuffer*y_buffer_ax1)])
+    x1a,x2a,y1a,y2a = ax1a.axis()
+    if setyp:
+        ax1a.axis([x1a,x2a,setyp[0],setyp[1]])
+    else:
+        y_maximum_ax1a = max(abs(max_y_ax1a),abs(min_y_ax1a))
+        y_buffer_ax1a = (2 * y_maximum_ax1a) * 0.03
+  	ax1a.axis([x1a,x2a,(-y_maximum_ax1a - y_buffer_ax1a),(y_maximum_ax1a + ybuffer*y_buffer_ax1a)])
     
     if file_list_dims[1] > 0:
-        y_maximum_ax2 = max(abs(max_y_ax2),abs(min_y_ax2))
-        y_buffer_ax2 = (2 * y_maximum_ax2) * 0.03 
-        ax2.axis([min_time,max_time,(-y_maximum_ax2 - y_buffer_ax2),(y_maximum_ax2 + ybuffer*y_buffer_ax2)])
-   
-    # Alter the range according to user inputs
-    
-    if setx: 
-        date_start = datetime.date( setx[0], setx[1], 16 ) 
-        date_end = datetime.date( setx[2], setx[3], 16 )
-        
-	if setyp:
-	    ax1.axis([date_start,date_end,setyp[0],setyp[1]])
-	else:
-	    x1,x2,y1,y2 = ax1.axis()
-	    ax1.axis([date_start,date_end,y1,y2])
-        
+	x1b,x2b,y1b,y2b = ax1b.axis()
 	if setys:
-	    ax2.axis([date_start,date_end,setys[0],setys[1]])
-	elif file_list_dims[1] > 0:
-	    x1,x2,y1,y2 = ax2.axis()
-	    ax2.axis([date_start,date_end,y1,y2])
-	
-    elif setyp or setys:
-         if setyp:
-	     x1,x2,y1,y2 = ax1.axis()
-	     ax1.axis([x1,x2,setyp[0],setyp[1]])
-	 if setys:
-	     x1,x2,y1,y2 = ax2.axis()
-	     ax2.axis([x1,x2,setys[0],setys[1]])
-	
-         	 
+	    ax1b.axis([x1b,x2b,setys[0],setys[1]])
+	else:
+	    y_maximum_ax1b = max(abs(max_y_ax1b),abs(min_y_ax1b))
+            y_buffer_ax1b = (2 * y_maximum_ax1b) * 0.03 
+            ax1b.axis([x1b,x2b,(-y_maximum_ax1b - y_buffer_ax1b),(y_maximum_ax1b + ybuffer*y_buffer_ax1b)])
+   
     # Plot labels (including title, axis labels and legend) #
 
-    labels_ax1 = ax1.get_xticklabels()
-    plt.setp(labels_ax1, rotation=0, fontsize='medium')   
+    #x axis labels
+    #plt.axes(ax1a)
+    labels_ax1a = ax1a.get_xticklabels()
+    plt.setp(labels_ax1a, rotation=0, fontsize='medium')   
+    if nrows > 1:
+	labels_ax2a = ax2a.get_xticklabels()
+        plt.setp(labels_ax2a, rotation=0, fontsize='medium')
+    if nrows > 2:
+	labels_ax3a = ax3a.get_xticklabels()
+        plt.setp(labels_ax3a, rotation=0, fontsize='medium')
 
-    ax1.set_ylabel(units_text_ax1,fontsize='medium')
-    ax1.set_title(title_text)
-    font = font_manager.FontProperties(size='medium')
-    ax1.legend(loc=legloc,prop=font,ncol=2) #prop=font,numpoints=1,labelspacing=0.3)  #,ncol=2)
-    ax1.grid(True,'major',color='0.5')
-    ax1.grid(True,'minor',color='0.7')
-    #ax1.xaxis.grid(True)
+    #y axis labels - primary plot
+    if nrows > 2:
+        ax2a.set_ylabel(units_text_ax1a,fontsize='medium')
+    elif nrows > 1:
+        ax1a.set_ylabel(units_text_ax1a,fontsize='medium')
+	ax2a.set_ylabel(units_text_ax1a,fontsize='medium')
+    else:
+        ax1a.set_ylabel(units_text_ax1a,fontsize='medium')
     
+    #y axis labels - secondary plot
     if file_list_dims[1] > 0:
-        ax2.set_ylabel(units_text_ax2, fontsize='medium', rotation=270)
-        font = font_manager.FontProperties(size='medium')
-        ax2.legend(loc=1,prop=font) #prop=font,numpoints=1,labelspacing=0.3)  #,ncol=2)
+	if nrows > 2:
+            ax2b.set_ylabel(units_text_ax1b,fontsize='medium',rotation=270)
+	elif nrows > 1:
+            ax1b.set_ylabel(units_text_ax1b,fontsize='medium',rotation=270)
+	    ax2b.set_ylabel(units_text_ax1b,fontsize='medium',rotation=270)
+	else:
+            ax1b.set_ylabel(units_text_ax1b,fontsize='medium',rotation=270)
+        
+    #title
+    ax1a.set_title(title_text)
+    
+    #legend - primary plot
+    font = font_manager.FontProperties(size='medium')
+    if legloc:
+	if nrows > 2:
+	    ax2a.legend(loc=legloc,prop=font,ncol=2) #prop=font,numpoints=1,labelspacing=0.3)  #,ncol=2)
+	elif nrows > 1:
+	    ax1a.legend(loc=legloc,prop=font,ncol=2)
+	    ax2a.legend(loc=legloc,prop=font,ncol=2)
+        else:
+	    ax1a.legend(loc=legloc,prop=font,ncol=2)
+    
+        #legend - secondary plot
+        if file_list_dims[1] > 0:
+	    if nrows > 2:
+		ax2b.legend(loc=1,prop=font)
+	    elif nrows > 1:
+		ax1b.legend(loc=1,prop=font)
+		ax2b.legend(loc=1,prop=font)
+            else:
+		ax1b.legend(loc=1,prop=font)
+    
+    #gridlines
+    ax1a.grid(True,'major',color='0.5')
+    ax1a.grid(True,'minor',color='0.7')
+    if nrows > 1:
+        ax2a.grid(True,'major',color='0.5')
+        ax2a.grid(True,'minor',color='0.7')
+    if nrows > 2:
+        ax3a.grid(True,'major',color='0.5')
+        ax3a.grid(True,'minor',color='0.7')
+    
     
     # Output the figure #
     
@@ -388,7 +509,7 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
         plt.show()
 
 
-def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,legloc):
+def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,legloc,nrows):
     """Run the program"""
     
     primary_file_list = [InputFile(f) for f in primary_file_list]
@@ -407,7 +528,7 @@ def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx
     
     ## Create the plot ##
         
-    create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,outfile_name,setx,setyp,setys,ybuffer,legloc)
+    create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,outfile_name,setx,setyp,setys,ybuffer,legloc,nrows)
     
 
 if __name__ == '__main__':
@@ -420,13 +541,14 @@ if __name__ == '__main__':
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
     parser.add_option("-o", "--outfile",dest="outfile",type='str',default=None,help="Name of output file [default = None]")
     parser.add_option("-s", "--secondary",dest="secondary",default=None,help="Comma separated list files to be plotted on the secondary y axis [default = None]")
-    parser.add_option("-l", "--legend",dest="legend",default=3,type='int',help="Location of the figure legend [defualt = 3]")
-    parser.add_option("-b", "--buffer",dest="buffer",type='float',default=4.0,help="Scale factor for y axis upper buffer [default = 4]")
-    parser.add_option("--wp",dest="windowp",type='int',default=1,help="window for primary axis running average [default = 1]")
-    parser.add_option("--ws",dest="windows",type='int',default=1,help="window for secondary axis running average [default = 1]")
-    parser.add_option("-x", "--setx",dest="setx",default=None,help="Comma separated list of time axis bounds (start_year,start_month,end_year,end_month) [default = None]")
-    parser.add_option("--setyp",dest="setyp",default=None,help="Comma separated list of primary y axis bounds (min,max) [default = None]")
-    parser.add_option("--setys",dest="setys",default=None,help="Comma separated list of secondary y axis bounds (min,max) [default = None]")
+    parser.add_option("-l", "--legend",dest="legend",default=None,type='int',help="Location of the figure legend [defualt = None]")
+    parser.add_option("-b", "--buffer",dest="buffer",type='float',default=1.0,help="Scale factor for y axis upper buffer [default = 4]")
+    parser.add_option("-r", "--rows",dest="nrows",type='int',default=1,help="Number of rows (long time axes can be split onto numerous rows [default = 1]")
+    parser.add_option("--wp",dest="windowp",type='int',default=1,help="Window for primary axis running average [default = 1]")
+    parser.add_option("--ws",dest="windows",type='int',default=1,help="Window for secondary axis running average [default = 1]")
+    parser.add_option("-x", "--setx",dest="setx",default=None,nargs=4,type='int',help="Time axis bounds (start_year start_month end_year end_month) [default = None]")
+    parser.add_option("--setyp",dest="setyp",default=None,nargs=2,type='float',help="Primary y axis bounds (min max) [default = None]")
+    parser.add_option("--setys",dest="setys",default=None,nargs=2,type='float',help="Secondary y axis bounds (min max) [default = None]")
     
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
@@ -439,14 +561,15 @@ if __name__ == '__main__':
             -M  ->  Display this on-line manual page and exit
             -h  ->  Display a help/usage message and exit
 	    -o  ->  Name of the output file [default = None = image is just shown instead]
-	    -l  ->  Location of the legend [default = 3]
-	    -b  ->  Scale factor for y axis upper buffer [default = 4]
+	    -l  ->  Location of the legend [default = None]
+	    -b  ->  Scale factor for y axis upper buffer [default = 1]
+	    -r  ->  Number of rows (long time axes can be split onto numerous rows [default = 1]
 	    -s  ->  Comma separated list files to be plotted on the secondary y axis [default = None]
-	    -x  ->  Comma separated list of time axis bounds (start_year,start_month,end_year,end_month) [default = None]
+	    -x  ->  Time axis bounds (start_year start_month end_year end_month) [default = None]
             --wp  ->  Window for primary axis running average [default = 1]
 	    --ws  ->  Window for secondary axis running average [default = 1]
-	    --setyp  ->  Comma separated list of primary y axis bounds (min,max) [default = None]
-	    --setys  ->  Comma separated list of secondary y axis bounds (min,max) [default = None]
+	    --setyp  ->  Primary y axis bounds (min,max) [default = None]
+	    --setys  ->  Secondary y axis bounds (min,max) [default = None]
 	
 	Legend options
 	    1: upper right
@@ -458,12 +581,12 @@ if __name__ == '__main__':
 	    7: center right
 	    8: lower center
 	    9: upper center
-	    10: center 
+	    10: center
+	    None: no legend 
 	
 	Example
-	    /opt/cdat/bin/cdat plot_climate_index.py -windowp 5 /work/dbirving/processed/indices/ts_Merra_NINO34_monthly_native-ocean.txt
-	    /work/dbirving/processed/indices/tos_ERSSTv3B_NINO34_monthly_native.txt
-	    /work/dbirving/processed/indices/tos_OISSTv2_NINO34_monthly_native.txt
+	    /opt/cdat/bin/cdat plot_climate_index.py --wp 5 /work/dbirving/processed/indices/data/ts_Merra_NINO34_monthly_native-ocean.txt
+	    /work/dbirving/processed/indices/data/tos_ERSSTv3b_NINO34_monthly_native.txt
 	    
 	Author
             Damien Irving, 22 Jun 2012.
@@ -480,23 +603,9 @@ if __name__ == '__main__':
 	else:
 	    secondary_file_list = None
 	
-	if options.setx:
-	    setx = [int(s) for s in options.setx.split(',')]
-	else:
-	    setx = None
-	
-	if options.setyp:
-	    setyp = [float(s) for s in options.setyp.split(',')]
-	else:
-	    setyp = None
-	
-	if options.setys:
-	    setys = [float(s) for s in options.setys.split(',')]
-	else:
-	    setys = None
 	    
         primary_file_list = args[:]   
 
-
-        main(primary_file_list,secondary_file_list,options.outfile,options.windowp,options.windows,setx,setyp,setys,options.buffer,options.legend)
+        main(primary_file_list,secondary_file_list,options.outfile,options.windowp,options.windows,
+	options.setx,options.setyp,options.setys,options.buffer,options.legend,options.nrows)
     
