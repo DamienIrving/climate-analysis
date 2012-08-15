@@ -28,7 +28,6 @@ from optparse import OptionParser
 import re
 import os
 import sys
-from datetime import datetime
 
 import cdms2 
 import genutil
@@ -37,8 +36,9 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 from pylab import *
 
-from matplotlib.dates import YEARLY, MONTHLY, DateFormatter, rrulewrapper, RRuleLocator, drange
-import datetime
+#import datetime
+from datetime import datetime
+from dateutil.rrule import *
 
 import numpy
 import numpy.ma as ma
@@ -206,45 +206,35 @@ def extract_data(file_list,file_list_dims,windowp,windows):
 
     return plot_data,plot_times
 
-    
-def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,outfile_name,setx,setyp,setys,ybuffer,legloc,nrows):
-    """Creates the plot"""
 
-    # Start the figure #
+def convert_datetime(dates):
+    """Converts a series of datetime instances to floating point numbers"""
     
-    plt.figure()
-    ax1a = plt.subplot(nrows,1,1)  # rows, columns, plot number
-    if file_list_dims[1] > 0:
-        ax1b = ax1a.twinx()
+    dates_float = numpy.zeros(len(dates[:]))
+    for i in range(0,len(dates[:])):
+        dates_float[i] = dates[i].year + (dates[i].month / 12.0) 
     
-    if nrows > 1:
-        ax2a = plt.subplot(nrows,1,2,sharey=ax1a)  
-        if file_list_dims[1] > 0:
-            ax2b = ax2a.twinx()
+    return dates_float
     
-    if nrows > 2:
-        ax3a = plt.subplot(nrows,1,3,sharey=ax1a)
-        if file_list_dims[1] > 0:
-            ax3b = ax3a.twinx()
-        
-    # Set the title and units #   
+    
+def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,ybuffer):
+    """Determines all the details for the plot (e.g. data, axis bounds, tick marks)"""
 
-    title_text = 'Climate indices'  ### FIX TO ACCOUNT FOR SECOND PLOT
+    ## Define the data and details of the plot setup ##
     
+    ydata = {}
+    xdata = {} 
+    ybounds = {}
     
     # Plot the data for each dataset #
 
     count = 0
-    units_text_ax1a = 'temp'
-    units_text_ax1b = 'temp'
-    min_year = 1e10
-    max_year = -1e10
-    min_time = 1e10
-    max_time = -1e10
-    min_y_ax1a = 1e10
-    max_y_ax1a = -1e10
-    min_y_ax1b = 1e10
-    max_y_ax1b = -1e10
+    max_time = datetime(0,1,1)
+    min_time = datetime(20000,12,31)
+    min_y_a = 1e10
+    max_y_a = -1e10
+    min_y_b = 1e10
+    max_y_b = -1e10
     
     for ifile in file_list:
 
@@ -257,28 +247,29 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
 	    end_month = end_month - 12
 	    end_year = end_year + 1
 
-        # Create time values and subset data if necessary #
+        # Subset the data along the time axis if neceassry, according to user defined time bounds #
 
         timeseries_complete = plot_data[ifile.fname] #read in timeseries data
-
-	date1 = datetime.date( int(start_year), int(start_month), 16 )
-	date2 = datetime.date( int(end_year), int(end_month), 16 )
-	delta = datetime.timedelta(minutes=43830)   # timedelta doesn't take monnths. For a 365.25 day year, the average month length is 43830 minutes 
-        
-	dates_complete = drange(date1, date2, delta)
+	dates_complete = rrule(MONTHLY,dtstart=datetime(start_year,start_month,16),until=datetime(end_year,end_month,16))
 	
 	if setx:
-	    start_year,start_month,end_year,end_month = setx
-	    end_month = end_month + 1
-	    if end_month > 12.0:
-	        end_month = end_month - 12
-	        end_year = end_year + 1
+	    start_year_user,start_month_user,end_year_user,end_month_user = setx
+	    end_month_user = end_month_user + 1
+	    if end_month_user > 12.0:
+	        end_month_user = end_month_user - 12
+	        end_year_user = end_year_user + 1
 	    
-	    date1_user = datetime.date( setx[0], setx[1], 16 ) 
-            date2_user = datetime.date( setx[2], setx[3], 16 )
+	    if datetime(start_year_user,start_month_user,16) > datetime(start_year,start_month,16):
+	        dates_user_a = rrule(MONTHLY,dtstart=datetime(start_year_user,start_month_user,16),until=datetime(end_year,end_month,16)) 
+	        new_start = len(dates_complete[:]) - len(dates_user_a[:])
+	    else:
+	        new_start = 0
 	    
-	    new_start = len(dates_complete) - len(drange(date1_user,date2,delta))
-	    new_end = len(drange(date1,date2_user,delta))
+	    if datetime(end_year_user,end_month_user,16) < datetime(end_year,end_month,16):
+	        dates_user_b = rrule(MONTHLY,dtstart=datetime(start_year,start_month,16),until=datetime(end_year_user,end_month_user,16))
+	        new_end = len(dates_user_b[:])
+	    else:
+	        new_end = len(dates_complete[:])
 	    
 	    dates = dates_complete[new_start:new_end]
 	    timeseries = timeseries_complete[new_start:new_end]	
@@ -286,220 +277,161 @@ def create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,ou
 	else:
 	    dates = dates_complete
 	    timeseries = timeseries_complete
-	    
-	    
-	max_time,min_time = hi_lo(dates,max_time,min_time)
-	max_year,min_year = hi_lo(range(int(start_year),int(end_year)+1),max_year,min_year) 
-
-        # Plot the data #
-        
-	label = ifile.index+', '+ifile.dataset
-	if count < file_list_dims[0]:
-	    units_text_ax1a = set_units(ifile.index,units_text_ax1a,'Primary')
-	    max_y_ax1a,min_y_ax1a = hi_lo(timeseries,max_y_ax1a,min_y_ax1a)
-	    
-	    if nrows == 1:
-	        ax1a.plot_date(dates,numpy.array(timeseries),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-	    elif nrows == 2:
-	        xlen = math.floor(len(dates)/2)
-		dates_1a = dates[0:xlen]
-		dates_2a = dates[xlen:xlen*2]
-		timeseries_1a = timeseries[0:xlen]
-		timeseries_2a = timeseries[xlen:xlen*2]
-		ax1a.plot_date(dates_1a,numpy.array(timeseries_1a),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-		ax2a.plot_date(dates_2a,numpy.array(timeseries_2a),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-            elif nrows == 2:
-	        xlen = math.floor(len(dates)/3)
-		dates_1a = dates[0:xlen]
-		dates_2a = dates[xlen:xlen*2]
-		dates_3a = dates[xlen*2:xlen*3]
-		timeseries_1a = timeseries[0:xlen]
-		timeseries_2a = timeseries[xlen:xlen*2]
-		timeseries_3a = timeseries[xlen*2:xlen*3]
-		ax1a.plot_date(dates_1a,numpy.array(timeseries_1a),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-		ax2a.plot_date(dates_2a,numpy.array(timeseries_2a),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-		ax3a.plot_date(dates_3a,numpy.array(timeseries_3a),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-
-	else:
-	    units_text_ax1b = set_units(ifile.index,units_text_ax1b,'Secondary')
-	    max_y_ax1b,min_y_ax1b = hi_lo(timeseries,max_y_ax1b,min_y_ax1b)
 	
-	    if nrows == 1:
-	        ax1b.plot_date(dates,numpy.array(timeseries),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-	    elif nrows == 2:
-	        xlen = math.floor(len(dates)/2)
-		dates_1b = dates[0:xlen]
-		dates_2b = dates[xlen:xlen*2]
-		timeseries_1b = timeseries[0:xlen]
-		timeseries_2b = timeseries[xlen:xlen*2]
-		ax1b.plot_date(dates_1b,numpy.array(timeseries_1b),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-		ax2b.plot_date(dates_2b,numpy.array(timeseries_2b),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-            elif nrows == 2:
-	        xlen = math.floor(len(dates)/3)
-		dates_1b = dates[0:xlen]
-		dates_2b = dates[xlen:xlen*2]
-		dates_3b = dates[xlen*2:xlen*3]
-		timeseries_1b = timeseries[0:xlen]
-		timeseries_2b = timeseries[xlen:xlen*2]
-		timeseries_3b = timeseries[xlen*2:xlen*3]
-		ax1b.plot_date(dates_1b,numpy.array(timeseries_1b),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-		ax2b.plot_date(dates_2b,numpy.array(timeseries_2b),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-		ax3b.plot_date(dates_3b,numpy.array(timeseries_3b),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+	# Alter maximum time values, if appropriate #
+	
+	if max_time < dates[-1]:
+	    max_time = dates[-1]
+	
+	if min_time > dates[0]:
+	    min_time = dates[0]
+	
+	# Alter the maximum y axis bounds, if appropriate #
+	
+	if count < file_list_dims[0]:
+	    max_y_a,min_y_a = hi_lo(timeseries,max_y_a,min_y_a)	
+	else:
+	    max_y_b,min_y_b = hi_lo(timeseries,max_y_b,min_y_b)
+	
+	
+	# Write the data to be plotted #
+	
+	#Convert the x values to floats
+	dates_float = convert_datetime(dates)  
+	
+	xdata[ifile.fname] = dates_float
+        ydata[ifile.fname] = timeseries
 
 	count = count + 1 
-        del date1
-	del date2
-	del delta
-        del dates         
-  
-    # Plot guidelines #
- 
-    #ax1a.axhline(y=0.0,linestyle='-',color='0.8')
-    
-    if units_text_ax1a == 'Anomaly (deg C)':
-        ax1a.axhline(y=0.5,linestyle='--',color='0.5')
-        ax1a.axhline(y=-0.5,linestyle='--',color='0.5')
-        if nrows > 1:
-	    ax2a.axhline(y=0.5,linestyle='--',color='0.5')
-            ax2a.axhline(y=-0.5,linestyle='--',color='0.5')
-	if nrows > 2:
-	    ax3a.axhline(y=0.5,linestyle='--',color='0.5')
-            ax3a.axhline(y=-0.5,linestyle='--',color='0.5')
+	         
 	
-    # Define labelling rules for the time axis #
-
-    if setx:
-        time_range = (setx[2] - setx[0]) / nrows
-    else:
-        time_range = (int(max_year) - int(min_year)) / nrows
+    # Define x ticks and labels #
     
-    if time_range < 4:
-        rule_major = rrulewrapper(MONTHLY, interval=3)
-        rule_minor = rrulewrapper(MONTHLY, interval=1)
-	major_label = '%b %y'
-	minor_label = ''
-    elif time_range < 20:
-        rule_major = rrulewrapper(YEARLY, bymonth=1, interval=1)
-        rule_minor = rrulewrapper(MONTHLY, interval=1)
-	major_label = '%Y'
-	minor_label = ''
-    elif time_range < 50:
-        rule_major = rrulewrapper(YEARLY, bymonth=1, interval=5)
-	rule_minor = rrulewrapper(YEARLY, bymonth=1, interval=1)
-	major_label = '%Y'
-	minor_label = ''
-    else:
-        rule_major = rrulewrapper(YEARLY, bymonth=1, interval=20)
-	rule_minor = rrulewrapper(YEARLY, bymonth=1, interval=5)
-	major_label = '%Y'
-	minor_label = ''
+    xaxis_full_datetime = rrule(MONTHLY,dtstart=min_time,until=max_time)
+    xaxis_full_float = convert_datetime(xaxis_full_datetime)
+    len_xaxis = len(xaxis_full_datetime[:])
         
-    loc_major = RRuleLocator(rule_major)
-    formatter_major = DateFormatter(major_label)    # '%m/%d/%y' capital Y for 4-digit year and b or B for full month name
+    minor_xticks = []
+    major_xticks = []
+    major_xlabels = []
+    for i in range(0,len_xaxis):
+        value = xaxis_full_float[i]
+        test = math.floor(value) / value
+	if test == 1.0:
+	    major_xticks.append(value)
+	    major_xlabels.append(int(xaxis_full_datetime[i].year))
+	else:
+	    minor_xticks.append(value)
+	    
 
-    loc_minor = RRuleLocator(rule_minor)
-    formatter_minor = DateFormatter(minor_label)    # '%m/%d/%y'
- 
-    ax1a.xaxis.set_major_locator(loc_major)
-    ax1a.xaxis.set_major_formatter(formatter_major)
-    ax1a.xaxis.set_minor_locator(loc_minor)
-    ax1a.xaxis.set_minor_formatter(formatter_minor)
-    if nrows > 1:
-        ax2a.xaxis.set_major_locator(loc_major)
-        ax2a.xaxis.set_major_formatter(formatter_major)
-        ax2a.xaxis.set_minor_locator(loc_minor)
-        ax2a.xaxis.set_minor_formatter(formatter_minor)
-    if nrows > 2:
-        ax3a.xaxis.set_major_locator(loc_major)
-        ax3a.xaxis.set_major_formatter(formatter_major)
-        ax3a.xaxis.set_minor_locator(loc_minor)
-        ax3a.xaxis.set_minor_formatter(formatter_minor)
-    
     # Define the range of the y axis #
     
-    x1a,x2a,y1a,y2a = ax1a.axis()
     if setyp:
-        ax1a.axis([x1a,x2a,setyp[0],setyp[1]])
+        ybounds['min','a'] = setyp[0]
+	ybounds['max','a'] = setyp[1]
     else:
-        y_maximum_ax1a = max(abs(max_y_ax1a),abs(min_y_ax1a))
-        y_buffer_ax1a = (2 * y_maximum_ax1a) * 0.03
-  	ax1a.axis([x1a,x2a,(-y_maximum_ax1a - y_buffer_ax1a),(y_maximum_ax1a + ybuffer*y_buffer_ax1a)])
+        y_maximum_a = max(abs(max_y_a),abs(min_y_a))
+        y_buffer_a = (2 * y_maximum_a) * 0.03
+  	
+	ybounds['min','a'] = -y_maximum_a - y_buffer_a
+	ybounds['max','a'] = y_maximum_a + ybuffer*y_buffer_a
     
     if file_list_dims[1] > 0:
-	x1b,x2b,y1b,y2b = ax1b.axis()
 	if setys:
-	    ax1b.axis([x1b,x2b,setys[0],setys[1]])
+	    ybounds['min','b'] = setys[0]
+	    ybounds['max','b'] = setys[1]
 	else:
-	    y_maximum_ax1b = max(abs(max_y_ax1b),abs(min_y_ax1b))
-            y_buffer_ax1b = (2 * y_maximum_ax1b) * 0.03 
-            ax1b.axis([x1b,x2b,(-y_maximum_ax1b - y_buffer_ax1b),(y_maximum_ax1b + ybuffer*y_buffer_ax1b)])
+	    y_maximum_b = max(abs(max_y_b),abs(min_y_b))
+            y_buffer_b = (2 * y_maximum_b) * 0.03 
+            
+	    ybounds['min','b'] = -y_maximum_b - y_buffer_b
+	    ybounds['max','b'] = y_maximum_b + ybuffer*y_buffer_b
    
-    # Plot labels (including title, axis labels and legend) #
 
-    #x axis labels
-    #plt.axes(ax1a)
-    labels_ax1a = ax1a.get_xticklabels()
-    plt.setp(labels_ax1a, rotation=0, fontsize='medium')   
-    if nrows > 1:
-	labels_ax2a = ax2a.get_xticklabels()
-        plt.setp(labels_ax2a, rotation=0, fontsize='medium')
-    if nrows > 2:
-	labels_ax3a = ax3a.get_xticklabels()
-        plt.setp(labels_ax3a, rotation=0, fontsize='medium')
-
-    #y axis labels - primary plot
-    if nrows > 2:
-        ax2a.set_ylabel(units_text_ax1a,fontsize='medium')
-    elif nrows > 1:
-        ax1a.set_ylabel(units_text_ax1a,fontsize='medium')
-	ax2a.set_ylabel(units_text_ax1a,fontsize='medium')
-    else:
-        ax1a.set_ylabel(units_text_ax1a,fontsize='medium')
+    return xdata,ydata,ybounds,major_xticks,minor_xticks,major_xlabels
     
-    #y axis labels - secondary plot
-    if file_list_dims[1] > 0:
-	if nrows > 2:
-            ax2b.set_ylabel(units_text_ax1b,fontsize='medium',rotation=270)
-	elif nrows > 1:
-            ax1b.set_ylabel(units_text_ax1b,fontsize='medium',rotation=270)
-	    ax2b.set_ylabel(units_text_ax1b,fontsize='medium',rotation=270)
-	else:
-            ax1b.set_ylabel(units_text_ax1b,fontsize='medium',rotation=270)
+    
+def generate_plot(file_list,file_list_dims,xdata,ydata,ybounds,major_xticks,minor_xticks,major_xlabels,outfile_name,legloc,nrows):
+    """Creates the plot"""
+    
+    fig = plt.figure()
+       
+    units_text='temp'
+    for ifile in file_list:
+        count = 0
+	for row in range(nrows,0,-1):
+	    #if count < file_list_dims[0]:
+
+            pnum = row  #plot number
+
+	    #initialise plot
+	    ax = fig.add_subplot(nrows,1,pnum)  # rows, columns, plot number
+
+## TRICKY BIT 2: twin axes
+#	    if file_list_dims[1] > 0:
+#        	ax1b = ax1a.twinx()
+#
+#	    if nrows > 1:
+#        	ax2a = fig.add_subplot(nrows,1,2,sharey=ax1a)  
+#        	if file_list_dims[1] > 0:
+#        	    ax2b = ax2a.twinx()
+#
+#	    if nrows > 2:
+#        	ax3a = fig.add_subplot(nrows,1,3,sharey=ax1a)
+#        	if file_list_dims[1] > 0:
+#        	    ax3b = ax3a.twinx()
+
+## TRICKY BIT 1: PUT THE TIMESERIES IN THE FULL X-AXIS (i.e. there will be missing values) 
+##               BEFORE SLICING IT UP FOR MULTIPLE ROWS
+#            elif nrows == 2:
+#	        xlen = math.floor(len(dates)/2)
+#		xdata[ifile.fname,1,'a'] = dates_float[0:xlen]
+#		xdata[ifile.fname,2,'a'] = dates_float[xlen:xlen*2]
+#		ydata[ifile.fname,1,'a'] = timeseries[0:xlen]
+#		ydata[ifile.fname,2,'a'] = timeseries[xlen:xlen*2]
+#            elif nrows == 3:
+#	        xlen = math.floor(len(dates)/3)
+#		xdata[ifile.fname,1,'a'] = dates_float[0:xlen]
+#		xdata[ifile.fname,2,'a'] = dates_float[xlen:xlen*2]
+#		xdata[ifile.fname,3,'a'] = dates_float[xlen*2:xlen*3]
+#		ydata[ifile.fname,1,'a'] = timeseries[0:xlen]
+#		ydata[ifile.fname,2,'a'] = timeseries[xlen:xlen*2]
+#		ydata[ifile.fname,3,'a'] = timeseries[xlen*2:xlen*3]
+
+
+	    #plot data
+	    label = ifile.index+', '+ifile.dataset
+	    plot_date(numpy.array(xdata[ifile.fname,pnum,'a']),numpy.array(ydata[ifile.fname,pnum,'a']),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+
+	    #plot extra guidelines
+	    units_text = set_units(ifile.index,units_text,'Primary')
+
+	    if units_text == 'Anomaly (deg C)':
+        	axhline(y=0.5,linestyle='--',color='0.5')
+        	axhline(y=-0.5,linestyle='--',color='0.5')
+            
+	    #axis limits
+	    ax.set_ylim(ybounds['min','a'],ybounds['max','a'])
+	    
+	    #ticks
+	    ax.set_ticks(major_xticks,minor=False)
+	    ax.set_ticks(minor_xticks,minor=True)
+	    ax.set_xticklabels(major_xlabels,minor=False,fontsize='medium')
+	    
+            #gridlines 
+	    ax.grid(True,'major',color='0.5')
+	    ax.grid(True,'minor',color='0.7')
+
+	    #axis labels
+	    #plt.setp(ax.get_xticklabels(), rotation=0, fontsize='medium') 
+	    #ax.set_xticklabels(ax.get_xticklabels(), rotation=0, fontsize='medium')
+	    ax.set_ylabel(units_text,fontsize='medium')  # rotation=270 for twin axis
+
+	    #legend
+	    font = font_manager.FontProperties(size='medium')
+	    legend(loc=legloc,prop=font,ncol=2)
         
-    #title
-    ax1a.set_title(title_text)
-    
-    #legend - primary plot
-    font = font_manager.FontProperties(size='medium')
-    if legloc:
-	if nrows > 2:
-	    ax2a.legend(loc=legloc,prop=font,ncol=2) #prop=font,numpoints=1,labelspacing=0.3)  #,ncol=2)
-	elif nrows > 1:
-	    ax1a.legend(loc=legloc,prop=font,ncol=2)
-	    ax2a.legend(loc=legloc,prop=font,ncol=2)
-        else:
-	    ax1a.legend(loc=legloc,prop=font,ncol=2)
-    
-        #legend - secondary plot
-        if file_list_dims[1] > 0:
-	    if nrows > 2:
-		ax2b.legend(loc=1,prop=font)
-	    elif nrows > 1:
-		ax1b.legend(loc=1,prop=font)
-		ax2b.legend(loc=1,prop=font)
-            else:
-		ax1b.legend(loc=1,prop=font)
-    
-    #gridlines
-    ax1a.grid(True,'major',color='0.5')
-    ax1a.grid(True,'minor',color='0.7')
-    if nrows > 1:
-        ax2a.grid(True,'major',color='0.5')
-        ax2a.grid(True,'minor',color='0.7')
-    if nrows > 2:
-        ax3a.grid(True,'major',color='0.5')
-        ax3a.grid(True,'minor',color='0.7')
-    
+	count = count + 1
     
     # Output the figure #
     
@@ -526,9 +458,13 @@ def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx
 
     plot_data, plot_times = extract_data(file_list,file_list_dims,windowp,windows)
     
-    ## Create the plot ##
+    ## Get all the setup details for the plot ##
         
-    create_plot(file_list,file_list_dims,plot_data,plot_times,windowp,windows,outfile_name,setx,setyp,setys,ybuffer,legloc,nrows)
+    xdata,ydata,ybounds,major_xticks,minor_xticks,major_xlabels = setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,ybuffer)
+    
+    ## Generate the plot ##
+    
+    generate_plot(file_list,file_list_dims,xdata,ydata,ybounds,major_xticks,minor_xticks,major_xlabels,outfile_name,legloc,nrows)
     
 
 if __name__ == '__main__':
