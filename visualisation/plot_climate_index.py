@@ -48,7 +48,8 @@ import math
 ## Define global variables ##
 
 
-color_list = ['red','blue','green','yellow','orange','purple','brown']
+pcolor_list = ['red','blue','green','yellow','orange']
+scolor_list = ['purple','brown','aqua']
 
 
 class InputFile(object):
@@ -211,8 +212,8 @@ def convert_datetime(dates):
     """Converts a series of datetime instances to floating point numbers"""
     
     dates_float = numpy.zeros(len(dates[:]))
-    for i in range(0,len(dates[:])):
-        dates_float[i] = dates[i].year + (dates[i].month / 12.0) 
+    for i in range(0,len(dates[:])):    # SLOW
+        dates_float[i] = dates[i].year + ((dates[i].month - 1) / 12.0) 
     
     return dates_float
     
@@ -229,8 +230,8 @@ def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,yb
     # Plot the data for each dataset #
 
     count = 0
-    max_time = datetime(0,1,1)
-    min_time = datetime(20000,12,31)
+    max_time = datetime(1000,1,1)
+    min_time = datetime(3000,12,31)
     min_y_a = 1e10
     max_y_a = -1e10
     min_y_b = 1e10
@@ -242,11 +243,6 @@ def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,yb
 
 	start_year,start_month,end_year,end_month = plot_times[ifile.fname]
 
-	end_month = end_month + 1
-	if end_month > 12.0:
-	    end_month = end_month - 12
-	    end_year = end_year + 1
-
         # Subset the data along the time axis if neceassry, according to user defined time bounds #
 
         timeseries_complete = plot_data[ifile.fname] #read in timeseries data
@@ -254,10 +250,6 @@ def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,yb
 	
 	if setx:
 	    start_year_user,start_month_user,end_year_user,end_month_user = setx
-	    end_month_user = end_month_user + 1
-	    if end_month_user > 12.0:
-	        end_month_user = end_month_user - 12
-	        end_year_user = end_year_user + 1
 	    
 	    if datetime(start_year_user,start_month_user,16) > datetime(start_year,start_month,16):
 	        dates_user_a = rrule(MONTHLY,dtstart=datetime(start_year_user,start_month_user,16),until=datetime(end_year,end_month,16)) 
@@ -297,6 +289,7 @@ def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,yb
 	# Write the data to be plotted #
 	
 	#Convert the x values to floats
+
 	dates_float = convert_datetime(dates)  
 	
 	xdata[ifile.fname] = dates_float
@@ -305,24 +298,10 @@ def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,yb
 	count = count + 1 
 	         
 	
-    # Define x ticks and labels #
+    # Define the full x axis #
     
-    xaxis_full_datetime = rrule(MONTHLY,dtstart=min_time,until=max_time)
+    xaxis_full_datetime = rrule(MONTHLY,dtstart=min_time,until=max_time)	    
     xaxis_full_float = convert_datetime(xaxis_full_datetime)
-    len_xaxis = len(xaxis_full_datetime[:])
-        
-    minor_xticks = []
-    major_xticks = []
-    major_xlabels = []
-    for i in range(0,len_xaxis):
-        value = xaxis_full_float[i]
-        test = math.floor(value) / value
-	if test == 1.0:
-	    major_xticks.append(value)
-	    major_xlabels.append(int(xaxis_full_datetime[i].year))
-	else:
-	    minor_xticks.append(value)
-	    
 
     # Define the range of the y axis #
     
@@ -348,89 +327,170 @@ def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,yb
 	    ybounds['max','b'] = y_maximum_b + ybuffer*y_buffer_b
    
 
-    return xdata,ydata,ybounds,major_xticks,minor_xticks,major_xlabels
+    return xdata,ydata,ybounds,xaxis_full_float
+
+
+def split_nrows(indata,nrows):
+    """Splits a give array according to the number of rows"""
+
+    outdata = {}
+
+    if nrows == 1:
+        outdata[1] = indata	
+    elif nrows == 2:
+	axlen = math.floor(len(indata)/2)
+	outdata[1] = indata[0:axlen]
+	outdata[2] = indata[axlen:axlen*2]
+    elif nrows == 3:
+	axlen = math.floor(len(indata)/3)
+	outdata[1] = indata[0:axlen]
+	outdata[2] = indata[axlen:axlen*2]
+	outdata[3] = indata[axlen*2:axlen*3]
+
+    return outdata
+
+
+def split_data(xaxis_full_float,xdata,ydata,nrows):
+    """Splits up the data according to the number of rows"""
+    
+    #initialise output y data array	
+    ydata_full = numpy.ones(len(xaxis_full_float)) * 1.e20
+    
+    #find location of the first time point
+    start_loc = numpy.int(numpy.where(xaxis_full_float==xdata[0])[0])
+    
+    #drop original y data into ydata_full
+    end_loc = start_loc + len(ydata)
+    ydata_full[start_loc:end_loc] = ydata
+    
+    #apply the mask
+    ydata_full = ma.masked_values(ydata_full,1.e20)
+
+    #split as necessary
+    xplot = split_nrows(xaxis_full_float,nrows)
+    yplot = split_nrows(ydata_full,nrows)
+    
+    return xplot,yplot
+
+
+def myroundup(x, base=10):
+    return int(base * math.ceil(float(x)/base))
+
+
+def get_xticks(xdata):
+    """Determines the x axis ticks and labels"""
+    
+    # Determine the interval between major and minor ticks #
+    
+    len_xdata = len(xdata)
+    major_interval = (myroundup(len_xdata/12)) / 10
+    if major_interval == 1:
+        minor_interval = (1.0/12.0)
+    elif major_interval == 2:
+        minor_interval = 0.5
+    else:
+        minor_interval = (myroundup(major_interval,base=4)) / 4
+        
+    # Determine the actual tick locations and values #
+    	
+    test_major = xdata % major_interval
+    test_minor = xdata % minor_interval
+     
+    major_xticks = numpy.where(test_major == 0, xdata, 0)
+    minor_xticks = numpy.where(test_minor < 0.0000001, xdata, 0)
+    minor_xticks = numpy.where(major_xticks != 0, 0, minor_xticks)
+    
+    major_xticks = major_xticks[major_xticks != 0]
+    major_xlabels = major_xticks.astype(int)
+    minor_xticks = minor_xticks[minor_xticks != 0]
+
+    return minor_xticks,major_xticks,major_xlabels
     
     
-def generate_plot(file_list,file_list_dims,xdata,ydata,ybounds,major_xticks,minor_xticks,major_xlabels,outfile_name,legloc,nrows):
+def generate_plot(primary_file_list,secondary_file_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,nrows):
     """Creates the plot"""
     
+    #initialise figure
     fig = plt.figure()
        
     units_text='temp'
-    for ifile in file_list:
-        count = 0
-	for row in range(nrows,0,-1):
-	    #if count < file_list_dims[0]:
+    units_text2='temp'
+    if secondary_file_list:
+        len_sec = len(secondary_file_list)
+    else:
+        len_sec = 0
+    count = 0
+    for pfile in primary_file_list:
+	
+	#split data according to nrows
+	xplot,yplot = split_data(xaxis_full_float,xdata[pfile.fname],ydata[pfile.fname],nrows)
+	
+	if count < len_sec:
+	    sfile = secondary_file_list[count]
+	    xplot2,yplot2 = split_data(xaxis_full_float,xdata[sfile.fname],ydata[sfile.fname],nrows)
+	    
+	for row in range(0,nrows):
 
-            pnum = row  #plot number
+            pnum = row + 1
 
 	    #initialise plot
 	    ax = fig.add_subplot(nrows,1,pnum)  # rows, columns, plot number
-
-## TRICKY BIT 2: twin axes
-#	    if file_list_dims[1] > 0:
-#        	ax1b = ax1a.twinx()
-#
-#	    if nrows > 1:
-#        	ax2a = fig.add_subplot(nrows,1,2,sharey=ax1a)  
-#        	if file_list_dims[1] > 0:
-#        	    ax2b = ax2a.twinx()
-#
-#	    if nrows > 2:
-#        	ax3a = fig.add_subplot(nrows,1,3,sharey=ax1a)
-#        	if file_list_dims[1] > 0:
-#        	    ax3b = ax3a.twinx()
-
-## TRICKY BIT 1: PUT THE TIMESERIES IN THE FULL X-AXIS (i.e. there will be missing values) 
-##               BEFORE SLICING IT UP FOR MULTIPLE ROWS
-#            elif nrows == 2:
-#	        xlen = math.floor(len(dates)/2)
-#		xdata[ifile.fname,1,'a'] = dates_float[0:xlen]
-#		xdata[ifile.fname,2,'a'] = dates_float[xlen:xlen*2]
-#		ydata[ifile.fname,1,'a'] = timeseries[0:xlen]
-#		ydata[ifile.fname,2,'a'] = timeseries[xlen:xlen*2]
-#            elif nrows == 3:
-#	        xlen = math.floor(len(dates)/3)
-#		xdata[ifile.fname,1,'a'] = dates_float[0:xlen]
-#		xdata[ifile.fname,2,'a'] = dates_float[xlen:xlen*2]
-#		xdata[ifile.fname,3,'a'] = dates_float[xlen*2:xlen*3]
-#		ydata[ifile.fname,1,'a'] = timeseries[0:xlen]
-#		ydata[ifile.fname,2,'a'] = timeseries[xlen:xlen*2]
-#		ydata[ifile.fname,3,'a'] = timeseries[xlen*2:xlen*3]
-
-
+            
+	    if count < len_sec:
+	        ax2 = ax.twinx()
+		sfile = secondary_file_list[count]
+		
 	    #plot data
-	    label = ifile.index+', '+ifile.dataset
-	    plot_date(numpy.array(xdata[ifile.fname,pnum,'a']),numpy.array(ydata[ifile.fname,pnum,'a']),color=color_list[count],lw=2.0,label=label,linestyle='-',marker='None')
-
+	    label = pfile.index+', '+pfile.dataset
+	    ax.plot_date(numpy.ma.array(xplot[pnum]),numpy.ma.array(yplot[pnum]),color=pcolor_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+	    
+	    if count < len_sec:
+	        label = sfile.index+', '+sfile.dataset
+	        ax2.plot_date(numpy.ma.array(xplot2[pnum]),numpy.ma.array(yplot2[pnum]),color=scolor_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+		
 	    #plot extra guidelines
-	    units_text = set_units(ifile.index,units_text,'Primary')
+	    units_text = set_units(pfile.index,units_text,'Primary')
 
-	    if units_text == 'Anomaly (deg C)':
-        	axhline(y=0.5,linestyle='--',color='0.5')
-        	axhline(y=-0.5,linestyle='--',color='0.5')
+            if count < len_sec:
+	        units_text2 = set_units(sfile.index,units_text2,'Secondary')
+
+	    if units_text == 'Anomaly (deg C)' or units_text2 == 'Anomaly (deg C)':
+        	ax.axhline(y=0.5,linestyle='--',color='0.5')
+        	ax.axhline(y=-0.5,linestyle='--',color='0.5')
             
 	    #axis limits
 	    ax.set_ylim(ybounds['min','a'],ybounds['max','a'])
+	    if count < len_sec:
+	        ax2.set_ylim(ybounds['min','b'],ybounds['max','b'])
 	    
-	    #ticks
-	    ax.set_ticks(major_xticks,minor=False)
-	    ax.set_ticks(minor_xticks,minor=True)
+	    #xticks
+	    minor_xticks,major_xticks,major_xlabels = get_xticks(xplot[pnum])
+	    
+	    ax.set_xticks(major_xticks,minor=False)
+	    ax.set_xticks(minor_xticks,minor=True)
 	    ax.set_xticklabels(major_xlabels,minor=False,fontsize='medium')
 	    
             #gridlines 
-	    ax.grid(True,'major',color='0.5')
-	    ax.grid(True,'minor',color='0.7')
+	    if secondary_file_list == None:
+	        ax.grid(True,'major',color='0.2')
+	        ax.grid(True,'minor',color='0.6')
+	    else:
+	        ax.axhline(y=0,linestyle='-',color='0.5')
 
 	    #axis labels
-	    #plt.setp(ax.get_xticklabels(), rotation=0, fontsize='medium') 
-	    #ax.set_xticklabels(ax.get_xticklabels(), rotation=0, fontsize='medium')
-	    ax.set_ylabel(units_text,fontsize='medium')  # rotation=270 for twin axis
+	    ax.set_ylabel(units_text,fontsize='medium')
+            
+	    if count < len_sec:
+	        ax2.set_ylabel(units_text2,fontsize='medium',rotation=270)
 
 	    #legend
 	    font = font_manager.FontProperties(size='medium')
-	    legend(loc=legloc,prop=font,ncol=2)
-        
+	    if leglocp:
+	        ax.legend(loc=leglocp,prop=font,ncol=2)
+	    
+	    if count < len_sec and leglocs:
+                ax2.legend(loc=leglocs,prop=font,ncol=2) 
+	
 	count = count + 1
     
     # Output the figure #
@@ -441,7 +501,7 @@ def generate_plot(file_list,file_list_dims,xdata,ydata,ybounds,major_xticks,mino
         plt.show()
 
 
-def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,legloc,nrows):
+def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,leglocp,leglocs,nrows):
     """Run the program"""
     
     primary_file_list = [InputFile(f) for f in primary_file_list]
@@ -460,11 +520,11 @@ def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx
     
     ## Get all the setup details for the plot ##
         
-    xdata,ydata,ybounds,major_xticks,minor_xticks,major_xlabels = setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,ybuffer)
+    xdata,ydata,ybounds,xaxis_full_float = setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,ybuffer)
     
     ## Generate the plot ##
     
-    generate_plot(file_list,file_list_dims,xdata,ydata,ybounds,major_xticks,minor_xticks,major_xlabels,outfile_name,legloc,nrows)
+    generate_plot(primary_file_list,secondary_file_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,nrows)
     
 
 if __name__ == '__main__':
@@ -477,12 +537,13 @@ if __name__ == '__main__':
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
     parser.add_option("-o", "--outfile",dest="outfile",type='str',default=None,help="Name of output file [default = None]")
     parser.add_option("-s", "--secondary",dest="secondary",default=None,help="Comma separated list files to be plotted on the secondary y axis [default = None]")
-    parser.add_option("-l", "--legend",dest="legend",default=None,type='int',help="Location of the figure legend [defualt = None]")
     parser.add_option("-b", "--buffer",dest="buffer",type='float',default=1.0,help="Scale factor for y axis upper buffer [default = 4]")
     parser.add_option("-r", "--rows",dest="nrows",type='int',default=1,help="Number of rows (long time axes can be split onto numerous rows [default = 1]")
+    parser.add_option("-x", "--setx",dest="setx",default=None,nargs=4,type='int',help="Time axis bounds (start_year start_month end_year end_month) [default = None]")
+    parser.add_option("--lp",dest="legendp",default=None,type='int',help="Location of the primary figure legend [defualt = None]")
+    parser.add_option("--ls",dest="legends",default=None,type='int',help="Location of the secondary figure legend [defualt = None]")
     parser.add_option("--wp",dest="windowp",type='int',default=1,help="Window for primary axis running average [default = 1]")
     parser.add_option("--ws",dest="windows",type='int',default=1,help="Window for secondary axis running average [default = 1]")
-    parser.add_option("-x", "--setx",dest="setx",default=None,nargs=4,type='int',help="Time axis bounds (start_year start_month end_year end_month) [default = None]")
     parser.add_option("--setyp",dest="setyp",default=None,nargs=2,type='float',help="Primary y axis bounds (min max) [default = None]")
     parser.add_option("--setys",dest="setys",default=None,nargs=2,type='float',help="Secondary y axis bounds (min max) [default = None]")
     
@@ -497,11 +558,12 @@ if __name__ == '__main__':
             -M  ->  Display this on-line manual page and exit
             -h  ->  Display a help/usage message and exit
 	    -o  ->  Name of the output file [default = None = image is just shown instead]
-	    -l  ->  Location of the legend [default = None]
 	    -b  ->  Scale factor for y axis upper buffer [default = 1]
 	    -r  ->  Number of rows (long time axes can be split onto numerous rows [default = 1]
 	    -s  ->  Comma separated list files to be plotted on the secondary y axis [default = None]
 	    -x  ->  Time axis bounds (start_year start_month end_year end_month) [default = None]
+	    --lp  ->  Location of the primary legend [default = None]
+	    --ls  ->  Location of the secondary legend [default = None]
             --wp  ->  Window for primary axis running average [default = 1]
 	    --ws  ->  Window for secondary axis running average [default = 1]
 	    --setyp  ->  Primary y axis bounds (min,max) [default = None]
@@ -525,8 +587,11 @@ if __name__ == '__main__':
 	    /work/dbirving/processed/indices/data/tos_ERSSTv3b_NINO34_monthly_native.txt
 	    
 	Author
-            Damien Irving, 22 Jun 2012.
-
+            Damien Irving, 22 Jun 2012
+	    
+	Note
+	    The number of primary files must be greater or equal to the number of secondary files
+	    
 	Bugs
             Please report any problems to: d.irving@student.unimelb.edu.au
 	"""
@@ -543,5 +608,5 @@ if __name__ == '__main__':
         primary_file_list = args[:]   
 
         main(primary_file_list,secondary_file_list,options.outfile,options.windowp,options.windows,
-	options.setx,options.setyp,options.setys,options.buffer,options.legend,options.nrows)
+	options.setx,options.setyp,options.setys,options.buffer,options.legendp,options.legends,options.nrows)
     
