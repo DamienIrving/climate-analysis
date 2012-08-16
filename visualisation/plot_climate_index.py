@@ -149,7 +149,7 @@ def hi_lo(data_series,current_max,current_min):
     return new_max,new_min  
 
 
-def extract_data(file_list,file_list_dims,windowp,windows):
+def extract_data(file_list,file_list_dims,error_list,windowp,windows):
     
     # Extract the index #
 
@@ -163,6 +163,7 @@ def extract_data(file_list,file_list_dims,windowp,windows):
 	years = []
 	months = []
 	data = []
+	error = []
 	
         # Read the input file, read the data and flatten the spatial dimension #
    
@@ -182,6 +183,9 @@ def extract_data(file_list,file_list_dims,windowp,windows):
 		years.append(int(year))
 		months.append(int(month))
 		data.append(float(temp_data))
+		if (count in error_list):
+		    temp_error = line.split()[loc+1]
+		    error.append(float(temp_error))
 	        
 	    line = fin.readline()
 
@@ -194,12 +198,18 @@ def extract_data(file_list,file_list_dims,windowp,windows):
 	    window = windows
 	
 	smooth_data = genutil.filters.runningaverage(data,window)
+	if (count in error_list):
+	    smooth_error = genutil.filters.runningaverage(error,window)
+	    
 	start_year,start_month,end_year,end_month = get_times(years,months,window)
 
 
 	# Define output values for plotting #
 	
         plot_data[ifile.fname] = smooth_data
+	if (count in error_list):
+	    plot_data[ifile.fname,'error'] = smooth_error
+	
 	plot_times[ifile.fname] = [start_year,start_month,end_year,end_month]
     
         count = count + 1
@@ -218,7 +228,7 @@ def convert_datetime(dates):
     return dates_float
     
     
-def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,ybuffer):
+def setup_plot(file_list,file_list_dims,error_list,plot_data,plot_times,setx,setyp,setys,ybuffer):
     """Determines all the details for the plot (e.g. data, axis bounds, tick marks)"""
 
     ## Define the data and details of the plot setup ##
@@ -246,6 +256,9 @@ def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,yb
         # Subset the data along the time axis if neceassry, according to user defined time bounds #
 
         timeseries_complete = plot_data[ifile.fname] #read in timeseries data
+	if (count in error_list):
+	    error_complete = plot_data[ifile.fname,'error']
+	    
 	dates_complete = rrule(MONTHLY,dtstart=datetime(start_year,start_month,16),until=datetime(end_year,end_month,16))
 	
 	if setx:
@@ -265,10 +278,14 @@ def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,yb
 	    
 	    dates = dates_complete[new_start:new_end]
 	    timeseries = timeseries_complete[new_start:new_end]	
+	    if (count in error_list):
+	        error = error_complete[new_start:new_end]
 	
 	else:
 	    dates = dates_complete
 	    timeseries = timeseries_complete
+	    if (count in error_list):
+	        error = error_complete
 	
 	# Alter maximum time values, if appropriate #
 	
@@ -281,10 +298,15 @@ def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,yb
 	# Alter the maximum y axis bounds, if appropriate #
 	
 	if count < file_list_dims[0]:
-	    max_y_a,min_y_a = hi_lo(timeseries,max_y_a,min_y_a)	
+	    max_y_a,min_y_a = hi_lo(timeseries,max_y_a,min_y_a)
+	    if (count in error_list):
+	        max_y_a,min_y_a = hi_lo(timeseries+(2*error),max_y_a,min_y_a)  
+		max_y_a,min_y_a = hi_lo(timeseries-(2*error),max_y_a,min_y_a)   	
 	else:
 	    max_y_b,min_y_b = hi_lo(timeseries,max_y_b,min_y_b)
-	
+	    if (count in error_list):
+	        max_y_b,min_y_b = hi_lo(timeseries+(2*error),max_y_b,min_y_b)  
+		max_y_b,min_y_b = hi_lo(timeseries-(2*error),max_y_b,min_y_b)
 	
 	# Write the data to be plotted #
 	
@@ -294,6 +316,8 @@ def setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,yb
 	
 	xdata[ifile.fname] = dates_float
         ydata[ifile.fname] = timeseries
+	if (count in error_list):
+	    ydata[ifile.fname,'error'] = error
 
 	count = count + 1 
 	         
@@ -407,7 +431,7 @@ def get_xticks(xdata):
     return minor_xticks,major_xticks,major_xlabels
     
     
-def generate_plot(primary_file_list,secondary_file_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,nrows):
+def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,nrows):
     """Creates the plot"""
     
     #initialise figure
@@ -424,10 +448,14 @@ def generate_plot(primary_file_list,secondary_file_list,xdata,ydata,ybounds,xaxi
 	
 	#split data according to nrows
 	xplot,yplot = split_data(xaxis_full_float,xdata[pfile.fname],ydata[pfile.fname],nrows)
+	if (count in error_list):
+	    xplot,yplot_error = split_data(xaxis_full_float,xdata[pfile.fname],ydata[pfile.fname,'error'],nrows)
 	
 	if count < len_sec:
 	    sfile = secondary_file_list[count]
 	    xplot2,yplot2 = split_data(xaxis_full_float,xdata[sfile.fname],ydata[sfile.fname],nrows)
+	    if ((count + len(primary_file_list)) in error_list):
+	        xplot2,yplot_error2 = split_data(xaxis_full_float,xdata[pfile.fname],ydata[pfile.fname,'error'],nrows)
 	    
 	for row in range(0,nrows):
 
@@ -442,11 +470,23 @@ def generate_plot(primary_file_list,secondary_file_list,xdata,ydata,ybounds,xaxi
 		
 	    #plot data
 	    label = pfile.index+', '+pfile.dataset
-	    ax.plot_date(numpy.ma.array(xplot[pnum]),numpy.ma.array(yplot[pnum]),color=pcolor_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+	    ax.plot(numpy.ma.array(xplot[pnum]),numpy.ma.array(yplot[pnum]),color=pcolor_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+	    if (count in error_list):
+	        upper = numpy.ma.array(yplot[pnum]) + 2*numpy.ma.array(yplot_error[pnum])
+		lower = numpy.ma.array(yplot[pnum]) - 2*numpy.ma.array(yplot_error[pnum])
+		ax.plot(numpy.ma.array(xplot[pnum]),upper,color=pcolor_list[count],lw=0.5)
+                ax.plot(numpy.ma.array(xplot[pnum]),lower,color=pcolor_list[count],lw=0.5)
+                ax.fill_between(numpy.ma.array(xplot[pnum]),upper,lower,facecolor=pcolor_list[count],alpha=0.4)
 	    
 	    if count < len_sec:
 	        label = sfile.index+', '+sfile.dataset
-	        ax2.plot_date(numpy.ma.array(xplot2[pnum]),numpy.ma.array(yplot2[pnum]),color=scolor_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+	        ax2.plot(numpy.ma.array(xplot2[pnum]),numpy.ma.array(yplot2[pnum]),color=scolor_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+		if ((count + len(primary_file_list)) in error_list):
+	            upper = numpy.ma.array(yplot[pnum]) + 2*numpy.ma.array(yplot_error[pnum])
+		    lower = numpy.ma.array(yplot[pnum]) - 2*numpy.ma.array(yplot_error[pnum])
+		    ax.plot(numpy.ma.array(xplot[pnum]),upper,color=pcolor_list[count],lw=0.5)
+                    ax.plot(numpy.ma.array(xplot[pnum]),lower,color=pcolor_list[count],lw=0.5)
+                    ax.fill_between(numpy.ma.array(xplot[pnum]),upper,lower,facecolor=pcolor_list[count],alpha=0.4)
 		
 	    #plot extra guidelines
 	    units_text = set_units(pfile.index,units_text,'Primary')
@@ -501,7 +541,7 @@ def generate_plot(primary_file_list,secondary_file_list,xdata,ydata,ybounds,xaxi
         plt.show()
 
 
-def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,leglocp,leglocs,nrows):
+def main(primary_file_list,secondary_file_list,error_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,leglocp,leglocs,nrows):
     """Run the program"""
     
     primary_file_list = [InputFile(f) for f in primary_file_list]
@@ -516,15 +556,15 @@ def main(primary_file_list,secondary_file_list,outfile_name,windowp,windows,setx
 
     ## Calculate the index ##
 
-    plot_data, plot_times = extract_data(file_list,file_list_dims,windowp,windows)
+    plot_data, plot_times = extract_data(file_list,file_list_dims,error_list,windowp,windows)
     
     ## Get all the setup details for the plot ##
         
-    xdata,ydata,ybounds,xaxis_full_float = setup_plot(file_list,file_list_dims,plot_data,plot_times,setx,setyp,setys,ybuffer)
+    xdata,ydata,ybounds,xaxis_full_float = setup_plot(file_list,file_list_dims,error_list,plot_data,plot_times,setx,setyp,setys,ybuffer)
     
     ## Generate the plot ##
     
-    generate_plot(primary_file_list,secondary_file_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,nrows)
+    generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,nrows)
     
 
 if __name__ == '__main__':
@@ -540,6 +580,7 @@ if __name__ == '__main__':
     parser.add_option("-b", "--buffer",dest="buffer",type='float',default=1.0,help="Scale factor for y axis upper buffer [default = 4]")
     parser.add_option("-r", "--rows",dest="nrows",type='int',default=1,help="Number of rows (long time axes can be split onto numerous rows [default = 1]")
     parser.add_option("-x", "--setx",dest="setx",default=None,nargs=4,type='int',help="Time axis bounds (start_year start_month end_year end_month) [default = None]")
+    parser.add_option("-e", "--error",dest="error",default=None,help="Comma separated list of file numbers corresponding to those with error shading [default = None]")
     parser.add_option("--lp",dest="legendp",default=None,type='int',help="Location of the primary figure legend [defualt = None]")
     parser.add_option("--ls",dest="legends",default=None,type='int',help="Location of the secondary figure legend [defualt = None]")
     parser.add_option("--wp",dest="windowp",type='int',default=1,help="Window for primary axis running average [default = 1]")
@@ -562,6 +603,7 @@ if __name__ == '__main__':
 	    -r  ->  Number of rows (long time axes can be split onto numerous rows [default = 1]
 	    -s  ->  Comma separated list files to be plotted on the secondary y axis [default = None]
 	    -x  ->  Time axis bounds (start_year start_month end_year end_month) [default = None]
+	    -e  ->  Comma separated list of file numbers corresponding to those with error shading [default = None]
 	    --lp  ->  Location of the primary legend [default = None]
 	    --ls  ->  Location of the secondary legend [default = None]
             --wp  ->  Window for primary axis running average [default = 1]
@@ -590,7 +632,9 @@ if __name__ == '__main__':
             Damien Irving, 22 Jun 2012
 	    
 	Note
-	    The number of primary files must be greater or equal to the number of secondary files
+	    The number of primary files must be greater or equal to the number of secondary files.
+	    The expect measure of error is the standard deviation (twice the standard deviation either side
+	    of the central estimate is plotted).
 	    
 	Bugs
             Please report any problems to: d.irving@student.unimelb.edu.au
@@ -604,9 +648,13 @@ if __name__ == '__main__':
 	else:
 	    secondary_file_list = None
 	
+	if options.error:
+	    error_list = [int(s) for s in options.error.split(',')]
+	else:
+	    error_list = [1000]   # Dummy number (purposely high)
 	    
         primary_file_list = args[:]   
 
-        main(primary_file_list,secondary_file_list,options.outfile,options.windowp,options.windows,
+        main(primary_file_list,secondary_file_list,error_list,options.outfile,options.windowp,options.windows,
 	options.setx,options.setyp,options.setys,options.buffer,options.legendp,options.legends,options.nrows)
     
