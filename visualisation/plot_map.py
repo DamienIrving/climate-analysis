@@ -88,11 +88,11 @@ def quickplot(ifile,ofile=None,variable=None):
     multiplot(ifile,variable,os.path.basename(ifile))
 
 
-def multiplot(ifiles,variables,title,
+def multiplot(ifiles,variables,
               #Variables below here are optional, should give a reasonable image by default
               dimensions=None,
-              #Output file name default is 'title'.png
-              ofile=None,
+              #Output file name and title
+              ofile=None,title=None,
               #can use a pre-defined region or override with min/max lat/lon, 
               region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-20,lonX=-125,projection='cyl',
               #colourbar settings
@@ -154,8 +154,8 @@ def multiplot(ifiles,variables,title,
 	confile_matrix = numpy.reshape(confile_matrix,(dimensions))
 	convar_matrix = numpy.reshape(convar_matrix,(dimensions))
 	
-	matrixplot(file_matrix,var_matrix,title,
-        	   ofile,
+	matrixplot(file_matrix,var_matrix,
+        	   ofile,title,
         	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
         	   res,area_threshold,
@@ -186,8 +186,8 @@ def multiplot(ifiles,variables,title,
 	vfile_matrix = numpy.reshape(vfile_matrix,(dimensions))
 	vvar_matrix = numpy.reshape(vvar_matrix,(dimensions))
 
-	matrixplot(file_matrix,var_matrix,title,
-        	   ofile,
+	matrixplot(file_matrix,var_matrix,
+        	   ofile,title,
         	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
         	   res,area_threshold,
@@ -210,8 +210,8 @@ def multiplot(ifiles,variables,title,
 	stipfile_matrix = numpy.reshape(stipfile_matrix,(dimensions))
 	stipvar_matrix = numpy.reshape(stipvar_matrix,(dimensions))
 	
-	matrixplot(file_matrix,var_matrix,title,
-        	   ofile,
+	matrixplot(file_matrix,var_matrix,
+        	   ofile,title,
         	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
         	   res,area_threshold,
@@ -226,8 +226,8 @@ def multiplot(ifiles,variables,title,
 	
     else:
         
-	matrixplot(file_matrix,var_matrix,title,
-        	   ofile,
+	matrixplot(file_matrix,var_matrix,
+        	   ofile,title,
         	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
         	   res,area_threshold,
@@ -241,10 +241,10 @@ def multiplot(ifiles,variables,title,
 		   textsize) 
 
 
-def matrixplot(ifiles,variables,title,
+def matrixplot(ifiles,variables,
               #Variables below here are optional, should give a reasonable image by default
               #Output file name default is 'title'.png
-              ofile=None,
+              ofile=None,title=None,
               #can use a pre-defined region or override with min/max lat/lon, 
               region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-20,lonX=-125,projection='cyl',
               #colourbar settings
@@ -282,13 +282,10 @@ def matrixplot(ifiles,variables,title,
     #rows/cols
     nrows = len(ifiles[:,0])
     ncols = len(ifiles[0,:])
-
-    #Output file
-    if not ofile:
-        ofile = title + ".png"
-
-    if os.path.exists(ofile):
-        print "WARNING replacing output file '%s'" % ofile
+    
+    if ofile:
+        if os.path.exists(ofile):
+            print "WARNING replacing output file '%s'" % ofile
 
     #Check length of headings matches num files/variables
     if(row_headings):
@@ -473,7 +470,8 @@ def matrixplot(ifiles,variables,title,
     ## Create the plot, one thumbnail at a time ##
 
     fig=plt.figure(figsize=(width,height))
-    fig.suptitle(title.replace('_',' '),y=(1-titlepos),size=20)
+    if title:
+        fig.suptitle(title.replace('_',' '),y=(1-titlepos),size=20)
 
     #for row,ifile in enumerate(ifiles):
     for row in range(nrows):
@@ -799,8 +797,13 @@ def matrixplot(ifiles,variables,title,
         cb.set_label(units)
 
 
-    plt.axes(ax)  # make the original axes current again
-    plt.savefig(ofile)#,dpi=300)
+#    plt.axes(ax)  # make the original axes current again
+    
+    if ofile:
+        plt.savefig(ofile)#,dpi=300)
+    else:
+	plt.savefig('test.png')
+	#plt.show()
 
 
 def get_min_max(files,variables,region):
@@ -964,6 +967,24 @@ def str2list(s):
     return s
 
 
+def unpack_comma_list(comma_list,data_type='str'):
+    """Converts a comma separated list into a python array"""
+
+#    type_function = {'float': float(), 'int': int(), 'str': str()}  
+#    set_type = type_function(data_type)
+    
+    if comma_list:  # because it might be 'None'
+	if data_type == 'int':
+	    python_array = [int(s) for s in comma_list.split(',')]
+	elif data_type == 'float':
+	    python_array = [float(s) for s in comma_list.split(',')]
+	else:
+	    python_array = [str(s) for s in comma_list.split(',')]
+    else:
+	python_array = None
+
+    return python_array
+
 
 if __name__ == '__main__':
 
@@ -973,7 +994,9 @@ if __name__ == '__main__':
     parser = OptionParser(usage=usage)
 
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
-    parser.add_option("--ofile",dest="ofile",type='string',default=None,help="name of output file [default = 'title'.png]")
+    parser.add_option("--dimensions",dest="dimensions",type='int',nargs=2,default=None,help="Matrix dimensions (two arguments - rows columns) [default=None]")
+    parser.add_option("--title",dest="title",type='string',default=None,help="plot title [default = None]")
+    parser.add_option("--ofile",dest="ofile",type='string',default=None,help="name of output file [default = test.png]")
     parser.add_option("--contour",action="store_true",dest="contour",default=False,help="Switch for drawing contour plot [default = False]")
     #Map details
     parser.add_option("--region",dest="region",type='string',default='WORLD_DATELINE',help="name of region to plot [default = WORLD_DATELINE]")
@@ -1030,7 +1053,7 @@ if __name__ == '__main__':
     if options.manual == True or len(sys.argv) == 1:
 	print """
 	Usage:
-            python plot_map.py [-M] [-h] [options] {ifile1,ifile2,...} {variable1,variable2,...} {title} {nrow,ncol}
+            python plot_map.py [-M] [-h] [options] {ifile1,ifile2,...} {variable1,variable2,...}
 
 	General Options
             -M  -> Display this on-line manual page and exit
@@ -1039,10 +1062,10 @@ if __name__ == '__main__':
 	Options for the multiplot function
             ifiles                List of comma separated input files, in an order such that positions in the matrix start bottom left and fill row by row [required] 
             variables             List of comma seperated variable names corresponding to the input files [required]
-            title                 Title of plot [required]
-            dimensions            List of comma seperated matrix dimensions (rows,columns)
-            --ofile               Name of output file [default = 'title'.png]
-            --region              Selector defining a region (for cylindrical projection). Inbuilt regions are WORLD_GRENEWICH, WORLD_DATELINE, AUSTRALIA, AUS_NZ [default = WORLD_DATELINE]
+            --dimensions          Matrix dimensions (two arguments - rows columns) [default=None]
+            --ofile               Name of output file [default = test.png]
+            --title               Title of plot [default = None]
+	    --region              Selector defining a region (for cylindrical projection). Inbuilt regions are WORLD_GRENEWICH, WORLD_DATELINE, AUSTRALIA, AUS_NZ [default = WORLD_DATELINE]
             --minlat              User can override the pre-defined region by specifying bounds
             --minlon              " "
             --maxlat              " "
@@ -1090,7 +1113,7 @@ if __name__ == '__main__':
 
 	Environment
 	    abyss.earthsci.unimelb.edu.au
-	        /opt/cdat/bin/python
+	        /opt/cdat/bin/cdat
 	    dcc.nci.org.au
                 module use /projects/r87/public/modulefiles;
 		module load python/2.7.1 python-cdat-lite/6.0rc2-py2.7 python-basemap/0.99.4-py2.7
@@ -1110,98 +1133,21 @@ if __name__ == '__main__':
     
 	file_list = [str(s) for s in args[0].split(',')]
 	var_list = [str(s) for s in args[1].split(',')]
-	title = args[2]
-	dimensions = [int(s) for s in args[3].split(',')]
 
-	#print options
-
-	if options.ticks:
-            ticks = [float(s) for s in options.ticks.split(',')]
-	else:
-            ticks = None
-
-	if options.discrete_segments:
-            discrete_segments = [str(s) for s in options.discrete_segments.split(',')]
-	else:
-            discrete_segments = None
-
-	if options.contour_files:
-            contour_files = [str(s) for s in options.contour_files.split(',')]
-	else:
-            contour_files = None
-
-	if options.contour_variables:
-            contour_variables = [str(s) for s in options.contour_variables.split(',')]
-	else:
-            contour_variables = None
-
-	if options.contour_ticks:
-            contour_ticks = [float(s) for s in options.contour_ticks.split(',')]
-	else:
-            contour_ticks = None
-
-	if options.uwnd_files:
-            uwnd_files = [str(s) for s in options.uwnd_files.split(',')]
-	else:
-            uwnd_files = None
-
-	if options.uwnd_variables:
-            uwnd_variables = [str(s) for s in options.uwnd_variables.split(',')]
-	else:
-            uwnd_variables = None
-
-	if options.vwnd_files:
-            vwnd_files = [str(s) for s in options.vwnd_files.split(',')]
-	else:
-            vwnd_files = None
-
-	if options.vwnd_variables:
-            vwnd_variables = [str(s) for s in options.vwnd_variables.split(',')]
-	else:
-            vwnd_variables = None
-
-	if options.stipple_files:
-            stipple_files = [str(s) for s in options.stipple_files.split(',')]
-	else:
-            stipple_files = None
-
-	if options.stipple_variables:
-            stipple_variables = [str(s) for s in options.stipple_variables.split(',')]
-	else:
-            stipple_variables = None
-
-	if options.row_headings:
-            row_headings = [str(s) for s in options.row_headings.split(',')]
-	else:
-            row_headings = None
-
-	if options.inline_row_headings:
-            inline_row_headings = [str(s) for s in options.inline_row_headings.split(',')]
-	else:
-            inline_row_headings = None
-
-	if options.col_headings:
-            col_headings = [str(s) for s in options.col_headings.split(',')]
-	else:
-            col_headings = None
-
-	if options.img_headings:
-            img_headings = [str(s) for s in options.img_headings.split(',')]
-	else:
-            img_headings = None
-
-
-	multiplot(file_list,var_list,title,
-        	  dimensions=dimensions,
-		  ofile=options.ofile,
+	multiplot(file_list,var_list,
+        	  dimensions=options.dimensions,
+		  ofile=options.ofile,title=options.title,
 		  region=options.region,minlat=options.minlat,minlon=options.minlon,maxlat=options.maxlat,maxlon=options.maxlon,latX=options.latX,lonX=options.lonX,projection=options.projection,
-        	  colourbar_colour=options.colourbar_colour,ticks=ticks,discrete_segments=discrete_segments,units=options.units,convert=options.convert,scale=options.scale,extend=options.extend,
+        	  colourbar_colour=options.colourbar_colour,ticks=unpack_comma_list(options.ticks,'float'),discrete_segments=unpack_comma_list(options.discrete_segments),
+		  units=options.units,convert=options.convert,scale=options.scale,extend=options.extend,
         	  res=options.resolution,area_threshold=options.area_threshold,
-		  draw_contours=options.draw_contours,contour_files=contour_files,contour_variables=contour_variables,contour_ticks=contour_ticks,contour_scale=options.contour_scale,
-		  draw_vectors=options.draw_vectors,uwnd_files=uwnd_files,uwnd_variables=uwnd_variables,vwnd_files=vwnd_files,vwnd_variables=vwnd_variables,thin=options.thin,
-		  draw_stippling=options.draw_stippling,stipple_files=stipple_files,stipple_variables=stipple_variables,
-        	  row_headings=row_headings,inline_row_headings=inline_row_headings,
-        	  col_headings=col_headings,img_headings=img_headings,
+		  draw_contours=options.draw_contours,contour_files=unpack_comma_list(options.contour_files),contour_variables=unpack_comma_list(options.contour_variables),
+		  contour_ticks=unpack_comma_list(options.contour_ticks,'float'),contour_scale=options.contour_scale,
+		  draw_vectors=options.draw_vectors,uwnd_files=unpack_comma_list(options.uwnd_files),uwnd_variables=unpack_comma_list(options.uwnd_variables),
+		  vwnd_files=unpack_comma_list(options.vwnd_files),vwnd_variables=unpack_comma_list(options.vwnd_variables),thin=options.thin,
+		  draw_stippling=options.draw_stippling,stipple_files=unpack_comma_list(options.stipple_files),stipple_variables=unpack_comma_list(options.stipple_variables),
+        	  row_headings=unpack_comma_list(options.row_headings),inline_row_headings=unpack_comma_list(options.inline_row_headings),
+        	  col_headings=unpack_comma_list(options.col_headings),img_headings=unpack_comma_list(options.img_headings),
         	  draw_axis=options.draw_axis,delat=options.delat,delon=options.delon,equator=options.equator,enso=options.enso,
 		  contour=options.contour,
         	  image_size=options.image_size,
