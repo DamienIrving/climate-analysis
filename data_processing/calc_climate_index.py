@@ -62,10 +62,7 @@ class InputFile(object):
     patterns = [
         ('data',
          True,
-         re.compile(r'(?P<variable_name>\S+)_(?P<dataset>\S+)_(?P<level>\S+)_(?P<timescale>\S+)_(?P<grid>\S+).nc')),
-	('error',
-         True,
-         re.compile(r'(?P<variable_name>\S+)-err_(?P<dataset>\S+)_(?P<level>\S+)_(?P<timescale>\S+)_(?P<grid>\S+).nc'))        
+         re.compile(r'(?P<variable_name>\S+)_(?P<dataset>\S+)_(?P<level>\S+)_(?P<timescale>\S+)_(?P<grid>\S+).nc'))  
     ]
     def __init__(self, fname):
         self.fname = fname
@@ -275,21 +272,11 @@ def calc_IEMI(index,ifile,efile,outfile_name,base_period):
 
     IEMI_timeseries = 3*anomaly_timeseries['EMI_A'] - 2*anomaly_timeseries['EMI_B'] - anomaly_timeseries['EMI_C']
 
-    fin.close()
-
 
     ## Calculate the error ##
     
     if efile:
     
-	# Read the input file #
-
-	try:
-            fin=cdms2.open(efile.fname,'r')
-	except cdms2.CDMSError:
-            print 'Unable to open file: ', efile
-	    sys.exit(0)
-
         # Calculate the mean error at each timestep #
 	
 	var_error_flat = {}
@@ -297,12 +284,8 @@ def calc_IEMI(index,ifile,efile,outfile_name,base_period):
         
 	    region = globals()[reg]
 	
-	    var_error=fin(efile.variable_name,region,order='tyx')
+	    var_error=fin('err',region,order='tyx')
 	    ntime_error,nlats_error,nlons_error = numpy.shape(var_error)
-	    
-	    if ntime_error != ntime_complete:
-	        print 'Error file has different dimensions to data file'
-	        sys.exit(0)
 	    
 	    var_error_flat[reg] = numpy.reshape(var_error,(int(ntime_error),int(nlats_error * nlons_error)))
 	
@@ -311,6 +294,8 @@ def calc_IEMI(index,ifile,efile,outfile_name,base_period):
         error_timeseries = numpy.mean(var_error_stack,axis=1)
 
 
+    fin.close()
+    
     ## Write the text file output ##
 
     fout = open(outfile_name,'w')
@@ -321,7 +306,7 @@ def calc_IEMI(index,ifile,efile,outfile_name,base_period):
     fout.write('Input file = '+ifile.fname+'\n')
     
     if efile:
-        fout.write(' YR   MON  IEMI  error \n') 
+        fout.write(' YR   MON   IEMI   error \n') 
 	for ii in range(0,len(time)):
             print >> fout, '%4i %3i %7.2f %7.2f' %(years[ii],months[ii],IEMI_timeseries[ii],error_timeseries[ii])
     else:
@@ -375,33 +360,22 @@ def calc_NINO(index,ifile,efile,outfile_name,base_period):
 
     NINO_timeseries = calc_monthly_anomaly(complete_timeseries,base_timeseries,months)	
 
-    fin.close()
+    
     
     ## Calculate the error ##
     
     if efile:
-    
-	# Read the input file #
-
-	try:
-            fin=cdms2.open(efile.fname,'r')
-	except cdms2.CDMSError:
-            print 'Unable to open file: ', ifile
-	    sys.exit(0)
-
+ 
         # Calculate the mean error at each timestep #
 	
-	var_error=fin(efile.variable_name,region,order='tyx')
+	var_error=fin('err',region,order='tyx') 
 	ntime_error,nlats_error,nlons_error = numpy.shape(var_error)
-	
-	if [ntime_error,nlats_error,nlons_error] != [ntime_complete,nlats,nlons]:
-	    print 'Error file bas different dimensions to data file'
-	    sys.exit(0)
 	
 	var_error_flat = numpy.reshape(var_error,(int(ntime_error),int(nlats_error * nlons_error)))
 	
 	error_timeseries = numpy.mean(var_error_flat,axis=1)   #Could use numpy.max for a slightly different error measurement
 
+    fin.close()
 
     ## Write the text file output ##
 
@@ -415,7 +389,7 @@ def calc_NINO(index,ifile,efile,outfile_name,base_period):
     fout.write('Input file = '+ifile.fname+'\n')
     
     if efile:
-        headers = ' YR   MON  %s  error \n' %(index)
+        headers = ' YR   MON  %s   error \n' %(index)
         fout.write(headers) 
         for ii in range(0,len(time)):
             print >> fout, '%4i %3i %7.2f %7.2f' %(years[ii],months[ii],NINO_timeseries[ii],error_timeseries[ii])
@@ -428,25 +402,19 @@ def calc_NINO(index,ifile,efile,outfile_name,base_period):
     fout.close()
 
 	    
- 
 function_for_index = {
     'NINO':        calc_NINO,
     'IEMI':        calc_IEMI,
     'SAMI':        calc_SAM,
                 	  }     
 
-def main(index,infile_name,efile_name,outfile_name,base_period):
+def main(index,infile_name,efile,outfile_name,base_period):
     """Run the program"""
 
     ## Get the input file attributes ##
 
     ifile = InputFile(infile_name)
-    
-    if efile_name:
-        efile = InputFile(efile_name)
-    else:
-        efile = None
-    
+        
     ## Initialise relevant index function ##
     
     calc_index = function_for_index[index[0:4]]
@@ -456,7 +424,6 @@ def main(index,infile_name,efile_name,outfile_name,base_period):
     calc_index(index,ifile,efile,outfile_name,base_period)
     
  
-
 if __name__ == '__main__':
 
     ### Help and manual information ###
@@ -465,7 +432,7 @@ if __name__ == '__main__':
     parser = OptionParser(usage=usage)
 
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
-    parser.add_option("-e", "--error",dest="error_file",default=None,help="File containing the estimated error ")
+    parser.add_option("-e", "--error",action="store_true",dest="error",default=False,help="Input file contains an additional error variable")
     parser.add_option("-b", "--base",dest="base_period",nargs=2,type='string',default=('1981-01-01','2010-12-31'),help="Start and end date for base period [default=('1981-01-01','2010-12-31')]")
     
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
@@ -478,7 +445,7 @@ if __name__ == '__main__':
 	Options
             -M  ->  Display this on-line manual page and exit
             -h  ->  Display a help/usage message and exit
-	    -e  ->  File containing the estimated error
+	    -e  ->  Input file contains an additional error variable
 	    -b  ->  Start and end date for base period [default=('1981-01-01','2010-12-31')]
 
         Pre-defined indices
@@ -487,7 +454,7 @@ if __name__ == '__main__':
 	
 	Example
 	    /opt/cdat/bin/cdat calc_climate_index.py NINO34 /work/dbirving/datasets/Merra/data/ts_Merra_surface_monthly_native.nc 
-	    /work/dbirving/processed/indices/ts_Merra_NINO34_monthly_native.txt
+	    /work/dbirving/processed/indices/data/ts_Merra_NINO34_monthly_native.txt
 	    
 	Author
             Damien Irving, 26 Jun 2012.
@@ -502,7 +469,6 @@ if __name__ == '__main__':
         print 'Index:', args[0]
         print 'Input file:', args[1]
         print 'Output file:', args[2]
-	print 'Error file:', options.error_file
 
-        main(args[0],args[1],options.error_file,args[2],options.base_period)
+        main(args[0],args[1],options.error,args[2],options.base_period)
     
