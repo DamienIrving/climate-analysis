@@ -27,6 +27,7 @@ import numpy
 import numpy.ma as ma
 
 import cdms2
+import cdutil
 
 import optparse
 from optparse import OptionParser
@@ -92,7 +93,7 @@ def multiplot(ifiles,variables,
               #Variables below here are optional, should give a reasonable image by default
               dimensions=None,
               #Output file name and title
-              ofile=None,title=None,
+              ofile=None,title=None,timmean=None,
               #can use a pre-defined region or override with min/max lat/lon, 
               region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-20,lonX=-125,projection='cyl',
               #colourbar settings
@@ -187,7 +188,7 @@ def multiplot(ifiles,variables,
 	vvar_matrix = numpy.reshape(vvar_matrix,(dimensions))
 
 	matrixplot(file_matrix,var_matrix,
-        	   ofile,title,
+        	   ofile,title,timmean,
         	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
         	   res,area_threshold,
@@ -211,7 +212,7 @@ def multiplot(ifiles,variables,
 	stipvar_matrix = numpy.reshape(stipvar_matrix,(dimensions))
 	
 	matrixplot(file_matrix,var_matrix,
-        	   ofile,title,
+        	   ofile,title,timmean,
         	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
         	   res,area_threshold,
@@ -227,7 +228,7 @@ def multiplot(ifiles,variables,
     else:
         
 	matrixplot(file_matrix,var_matrix,
-        	   ofile,title,
+        	   ofile,title,timmean,
         	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
         	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
         	   res,area_threshold,
@@ -244,7 +245,7 @@ def multiplot(ifiles,variables,
 def matrixplot(ifiles,variables,
               #Variables below here are optional, should give a reasonable image by default
               #Output file name default is 'title'.png
-              ofile=None,title=None,
+              ofile=None,title=None,timmean=None,
               #can use a pre-defined region or override with min/max lat/lon, 
               region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-20,lonX=-125,projection='cyl',
               #colourbar settings
@@ -331,7 +332,17 @@ def matrixplot(ifiles,variables,
 
     ## Define the colourbar ###
 
+    #Make sure discrete_segments is in the correct format
+    if isinstance(discrete_segments,list):
+        if len(discrete_segments) == 1:
+	    discrete_segments = int(discrete_segments[0])
+
     #Setup colour map (unless custom which is created later)
+    if discrete_segments or ticks:
+        continuous_colourbar = False
+    else:
+        continuous_colourbar = True
+    
     if colourbar_colour:
 	if hasattr(plt.cm, colourbar_colour):
             colourmap = getattr(plt.cm, colourbar_colour)
@@ -340,7 +351,7 @@ def matrixplot(ifiles,variables,
 	else:
             print "Error, color option '",colourbar_colour,"' not a valid option"
             sys.exit(1)
-
+	    
     #Get the min/max level for colourbar settings
     #TODO, perhaps use -/+ 2 standard deviations if no min/max specified 
     #as outlies will reduce colours/featues, you may end up with an image entirely one
@@ -348,61 +359,57 @@ def matrixplot(ifiles,variables,
     if ticks:
         min_level = ticks[0]
         max_level = ticks[-1]
-	space = abs(ticks[0]-ticks[1])*0.2
     else:
-        min_level,max_level = get_min_max(ifiles,variables,region)
-	space = 0.1
+        min_level,max_level = get_min_max(ifiles,variables,timmean,region)
+	diff = max_level - min_level
+	if isinstance(discrete_segments,list):
+	    step = diff/float(len(discrete_segments))
+	elif discrete_segments:
+	    step = diff/float(discrete_segments)
+	else:
+	    step = diff/10.0
+	    
+	ticks = list(numpy.arange(min_level,max_level+(step/2),step))
 
+    dec = decimal_places(max_level - min_level)
+    space = abs(ticks[0]-ticks[1])*0.2
+    
     if extend == 'both':
         min_level = min_level - space
         max_level = max_level + space
-        if ticks:
-            ticks.append(max_level)
-            ticks.insert(0,min_level)
+        ticks.append(max_level)
+        ticks.insert(0,min_level)
 
     if extend == 'max':
         max_level = max_level + space
-        if ticks:
-            ticks.append(max_level)
+        ticks.append(max_level)
 	    
     if extend == 'min':
         min_level = min_level - space
-        if ticks:
-            ticks.insert(0,min_level)
+        ticks.insert(0,min_level)
 
 
     #Colourbar can be converted to a number of discete segments or a custom
     #colourmap can be defined forcing it to a discrete map
     
-    if(discrete_segments):
-        if discrete_segments[0] in globals():
+    if isinstance(discrete_segments,list):
+	if discrete_segments[0] in globals():
             for i in range(0,len(discrete_segments)):
-	        discrete_segments[i] = globals()[discrete_segments[i]]
-        
-	#Segments can be non-linear and are scaled to tick options if defined
-        if ticks:
-	    if len(discrete_segments) != (len(ticks)-1):
-	        print 'Number of input colour segments does not match number of ticks - check extension setting'
-		sys.exit(1)
-	    if isinstance(discrete_segments,list):
-                colourmap = matplotlib.colors.ListedColormap(discrete_segments[:], 'indexed')
-            else:
-		colourmap = nonlinear_colourmap(colourmap,ticks)
-        else:     
-            if isinstance(discrete_segments,list):
-               colourmap = matplotlib.colors.ListedColormap(colors, name='custom_discrete')
-               nSegments = len(discrete_segments)
-            else:
-                nSegments = int(discrete_segments)
-                colourmap = cmap_discretize(colourmap,nSegments)
+		discrete_segments[i] = globals()[discrete_segments[i]]
 
-            step = (max_level - min_level)/float(nSegments)
-            ticks = numpy.arange(min_level,max_level+step,step)
-
-    #TODO make better ticks if no options selected
-    elif not (ticks):
-            step = (max_level - min_level)/10.0
-            coloutbar_ticks = numpy.arange(min_level,max_level+step,step)
+    if isinstance(discrete_segments,list):
+        if len(discrete_segments) != (len(ticks)-1):
+	    print 'Number of input colour segments does not match number of ticks - check extension setting'
+	    sys.exit(1)
+	colourmap = matplotlib.colors.ListedColormap(discrete_segments[:], 'indexed')
+    elif discrete_segments:
+        if discrete_segments != (len(ticks)-1):
+	    print 'Number of input colour segments does not match number of ticks - check extension setting'
+	    sys.exit(1)
+	colourmap = generate_colourmap(colourmap,discrete_segments)
+    elif not continuous_colourbar:
+	colourmap = generate_colourmap(colourmap,len(ticks))        
+	
 
     #Remove added elements as we dont wont these displayed
     if extend == 'both':
@@ -477,7 +484,6 @@ def matrixplot(ifiles,variables,
     for row in range(nrows):
         for col in range(ncols):
 	
-
             # Open file and extract data #
 
             #Skip image if blank or set to "N/A or n/a"
@@ -487,16 +493,8 @@ def matrixplot(ifiles,variables,
                 continue
 
             #Otherwise open
-            fin = cdms2.open(ifiles[row,col],'r')
-	    tVar = fin(variables[row,col],squeeze=1)
-	    tVar_lon = tVar.getLongitude()[:]
-	    tVar_lat = tVar.getLatitude()[:]
-	    
-	    fin.close()
-	    
-	    
-	    # Make any necessary modifications to the data #
-	    
+	    tVar,tVar_lon,tVar_lat = extract_data(ifiles,variables,row,col,timmean,region=None)
+	   
 	    #White mask for stippling disagreement
 	    if draw_stippling:
 	        fin_stip = cdms2.open(stipple_files[row,col],'r')
@@ -507,23 +505,7 @@ def matrixplot(ifiles,variables,
 	   
 	        fin_stip.close()
 	    
-	    #Unit conversion
-	    if convert:
-		if tVar.units == 'kg m-2 s-1' and units[0] == 'm':
-	            tVar = tVar*86400
-		if tVar.units[0] == 'K' and units[0] == 'C' and ma.max(tVar) > 70.0:
-	            tVar = tVar - 273.16
 	    
-	    #Apply scale factor
-	    if scale:
-	        tVar = tVar*scale
-	    
-	    #Data must be two dimensional 
-            if (re.match('^t',tVar.getOrder())):
-                print "WARNING data has a time axis, results displayed will be the first time step"
-                tVar = tVar[0,:,:]
-            
-            
 	    # Plot the axes and map #
 	    
 	    if projection == 'cyl':
@@ -557,14 +539,14 @@ def matrixplot(ifiles,variables,
                                           tVar_lat,
                                           xres, yres,
                                           order=0)
-					  
+	      
 					  
             # Plot the primary data (i.e. the data that uses the colourbar) #
 	                
 	    if contour: 
 	        x,y = map(*numpy.meshgrid(tVar_lon,tVar_lat))
-	    	im = map.contourf(x,y,tVar,ticks,cmap=colourmap,extend=extend)
-		
+		im = map.contourf(x,y,tVar,ticks,cmap=colourmap,extend=extend)
+
 	    else:
                 if draw_stippling:
 		    maskout = map.transform_scalar(mask.data, 
@@ -588,19 +570,12 @@ def matrixplot(ifiles,variables,
             # Plot the secondary data #
     
             if draw_contours:
-	        fin = cdms2.open(contour_files[row,col],'r')
-	        contour_data = fin(contour_variables[row,col],squeeze=1)
-		contour_lat = contour_data.getLatitude()[:]
-	        contour_lon = contour_data.getLongitude()[:]      
-	        fin.close()
+	        contour_data,contour_lon,contour_lat = extract_data(contour_files,contour_variables,row,col,timmean,scale=contour_scale)
 		
 		if projection == 'cyl':
 		    contour_data,contour_lon = shiftgrid(0.,contour_data,contour_lon,start=True)
 		else:
 		    contour_data,contour_lon = shiftgrid(180.,contour_data,contour_lon,start=False)
-		
-		if contour_scale:
-		    contour_data = contour_data*contour_scale
 		    
 		x,y = map(*numpy.meshgrid(contour_lon,contour_lat))
 		im2 = map.contour(x,y,contour_data,contour_ticks,colors='k')
@@ -792,7 +767,7 @@ def matrixplot(ifiles,variables,
     plt.xticks(fontsize=12)
     #plt.colorbar(cax=cax,orientation='horizontal',ticks=ticks,extend='both',format="%.2f") # draw colorbar
     #cb = plt.colorbar(cax=cax,orientation='horizontal',ticks=ticks,extend=extend,format="%.2f") # draw colorbar
-    cb = plt.colorbar(mappable=im,cax=cax,orientation='horizontal',ticks=ticks,extend=extend) # draw colorbar
+    cb = plt.colorbar(mappable=im,cax=cax,orientation='horizontal',ticks=ticks,extend=extend,format='%.'+str(dec)+'f') # draw colorbar
     if units:
         cb.set_label(units)
 
@@ -806,7 +781,58 @@ def matrixplot(ifiles,variables,
 	#plt.show()
 
 
-def get_min_max(files,variables,region):
+def extract_data(file_list,variable_list,row,col,timmean,region=None,convert=False,scale=False):
+    """Extracts data from the file"""
+   
+    fin = cdms2.open(file_list[row,col],'r')
+    if timmean and region:
+	tVar = fin(variable_list[row,col],region,time=(timmean[0],timmean[1]),squeeze=1)
+    elif timmean: 
+        tVar = fin(variable_list[row,col],time=(timmean[0],timmean[1]),squeeze=1)
+    elif region:
+        tVar = fin(variable_list[row,col],region,squeeze=1)
+    else:
+	tVar = fin(variable_list[row,col],squeeze=1)
+    
+    tVar_lon = tVar.getLongitude()[:]
+    tVar_lat = tVar.getLatitude()[:]
+
+    #Unit conversion
+    if convert:
+	if tVar.units == 'kg m-2 s-1' and units[0] == 'm':
+	    tVar = tVar*86400
+	if tVar.units[0] == 'K' and units[0] == 'C' and ma.max(tVar) > 70.0:
+	    tVar = tVar - 273.16
+
+    #Apply scale factor
+    if scale:
+	tVar = tVar*scale
+
+    #Data must be two dimensional 
+    if (re.match('^t',tVar.getOrder())):
+	print "WARNING data has a time axis, results displayed will be the temporal average"
+        #tVar = tVar[0,:,:]
+        tVar = numpy.mean(tVar,axis=0)
+
+    fin.close()
+
+    return tVar,tVar_lon,tVar_lat
+    
+
+def decimal_places(diff):
+    """Determines the decimal place rounding for a given difference between min and max ticks"""
+    
+    if diff > 100.0:
+        dec = 0
+    elif diff > 10.0:
+        dec = 1
+    else:
+        dec = math.floor(math.fabs(math.log10(diff)) + 2)
+    
+    return int(dec)
+
+
+def get_min_max(files,variables,timmean,region):
 
     min_level = 1.0e20
     max_level = -1.0e20
@@ -823,8 +849,8 @@ def get_min_max(files,variables,region):
             var = variables[row][col]
             fin = cdms2.open(ifile,'r')
 
-            tVar = fin(var,region)
-            tmax = tVar.max()
+            tVar = extract_data(files,variables,row,col,timmean,region=region)[0]
+	    tmax = tVar.max()
             tmin = tVar.min()
             if tmax > max_level:
                 max_level = tmax
@@ -834,125 +860,23 @@ def get_min_max(files,variables,region):
 
             fin.close()
 
+    print 'Minimum value = ',min_level
+    print 'Maximum value = ',max_level
+    
     return min_level,max_level
 
 
-def cmap_discretize(cmap, N):
-    """
-    Return a discrete colormap from the continuous colormap cmap.
+def generate_colourmap(colourmap, nsegs):
+    """Returns a discrete colormap from the continuous colormap (cmap),
+       according to the number of segments (nsegs)"""
+        
+    segs = []
+    for i in range(0,nsegs):
+	c = colourmap(float(float(i)/float(nsegs)),1)
+	segs.append(c)
+    colourmap = matplotlib.colors.ListedColormap(segs[:], 'indexed')
     
-    cmap: colormap instance, eg. cm.jet. 
-    N: Number of colors.
-     
-    Example
-        x = resize(arange(100), (5,100))
-        djet = cmap_discretize(cm.jet, 5)
-        imshow(x, cmap=djet)
-
-    Code from matplotlib cookbook
-    """
-
-    cdict = cmap._segmentdata.copy()
-    # N colors
-    colors_i = numpy.linspace(0,1.,N)
-    # N+1 indices
-    indices = numpy.linspace(0,1.,N+1)
-    for key in ('red','green','blue'):
-        # Find the N colors
-        D = numpy.array(cdict[key])
-        I = interpolate.interp1d(D[:,0], D[:,1])
-        colors = I(colors_i)
-        # Place these colors at the correct indices.
-        A = numpy.zeros((N+1,3), float)
-        A[:,0] = indices
-        A[1:,1] = colors
-        A[:-1,2] = colors
-        # Create a tuple for the dictionary.
-        L = []
-        for l in A:
-            L.append(tuple(l))
-        cdict[key] = tuple(L)
-    # Return colormap object.
-    return matplotlib.colors.LinearSegmentedColormap('colormap',cdict,1024)
-
-
-def cmap_map(function,cmap):
-    """ 
-    Applies function (which should operate on vectors of shape 3:
-    [r, g, b], on colormap cmap. This routine will break any discontinuous points in a colormap.
-
-    Code from matplotlib cookbook
-    """
-    cdict = cmap._segmentdata
-    step_dict = {}
-    # Firt get the list of points where the segments start or end
-    for key in ('red','green','blue'):         step_dict[key] = map(lambda x: x[0], cdict[key])
-    step_list = reduce(lambda x, y: x+y, step_dict.values())
-    step_list = numpy.array(list(set(step_list)))
-    # Then compute the LUT, and apply the function to the LUT
-    reduced_cmap = lambda step : numpy.array(cmap(step)[0:3])
-    old_LUT = numpy.array(map( reduced_cmap, step_list))
-    new_LUT = numpy.array(map( function, old_LUT))
-    # Now try to make a minimal segment definition of the new LUT
-    cdict = {}
-    for i,key in enumerate(('red','green','blue')):
-        this_cdict = {}
-        for j,step in enumerate(step_list):
-            if step in step_dict[key]:
-                this_cdict[step] = new_LUT[j,i]
-            elif new_LUT[j,i]!=old_LUT[j,i]:
-                this_cdict[step] = new_LUT[j,i]
-        colorvector=  map(lambda x: x + (x[1], ), this_cdict.items())
-        colorvector.sort()
-        cdict[key] = colorvector
-
-    return matplotlib.colors.LinearSegmentedColormap('colormap',cdict,1024)
-
-
-def nonlinear_colourmap(cmap, bounds):
-    """
-    Return a discrete colormap from the continuous colormap cmap.
-    
-    cmap: colormap instance, eg. cm.jet. 
-    N: Number of colors.
-     
-    Example
-        x = resize(arange(100), (5,100))
-        djet = cmap_discretize(cm.jet, 5)
-        imshow(x, cmap=djet)
-
-    Code from matplotlib cookbook
-    """
-
-    cdict = cmap._segmentdata.copy()
-    # N colors
-    N = len(bounds) - 1
-    colors_i = numpy.linspace(0,1.,N)
-    
-    #Indices    
-    indices = bounds[:]
-
-    #Normalise
-    indices = [i - indices[0] for i in indices]
-    indices = [i/(indices[-1]*1.0) for i in indices]
-
-    for key in ('red','green','blue'):
-        # Find the N colors
-        D = numpy.array(cdict[key])
-        I = interpolate.interp1d(D[:,0], D[:,1])
-        colors = I(colors_i)
-        # Place these colors at the correct indices.
-        A = numpy.zeros((N+1,3), float)
-        A[:,0] = indices
-        A[1:,1] = colors
-        A[:-1,2] = colors
-        # Create a tuple for the dictionary.
-        L = []
-        for l in A:
-            L.append(tuple(l))
-        cdict[key] = tuple(L)
-    # Return colormap object.
-    return matplotlib.colors.LinearSegmentedColormap('colormap',cdict,1024)
+    return colourmap
 
 
 def str2list(s):
@@ -998,6 +922,7 @@ if __name__ == '__main__':
     parser.add_option("--title",dest="title",type='string',default=None,help="plot title [default = None]")
     parser.add_option("--ofile",dest="ofile",type='string',default=None,help="name of output file [default = test.png]")
     parser.add_option("--contour",action="store_true",dest="contour",default=False,help="Switch for drawing contour plot [default = False]")
+    parser.add_option("--timmean",dest="timmean",default=None,nargs=2,type='str',help="Period over which to calculate time mean [default = entire time period]")
     #Map details
     parser.add_option("--region",dest="region",type='string',default='WORLD_DATELINE',help="name of region to plot [default = WORLD_DATELINE]")
     parser.add_option("--minlat", dest="minlat",type='float',default=None,help="Minimum latitude [defualt = none]")
@@ -1065,6 +990,7 @@ if __name__ == '__main__':
             --dimensions          Matrix dimensions (two arguments - rows columns) [default=None]
             --ofile               Name of output file [default = test.png]
             --title               Title of plot [default = None]
+	    --timmean             Period over which to calculate time mean [default = entire time period]
 	    --region              Selector defining a region (for cylindrical projection). Inbuilt regions are WORLD_GRENEWICH, WORLD_DATELINE, AUSTRALIA, AUS_NZ [default = WORLD_DATELINE]
             --minlat              User can override the pre-defined region by specifying bounds
             --minlon              " "
@@ -1136,7 +1062,7 @@ if __name__ == '__main__':
 
 	multiplot(file_list,var_list,
         	  dimensions=options.dimensions,
-		  ofile=options.ofile,title=options.title,
+		  ofile=options.ofile,title=options.title,timmean=options.timmean,
 		  region=options.region,minlat=options.minlat,minlon=options.minlon,maxlat=options.maxlat,maxlon=options.maxlon,latX=options.latX,lonX=options.lonX,projection=options.projection,
         	  colourbar_colour=options.colourbar_colour,ticks=unpack_comma_list(options.ticks,'float'),discrete_segments=unpack_comma_list(options.discrete_segments),
 		  units=options.units,convert=options.convert,scale=options.scale,extend=options.extend,
