@@ -2,13 +2,19 @@
 
 
 ts_file=/work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc
-sf_file=/work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc
+
+#vp_file=/work/dbirving/datasets/Merra/data/processed/vp_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc
+#vp_file=/work/dbirving/datasets/Merra/data/processed/vp_Merra_250hPa_monthly-clim-1981-2010_native.nc
+vp_file=/work/dbirving/datasets/Merra/data/processed/vp_Merra_250hPa_monthly_native.nc
+
+uad_file=/work/dbirving/datasets/Merra/data/processed/uad_Merra_250hPa_monthly_native.nc
+vad_file=/work/dbirving/datasets/Merra/data/processed/vad_Merra_250hPa_monthly_native.nc
 
 proj=cyl
 
 pticks='-5,-4.5,-4,-3.5,-3,-2.5,-2,-1.5,-1,-0.5,0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5'
 #cbar=blue8,blue7,blue6,blue5,blue4,blue3,blue2,red2,red3,red4,red5,red6,red7,red8
-sticks='-30,-25,-20,-15,-10,-5,0,5,10,15,20,25,30'
+sticks='-9,-7.5,-6,-4.5,-3,-1.5,0,1.5,3,4.5,6,7.5,9'
 
 ## Select times to plot ##
 
@@ -67,14 +73,17 @@ do
     for m in ${months[*]}
     do
         cdo seltimestep,${count} ${ts_file} temp_ts.nc
-	cdo seltimestep,${count} ${sf_file} temp_sf.nc
-	outfile=/work/dbirving/processed/plots/ts-sf_Merra_surface-250hPa_monthly-anom-wrt-1981-2010_native_${proj}_${count}.png
+	cdo seltimestep,${count} ${vp_file} temp_vp.nc
+	cdo seltimestep,${count} ${uad_file} temp_uad.nc
+	cdo seltimestep,${count} ${vad_file} temp_vad.nc
+	outfile=/work/dbirving/processed/spatial_maps/ts-vp_Merra_surface-250hPa_monthly_native_${proj}_${count}.png
         #outfile=test.png
-	/opt/cdat/bin/cdat plot_map.py temp_ts.nc ts --title '250hPa_streamfunction_anomaly_&_SST_anomaly' --contour --ticks ${pticks} --draw_contours --contour_files temp_sf.nc --contour_variables sf --contour_ticks ${sticks} --image_size 13 --draw_axis --ofile ${outfile} --img_headings ${m}${y} --units Celsius --extend both --colourbar_colour RdBu_r --enso --projection ${proj} --contour_scale 1.e-6
+	/opt/cdat/bin/cdat plot_map.py temp_ts.nc ts --title '250hPa_velocity_potential_&_SST_anomaly' --contour --ticks ${pticks} --draw_contours --contour_files temp_vp.nc --contour_variables vp --contour_ticks ${sticks} --image_size 13 --draw_axis --ofile ${outfile} --img_headings ${m}${y} --units Celsius --extend both --colourbar_colour RdBu_r --enso --projection ${proj} --contour_scale 1.e-6 --draw_vectors --uwnd_files temp_uad.nc --uwnd_variables uad --vwnd_files temp_vad.nc --vwnd_variables vad --thin 10
 	echo ${outfile}
         rm temp_ts.nc
-	rm temp_sf.nc
-	
+	rm temp_vp.nc
+	rm temp_uad.nc
+	rm temp_vad.nc
 	count=`expr $count + 1`
     done
 done

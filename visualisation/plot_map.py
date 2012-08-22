@@ -25,6 +25,7 @@ import matplotlib.colors
 from scipy import interpolate
 import numpy
 import numpy.ma as ma
+import math
 
 import cdms2
 import cdutil
@@ -144,102 +145,20 @@ def multiplot(ifiles,variables,
 
     ## Call matrixplot, accounting for the special cases that require additional data (i.e. wind vectors or stippling) ##
 
-    
-    if draw_contours:
-
-	contour_files = str2list(contour_files)
-	contour_variables = str2list(contour_variables)
-
-	confile_matrix = numpy.array(contour_files)
-	convar_matrix = numpy.array(contour_variables)
-	confile_matrix = numpy.reshape(confile_matrix,(dimensions))
-	convar_matrix = numpy.reshape(convar_matrix,(dimensions))
-	
-	matrixplot(file_matrix,var_matrix,
-        	   ofile,title,
-        	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
-        	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
-        	   res,area_threshold,
-		   draw_contours,confile_matrix,convar_matrix,contour_ticks,contour_scale,
-		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,thin,
-		   draw_stippling,stipple_files,stipple_variables,
-        	   row_headings,inline_row_headings,col_headings,img_headings,
-        	   draw_axis,delat,delon,equator,enso,
-		   contour,
-        	   image_size,
-		   textsize) 
-	
-    elif draw_vectors:
-
-	uwnd_files = str2list(uwnd_files)
-	uwnd_variables = str2list(uwnd_variables)
-
-	ufile_matrix = numpy.array(uwnd_files)
-	uvar_matrix = numpy.array(uwnd_variables)
-	ufile_matrix = numpy.reshape(ufile_matrix,(dimensions))
-	uvar_matrix = numpy.reshape(uvar_matrix,(dimensions))
-
-	vwnd_files = str2list(vwnd_files)
-	vwnd_variables = str2list(vwnd_variables)
-
-	vfile_matrix = numpy.array(vwnd_files)
-	vvar_matrix = numpy.array(vwnd_variables)
-	vfile_matrix = numpy.reshape(vfile_matrix,(dimensions))
-	vvar_matrix = numpy.reshape(vvar_matrix,(dimensions))
-
-	matrixplot(file_matrix,var_matrix,
-        	   ofile,title,timmean,
-        	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
-        	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
-        	   res,area_threshold,
-		   draw_contours,contour_files,contour_variables,contour_ticks,contour_scale,
-		   draw_vectors,ufile_matrix,uvar_matrix,vfile_matrix,vvar_matrix,thin,
-		   draw_stippling,stipple_files,stipple_variables,
-        	   row_headings,inline_row_headings,col_headings,img_headings,
-        	   draw_axis,delat,delon,equator,enso,
-		   contour,
-        	   image_size,
-		   textsize) 
-    
-    elif draw_stippling:
-
-	stipple_files = str2list(stipple_files)
-	stipple_variables = str2list(stipple_variables)
-
-	stipfile_matrix = numpy.array(stipple_files)
-	stipvar_matrix = numpy.array(stipple_variables)
-	stipfile_matrix = numpy.reshape(stipfile_matrix,(dimensions))
-	stipvar_matrix = numpy.reshape(stipvar_matrix,(dimensions))
-	
-	matrixplot(file_matrix,var_matrix,
-        	   ofile,title,timmean,
-        	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
-        	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
-        	   res,area_threshold,
-		   draw_contours,contour_files,contour_variables,contour_ticks,contour_scale,
-		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,thin,
-		   draw_stippling,stipfile_matrix,stipvar_matrix,
-        	   row_headings,inline_row_headings,col_headings,img_headings,
-        	   draw_axis,delat,delon,equator,enso,
-		   contour,
-        	   image_size,
-		   textsize) 
-	
-    else:
         
-	matrixplot(file_matrix,var_matrix,
-        	   ofile,title,timmean,
-        	   region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
-        	   colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
-        	   res,area_threshold,
-		   draw_contours,contour_files,contour_variables,contour_ticks,contour_scale,
-		   draw_vectors,uwnd_files,uwnd_variables,vwnd_files,vwnd_variables,thin,
-		   draw_stippling,stipple_files,stipple_variables,
-        	   row_headings,inline_row_headings,col_headings,img_headings,
-        	   draw_axis,delat,delon,equator,enso,
-		   contour,
-        	   image_size,
-		   textsize) 
+    matrixplot(file_matrix,var_matrix,
+               ofile,title,timmean,
+               region,minlat,minlon,maxlat,maxlon,latX,lonX,projection,
+               colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
+               res,area_threshold,
+	       draw_contours,reshape_list(contour_files,(dimensions)),reshape_list(contour_variables,(dimensions)),contour_ticks,contour_scale,
+	       draw_vectors,reshape_list(uwnd_files,(dimensions)),reshape_list(uwnd_variables,(dimensions)),reshape_list(vwnd_files,(dimensions)),reshape_list(vwnd_variables,(dimensions)),thin,
+	       draw_stippling,reshape_list(stipple_files,(dimensions)),reshape_list(stipple_variables,(dimensions)),
+               row_headings,inline_row_headings,col_headings,img_headings,
+               draw_axis,delat,delon,equator,enso,
+	       contour,
+               image_size,
+	       textsize) 
 
 
 def matrixplot(ifiles,variables,
@@ -312,7 +231,7 @@ def matrixplot(ifiles,variables,
     if isinstance(region, basestring):
         if region in globals():
             region = globals()[region]
-
+    
     #Bounding region
     if isinstance(region, cdms2.selectors.Selector):
         for selector_component in region.components():
@@ -493,7 +412,7 @@ def matrixplot(ifiles,variables,
                 continue
 
             #Otherwise open
-	    tVar,tVar_lon,tVar_lat = extract_data(ifiles,variables,row,col,timmean,region=None)
+	    tVar,tVar_lon,tVar_lat = extract_data(ifiles,variables,row,col,timmean=timmean,region=None)
 	   
 	    #White mask for stippling disagreement
 	    if draw_stippling:
@@ -570,7 +489,8 @@ def matrixplot(ifiles,variables,
             # Plot the secondary data #
     
             if draw_contours:
-	        contour_data,contour_lon,contour_lat = extract_data(contour_files,contour_variables,row,col,timmean,scale=contour_scale)
+	        print numpy.shape(contour_files)
+		contour_data,contour_lon,contour_lat = extract_data(contour_files,contour_variables,row,col,timmean=timmean,scale=contour_scale)
 		
 		if projection == 'cyl':
 		    contour_data,contour_lon = shiftgrid(0.,contour_data,contour_lon,start=True)
@@ -589,75 +509,46 @@ def matrixplot(ifiles,variables,
 	        except ValueError:
 		    continue
 	    
-	    elif draw_vectors:
-                fin = cdms2.open(uwnd_files[row,col],'r')
-	        uas = fin(uwnd_variables[row,col],squeeze=1)      
-	        fin.close()
-	    
-		fin = cdms2.open(vwnd_files[row,col],'r')
-	        vas = fin(vwnd_variables[row,col],squeeze=1)     
-        	fin.close()
-
-                latsq2=uas.getLatitude()
-	        latsq2.units = 'degrees_north'
+	    if draw_vectors:
+		uas_data,uas_lon,uas_lat = extract_data(uwnd_files,uwnd_variables,row,col,timmean=timmean)
+		vas_data,vas_lon,vas_lat = extract_data(vwnd_files,vwnd_variables,row,col,timmean=timmean)
 		
-		lonsq2=uas.getLongitude()
-	        lonsq2.units = 'degrees_east'
+	        #latsq2.units = 'degrees_north'
+		#lonsq2.units = 'degrees_east'
                 
 		if projection == 'nsper':
-		    uas,lonsq2 = shiftgrid(180.,uas,lonsq2,start=False)
-		    vas,lonsq2 = shiftgrid(180.,vas,lonsq2,start=False)
+		    uas_data,uas_lon = shiftgrid(180.,uas_data,uas_lon,start=False)
+		    vas_data,vas_lon = shiftgrid(180.,vas_data,vas_lon,start=False)
 		
-        	x,y = map(*numpy.meshgrid(lonsq2,latsq2))
+        	x,y = map(*numpy.meshgrid(uas_lon,uas_lat))
         	t = int(thin)
-		map.quiver(x[::t,::t],y[::t,::t],uas[::t,::t],vas[::t,::t],width=0.001,scale=650,headwidth=2,headlength=3)
+		map.quiver(x[::t,::t],y[::t,::t],uas_data[::t,::t],vas_data[::t,::t],width=0.001,scale=650,headwidth=2,headlength=3)
 		# could use quiverkey function here to define a legend for the quiver
 		# see http://matplotlib.sourceforge.net/examples/pylab_examples/quiver_demo.html
 	    
-	    elif draw_stippling:
-	        fin = cdms2.open(stipple_files[row,col],'r')
-	        stipple = fin(stipple_variables[row,col],region)   #,region
-	        fin.close()
-	        
-		latsq3=stipple.getLatitude()
-	        latsq3.units = 'degrees_north'
+	    if draw_stippling:
+	        stipple_data,stipple_lon,stipple_lat = extract_data(stipple_files,stipple_variables,row,col) #region=region
 		
-		lonsq3=stipple.getLongitude()
-	        lonsq3.units = 'degrees_east'
+	        #latsq3.units = 'degrees_north'
+		#lonsq3.units = 'degrees_east'
 		
 		if projection == 'nsper':
-		    stipple,lonsq3 = shiftgrid(180.,stipple,lonsq3,start=False)
-		
-		ndots = numpy.sum(stipple)
-		            
-		for iy, lat in enumerate(latsq3[:]):
-        	    for ix, lon in enumerate(lonsq3[:]):
-                        agreement = stipple[iy,ix]
+		    stipple_data,stipple_lon = shiftgrid(180.,stipple_data,stipple_lon,start=False)
+				            
+		for iy, lat in enumerate(stipple_lat[:]):
+        	    for ix, lon in enumerate(stipple_lon[:]):
+                        agreement = stipple_data[iy,ix]
+			x,y = map(*numpy.meshgrid(numpy.array([lon]),numpy.array([lat])))
 			if agreement == 1:
-			    lons=numpy.array([lon])
-			    lats=numpy.array([lat])
-			    x,y = map(*numpy.meshgrid(lons,lats))
 	                    map.plot(x,y,marker='o',markersize=2.0,markerfacecolor='black',markeredgecolor='black',markeredgewidth=0.2) 
 	                elif agreement == 2:
-			    lons=numpy.array([lon])
-			    lats=numpy.array([lat])
-			    x,y = map(*numpy.meshgrid(lons,lats))
 	                    map.plot(x,y,marker='o',markersize=2.0,markerfacecolor='red',markeredgecolor='red',markeredgewidth=0.2)  
 			elif agreement == 10:
-			    lons=numpy.array([lon])
-			    lats=numpy.array([lat])
-			    x,y = map(*numpy.meshgrid(lons,lats))
 	                    map.plot(x,y,marker=7,markersize=3.0,markeredgewidth=0.6,markerfacecolor='black',markeredgecolor='black') 
 			    #map.plot(x,y,marker='x',markersize=3.5,markeredgecolor='black') # markeredgewidth=0.3,markerfacecolor='None',)
 			elif agreement == 20:
-			    lons=numpy.array([lon])
-			    lats=numpy.array([lat])
-			    x,y = map(*numpy.meshgrid(lons,lats))
 	                    map.plot(x,y,marker=7,markersize=3.0,markeredgewidth=0.6,markerfacecolor='red',markeredgecolor='red')
 #	                elif agreement == 100:
-#			    lons=numpy.array([lon])
-#			    lats=numpy.array([lat])
-#			    x,y = map(*numpy.meshgrid(lons,lats))
 #	                    map.plot(x,y,marker='|',markersize=3.0,markeredgewidth=0.6,markerfacecolor='black',markeredgecolor='black')
 	   
 
@@ -781,7 +672,18 @@ def matrixplot(ifiles,variables,
 	#plt.show()
 
 
-def extract_data(file_list,variable_list,row,col,timmean,region=None,convert=False,scale=False):
+def reshape_list(input_list,dimensions):
+    """Reshapes a list according to the matrix dimensions"""
+    if input_list:
+	correct_format_list = numpy.array(str2list(input_list))
+	output_list = numpy.reshape(correct_format_list,(dimensions))
+    else:
+	output_list = input_list
+
+    return output_list
+
+
+def extract_data(file_list,variable_list,row,col,timmean=None,region=None,convert=False,scale=False):
     """Extracts data from the file"""
    
     fin = cdms2.open(file_list[row,col],'r')
@@ -824,7 +726,7 @@ def decimal_places(diff):
     
     if diff > 100.0:
         dec = 0
-    elif diff > 10.0:
+    elif diff > 5.0:
         dec = 1
     else:
         dec = math.floor(math.fabs(math.log10(diff)) + 2)
@@ -849,7 +751,7 @@ def get_min_max(files,variables,timmean,region):
             var = variables[row][col]
             fin = cdms2.open(ifile,'r')
 
-            tVar = extract_data(files,variables,row,col,timmean,region=region)[0]
+            tVar = extract_data(files,variables,row,col,timmean=timmean,region=region)[0]
 	    tmax = tVar.max()
             tmin = tVar.min()
             if tmax > max_level:
@@ -1059,6 +961,7 @@ if __name__ == '__main__':
     
 	file_list = [str(s) for s in args[0].split(',')]
 	var_list = [str(s) for s in args[1].split(',')]
+        
 
 	multiplot(file_list,var_list,
         	  dimensions=options.dimensions,
