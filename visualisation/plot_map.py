@@ -37,6 +37,8 @@ import sys
 import os
 from datetime import datetime
 
+import pylab
+
 
 ### Define globals ###
 
@@ -489,7 +491,6 @@ def matrixplot(ifiles,variables,
             # Plot the secondary data #
     
             if draw_contours:
-	        print numpy.shape(contour_files)
 		contour_data,contour_lon,contour_lat = extract_data(contour_files,contour_variables,row,col,timmean=timmean,scale=contour_scale)
 		
 		if projection == 'cyl':
@@ -522,9 +523,9 @@ def matrixplot(ifiles,variables,
 		
         	x,y = map(*numpy.meshgrid(uas_lon,uas_lat))
         	t = int(thin)
-		map.quiver(x[::t,::t],y[::t,::t],uas_data[::t,::t],vas_data[::t,::t],width=0.001,scale=650,headwidth=2,headlength=3)
-		# could use quiverkey function here to define a legend for the quiver
-		# see http://matplotlib.sourceforge.net/examples/pylab_examples/quiver_demo.html
+		Q = map.quiver(x[::t,::t],y[::t,::t],uas_data[::t,::t],vas_data[::t,::t],units='height',scale=170,width=0.0015,headwidth=3.5,headlength=4)
+		
+		qk = pylab.quiverkey(Q, 0.9, 0.95, 5, r'$5\; m\, s^{-1}$',labelpos='E',coordinates='figure',fontproperties={'weight': 'bold'})
 	    
 	    if draw_stippling:
 	        stipple_data,stipple_lon,stipple_lat = extract_data(stipple_files,stipple_variables,row,col) #region=region
