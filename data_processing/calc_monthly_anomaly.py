@@ -25,8 +25,9 @@ import os
 import sys
 from datetime import datetime
 
-import Scientific.IO.NetCDF
-from Scientific.IO.NetCDF import NetCDFFile
+#import Scientific.IO.NetCDF
+#from Scientific.IO.NetCDF import NetCDFFile
+import netCDF4
 # for maksed values I might need import netcdf4
 
 import cdms2 
@@ -35,30 +36,35 @@ import numpy
 import numpy.ma as ma
 
 
-def calc_monthly_climatology(base_data):
+def calc_monthly_climatology(base_data,miss_val):
     """Calculates the monthly climatology"""
+    
     ntime,nlat,nlon = numpy.shape(base_data)
-    monthly_climatology = numpy.zeros([12,nlat,nlon])
+    monthly_climatology = numpy.ones([12,nlat,nlon]) * miss_val
     for i in range(0,12):
-        monthly_climatology[i,:,:] = numpy.ma.mean(base_data[i:ntime:12,:,:],axis=0)
-	
+        monthly_climatology[i,:,:] = numpy.ma.mean(base_data[i:ntime:12,:,:],axis=0) 
+	## FIX: Note that for the Merra ts land masked data, the assignment of the numpy.mean values to monthly_climatology
+	## changes the -- values to 0.0. I need to re-make the masked file using apply_mask.py to get rid of this problem.
+
     return monthly_climatology
 
 
-def calc_monthly_anomaly(complete_data,base_data,months):
-    """Calculates the monthly anomaly"""  # assumes that the base_timeseries starts in January
+def calc_monthly_anomaly(complete_data,base_data,months,miss_val):
+    """Calculates the monthly anomaly"""  
     
     ## Calculate the monthly climatology ##
     
-    monthly_climatology = calc_monthly_climatology(base_data)
+    monthly_climatology = calc_monthly_climatology(base_data,miss_val)
     
     ## Calculate the monthly anomaly ##
     
     ntime,nlat,nlon = numpy.shape(complete_data)
-    monthly_anomaly = numpy.zeros([ntime,nlat,nlon])
+    monthly_anomaly = numpy.ones([ntime,nlat,nlon]) * miss_val
     for i in range(0,ntime):
 	month_index = months[i]
 	monthly_anomaly[i,:,:] = numpy.ma.subtract(complete_data[i,:,:], monthly_climatology[month_index-1,:,:])
+	# FIX: Note that for the Merra ts land masked data, the assignment of the numpy.substract values to monthly_anomaly
+	## changes the -- values to 0.0. I need to re-make the masked file using apply_mask.py to get rid of this problem.
     
     return monthly_anomaly, monthly_climatology 
 
@@ -80,7 +86,8 @@ def write_outfile(infile_name,infile_variable,outfile_name,outfile_data,var_comp
 	
     # Write the output file #
 
-    outfile = NetCDFFile(outfile_name, 'w') 
+    #outfile = NetCDFFile(outfile_name, 'w')   ## CHANGE ##
+    outfile = netCDF4.Dataset(outfile_name, 'w')
 
     # Global attributes #
 
@@ -118,7 +125,7 @@ def write_outfile(infile_name,infile_variable,outfile_name,outfile_data,var_comp
 
     if stat == 'anomaly':
 	outfile.createDimension('time',None)
-	times = outfile.createVariable('time',numpy.dtype('float32').char,('time',))
+	times = outfile.createVariable('time',numpy.dtype('float32').char,('time',)) 
 	times.units = time_units
 	times.calendar = time_calendar
 	times[:] = var_complete.getTime()
@@ -128,7 +135,7 @@ def write_outfile(infile_name,infile_variable,outfile_name,outfile_data,var_comp
 
     outfile_data = outfile_data.astype(numpy.float32)
     if stat == 'anomaly':
-	anom = outfile.createVariable(infile_variable,numpy.dtype('float32').char,('time','latitude','longitude')) #,fill_value=var_complete._FillValue[0])
+	anom = outfile.createVariable(infile_variable,numpy.dtype('float32').char,('time','latitude','longitude'),fill_value=var_complete._FillValue[0])
 	anom.units = var_complete.units
 	anom.long_name = var_complete.long_name
 	anom.history = long_history
@@ -139,7 +146,7 @@ def write_outfile(infile_name,infile_variable,outfile_name,outfile_data,var_comp
     else:
         count = 0
 	for i in ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']:
-	    clim = outfile.createVariable(infile_variable+'_'+i,numpy.dtype('float32').char,('latitude','longitude')) #,fill_value=var_complete._FillValue[0])
+	    clim = outfile.createVariable(infile_variable+'_'+i,numpy.dtype('float32').char,('latitude','longitude'),fill_value=var_complete._FillValue[0])
 	    clim.units = var_complete.units
 	    clim.long_name = var_complete.long_name
 	    clim.history = long_history+' for '+i
@@ -175,12 +182,13 @@ def main(infile_name,infile_variable,outfile_name,start_date,end_date,climatolog
     var_complete=fin(infile_variable,order='tyx')
     
     #Make sure missing values are masked
+    
     var_base_ma = ma.masked_values(var_base,var_base._FillValue)
     var_complete_ma = ma.masked_values(var_complete,var_complete._FillValue)
     
     fin.close()
     
-    monthly_anomaly, monthly_climatology = calc_monthly_anomaly(var_complete_ma,var_base_ma,months)
+    monthly_anomaly, monthly_climatology = calc_monthly_anomaly(var_complete_ma,var_base_ma,months,var_complete._FillValue)
 
     ## Wtite the outfile file/s ##
  
