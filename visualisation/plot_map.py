@@ -82,6 +82,7 @@ white = '#FFFFFF'
 
 ### Define functions ###
 
+
 def quickplot(ifile,ofile=None,variable=None):
     """Function for producing a quick plot using all default values"""
     
@@ -110,8 +111,7 @@ def multiplot(ifiles,variables,
 	      #stippling
 	      draw_stippling=False,stipple_files=None,stipple_variables=None,
               #Headings if using mutiple plots in a single plot
-              row_headings=None,inline_row_headings=False,
-              col_headings=None,img_headings=None,
+              row_headings=None,inline_row_headings=False,col_headings=None,img_headings=None,
               #Axis options to draw lat/lon lines
               draw_axis=False,delat=30,delon=30,equator=False,enso=False,
 	      #contour plot
@@ -145,7 +145,7 @@ def multiplot(ifiles,variables,
         img_headings = numpy.reshape(img_headings,(dimensions))
 
 
-    ## Call matrixplot, accounting for the special cases that require additional data (i.e. wind vectors or stippling) ##
+    ## Call matrixplot, accounting for the special cases that require additional data (e.g. wind vectors or stippling) ##
 
         
     matrixplot(file_matrix,var_matrix,
@@ -433,13 +433,6 @@ def matrixplot(ifiles,variables,
 		map = Basemap(llcrnrlon=minlon,llcrnrlat=minlat,urcrnrlon=maxlon,urcrnrlat=maxlat,\
                               resolution=res,area_thresh=area_threshold,projection='cyl')
 		tVar,tVar_lon = shiftgrid(0.,tVar,tVar_lon,start=True)
-	    elif projection == 'cyl-default':
-	        map = Basemap(resolution=res,area_thresh=area_threshold,projection='cyl')
-		tVar,tVar_lon = shiftgrid(180.,tVar,tVar_lon,start=False)
-	    elif projection == 'robin':	
-		map = Basemap(lon_0=0.,\
-                              resolution=res,area_thresh=area_threshold,projection='robin')
-	        tVar,tVar_lon = shiftgrid(180.,tVar,tVar_lon,start=False)
             elif projection == 'nsper':
 	        h = 3000000  #height of satellite
 		map = Basemap(projection='nsper',lon_0=lonX,lat_0=latX,satellite_height=h*1000.,resolution=res,area_thresh=area_threshold)
@@ -614,7 +607,7 @@ def matrixplot(ifiles,variables,
 		#IEMI-A
 		map.plot([W180,W140],[-10,-10],linestyle='-',color='0.5')   #bottom
 		map.plot([E165,E180],[-10,-10],linestyle='-',color='0.5')
-		map.plot([W180,W140],[10,10],linestyle='-',color='0.5')   #top
+		map.plot([W180,W140],[10,10],linestyle='-',color='0.5')     #top
 		map.plot([E165,E180],[10,10],linestyle='-',color='0.5')	
 		map.plot([E165,E165],[-10,10],linestyle='-',color='0.5')    #right
 		map.plot([W140,W140],[-10,10],linestyle='-',color='0.5')    #left
@@ -629,36 +622,34 @@ def matrixplot(ifiles,variables,
 		map.plot([E125,E125],[-10,20],linestyle='-',color='0.5')    #right
 		map.plot([E145,E145],[-10,20],linestyle='-',color='0.5')    #left
 		#nino4
-                map.plot([E160,E180],[-5,-5],linestyle='--',color='green',lw=1)    #bottom
+                map.plot([E160,E180],[-5,-5],linestyle='--',color='green',lw=1)   #bottom
 		map.plot([W180,W150],[-5,-5],linestyle='--',color='green',lw=1)
-		map.plot([E160,E180],[5,5],linestyle='--',color='green',lw=1)    #top
+		map.plot([E160,E180],[5,5],linestyle='--',color='green',lw=1)     #top
 		map.plot([W180,W150],[5,5],linestyle='--',color='green',lw=1)
-		map.plot([E160,E160],[-5,5],linestyle='--',color='green',lw=1)     #right
-		map.plot([W150,W150],[-5,5],linestyle='--',color='green',lw=1)     #left
+		map.plot([E160,E160],[-5,5],linestyle='--',color='green',lw=1)    #right
+		map.plot([W150,W150],[-5,5],linestyle='--',color='green',lw=1)    #left
 		#nino3.4
-                map.plot([W120,W170],[-5,-5],linestyle='--',color='orange',lw=1)    #bottom
-		map.plot([W120,W170],[5,5],linestyle='--',color='orange',lw=1)      #top
-		map.plot([W120,W120],[-5,5],linestyle='--',color='orange',lw=1)     #right
-		map.plot([W170,W170],[-5,5],linestyle='--',color='orange',lw=1)     #left
+                map.plot([W120,W170],[-5,-5],linestyle='--',color='orange',lw=1)  #bottom
+		map.plot([W120,W170],[5,5],linestyle='--',color='orange',lw=1)    #top
+		map.plot([W120,W120],[-5,5],linestyle='--',color='orange',lw=1)   #right
+		map.plot([W170,W170],[-5,5],linestyle='--',color='orange',lw=1)   #left
 		#nino3
                 map.plot([W90,W150],[-5,-5],linestyle='--',color='aqua',lw=1)     #bottom
 		map.plot([W90,W150],[5,5],linestyle='--',color='aqua',lw=1)       #top
 		map.plot([W90,W90],[-5,5],linestyle='--',color='aqua',lw=1)       #right
 		map.plot([W150,W150],[-5,5],linestyle='--',color='aqua',lw=1)     #left
 		#nino1+2
-                map.plot([W80,W90],[-10,-10],linestyle='--',color='0.5',lw=1)      #bottom
-		map.plot([W80,W90],[0,0],linestyle='--',color='0.5',lw=1)        #top
+                map.plot([W80,W90],[-10,-10],linestyle='--',color='0.5',lw=1)     #bottom
+		map.plot([W80,W90],[0,0],linestyle='--',color='0.5',lw=1)         #top
 		map.plot([W80,W80],[-10,0],linestyle='--',color='0.5',lw=1)       #right
 		map.plot([W90,W90],[-10,0],linestyle='--',color='0.5',lw=1)       #left
 
 
     ## Plot the colour bar ##
     
-    #cax = plt.axes([0.15,0.035,0.7,0.03]) # setup colorbar axes.
-    cax = plt.axes([0.15,vpadding*2,0.7,colourbar])   # used to be vpadding*2
+    cax = plt.axes([0.15,vpadding*2,0.7,colourbar])
     plt.xticks(fontsize=12)
-    #plt.colorbar(cax=cax,orientation='horizontal',ticks=ticks,extend='both',format="%.2f") # draw colorbar
-    #cb = plt.colorbar(cax=cax,orientation='horizontal',ticks=ticks,extend=extend,format="%.2f") # draw colorbar
+
     cb = plt.colorbar(mappable=im,cax=cax,orientation='horizontal',ticks=ticks,extend=extend,format='%.'+str(dec)+'f') # draw colorbar
     if units:
         cb.set_label(units)
@@ -796,9 +787,6 @@ def str2list(s):
 
 def unpack_comma_list(comma_list,data_type='str'):
     """Converts a comma separated list into a python array"""
-
-#    type_function = {'float': float(), 'int': int(), 'str': str()}  
-#    set_type = type_function(data_type)
     
     if comma_list:  # because it might be 'None'
 	if data_type == 'int':
@@ -983,23 +971,3 @@ if __name__ == '__main__':
         	  image_size=options.image_size,
 		  textsize=options.textsize)
 
-
-####################
-###  Example plot ##
-####################
-#d
-##path = '/cs/datastore/csdar/irv033/projections/tas/ann_se/'
-##infile_list = [path+'tas_proj.global.ensemble_all.2030.sresa2.ann.nc',path+'tas_proj.global.ensemble_all.2055.sresa2.ann.nc',
-##path+'tas_proj.global.ensemble_all.2090.sresa2.ann.nc',path+'tas_proj.global.ensemble_all.2030.sresa1b.ann.nc',
-##path+'tas_proj.global.ensemble_all.2055.sresa1b.ann.nc',path+'tas_proj.global.ensemble_all.2090.sresa1b.ann.nc']
-##variable_list = ['tas2030','tas2055','tas2090','tas2030','tas2055','tas2090']
-##dims = [2,3]
-##title = 'Change in surface air temperature relative to 1990 (all model ensemble)'
-##outfile = 'example.png'
-##tick_list = [0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5]
-##seg_list = ['#FFFFDF','#FFFF95','#FFFF0B','#FFAA0B','#FF660B','#FF0B0B','#800000','#550000','#350000']
-##row_heads = ['A2','A1B']       
-##col_heads = ['2030','2055','2099']
-##
-##multiplot(infile_list,variable_list,title,dimensions=dims,ofile=outfile,region=PACIFIC,res='l',area_threshold=1,units='degrees Celcius',
-##ticks=tick_list,discrete_segments=seg_list,row_headings=row_heads,col_headings=col_heads,draw_axis=True,contour=True,image_size=4)
