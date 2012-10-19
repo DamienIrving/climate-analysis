@@ -37,13 +37,7 @@ from cdms2 import MV2
 import numpy
 from numpy import *
 
-import array
-
-import Scientific.IO.NetCDF
-from Scientific.IO.NetCDF import NetCDFFile
-
-#import Numeric
-
+import netCDF4
 from scipy.io.numpyio import fwrite, fread
 
 import regrid2
@@ -125,12 +119,18 @@ def regrid(data,oldgrid):
     """Takes input data and regrids to a 2.5 degree global grid"""
     
     latitude = cdms2.createAxis(numpy.arange(-90,92.5,2.5,'f'),id='latitude')
-    latitude.units = 'degrees_north'
     latitude.designateLatitude()
+    latitude.units = 'degrees_north'
+    latitude.long_name = 'Latitude'
+    latitude.standard_name ='latitude'
+    latitude.axis = 'Y'
 
     longitude = cdms2.createAxis(numpy.arange(0,360,2.5,'f'),id='longitude')
-    longitude.units = 'degrees_east'
     longitude.designateLongitude()
+    longitude.units = 'degrees_east'
+    longitude.long_name = 'Longitude'
+    longitude.standard_name = 'longitude'
+    longitude.axis = 'X'
     longitude.modulo = 360.
     longitude.topology = 'circular'
 
@@ -145,7 +145,7 @@ def regrid(data,oldgrid):
 def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,outvar):
     """Writes the output netcdf file"""
     
-    outfile = NetCDFFile(fname_out, 'w') 
+    outfile = netCDF4.Dataset(fname_out, 'w') 
 
     # Global attributes #
 
@@ -167,18 +167,24 @@ def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,
     lats = outfile.createVariable('latitude',dtype('float32').char,('latitude',))
     lons = outfile.createVariable('longitude',dtype('float32').char,('longitude',))
 
-    times[:] = time_axis         # u.getTime()
-    lats[:] = lat_axis           # lat_u
-    lons[:] = lon_axis           # lon_u     # What about the variable attributes?? use attList = dir(NetCDFVariable)  OR  attData = getattr(var,  attName) 
+    for att_name in time_axis.attributes.keys():
+        setattr(times, att_name, time_axis.attributes[att_name])
+    for att_name in lat_axis.attributes.keys():
+        setattr(lats, att_name, lat_axis.attributes[att_name])
+    for att_name in lon_axis.attributes.keys():
+        setattr(lons, att_name, lon_axis.attributes[att_name])
+
+    times[:] = time_axis         
+    lats[:] = lat_axis           
+    lons[:] = lon_axis            
 
     # Variable #
 
-    out_data = outfile.createVariable(outvar,dtype('float32').char,('time','latitude','longitude'))
+    out_data = outfile.createVariable(outvar,dtype('float32').char,('time','latitude','longitude'),fill_value=9.999e+20)
     out_data.units = 'm2 s-2'
     out_data.name = 'Wave activity flux, %s component'  %(outvar[-1])
     out_data.history = 'Calculated wave activity flux from U wind, V wind and geopotential height'
     out_data.standard_name = outvar
-    #out_data._FillValue = 9.999e+20  # or missing_value or fill_value????
 
     waf_data = waf_data.astype(numpy.float32)
     out_data[:] = waf_data
@@ -187,7 +193,6 @@ def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,
     outfile.close()
 
 
-	
 def main(fname_u, fname_uclim, vname_u, fname_v, fname_vclim, vname_v, fname_zg, fname_zgclim, vname_zg, fname_wafx, fname_wafy):
     """Run the program"""
 
@@ -258,7 +263,7 @@ def main(fname_u, fname_uclim, vname_u, fname_v, fname_vclim, vname_v, fname_zg,
     
     zg_data_regrid, lat_regrid, lon_regrid = regrid(zg_data,input_grid)
     zgclim_data_regrid, lat_regrid, lon_regrid = regrid(zgclim_data,input_grid)
-    
+   
     
     ### Create the binary data files for input into the Fortran wap script ### 
     
@@ -287,6 +292,7 @@ def main(fname_u, fname_uclim, vname_u, fname_v, fname_vclim, vname_v, fname_zg,
     
     os.system("/home/dbirving/data_processing/WAF/tnf_xy_onelevel.run < answers.txt")
     
+    
     ### Write the output netCDF file ###
     
     wafx_data = read_binary('wafx.bin',[ntime,73,144])
@@ -297,6 +303,10 @@ def main(fname_u, fname_uclim, vname_u, fname_v, fname_vclim, vname_v, fname_zg,
     write_netcdf(fname_wafx,wafx_data,time_u,lat_regrid,lon_regrid,sourcefile_text,'wafx')
     write_netcdf(fname_wafy,wafy_data,time_u,lat_regrid,lon_regrid,sourcefile_text,'wafy')
 
+    
+    ### Clean up ###
+    
+    os.system("rm answers.txt zg.bin zgclim.bin u.bin uclim.bin v.bin vclim.bin wafx.bin wafy.bin")
 
     infile_u.close()
     infile_v.close()
