@@ -107,7 +107,8 @@ def multiplot(ifiles,variables,
 	      #contours
 	      draw_contours=False,contour_files=None,contour_variables=None,contour_ticks=None,contour_scale=None,
 	      #wind vectors
-	      draw_vectors=False,uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,thin=1,
+	      draw_vectors=False,vector_type='wind',uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,thin=1,key_value=1,
+	      quiver_scale=170,quiver_width=0.0015,quiver_headwidth=3.5,quiver_headlength=4.0,
 	      #stippling
 	      draw_stippling=False,stipple_files=None,stipple_variables=None,
               #Headings if using mutiple plots in a single plot
@@ -154,7 +155,8 @@ def multiplot(ifiles,variables,
                colourbar_colour,ticks,discrete_segments,units,convert,scale,extend,
                res,area_threshold,
 	       draw_contours,reshape_list(contour_files,(dimensions)),reshape_list(contour_variables,(dimensions)),contour_ticks,contour_scale,
-	       draw_vectors,reshape_list(uwnd_files,(dimensions)),reshape_list(uwnd_variables,(dimensions)),reshape_list(vwnd_files,(dimensions)),reshape_list(vwnd_variables,(dimensions)),thin,
+	       draw_vectors,vector_type,reshape_list(uwnd_files,(dimensions)),reshape_list(uwnd_variables,(dimensions)),reshape_list(vwnd_files,(dimensions)),reshape_list(vwnd_variables,(dimensions)),thin,key_value,
+	       quiver_scale,quiver_width,quiver_headwidth,quiver_headlength,
 	       draw_stippling,reshape_list(stipple_files,(dimensions)),reshape_list(stipple_variables,(dimensions)),
                row_headings,inline_row_headings,col_headings,img_headings,
                draw_axis,delat,delon,equator,enso,
@@ -176,7 +178,8 @@ def matrixplot(ifiles,variables,
 	      #contours
 	      draw_contours=False,contour_files=None,contour_variables=None,contour_ticks=None,contour_scale=None,
 	      # wind vectors
-	      draw_vectors=False,uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,thin=1,
+	      draw_vectors=False,vector_type='wind',uwnd_files=None,uwnd_variables=None,vwnd_files=None,vwnd_variables=None,thin=1,key_value=1,
+	      quiver_scale=170,quiver_width=0.0015,quiver_headwidth=3.5,quiver_headlength=4.0,
 	      # stippling
 	      draw_stippling=False,stipple_files=None,stipple_variables=None,
               #Headings if using mutiple plots in a single plot
@@ -502,7 +505,7 @@ def matrixplot(ifiles,variables,
                     plt.setp(zc, linewidth=2)
 	        except ValueError:
 		    continue
-	    
+	  
 	    if draw_vectors:
 		uas_data,uas_lon,uas_lat = extract_data(uwnd_files,uwnd_variables,row,col,timmean=timmean)
 		vas_data,vas_lon,vas_lat = extract_data(vwnd_files,vwnd_variables,row,col,timmean=timmean)
@@ -516,9 +519,18 @@ def matrixplot(ifiles,variables,
 		
         	x,y = map(*numpy.meshgrid(uas_lon,uas_lat))
         	t = int(thin)
-		Q = map.quiver(x[::t,::t],y[::t,::t],uas_data[::t,::t],vas_data[::t,::t],units='height',scale=170,width=0.0015,headwidth=3.5,headlength=4)
+		Q = map.quiver(x[::t,::t],y[::t,::t],uas_data[::t,::t],vas_data[::t,::t],units='height',scale=quiver_scale,
+		width=quiver_width,headwidth=quiver_headwidth,headlength=quiver_headlength)
 		
-		qk = pylab.quiverkey(Q, 0.9, 0.95, 5, r'$5\; m\, s^{-1}$',labelpos='E',coordinates='figure',fontproperties={'weight': 'bold'})
+		if vector_type == 'wind':
+		    key_units = 'm\, s^{-1}'
+		elif vector_type == 'waf':   # wave activity flux
+		    key_units = 'm^{2}\, s^{-2}'
+		else:
+		    print 'Vector type not recognised'
+		    sys.exit(0)
+		
+		qk = pylab.quiverkey(Q, 0.9, 0.95, key_value, r'$%s\; %s$' %(key_value,key_units), labelpos='E',coordinates='figure',fontproperties={'weight': 'bold'})
 	    
 	    if draw_stippling:
 	        stipple_data,stipple_lon,stipple_lat = extract_data(stipple_files,stipple_variables,row,col) #region=region
@@ -653,7 +665,6 @@ def matrixplot(ifiles,variables,
     cb = plt.colorbar(mappable=im,cax=cax,orientation='horizontal',ticks=ticks,extend=extend,format='%.'+str(dec)+'f') # draw colorbar
     if units:
         cb.set_label(units)
-
 
 #    plt.axes(ax)  # make the original axes current again
     
@@ -847,11 +858,17 @@ if __name__ == '__main__':
     parser.add_option("--contour_scale", dest="contour_scale",type='float',default=None,help="Scale (or multiplication) factor for contour data [defualt = None]")
     #Wind
     parser.add_option("--draw_vectors",action="store_true",dest="draw_vectors",default=False,help="Switch for drawing wind vectors on the plot [default = False]")
+    parser.add_option("--vector_type", dest="vector_type",type='string',default='wind',help="Type of vector being plotted [defualt = wind]")
     parser.add_option("--uwnd_files", dest="uwnd_files",type='string',default=None,help="List of input zonal wind files")
     parser.add_option("--uwnd_variables", dest="uwnd_variables",type='string',default=None,help="List of input zonal wind variables")
     parser.add_option("--vwnd_files", dest="vwnd_files",type='string',default=None,help="List of input zonal wind files")
     parser.add_option("--vwnd_variables", dest="vwnd_variables",type='string',default=None,help="List of input zonal wind variables")
     parser.add_option("--thin", dest="thin",type='int',default=1,help="Thinning factor for plotting wind vectors [defualt = 1]")
+    parser.add_option("--key_value", dest="key_value",type='float',default=1.0,help="Size of the wind vector in the key (plot is not scaled to this) [defualt = 1]")
+    parser.add_option("--quiver_scale",dest="quiver_scale",type='float',default=170,help="Data units per arrow length unit (smaller means longer arrow) [defualt = 170]")
+    parser.add_option("--quiver_width",dest="quiver_width",type='float',default=0.0015,help="Shaft width in arrow units [default = 0.0015, i.e. 0.0015 times the width of the plot]")
+    parser.add_option("--quiver_headwidth",dest="quiver_headwidth",type='float',default=3.5,help="Head width as multiple of shaft width [default = 3.5]")
+    parser.add_option("--quiver_headlength",dest="quiver_headlength",type='float',default=4.0,help="Head length as multiple of shaft width [default = 4.0]")
     #Stippling
     parser.add_option("--draw_stippling",action="store_true",dest="draw_stippling",default=False,help="Switch for drawing stippling on the plot [default = False]")
     parser.add_option("--stipple_files", dest="stipple_files",type='string',default=None,help="List of input stippling files")
@@ -907,12 +924,18 @@ if __name__ == '__main__':
             --contour_ticks       List of comma seperataed tick marks, or just the number of contour lines
             --contour_scale       Scale (or multiplication) factor for contour data [default = None]
 	    --draw_vectors        Switch for drawing wind vectors on the plot [default = False]
-            --uwnd_files          List of input zonal surface wind files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
+            --vector_type         Type of vector being plotted (determines units for quiver key). Can be 'wind' or 'waf' (wave activity flux) [default = 'wind']
+	    --uwnd_files          List of input zonal surface wind files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
             --uwnd_variables      List of comma seperated variable names corresponding to the input zonal surface wind files [default = None] 
             --vwnd_files          List of input meridional surface wind files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
             --vwnd_variables      List of comma seperated variable names corresponding to the input meridional surface wind files [default = None] 
 	    --thin                Thinning factor for plotting wind vectors (e.g. 2 = every second vector; 3 = every third) [default = 1]
-            --draw_stippling      Switch for drawing stippling on the plot [default = False]
+            --key_value           Magnitude of the vector shown in the legend (plot vectors are not scaled to this) [default = 1]
+	    --quiver_scale        Data units per arrow length unit, e.g. m/s per plot width; a smaller scale parameter makes the arrow longer. If None, autoscaling algorithm used [default = 170]
+	    --quiver_width        Shaft width in arrow units [default = 0.0015, i.e. 0.0015 times the width of the plot]
+	    --quiver_headwidth    Head width as multiple of shaft width [default = 3.5]
+	    --quiver_headlength   Head length as multiple of shaft width [default = 4.0]
+	    --draw_stippling      Switch for drawing stippling on the plot [default = False]
             --stipple_files       List of input stippling files, in an order such that positions in the matrix start bottom left and fill row by row [defualt = None]
             --stipple_variables   List of comma seperated variable names corresponding to the input stippling files [default = None] 
             --row_headings        List of comma seperated row headings (order bottom to top) [default = None]
@@ -961,8 +984,9 @@ if __name__ == '__main__':
         	  res=options.resolution,area_threshold=options.area_threshold,
 		  draw_contours=options.draw_contours,contour_files=unpack_comma_list(options.contour_files),contour_variables=unpack_comma_list(options.contour_variables),
 		  contour_ticks=unpack_comma_list(options.contour_ticks,'float'),contour_scale=options.contour_scale,
-		  draw_vectors=options.draw_vectors,uwnd_files=unpack_comma_list(options.uwnd_files),uwnd_variables=unpack_comma_list(options.uwnd_variables),
-		  vwnd_files=unpack_comma_list(options.vwnd_files),vwnd_variables=unpack_comma_list(options.vwnd_variables),thin=options.thin,
+		  draw_vectors=options.draw_vectors,vector_type=options.vector_type,uwnd_files=unpack_comma_list(options.uwnd_files),uwnd_variables=unpack_comma_list(options.uwnd_variables),
+		  vwnd_files=unpack_comma_list(options.vwnd_files),vwnd_variables=unpack_comma_list(options.vwnd_variables),thin=options.thin,key_value=options.key_value,
+		  quiver_scale=options.quiver_scale,quiver_width=options.quiver_width,quiver_headwidth=options.quiver_headwidth,quiver_headlength=options.quiver_headlength,
 		  draw_stippling=options.draw_stippling,stipple_files=unpack_comma_list(options.stipple_files),stipple_variables=unpack_comma_list(options.stipple_variables),
         	  row_headings=unpack_comma_list(options.row_headings),inline_row_headings=unpack_comma_list(options.inline_row_headings),
         	  col_headings=unpack_comma_list(options.col_headings),img_headings=unpack_comma_list(options.img_headings),

@@ -65,6 +65,8 @@ outpath=/work/dbirving/processed/spatial_maps
 if [ ${contour_type} = 'raw' ] ; then
     ts_file=${inpath}/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc
     sf_file=${inpath}/processed/sf_Merra_250hPa_monthly_native.nc
+    wafx_file=${inpath}/processed/wafx_Merra_250hPa_monthly_native.nc
+    wafy_file=${inpath}/processed/wafy_Merra_250hPa_monthly_native.nc
     cbar=RdBu_r
     pticks='-5,-4.5,-4,-3.5,-3,-2.5,-2,-1.5,-1,-0.5,0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5'
     sticks='-30,-25,-20,-15,-10,-5,0,5,10,15,20,25,30'
@@ -73,6 +75,8 @@ if [ ${contour_type} = 'raw' ] ; then
 elif [ ${contour_type} = 'anomaly' ] ; then
     ts_file=${inpath}/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc
     sf_file=${inpath}/processed/sf_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc
+    wafx_file=${inpath}/processed/wafx_Merra_250hPa_monthly_native.nc
+    wafy_file=${inpath}/processed/wafy_Merra_250hPa_monthly_native.nc
     cbar=RdBu_r
     pticks='-5,-4.5,-4,-3.5,-3,-2.5,-2,-1.5,-1,-0.5,0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5'
     sticks='-30,-25,-20,-15,-10,-5,0,5,10,15,20,25,30'
@@ -135,11 +139,15 @@ do
     do
         cdo seltimestep,${count} ${ts_file} temp_ts.nc
 	cdo seltimestep,${count} ${sf_file} temp_sf.nc
+	cdo -b 64 seltimestep,${count} ${wafx_file} temp_wafx.nc
+	cdo -b 64 seltimestep,${count} ${wafy_file} temp_wafy.nc
 	outfile=${outfile_start}_${proj}_${count}.png
-	/opt/cdat/bin/cdat plot_map.py temp_ts.nc ts --title ${title} --contour --ticks ${pticks} --draw_contours --contour_files temp_sf.nc --contour_variables sf --contour_ticks ${sticks} --image_size 13 --draw_axis --ofile ${outfile} --img_headings ${m}${y} --units Celsius --extend both --colourbar_colour ${cbar} --enso --projection ${proj} --contour_scale 1.e-6 
+	/opt/cdat/bin/cdat plot_map.py temp_ts.nc ts --title ${title} --contour --ticks ${pticks} --draw_contours --contour_files temp_sf.nc --contour_variables sf --contour_ticks ${sticks} --image_size 13 --draw_axis --ofile ${outfile} --img_headings ${m}${y} --units Celsius --extend both --colourbar_colour ${cbar} --enso --projection ${proj} --contour_scale 1.e-6 --draw_vectors --vector_type waf --uwnd_files temp_wafx.nc --uwnd_variables wafx --vwnd_files temp_wafy.nc --vwnd_variables wafy --key_value 10 --thin 4 --quiver_scale 300
 	echo ${outfile}
         rm temp_ts.nc
 	rm temp_sf.nc
+	rm temp_wafx.nc
+	rm temp_wafy.nc
 	count=`expr $count + 1`
     done
 done
