@@ -145,7 +145,7 @@ def regrid(data,oldgrid):
 def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,outvar):
     """Writes the output netcdf file"""
     
-    outfile = netCDF4.Dataset(fname_out, 'w') 
+    outfile = netCDF4.Dataset(fname_out, 'w', format='NETCDF3_CLASSIC')   ## Found error using cdo on abyss with format='NETCDF4' 
 
     # Global attributes #
 
@@ -156,6 +156,7 @@ def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,
     setattr(outfile,'Sourcefiles',sourcefile_text)
     creation_text = 'Created %s using %s' %(datetime.utcnow().isoformat(), sys.argv[0])
     setattr(outfile,'created',creation_text)
+    setattr(outfile,'Format','NETCDF3_CLASSIC')
 
     # Dimensions #
 
