@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # $ Id: $
 #
 # Author: ( @csiro.au)
@@ -11,7 +11,7 @@
 
 nargs=3
 function usage {
-    echo "USAGE: $0 input output"
+    echo "USAGE: $0 {region} {input} {output}"
     echo "    region:     Region to extract"
     echo "    input:      Input file"
     echo "    output:     Output file"
@@ -53,8 +53,8 @@ case ${region} in
     trop_ind_pac )
       box="39,280,-25,25"
       cdo sellonlatbox,${box} $infile $outfile ;;
-    eq_pacific )
-      box="120,280,-20,20"
+    eqpacific )
+      box="120,280,-30,30"
       cdo sellonlatbox,${box} $infile $outfile ;;
     indian )
       box="39,120,-25,25"

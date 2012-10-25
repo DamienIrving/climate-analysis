@@ -25,10 +25,7 @@ import os
 import sys
 from datetime import datetime
 
-#import Scientific.IO.NetCDF
-#from Scientific.IO.NetCDF import NetCDFFile
 import netCDF4
-# for maksed values I might need import netcdf4
 
 import cdms2 
 
@@ -44,7 +41,7 @@ def calc_monthly_climatology(base_data,miss_val):
     for i in range(0,12):
         monthly_climatology[i,:,:] = numpy.ma.mean(base_data[i:ntime:12,:,:],axis=0) 
 	## FIX: Note that for the Merra ts land masked data, the assignment of the numpy.mean values to monthly_climatology
-	## changes the -- values to 0.0. I need to re-make the masked file using apply_mask.py to get rid of this problem.
+	## changes the -- values to 0.0. 
 
     return monthly_climatology
 
@@ -64,15 +61,13 @@ def calc_monthly_anomaly(complete_data,base_data,months,miss_val):
 	month_index = months[i]
 	monthly_anomaly[i,:,:] = numpy.ma.subtract(complete_data[i,:,:], monthly_climatology[month_index-1,:,:])
 	# FIX: Note that for the Merra ts land masked data, the assignment of the numpy.substract values to monthly_anomaly
-	## changes the -- values to 0.0. I need to re-make the masked file using apply_mask.py to get rid of this problem.
+	## changes the -- values to 0.0. 
     
     return monthly_anomaly, monthly_climatology 
 
 
 def write_outfile(infile_name,infile_variable,outfile_name,outfile_data,var_complete,start_date,end_date,time_units,time_calendar,stat='anomaly'):
     """Writes output file for either climatology or anomaly stat"""
-    
-    print var_complete._FillValue[0]
     
     # Define stat specific info #
     
@@ -86,17 +81,16 @@ def write_outfile(infile_name,infile_variable,outfile_name,outfile_data,var_comp
 	
     # Write the output file #
 
-    #outfile = NetCDFFile(outfile_name, 'w')   ## CHANGE ##
-    outfile = netCDF4.Dataset(outfile_name, 'w')
+    outfile = netCDF4.Dataset(outfile_name, 'w', format='NETCDF3_CLASSIC')
 
     # Global attributes #
 
     setattr(outfile,'Title','Monthly anomaly')
-    setattr(outfile,'contact','Damien Irving (d.irving@student.unimelb.edu.au)')
-    setattr(outfile,'history',short_history)
-    setattr(outfile,'sourcefile',infile_name)
-    creation_text = 'Created %s using %s' %(datetime.utcnow().isoformat(), sys.argv[0])
-    setattr(outfile,'created',creation_text)
+    setattr(outfile,'Contact','Damien Irving (d.irving@student.unimelb.edu.au)')
+    setattr(outfile,'History',short_history)
+    setattr(outfile,'Sourcefile',infile_name)
+    setattr(outfile,'Created','Created %s using %s' %(datetime.utcnow().isoformat(), sys.argv[0]))
+    setattr(outfile,'Format','NETCDF3_CLASSIC')
 
     # Latitude and longitude #
     
@@ -234,7 +228,11 @@ if __name__ == '__main__':
             Damien Irving, 23 Aug 2012.
 
 	Bugs
-            Please report any problems to: d.irving@student.unimelb.edu.au
+            The script currently has issues with missing values (e.g. with land masked files). A short-term
+	    work around would be to use the skin temperature (which has no missing data) and then apply a mask 
+	    after the climatology or anomaly has been calculated.  
+	    
+	    Please report any problems to: d.irving@student.unimelb.edu.au
 	"""
 	sys.exit(0)
 
