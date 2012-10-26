@@ -22,6 +22,12 @@ from optparse import OptionParser
 from datetime import datetime
 
 import cdms2 
+from cdms2 import MV2
+
+#cdms2.setNetcdfShuffleFlag(0)
+#cdms2.setNetcdfDeflateFlag(0)
+#cdms2.setNetcdfDeflateLevelFlag(0)
+
 import numpy
 
 import regrid2
@@ -135,36 +141,62 @@ def main(mask_file, mask_var, mask_type, input_file, output_file, hide, threshol
     setattr(fout,'Mask','%s mask (points with %s fraction > %s hidden) applied to %s on %s using %s' %(hide,hide,threshold,input_file,datetime.utcnow().isoformat(), sys.argv[0]))
     setattr(fout,'Format','NETCDF3_CLASSIC')
     
-    # Axes #
-    
-    create_axis('latitude',fout,in_lat)
-    create_axis('longitude',fout,in_lon)
+    # Dimensions #
+   
+    # Create dimension
     if is_time:
-        create_axis('time',fout,in_time)		
-	axis_list = ('time','latitude','longitude')
+        fout.createDimension('time', None)		
+	axis_list = ('time','latitude','longitude',)
     else:  
-        axis_list = ('latitude','longitude')
-
-    # Write new variables #   
+        axis_list = ('latitude','longitude',)
+    out_lat = fout.createDimension('latitude', len(in_lat))
+    out_lon = fout.createDimension('longitude', len(in_lon)) 
     
+    # Create corresponding variables
+    if is_time:
+        times = fout.createVariable('time','f4',('time',))
+        times[:] = in_time[:]
+    latitudes = fout.createVariable('latitude','f4',('latitude',))
+    longitudes = fout.createVariable('longitude','f4',('longitude',))
+    latitudes[:] = in_lat[:]
+    longitudes[:] = in_lon[:]
+    
+    # Include attributes
+    for att_name in in_time.attributes.keys():
+	setattr(times, att_name, in_time.attributes[att_name])
+    for att_name in in_lat.attributes.keys():
+        setattr(latitudes, att_name, in_lat.attributes[att_name])
+    for att_name in in_lon.attributes.keys():
+	setattr(longitudes, att_name, in_lon.attributes[att_name])
+    
+    # Output data #
+	
     for v in in_vars:
-	in_data = fin(v, order=order)
+	in_data = fin(v) #, order=order)
 	
 	if grid_match == False:
 	    oldgrid=in_data.getGrid()                                               
             regridfunc=Regridder(oldgrid, mask_grid)                                
             in_data=regridfunc(in_data)
 	
-        in_data=numpy.squeeze(in_data)	
-	in_data_ma = numpy.where(mask == 1, 9.999e+20, in_data) 
+        #in_data=numpy.squeeze(in_data)	
+#	mask = numpy.resize(mask,numpy.shape(in_data))
+#	in_data_ma = numpy.ma.masked_array(in_data, mask=mask) 
+#	
+#	in_data_ma = MV2.array(in_data_ma)
+#	in_data_ma = in_data_ma.astype(numpy.float32)
 	
-	out_var = fout.createVariable(v,numpy.dtype('float32').char,axis_list,fill_value=9.999e+20) 
+	out_data = fout.createVariable(v,'f4',axis_list,fill_value=in_data.missing_value) 
+	
 	for att_name in in_data.attributes.keys():
-            setattr(out_var, att_name, in_data.attributes[att_name])
-	setattr(out_var, 'mask', 'points with %s fraction > %s hidden' %(hide,threshold))
-	out_var[:] = in_data_ma
+	    if att_name != "_FillValue":
+                setattr(out_data, att_name, in_data.attributes[att_name])
+	setattr(out_data, 'mask', 'points with %s fraction > %s hidden' %(hide,threshold))
+	setattr(out_data, 'missing_value', in_data.missing_value)
 	
-	   
+	out_data[:] = in_data[:,:,:]#in_data_ma[:,:,:]
+    
+  	   
     mfin.close()
     fin.close()
     fout.close()
