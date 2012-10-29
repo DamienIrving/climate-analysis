@@ -40,8 +40,9 @@ def calc_monthly_climatology(base_data,miss_val):
     monthly_climatology = numpy.ones([12,nlat,nlon]) * miss_val
     for i in range(0,12):
         monthly_climatology[i,:,:] = numpy.ma.mean(base_data[i:ntime:12,:,:],axis=0) 
-	## FIX: Note that for the Merra ts land masked data, the assignment of the numpy.mean values to monthly_climatology
-	## changes the -- values to 0.0. 
+	# The input variable must have a 'missing_value' attribute for this to work correctly,
+	# because python does not recognise the _FillValue attribute (used in CF compliance)
+	# If missing_value is not present, all missing values become zeros in the array 
 
     return monthly_climatology
 
@@ -60,13 +61,14 @@ def calc_monthly_anomaly(complete_data,base_data,months,miss_val):
     for i in range(0,ntime):
 	month_index = months[i]
 	monthly_anomaly[i,:,:] = numpy.ma.subtract(complete_data[i,:,:], monthly_climatology[month_index-1,:,:])
-	# FIX: Note that for the Merra ts land masked data, the assignment of the numpy.substract values to monthly_anomaly
-	## changes the -- values to 0.0. 
+	# The input variable must have a 'missing_value' attribute for this to work correctly,
+	# because python does not recognise the _FillValue attribute (used in CF compliance)
+	# If missing_value is not present, all missing values become zeros in the array 
     
     return monthly_anomaly, monthly_climatology 
 
 
-def write_outfile(infile_name,infile_variable,outfile_name,outfile_data,var_complete,start_date,end_date,time_units,time_calendar,stat='anomaly'):
+def write_outfile(fin,infile_name,infile_variable,outfile_name,outfile_data,var_complete,start_date,end_date,stat='anomaly'):
     """Writes output file for either climatology or anomaly stat"""
     
     # Define stat specific info #
@@ -85,6 +87,9 @@ def write_outfile(infile_name,infile_variable,outfile_name,outfile_data,var_comp
 
     # Global attributes #
 
+#    for att_name in fin.attributes.keys():
+#        setattr(fout, att_name, fin.attributes[att_name])
+
     setattr(outfile,'Title','Monthly anomaly')
     setattr(outfile,'Contact','Damien Irving (d.irving@student.unimelb.edu.au)')
     setattr(outfile,'History',short_history)
@@ -94,102 +99,112 @@ def write_outfile(infile_name,infile_variable,outfile_name,outfile_data,var_comp
 
     # Latitude and longitude #
     
+    in_lat = var_complete.getLatitude()
+    in_lon = var_complete.getLongitude()
     ntime,nlat,nlon = numpy.shape(var_complete)
     
     outfile.createDimension('latitude',nlat)
     outfile.createDimension('longitude',nlon)
     
-    lats = outfile.createVariable('latitude',numpy.dtype('float32').char,('latitude',))
-    lons = outfile.createVariable('longitude',numpy.dtype('float32').char,('longitude',))
+    lats = outfile.createVariable('latitude','f4',('latitude',))
+    lons = outfile.createVariable('longitude','f4',('longitude',))
 
-    lats.long_name = 'Latitude'
-    lats.units = 'degrees_north'
-    lats.standard_name = 'latitude'
-    lats.axis = 'Y'
-    
-    lons.long_name = 'Longitude'
-    lons.units = 'degrees_east'
-    lons.standard_name = 'longitude'
-    lons.axis = 'X'
+    for att_name in in_lat.attributes.keys():
+        setattr(lats, att_name, in_lat.attributes[att_name])
+    for att_name in in_lon.attributes.keys():
+	setattr(lons, att_name, in_lon.attributes[att_name])
 
-    lats[:] = var_complete.getLatitude()
-    lons[:] = var_complete.getLongitude()   
+    lats[:] = in_lat[:]
+    lons[:] = in_lon[:]   
 
     # Time axis (if anomaly) #
 
     if stat == 'anomaly':
-	outfile.createDimension('time',None)
-	times = outfile.createVariable('time',numpy.dtype('float32').char,('time',)) 
-	times.units = time_units
-	times.calendar = time_calendar
-	times[:] = var_complete.getTime()
+	outfile.createDimension('time', None)
+	times = outfile.createVariable('time','f4',('time',)) 
+	
+	in_time = var_complete.getTime()
+	for att_name in in_time.attributes.keys():
+	    setattr(times, att_name, in_time.attributes[att_name])
+	
+	times[:] = in_time[:]
     
     
     # Output variable #
-
-    outfile_data = outfile_data.astype(numpy.float32)
+    
+    out_data = MV2.array(out_data)
+    out_data = out_data.astype(numpy.float32)
+    
     if stat == 'anomaly':
-	anom = outfile.createVariable(infile_variable,numpy.dtype('float32').char,('time','latitude','longitude'),fill_value=var_complete._FillValue[0])
-	anom.units = var_complete.units
-	anom.long_name = var_complete.long_name
-	anom.history = long_history
-	anom.standard_name = infile_variable
-
-	anom[:] = outfile_data
+	out_var = outfile.createVariable(infile_variable,'f4',('time','latitude','longitude',),fill_value=var_complete.missing_value)
+	
+	for att_name in var_complete.attributes.keys():
+	    if (att_name != "_FillValue") and (att_name != "history"):
+                setattr(out_data, att_name, var_complete.attributes[att_name])
+        setattr(out_data,'history',long_history)
+	setattr(out_data, 'missing_value', var_complete.missing_value)
+	
+	out_var[:] = out_data
     
     else:
         count = 0
 	for i in ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']:
-	    clim = outfile.createVariable(infile_variable+'_'+i,numpy.dtype('float32').char,('latitude','longitude'),fill_value=var_complete._FillValue[0])
-	    clim.units = var_complete.units
-	    clim.long_name = var_complete.long_name
-	    clim.history = long_history+' for '+i
-	    clim.standard_name = infile_variable
+	    out_var = outfile.createVariable(infile_variable+'_'+i,'f4',('latitude','longitude',),fill_value=var_complete.missing_value)
 	    
-	    clim[:] = outfile_data[count,:,:]
+	    for att_name in var_complete.attributes.keys():
+		if (att_name != "_FillValue") and (att_name != "history"):
+                    setattr(out_data, att_name, var_complete.attributes[att_name])
+            setattr(out_data,'history',long_history+' for '+i)
+	    setattr(out_data, 'missing_value', var_complete.missing_value)
+	        
+	    out_var[:] = out_data[count,:,:]
             
 	    count = count + 1
-	    
+
+ 
     outfile.close()
     
 
 def main(infile_name,infile_variable,outfile_name,start_date,end_date,climatology):
     """Run the program"""
     
-    ## Read the input file ##
+    ## Open the input file ##
 
     fin=cdms2.open(infile_name,'r')
     
     ## Get the time axis information ##
     
     time_data = fin.getAxis('time').asComponentTime()
-    time_units = getattr(fin.getAxis('time'), 'units')
-    time_calendar = getattr(fin.getAxis('time'), 'calendar')
-    
     months = []
     for ii in range(0,len(time_data)):
 	months.append(int(str(time_data[ii]).split('-')[1]))
     
-    ## Calculate the monthly climatology and anomaly ##
+    
+    ## Extract the required data ##
     
     var_base=fin(infile_variable,time=(start_date,end_date),order='tyx')
     var_complete=fin(infile_variable,order='tyx')
     
+    assert (hasattr(var_base, 'missing_value'), 'Input variable must have missing_value attribute'
+    
     #Make sure missing values are masked
     
-    var_base_ma = ma.masked_values(var_base,var_base._FillValue)
-    var_complete_ma = ma.masked_values(var_complete,var_complete._FillValue)
+    var_base_ma = ma.masked_values(var_base,var_base.missing_value)
+    var_complete_ma = ma.masked_values(var_complete,var_complete.missing_value)
     
-    fin.close()
+    
+    ## Calculate the monthly climatology and anomaly ##
     
     monthly_anomaly, monthly_climatology = calc_monthly_anomaly(var_complete_ma,var_base_ma,months,var_complete._FillValue)
 
     ## Wtite the outfile file/s ##
  
     if climatology:
-        write_outfile(infile_name,infile_variable,outfile_name,monthly_climatology,var_complete,start_date,end_date,time_units,time_calendar,stat='climatology')
+        write_outfile(fin,infile_name,infile_variable,outfile_name,monthly_climatology,var_complete,start_date,end_date,stat='climatology')
     else:
-        write_outfile(infile_name,infile_variable,outfile_name,monthly_anomaly,var_complete,start_date,end_date,time_units,time_calendar)
+        write_outfile(fin,infile_name,infile_variable,outfile_name,monthly_anomaly,var_complete,start_date,end_date)
+   
+    fin.close()
    
    
 if __name__ == '__main__':

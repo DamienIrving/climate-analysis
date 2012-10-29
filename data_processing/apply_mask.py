@@ -138,7 +138,8 @@ def main(mask_file, mask_var, mask_type, input_file, output_file, hide, threshol
     for att_name in fin.attributes.keys():
         setattr(fout, att_name, fin.attributes[att_name])
     
-    setattr(fout,'Mask','%s mask (points with %s fraction > %s hidden) applied to %s on %s using %s' %(hide,hide,threshold,input_file,datetime.utcnow().isoformat(), sys.argv[0]))
+    setattr(fout,'Mask','%s mask (points with %s fraction > %s hidden) applied to %s on %s using %s' %(hide,
+            hide,threshold,input_file,datetime.utcnow().isoformat(), sys.argv[0]))
     setattr(fout,'Format','NETCDF3_CLASSIC')
     
     # Dimensions #
@@ -155,7 +156,7 @@ def main(mask_file, mask_var, mask_type, input_file, output_file, hide, threshol
     # Create corresponding variables
     if is_time:
         times = fout.createVariable('time','f4',('time',))
-        times[:] = in_time[:]
+        times[:] = in_time
     latitudes = fout.createVariable('latitude','f4',('latitude',))
     longitudes = fout.createVariable('longitude','f4',('longitude',))
     latitudes[:] = in_lat[:]
@@ -172,29 +173,29 @@ def main(mask_file, mask_var, mask_type, input_file, output_file, hide, threshol
     # Output data #
 	
     for v in in_vars:
-	in_data = fin(v) #, order=order)
-	
+	in_data = fin(v,order=order)
+
 	if grid_match == False:
 	    oldgrid=in_data.getGrid()                                               
             regridfunc=Regridder(oldgrid, mask_grid)                                
             in_data=regridfunc(in_data)
 	
-        #in_data=numpy.squeeze(in_data)	
-#	mask = numpy.resize(mask,numpy.shape(in_data))
-#	in_data_ma = numpy.ma.masked_array(in_data, mask=mask) 
-#	
-#	in_data_ma = MV2.array(in_data_ma)
-#	in_data_ma = in_data_ma.astype(numpy.float32)
+        in_data=numpy.squeeze(in_data)	
+	mask = numpy.resize(mask,numpy.shape(in_data))
+	in_data_ma = numpy.ma.masked_array(in_data, mask=mask) 
 	
+	in_data_ma = MV2.array(in_data_ma)
+	in_data_ma = in_data_ma.astype(numpy.float32)
+	
+	assert (hasattr(in_data, 'missing_value'), 'Input variable must have missing_value attribute'
 	out_data = fout.createVariable(v,'f4',axis_list,fill_value=in_data.missing_value) 
 	
 	for att_name in in_data.attributes.keys():
 	    if att_name != "_FillValue":
                 setattr(out_data, att_name, in_data.attributes[att_name])
-	setattr(out_data, 'mask', 'points with %s fraction > %s hidden' %(hide,threshold))
 	setattr(out_data, 'missing_value', in_data.missing_value)
 	
-	out_data[:] = in_data[:,:,:]#in_data_ma[:,:,:]
+	out_data[:] = in_data_ma[:,:,:]
     
   	   
     mfin.close()
@@ -211,7 +212,7 @@ if __name__ == '__main__':
 
     parser.add_option("-M","--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
     parser.add_option("--hide",dest="hide",type='string',default='land',help="thing that you want to mask/hide [default = land]")
-    parser.add_option("-t", "--threshold",dest="threshold",type='float',default=0.01,help="value of mask threshold [default = 0.01]")
+    parser.add_option("-t", "--threshold",dest="threshold",type='float',default=0.5,help="value of mask threshold [default = 0.5]")
 
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
@@ -224,7 +225,7 @@ if __name__ == '__main__':
             -M or --manual      Display this on-line manual page and exit
             -h or --help        Display a help/usage message and exit
 	    --hide              Thing that you want to hide. Can be 'land' or 'ocean' [default = land]
-	    -t or --threshold   Value of mask threshold [default = 0.01]. Will hide the selected medium 
+	    -t or --threshold   Value of mask threshold [default = 0.5]. Will hide the selected medium 
 	                        (land or ocean) when its fractional value is greater than this.
 	
 	Assumptions
