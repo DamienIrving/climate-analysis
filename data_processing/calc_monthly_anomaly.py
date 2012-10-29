@@ -28,6 +28,7 @@ from datetime import datetime
 import netCDF4
 
 import cdms2 
+from cdms2 import MV2
 
 import numpy
 import numpy.ma as ma
@@ -37,12 +38,9 @@ def calc_monthly_climatology(base_data,miss_val):
     """Calculates the monthly climatology"""
     
     ntime,nlat,nlon = numpy.shape(base_data)
-    monthly_climatology = numpy.ones([12,nlat,nlon]) * miss_val
+    monthly_climatology = numpy.ma.ones([12,nlat,nlon]) * miss_val
     for i in range(0,12):
         monthly_climatology[i,:,:] = numpy.ma.mean(base_data[i:ntime:12,:,:],axis=0) 
-	# The input variable must have a 'missing_value' attribute for this to work correctly,
-	# because python does not recognise the _FillValue attribute (used in CF compliance)
-	# If missing_value is not present, all missing values become zeros in the array 
 
     return monthly_climatology
 
@@ -57,18 +55,15 @@ def calc_monthly_anomaly(complete_data,base_data,months,miss_val):
     ## Calculate the monthly anomaly ##
     
     ntime,nlat,nlon = numpy.shape(complete_data)
-    monthly_anomaly = numpy.ones([ntime,nlat,nlon]) * miss_val
+    monthly_anomaly = numpy.ma.ones([ntime,nlat,nlon]) * miss_val
     for i in range(0,ntime):
 	month_index = months[i]
 	monthly_anomaly[i,:,:] = numpy.ma.subtract(complete_data[i,:,:], monthly_climatology[month_index-1,:,:])
-	# The input variable must have a 'missing_value' attribute for this to work correctly,
-	# because python does not recognise the _FillValue attribute (used in CF compliance)
-	# If missing_value is not present, all missing values become zeros in the array 
-    
+	
     return monthly_anomaly, monthly_climatology 
 
 
-def write_outfile(fin,infile_name,infile_variable,outfile_name,outfile_data,var_complete,start_date,end_date,stat='anomaly'):
+def write_outfile(fin,infile_name,infile_variable,outfile_name,out_data,var_complete,start_date,end_date,stat='anomaly'):
     """Writes output file for either climatology or anomaly stat"""
     
     # Define stat specific info #
@@ -87,15 +82,17 @@ def write_outfile(fin,infile_name,infile_variable,outfile_name,outfile_data,var_
 
     # Global attributes #
 
-#    for att_name in fin.attributes.keys():
-#        setattr(fout, att_name, fin.attributes[att_name])
+    for att_name in fin.attributes.keys():
+        if att_name != "history":
+	    setattr(outfile, att_name, fin.attributes[att_name])
 
-    setattr(outfile,'Title','Monthly anomaly')
-    setattr(outfile,'Contact','Damien Irving (d.irving@student.unimelb.edu.au)')
-    setattr(outfile,'History',short_history)
-    setattr(outfile,'Sourcefile',infile_name)
-    setattr(outfile,'Created','Created %s using %s' %(datetime.utcnow().isoformat(), sys.argv[0]))
-    setattr(outfile,'Format','NETCDF3_CLASSIC')
+    if 'history' in fin.attributes.keys():
+        old_history = fin.attributes['history']
+    else:
+        old_history = ''
+	
+    setattr(outfile, 'history', """%s: %s from %s using %s, format=NETCDF3_CLASSIC\n%s""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
+    short_history,infile_name,sys.argv[0],old_history))
 
     # Latitude and longitude #
     
@@ -140,9 +137,9 @@ def write_outfile(fin,infile_name,infile_variable,outfile_name,outfile_data,var_
 	
 	for att_name in var_complete.attributes.keys():
 	    if (att_name != "_FillValue") and (att_name != "history"):
-                setattr(out_data, att_name, var_complete.attributes[att_name])
-        setattr(out_data,'history',long_history)
-	setattr(out_data, 'missing_value', var_complete.missing_value)
+                setattr(out_var, att_name, var_complete.attributes[att_name])
+        setattr(out_var,'history',long_history)
+	setattr(out_var, 'missing_value', var_complete.missing_value)
 	
 	out_var[:] = out_data
     
@@ -153,9 +150,9 @@ def write_outfile(fin,infile_name,infile_variable,outfile_name,outfile_data,var_
 	    
 	    for att_name in var_complete.attributes.keys():
 		if (att_name != "_FillValue") and (att_name != "history"):
-                    setattr(out_data, att_name, var_complete.attributes[att_name])
-            setattr(out_data,'history',long_history+' for '+i)
-	    setattr(out_data, 'missing_value', var_complete.missing_value)
+                    setattr(out_var, att_name, var_complete.attributes[att_name])
+            setattr(out_var,'history',long_history+' for '+i)
+	    setattr(out_var, 'missing_value', var_complete.missing_value)
 	        
 	    out_var[:] = out_data[count,:,:]
             
@@ -185,17 +182,12 @@ def main(infile_name,infile_variable,outfile_name,start_date,end_date,climatolog
     var_base=fin(infile_variable,time=(start_date,end_date),order='tyx')
     var_complete=fin(infile_variable,order='tyx')
     
-    assert (hasattr(var_base, 'missing_value'), 'Input variable must have missing_value attribute'
-    
-    #Make sure missing values are masked
-    
-    var_base_ma = ma.masked_values(var_base,var_base.missing_value)
-    var_complete_ma = ma.masked_values(var_complete,var_complete.missing_value)
-    
-    
+    assert (hasattr(var_base, 'missing_value')), 'Input variable must have missing_value attribute'
+
+      
     ## Calculate the monthly climatology and anomaly ##
     
-    monthly_anomaly, monthly_climatology = calc_monthly_anomaly(var_complete_ma,var_base_ma,months,var_complete._FillValue)
+    monthly_anomaly, monthly_climatology = calc_monthly_anomaly(var_complete,var_base,months,var_complete.missing_value)
 
     ## Wtite the outfile file/s ##
  
@@ -242,12 +234,14 @@ if __name__ == '__main__':
 	Author
             Damien Irving, 23 Aug 2012.
 
-	Bugs
-            The script currently has issues with missing values (e.g. with land masked files). A short-term
-	    work around would be to use the skin temperature (which has no missing data) and then apply a mask 
-	    after the climatology or anomaly has been calculated.  
-	    
-	    Please report any problems to: d.irving@student.unimelb.edu.au
+	Example
+	    abyss.earthsci.unimelb.edu.au
+	        /opt/cdat/bin/cdat calc_monthly_anomaly.py 
+		/work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly_native-ocean.nc ts
+		/work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc
+	    	
+		
+	Please report any problems to: d.irving@student.unimelb.edu.au
 	"""
 	sys.exit(0)
 

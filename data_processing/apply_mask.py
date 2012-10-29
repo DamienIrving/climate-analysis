@@ -136,11 +136,16 @@ def main(mask_file, mask_var, mask_type, input_file, output_file, hide, threshol
     # Global attributes #
     
     for att_name in fin.attributes.keys():
-        setattr(fout, att_name, fin.attributes[att_name])
+        if att_name != "history":
+            setattr(fout, att_name, fin.attributes[att_name])
     
-    setattr(fout,'Mask','%s mask (points with %s fraction > %s hidden) applied to %s on %s using %s' %(hide,
-            hide,threshold,input_file,datetime.utcnow().isoformat(), sys.argv[0]))
-    setattr(fout,'Format','NETCDF3_CLASSIC')
+    if 'history' in fin.attributes.keys():
+        old_history = fin.attributes['history']
+    else:
+        old_history = ''
+	
+    setattr(fout, 'history', """%s: %s mask (%s fraction > %s hidden) applied to %s using %s, format=NETCDF3_CLASSIC\n%s""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
+    hide,hide,threshold,input_file,sys.argv[0],old_history))
     
     # Dimensions #
    
@@ -187,7 +192,7 @@ def main(mask_file, mask_var, mask_type, input_file, output_file, hide, threshol
 	in_data_ma = MV2.array(in_data_ma)
 	in_data_ma = in_data_ma.astype(numpy.float32)
 	
-	assert (hasattr(in_data, 'missing_value'), 'Input variable must have missing_value attribute'
+	assert (hasattr(in_data, 'missing_value')), 'Input variable must have missing_value attribute'
 	out_data = fout.createVariable(v,'f4',axis_list,fill_value=in_data.missing_value) 
 	
 	for att_name in in_data.attributes.keys():
