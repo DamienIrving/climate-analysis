@@ -35,7 +35,6 @@ import os
 import cdms2 
 from cdms2 import MV2
 import numpy
-from numpy import *
 
 import netCDF4
 from scipy.io.numpyio import fwrite, fread
@@ -149,14 +148,11 @@ def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,
 
     # Global attributes #
 
-    setattr(outfile,'Title','Wave activity flux')
+    setattr(outfile,'Title','Calculated wave activity flux from U wind, V wind and geopotential height')
     setattr(outfile,'Contact','Damien Irving (d.irving@student.unimelb.edu.au)')
-    setattr(outfile,'History','Calculated wave activity flux from U wind, V wind and geopotential height')
     setattr(outfile,'Reference','Takaya & Nakamura (2001) J. Atmos. Sci., 58, 608-627')
     setattr(outfile,'Sourcefiles',sourcefile_text)
-    creation_text = 'Created %s using %s' %(datetime.utcnow().isoformat(), sys.argv[0])
-    setattr(outfile,'created',creation_text)
-    setattr(outfile,'Format','NETCDF3_CLASSIC')
+    setattr(outfile,'history','%s: Created using %s, format=NETCDF3_CLASSIC' %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"), sys.argv[0])) 
 
     # Dimensions #
 
@@ -164,9 +160,9 @@ def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,
     outfile.createDimension('latitude',len(lat_axis))
     outfile.createDimension('longitude',len(lon_axis))
 
-    times = outfile.createVariable('time',dtype('float32').char,('time',))
-    lats = outfile.createVariable('latitude',dtype('float32').char,('latitude',))
-    lons = outfile.createVariable('longitude',dtype('float32').char,('longitude',))
+    times = outfile.createVariable('time','f4',('time',))
+    lats = outfile.createVariable('latitude','f4',('latitude',))
+    lons = outfile.createVariable('longitude','f4',('longitude',))
 
     for att_name in time_axis.attributes.keys():
         setattr(times, att_name, time_axis.attributes[att_name])
@@ -181,12 +177,13 @@ def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,
 
     # Variable #
 
-    out_data = outfile.createVariable(outvar,dtype('float32').char,('time','latitude','longitude'),fill_value=9.999e+20)
-    out_data.units = 'm2 s-2'
-    out_data.name = 'Wave activity flux, %s component'  %(outvar[-1])
-    out_data.history = 'Calculated wave activity flux from U wind, V wind and geopotential height'
-    out_data.standard_name = outvar
-
+    out_data = outfile.createVariable(outvar,'f4',('time','latitude','longitude',),fill_value=9.999e+20)
+    setattr(out_data, 'standard_name', outvar)
+    setattr(out_data, 'units', 'm2 s-2')
+    setattr(out_data, 'name', 'Wave activity flux, %s component' %(outvar[-1]))
+    setattr(out_data, 'missing_value', 9.999e+20) 
+    setattr(out_data, 'history', 'Calculated wave activity flux from U wind, V wind and geopotential height')
+    
     waf_data = waf_data.astype(numpy.float32)
     out_data[:] = waf_data
 

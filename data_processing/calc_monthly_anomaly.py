@@ -34,23 +34,29 @@ import numpy
 import numpy.ma as ma
 
 
-def calc_monthly_climatology(base_data,miss_val):
+def calc_monthly_climatology(base_data,miss_val,annual_anomaly):
     """Calculates the monthly climatology"""
     
     ntime,nlat,nlon = numpy.shape(base_data)
     monthly_climatology = numpy.ma.ones([12,nlat,nlon]) * miss_val
-    for i in range(0,12):
-        monthly_climatology[i,:,:] = numpy.ma.mean(base_data[i:ntime:12,:,:],axis=0) 
+    
+    if annual_anomaly:
+	annual_mean = numpy.ma.mean(base_data,axis=0)
+	print numpy.shape(annual_mean)
+	monthly_climatology[:,:,:] = numpy.resize(annual_mean,numpy.shape(monthly_climatology))
+    else:
+	for i in range(0,12):
+            monthly_climatology[i,:,:] = numpy.ma.mean(base_data[i:ntime:12,:,:],axis=0) 
 
     return monthly_climatology
 
 
-def calc_monthly_anomaly(complete_data,base_data,months,miss_val):
+def calc_monthly_anomaly(complete_data,base_data,months,miss_val,annual_anomaly):
     """Calculates the monthly anomaly"""  
     
     ## Calculate the monthly climatology ##
     
-    monthly_climatology = calc_monthly_climatology(base_data,miss_val)
+    monthly_climatology = calc_monthly_climatology(base_data,miss_val,annual_anomaly)
     
     ## Calculate the monthly anomaly ##
     
@@ -63,14 +69,19 @@ def calc_monthly_anomaly(complete_data,base_data,months,miss_val):
     return monthly_anomaly, monthly_climatology 
 
 
-def write_outfile(fin,infile_name,infile_variable,outfile_name,out_data,var_complete,start_date,end_date,stat='anomaly'):
+def write_outfile(fin,infile_name,infile_variable,outfile_name,out_data,var_complete,start_date,end_date,annual_anomaly,stat='anomaly'):
     """Writes output file for either climatology or anomaly stat"""
     
     # Define stat specific info #
     
+    if annual_anomaly:
+        tscale = 'annual'
+    else:
+        tscale = 'monthly'
+    
     if stat == 'anomaly':
         short_history = 'Calculated monthly anomaly'	 
-        long_history = 'Calculated anomaly relative to the %s to %s monthly climatology.'  %(start_date,end_date)
+        long_history = 'Calculated anomaly relative to the %s to %s %s climatology.'  %(start_date,end_date,tscale)
     elif stat == 'climatology':
         short_history = 'Calculated monthly climatology'	 
         long_history = 'Calculated monthly climatology (%s to %s)'  %(start_date,end_date)
@@ -162,7 +173,7 @@ def write_outfile(fin,infile_name,infile_variable,outfile_name,out_data,var_comp
     outfile.close()
     
 
-def main(infile_name,infile_variable,outfile_name,start_date,end_date,climatology):
+def main(infile_name,infile_variable,outfile_name,start_date,end_date,climatology,annual_anomaly):
     """Run the program"""
     
     ## Open the input file ##
@@ -187,14 +198,14 @@ def main(infile_name,infile_variable,outfile_name,start_date,end_date,climatolog
       
     ## Calculate the monthly climatology and anomaly ##
     
-    monthly_anomaly, monthly_climatology = calc_monthly_anomaly(var_complete,var_base,months,var_complete.missing_value)
+    monthly_anomaly, monthly_climatology = calc_monthly_anomaly(var_complete,var_base,months,var_complete.missing_value,annual_anomaly)
 
     ## Wtite the outfile file/s ##
  
     if climatology:
-        write_outfile(fin,infile_name,infile_variable,outfile_name,monthly_climatology,var_complete,start_date,end_date,stat='climatology')
+        write_outfile(fin,infile_name,infile_variable,outfile_name,monthly_climatology,var_complete,start_date,end_date,annual_anomaly,stat='climatology')
     else:
-        write_outfile(fin,infile_name,infile_variable,outfile_name,monthly_anomaly,var_complete,start_date,end_date)
+        write_outfile(fin,infile_name,infile_variable,outfile_name,monthly_anomaly,var_complete,start_date,end_date,annual_anomaly)
    
     fin.close()
    
@@ -210,17 +221,19 @@ if __name__ == '__main__':
     parser.add_option("-s", "--start",dest="start",type='string',default='1981-01-01',help="start date for the base period [default='1981-01-01']")
     parser.add_option("-e", "--end",dest="end",type='string',default='2010-12-31',help="end date for the base period [default='2010-12-31']")
     parser.add_option("-c", "--climatology",action="store_true",dest="climatology",default=False,help="output the climatology instead of the anomaly [default=False]")
+    parser.add_option("-a", "--annual",action="store_true",dest="annual",default=False,help="subtract the annual mean instead of the monthly mean in calculating the anomaly [default=False]")
 
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
     if options.manual == True or len(sys.argv) == 1:
 	print """
 	Usage:
-            calc_monthly_anomaly.py [-M] [-h] [-s] [-e] [-c] {input_file} {input_variable} {output_file}
+            calc_monthly_anomaly.py [-M] [-h] [-s] [-e] [-c] [-a] {input_file} {input_variable} {output_file}
 
 	Options
             -M -> Display this on-line manual page and exit
             -h -> Display a help/usage message and exit
+	    -a -> Subtract the annual mean instead of the monthly mean in calculating the anomaly
 	    -s -> Start date for the base period [default='1981-01-01']
 	    -e -> End date for the base period [default='2010-12-31']
 	    -c -> Output monthly climatology instead of the monthly anomaly [default=False]
@@ -254,5 +267,5 @@ if __name__ == '__main__':
 
     infile_name, infile_variable, outfile_name = args  
     
-    main(infile_name,infile_variable,outfile_name,options.start,options.end,options.climatology)
+    main(infile_name,infile_variable,outfile_name,options.start,options.end,options.climatology,options.annual)
 
