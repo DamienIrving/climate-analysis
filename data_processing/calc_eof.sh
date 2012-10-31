@@ -21,6 +21,11 @@ function usage {
     echo "    var:        Variable base name"
     echo "    input:      Input file"
     echo "    output:     Output file"
+    echo ""
+    echo "    This routine only handles missing values if they"
+    echo "    are in the same spatial location at every time step"
+    echo ""
+    echo "    Input data are assumed to be an anomaly timeseries"
     exit 1
 }
 
@@ -44,6 +49,54 @@ if [ -f $outfile ] ; then
 fi
 
 TMPDIR=/work/dbirving/temp_data
+MYDIR=/home/dbirving/data_processing
+
+
+# Select the desired region and time period
+
+region_flag=false
+start_flag=false
+end_flag=false
+tmpregfile=$TMPDIR/tmp_reg.nc
+tmptimefile=$TMPDIR/tmp_time.nc
+while getopts ":r:t:" opt; do
+  case $opt in
+    r)
+      $MYDIR/named_region.sh $OPTARG ${infile} ${tmpregfile}  
+      region_flag=true
+      ;;
+    s)
+      start_date=$OPTARG
+      start_flag=true
+      ;;
+    e)
+      if start_flag ; then
+        end_flag=true
+      else
+        echo "Must use both start (-s) and end (-e) date options" >&2
+        exit 1
+      fi
+      end_date=$OPTARG
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;  
+  esac
+done
+shift $((OPTIND-1))
+
+if (( region_flag )) && (( end_flag )) ; then
+  cdo seldate,${start_date},${end_date} ${tempregfile} ${tmptimefile}
+  infile=${tmptimefile}
+elif region_flag ; then
+  infile=${tmpregfile}
+fi
+
 
 ### Get the lat/lon varaible names....
 griddes=$TMPDIR/cdo_griddes.txt
@@ -146,6 +199,15 @@ for n in `seq ${np}`; do
 done
 
 rm ${tmpcdoeof1} ${tmpcdoeof2} ${tmppercvar}
+
+if region_flag ; then
+  rm ${tempregfile} 
+fi
+
+if end_flag ; then
+  rm ${temptimefile} 
+fi
+ 
 
 # Set some metadata
 ncks -h -A -x $infile $outfile
