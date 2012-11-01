@@ -56,7 +56,7 @@ class InputFile(object):
     patterns = [
         ('monthly_timeseries',
          True, #meaning the model file
-         re.compile(r'(?P<variable_name>\S+)_(?P<dataset>\S+)_(?P<index>\S+)_(?P<timescale>\S+)_(?P<grid>\S+).txt')),        
+         re.compile(r'(?P<variable_name>\S+)_(?P<dataset>\S+)_(?P<level>\S+)_(?P<index>\S+)_(?P<timescale>\S+)_(?P<grid>\S+).txt')),        
     ]
     def __init__(self, fname):
         self.fname = fname
@@ -93,11 +93,10 @@ def get_times(years,months,window):
     start_month = months[0]
     end_year = years[-1]
     end_month = months[-1]
-
+    
     if window > 1.0:
-        start_adjust = math.floor(window / 2.0)
-	end_adjust = math.ceil(window / 2.0)
-
+        start_adjust = math.floor((window-1) / 2.0)
+	end_adjust = math.ceil((window-1) / 2.0)
 	start_month = start_month + start_adjust
 	if start_month > 12.0:
 	    start_month = start_month - 12
@@ -108,7 +107,7 @@ def get_times(years,months,window):
 	    end_month = end_month + 12
 	    end_year = end_year - 1
 
-    return start_year,start_month,end_year,end_month
+    return int(start_year),int(start_month),int(end_year),int(end_month)
 
 
 def set_units(index,orig_units,axis):
@@ -120,6 +119,8 @@ def set_units(index,orig_units,axis):
         units = 'Anomaly (deg C)'
     elif index == 'SAMI':
         units = 'Monthly SAM index'
+    elif index[0:3] == 'EOF':
+        units = '1.e+6 m2 s-1'
     else:
         print 'Index not recognised'
         sys.exit(0)
@@ -312,7 +313,7 @@ def setup_plot(file_list,file_list_dims,error_list,plot_data,plot_times,setx,set
 	
 	#Convert the x values to floats
 
-	dates_float = convert_datetime(dates)  
+	dates_float = convert_datetime(dates) 
 	
 	xdata[ifile.fname] = dates_float
         ydata[ifile.fname] = timeseries
@@ -350,7 +351,7 @@ def setup_plot(file_list,file_list_dims,error_list,plot_data,plot_times,setx,set
 	    ybounds['min','b'] = -y_maximum_b - y_buffer_b
 	    ybounds['max','b'] = y_maximum_b + ybuffer*y_buffer_b
    
-
+    
     return xdata,ydata,ybounds,xaxis_full_float
 
 
@@ -431,7 +432,7 @@ def get_xticks(xdata):
     return minor_xticks,major_xticks,major_xlabels
     
     
-def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,nrows):
+def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,legsize,nrows):
     """Creates the plot"""
     
     #initialise figure
@@ -445,7 +446,7 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
         len_sec = 0
     count = 0
     for pfile in primary_file_list:
-	
+
 	#split data according to nrows
 	xplot,yplot = split_data(xaxis_full_float,xdata[pfile.fname],ydata[pfile.fname],nrows)
 	if (count in error_list):
@@ -480,7 +481,7 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
 	    
 	    if count < len_sec:
 	        label = sfile.index+', '+sfile.dataset
-	        ax2.plot(numpy.ma.array(xplot2[pnum]),numpy.ma.array(yplot2[pnum]),color=scolor_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+	        ax2.plot(numpy.ma.array(xplot2[pnum]),numpy.ma.array(yplot2[pnum]),color=scolor_list[count],lw=2.0,label=label,linestyle='--',marker='None')
 		if ((count + len(primary_file_list)) in error_list):
 	            upper = numpy.ma.array(yplot[pnum]) + 2*numpy.ma.array(yplot_error[pnum])
 		    lower = numpy.ma.array(yplot[pnum]) - 2*numpy.ma.array(yplot_error[pnum])
@@ -524,13 +525,15 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
 	        ax2.set_ylabel(units_text2,fontsize='medium',rotation=270)
 
 	    #legend
-	    font = font_manager.FontProperties(size='medium')
-	    if leglocp:
-	        ax.legend(loc=leglocp,prop=font,ncol=2)
 	    
-	    if count < len_sec and leglocs:
-                ax2.legend(loc=leglocs,prop=font,ncol=2) 
-	
+            if row == (nrows-1): 	   
+		font = font_manager.FontProperties(size=legsize)
+		if leglocp:
+	            ax.legend(loc=leglocp,prop=font,ncol=2)
+                
+		if leglocs:
+                    ax2.legend(loc=leglocs,prop=font,ncol=2)
+
 	count = count + 1
     
     # Output the figure #
@@ -541,7 +544,7 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
         plt.show()
 
 
-def main(primary_file_list,secondary_file_list,error_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,leglocp,leglocs,nrows):
+def main(primary_file_list,secondary_file_list,error_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,leglocp,leglocs,legsize,nrows):
     """Run the program"""
     
     primary_file_list = [InputFile(f) for f in primary_file_list]
@@ -564,7 +567,7 @@ def main(primary_file_list,secondary_file_list,error_list,outfile_name,windowp,w
     
     ## Generate the plot ##
     
-    generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,nrows)
+    generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,legsize,nrows)
     
 
 if __name__ == '__main__':
@@ -583,6 +586,7 @@ if __name__ == '__main__':
     parser.add_option("-e", "--error",dest="error",default=None,help="Comma separated list of file numbers corresponding to those with error shading [default = None]")
     parser.add_option("--lp",dest="legendp",default=None,type='int',help="Location of the primary figure legend [defualt = None]")
     parser.add_option("--ls",dest="legends",default=None,type='int',help="Location of the secondary figure legend [defualt = None]")
+    parser.add_option("--lsize",dest="legendsize",default='medium',type='string',help="Size of the legend text [defualt = medium]")
     parser.add_option("--wp",dest="windowp",type='int',default=1,help="Window for primary axis running average [default = 1]")
     parser.add_option("--ws",dest="windows",type='int',default=1,help="Window for secondary axis running average [default = 1]")
     parser.add_option("--setyp",dest="setyp",default=None,nargs=2,type='float',help="Primary y axis bounds (min max) [default = None]")
@@ -606,23 +610,18 @@ if __name__ == '__main__':
 	    -e  ->  Comma separated list of file numbers corresponding to those with error shading [default = None]
 	    --lp  ->  Location of the primary legend [default = None]
 	    --ls  ->  Location of the secondary legend [default = None]
+	    --lsize  ->  Size of the legend text [default = medium]
             --wp  ->  Window for primary axis running average [default = 1]
 	    --ws  ->  Window for secondary axis running average [default = 1]
 	    --setyp  ->  Primary y axis bounds (min,max) [default = None]
 	    --setys  ->  Secondary y axis bounds (min,max) [default = None]
 	
 	Legend options
-	    1: upper right
-	    2: upper left
-	    3: lower left
-	    4: lower_right
-	    5: right
-	    6: center left
-	    7: center right
-	    8: lower center
-	    9: upper center
-	    10: center
-	    None: no legend 
+	    Location:  1 upper right, 2 upper left, 3 lower left, 4 lower_right, 5 right, 6 center left, 
+	               7 center right, 8 lower center, 9 upper center, 10 center, None no legend 
+	
+	    Text size: Either xx-small, x-small, small, medium, large, x-large, xx-large, 
+	               or an absolute font size, e.g. 12
 	
 	Example
 	    /opt/cdat/bin/cdat plot_climate_index.py --wp 5 /work/dbirving/processed/indices/data/ts_Merra_NINO34_monthly_native-ocean.txt
@@ -633,7 +632,7 @@ if __name__ == '__main__':
 	    
 	Note
 	    The number of primary files must be greater or equal to the number of secondary files.
-	    The expect measure of error is the standard deviation (twice the standard deviation either side
+	    The expected measure of error is the standard deviation (twice the standard deviation either side
 	    of the central estimate is plotted).
 	    
 	Bugs
@@ -656,5 +655,5 @@ if __name__ == '__main__':
         primary_file_list = args[:]   
 
         main(primary_file_list,secondary_file_list,error_list,options.outfile,options.windowp,options.windows,
-	options.setx,options.setyp,options.setys,options.buffer,options.legendp,options.legends,options.nrows)
+	options.setx,options.setyp,options.setys,options.buffer,options.legendp,options.legends,options.legendsize,options.nrows)
     
