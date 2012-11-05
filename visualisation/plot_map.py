@@ -237,18 +237,18 @@ def matrixplot(ifiles,variables,
         if region in globals():
             region = globals()[region]
     
-    #Bounding region
-    if isinstance(region, cdms2.selectors.Selector):
-        for selector_component in region.components():
+    #apply custom region if necessary
+    if minlat is not None and maxlat is not None and \
+         minlon is not None and maxlon is not None:
+	region = cdms2.selectors.Selector(latitude=(minlat,maxlat,'cc'),longitude=(minlon,maxlon,'cc'))
+    elif isinstance(region, cdms2.selectors.Selector):
+	for selector_component in region.components():
             if selector_component.id == 'lat':
                 minlat = selector_component.spec[0]
                 maxlat = selector_component.spec[1]
             elif selector_component.id == 'lon':
                 minlon = selector_component.spec[0]
                 maxlon = selector_component.spec[1]
-    elif minlat is not None and maxlat is not None and \
-         minlon is not None and maxlon is not None:
-        region = cdms2.selectors.Selector(latitude=(minlat,maxlat,'cc'),longitude=(minlon,maxlon,'cc'))
     else:
         print "Error could not determine region"
         sys.exit(1)
@@ -435,7 +435,7 @@ def matrixplot(ifiles,variables,
 	    if projection == 'cyl':
 		map = Basemap(llcrnrlon=minlon,llcrnrlat=minlat,urcrnrlon=maxlon,urcrnrlat=maxlat,\
                               resolution=res,area_thresh=area_threshold,projection='cyl')
-		tVar,tVar_lon = shiftgrid(0.,tVar,tVar_lon,start=True)
+		#tVar,tVar_lon = shiftgrid(0.,tVar,tVar_lon,start=True)
             elif projection == 'nsper':
 	        h = 3000000  #height of satellite
 		map = Basemap(projection='nsper',lon_0=lonX,lat_0=latX,satellite_height=h*1000.,resolution=res,area_thresh=area_threshold)
@@ -451,9 +451,9 @@ def matrixplot(ifiles,variables,
             ax = fig.add_axes([row_heading+(col*(pwidth+hpadding)),colourbar+cbarbuffer+(row*(pheight+vpadding)),pwidth,pheight]) 
             
 	    
-            datout = map.transform_scalar(tVar, 
-                                          tVar_lon,     #fin['latitude']
-                                          tVar_lat,
+            datout = map.transform_scalar(tVar.data, 
+                                          tVar_lon[:],
+                                          tVar_lat[:],
                                           xres, yres,
                                           order=0)
 	      
@@ -489,9 +489,7 @@ def matrixplot(ifiles,variables,
             if draw_contours:
 		contour_data,contour_lon,contour_lat = extract_data(contour_files,contour_variables,row,col,timmean=timmean,scale=contour_scale)
 		
-		if projection == 'cyl':
-		    contour_data,contour_lon = shiftgrid(0.,contour_data,contour_lon,start=True)
-		else:
+		if projection == 'nsper':
 		    contour_data,contour_lon = shiftgrid(180.,contour_data,contour_lon,start=False)
 		    
 		x,y = map(*numpy.meshgrid(contour_lon,contour_lat))
