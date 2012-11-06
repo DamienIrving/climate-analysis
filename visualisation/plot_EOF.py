@@ -122,8 +122,18 @@ def main(neofs,ifile,var,ofile,title,ticks,segments,equator):
         fin.close()
     img_headings_list = shuffle(img_headings,rows,cols)
     
-    plot_map.multiplot(ifile_list,variable_list,dimensions=dims,minlat=minlat,maxlat=maxlat,minlon=minlon,maxlon=maxlon,img_headings=img_headings_list,
-    draw_axis=True,delat=15,delon=15,equator=equator,contour=True,ticks=unpack_comma_list(ticks,data_type='float'),discrete_segments=unpack_comma_list(segments),title=title)
+    plot_map.multiplot(ifile_list,
+                       variable_list,
+		       dimensions=dims,
+		       minlat=minlat,maxlat=maxlat,minlon=minlon,maxlon=maxlon,
+		       img_headings=img_headings_list,
+		       draw_axis=True,
+		       delat=15,delon=15,
+		       equator=equator,
+		       contour=True,
+		       ticks=unpack_comma_list(ticks,data_type='float'),
+		       discrete_segments=unpack_comma_list(segments),title=title
+		       )
 
 
 if __name__ == '__main__':

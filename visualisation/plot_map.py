@@ -254,7 +254,7 @@ def matrixplot(ifiles,variables,
         sys.exit(1)
 
 
-    ## Define the colourbar ###
+    ## Define the colourbar ##
 
     #Make sure discrete_segments is in the correct format
     if isinstance(discrete_segments,list):
@@ -344,6 +344,15 @@ def matrixplot(ifiles,variables,
 
     if extend == 'min':
         ticks = ticks[1:]
+    
+    ## Define the contour plot ticks, if required ##
+    
+    if draw_contours and (contour_ticks == None):
+        min_level,max_level = get_min_max(contour_files,contour_variables,timmean,region)
+	diff = max_level - min_level
+	step = diff/10.0
+
+	contour_ticks = list(numpy.arange(min_level,max_level+(step/2),step))
     
     
     ## Define the image size and padding ##
@@ -488,7 +497,7 @@ def matrixplot(ifiles,variables,
     
             if draw_contours:
 		contour_data,contour_lon,contour_lat = extract_data(contour_files,contour_variables,row,col,timmean=timmean,scale=contour_scale)
-		
+
 		if projection == 'nsper':
 		    contour_data,contour_lon = shiftgrid(180.,contour_data,contour_lon,start=False)
 		    
