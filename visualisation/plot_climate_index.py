@@ -13,8 +13,6 @@ Updates | By | Description
 --------+----+------------
 23 February 2012 | Damien Irving | Initial version.
 
-
-Copyright CSIRO, 2012
 """
 
 
@@ -470,7 +468,8 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
 		sfile = secondary_file_list[count]
 		
 	    #plot data
-	    label = pfile.index+', '+pfile.dataset
+	    label = pfile.variable_name+', '+pfile.index+', '+pfile.dataset
+	    print label
 	    ax.plot(numpy.ma.array(xplot[pnum]),numpy.ma.array(yplot[pnum]),color=pcolor_list[count],lw=2.0,label=label,linestyle='-',marker='None')
 	    if (count in error_list):
 	        upper = numpy.ma.array(yplot[pnum]) + 2*numpy.ma.array(yplot_error[pnum])
@@ -480,8 +479,9 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
                 ax.fill_between(numpy.ma.array(xplot[pnum]),upper,lower,facecolor=pcolor_list[count],alpha=0.4)
 	    
 	    if count < len_sec:
-	        label = sfile.index+', '+sfile.dataset
-	        ax2.plot(numpy.ma.array(xplot2[pnum]),numpy.ma.array(yplot2[pnum]),color=scolor_list[count],lw=2.0,label=label,linestyle='--',marker='None')
+	        label = sfile.variable_name+', '+sfile.index+', '+sfile.dataset
+	        print label
+		ax2.plot(numpy.ma.array(xplot2[pnum]),numpy.ma.array(yplot2[pnum]),color=scolor_list[count],lw=2.0,label=label,linestyle='--',marker='None')
 		if ((count + len(primary_file_list)) in error_list):
 	            upper = numpy.ma.array(yplot[pnum]) + 2*numpy.ma.array(yplot_error[pnum])
 		    lower = numpy.ma.array(yplot[pnum]) - 2*numpy.ma.array(yplot_error[pnum])
@@ -519,6 +519,8 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
 	        ax.axhline(y=0,linestyle='-',color='0.5')
 
 	    #axis labels
+	    print units_text
+	    print units_text2
 	    ax.set_ylabel(units_text,fontsize='medium')
             
 	    if count < len_sec:
@@ -532,7 +534,7 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
 	            ax.legend(loc=leglocp,prop=font,ncol=2)
                 
 		if leglocs:
-                    ax2.legend(loc=leglocs,prop=font,ncol=2)
+                    ax2.legend(loc=leglocs,prop=font)  #,ncol=2)
 
 	count = count + 1
     
@@ -623,10 +625,18 @@ if __name__ == '__main__':
 	    Text size: Either xx-small, x-small, small, medium, large, x-large, xx-large, 
 	               or an absolute font size, e.g. 12
 	
-	Example
-	    /opt/cdat/bin/cdat plot_climate_index.py --wp 5 /work/dbirving/processed/indices/data/ts_Merra_NINO34_monthly_native-ocean.txt
+	Examples (abyss.earthsci.unimelb.edu.au)
+	    /opt/cdat/bin/cdat plot_climate_index.py --wp 5 
+	    /work/dbirving/processed/indices/data/ts_Merra_NINO34_monthly_native-ocean.txt
 	    /work/dbirving/processed/indices/data/tos_ERSSTv3b_NINO34_monthly_native.txt
 	    
+	    /opt/cdat/bin/cdat plot_climate_index.py 
+	    /work/dbirving/processed/indices/data/ts_Merra_surface_EOF1_monthly_native-ocean-eqpacific.txt 
+	    /work/dbirving/processed/indices/data/ts_Merra_surface_EOF2_monthly_native-ocean-eqpacific.txt 
+	    -s /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF1_monthly_native-eqpacific.txt,
+	    /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF2_monthly_native-eqpacific.txt 
+	    -r 3 --wp 5 --ws 5 --lp 2 --ls 1
+
 	Author
             Damien Irving, 22 Jun 2012
 	    

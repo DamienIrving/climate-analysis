@@ -348,12 +348,15 @@ def matrixplot(ifiles,variables,
     ## Define the contour plot ticks, if required ##
     
     if draw_contours and (contour_ticks == None):
-        min_level,max_level = get_min_max(contour_files,contour_variables,timmean,region)
-	diff = max_level - min_level
-	step = diff/10.0
+        contour_min_level,contour_max_level = get_min_max(contour_files,contour_variables,timmean,region,plot='contour')
+	contour_diff = contour_max_level - contour_min_level
+	contour_step = contour_diff/10.0
 
-	contour_ticks = list(numpy.arange(min_level,max_level+(step/2),step))
-    
+	contour_ticks = list(numpy.arange(contour_min_level,contour_max_level+(contour_step/2),contour_step))
+        if contour_max_level > 0 and contour_min_level < 0:
+	    contour_ticks[5] = 0.0
+	    
+	contour_dec = decimal_places(contour_max_level - contour_min_level)
     
     ## Define the image size and padding ##
     
@@ -411,7 +414,7 @@ def matrixplot(ifiles,variables,
 
     fig=plt.figure(figsize=(width,height))
     if title:
-        fig.suptitle(title.replace('_',' '),y=(1-titlepos),size=20)
+        fig.suptitle(title.replace('_',' '),y=(1-titlepos),size=16)
 
     #for row,ifile in enumerate(ifiles):
     for row in range(nrows):
@@ -503,15 +506,15 @@ def matrixplot(ifiles,variables,
 		    
 		x,y = map(*numpy.meshgrid(contour_lon,contour_lat))
 		im2 = map.contour(x,y,contour_data,contour_ticks,colors='k')
-		plt.clabel(im2, fontsize=5, inline=1, fmt='%1.1f')     #levels[1::2] for label every second level
+		plt.clabel(im2, fontsize=5, inline=1, fmt='%.'+str(contour_dec)+'f')      #fmt='%1.1f'  #levels[1::2] for label every second level
 	    
 	        #Thicken the zero contour
 		try:
 		    index = contour_ticks.index(0)
 		    zc = im2.collections[index]
-                    plt.setp(zc, linewidth=2)
+                    plt.setp(zc, linewidth=1.5)
 	        except ValueError:
-		    continue
+		    print 'no zero contour'
 	  
 	    if draw_vectors:
 		uas_data,uas_lon,uas_lat = extract_data(uwnd_files,uwnd_variables,row,col,timmean=timmean)
@@ -615,14 +618,13 @@ def matrixplot(ifiles,variables,
                 if delon:
                     meridians = numpy.arange(minlon,maxlon,delon)
                     map.drawmeridians(meridians,labels=labels,fontsize=8,linewidth=0.5)
-
+            
             if enso:
 	        if projection == 'cyl':
 		    E125,E145,E160,E165,E180,W180,W170,W150,W140,W120,W110,W90,W80,W70=[125,145,160,165,180,180,190,210,220,240,250,270,280,290]
 		else:
 		    E125,E145,E160,E165,E180,W180,W170,W150,W140,W120,W110,W90,W80,W70=[125,145,160,165,180,-180,-170,-150,-140,-120,-110,-90,-80,-70]
 
-			
 		#IEMI-A
 		map.plot([W180,W140],[-10,-10],linestyle='-',color='0.5')   #bottom
 		map.plot([E165,E180],[-10,-10],linestyle='-',color='0.5')
@@ -648,10 +650,10 @@ def matrixplot(ifiles,variables,
 		map.plot([E160,E160],[-5,5],linestyle='--',color='green',lw=1)    #right
 		map.plot([W150,W150],[-5,5],linestyle='--',color='green',lw=1)    #left
 		#nino3.4
-                map.plot([W120,W170],[-5,-5],linestyle='--',color='orange',lw=1)  #bottom
-		map.plot([W120,W170],[5,5],linestyle='--',color='orange',lw=1)    #top
-		map.plot([W120,W120],[-5,5],linestyle='--',color='orange',lw=1)   #right
-		map.plot([W170,W170],[-5,5],linestyle='--',color='orange',lw=1)   #left
+                map.plot([W120,W170],[-5,-5],linestyle='-',color='orange',lw=1)  #bottom
+		map.plot([W120,W170],[5,5],linestyle='-',color='orange',lw=1)    #top
+		map.plot([W120,W120],[-5,5],linestyle='-',color='orange',lw=1)   #right
+		map.plot([W170,W170],[-5,5],linestyle='-',color='orange',lw=1)   #left
 		#nino3
                 map.plot([W90,W150],[-5,-5],linestyle='--',color='aqua',lw=1)     #bottom
 		map.plot([W90,W150],[5,5],linestyle='--',color='aqua',lw=1)       #top
@@ -744,7 +746,7 @@ def decimal_places(diff):
     return int(dec)
 
 
-def get_min_max(files,variables,timmean,region):
+def get_min_max(files,variables,timmean,region,plot='primary'):
 
     min_level = 1.0e20
     max_level = -1.0e20
@@ -772,8 +774,17 @@ def get_min_max(files,variables,timmean,region):
 
             fin.close()
 
+    print plot, 'plot'
     print 'Minimum value = ',min_level
     print 'Maximum value = ',max_level
+    
+    #For ranges that straddle zero, make magnitude of min and max equal
+    if max_level > 0 and min_level < 0:
+        if abs(max_level) > abs(min_level):
+	    min_level = -1 * max_level
+	else:
+	    max_level = abs(min_level)
+        
     
     return min_level,max_level
 

@@ -2,10 +2,8 @@
 
 """
 GIT INFO: $Id$
-Filename:     plot_EOF.py
+Filename:     plot_layers.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Plots the spatial EOF
-
 
 Updates | By | Description
 --------+----+------------
@@ -26,6 +24,10 @@ import numpy
 import math
 
 import plot_map
+
+from time import strftime
+from datetime import datetime
+
 
 
 def dimensions(nfiles):
@@ -83,9 +85,17 @@ def unpack_comma_list(comma_list,data_type='str'):
 
     return python_array
 
+def month_text(month_number):
+    """Converts a month number to the text name"""
+    
+    formated_month = datetime(2012, int(month_number), 1)
+    selected_month = formated_month.strftime("%b")
+    
+    return selected_month
+
 
 def main(primary_files,primary_variables,ofile,contour_files,quiver_files,title,
-         dates,region,ticks,contour_ticks,quiver_type,thin,key_value,equator,image_size):
+         dates,region,ticks,units,contour_ticks,quiver_type,thin,key_value,equator,image_size):
 
     # Dimensions
     nfiles = len(primary_files)
@@ -142,17 +152,28 @@ def main(primary_files,primary_variables,ofile,contour_files,quiver_files,title,
 	quivery_file_list = None
 	quivery_variable_list = None
 
+    # Title
+    
+    start_year, start_month, start_day = dates[0].split('-')
+    end_year, end_month, end_day = dates[1].split('-')
+    
+    if (start_year == end_year) and (start_month == end_month):
+        new_title = '%s %s %s' %(title,month_text(start_month),start_year)
+    else:
+        new_title = '%s %s %s to %s %s ' %(title,month_text(start_month),start_year,month_text(end_month),end_year)
+
     
     plot_map.multiplot(primary_file_list,
                        primary_variable_list,
 		       dimensions=dims,
 		       ofile=ofile,
-		       title=title,
+		       title=new_title,
 		       timmean=dates,
 		       region=region,
 		       colourbar_colour='RdBu_r',
 		       extend='both',
 		       ticks=unpack_comma_list(ticks,data_type='float'),
+		       units=units,
 		       draw_contours=draw_contours,
 		       contour_files=contour_file_list,
 		       contour_variables=contour_variable_list,
@@ -187,9 +208,10 @@ if __name__ == '__main__':
     parser.add_option("-c","--contour_files",dest="contour_files",type='string',nargs=2,default=None,help="Two comma seperated contour lists (files variables) [default = None]")
     parser.add_option("-q","--quiver_files",dest="quiver_files",type='string',nargs=4,default=None,help="Four comma seperated quiver lists (x_dir_files x_vars y_files y_vars) [default = None]")
     parser.add_option('-d',"--dates",dest="dates",type='string',nargs=2,default=None,help="Two integer times (start_date end_date) [default = None]")
-    parser.add_option("--title",dest="title",type='string',default=None,help="plot title [default = None]")
+    parser.add_option("--title",dest="title",type='string',default='',help="plot title [default = date only]")
     parser.add_option("--region",dest="region",type='string',default='WORLD_DATELINE',help="name of region to plot [default = WORLD_DATELINE]")
     parser.add_option("--ticks", dest="ticks",type='string',default=None,help="List of comma seperated tick marks to appear on the colour bar [default = automatic]")
+    parser.add_option("--units", dest="units",type='string',default=None,help="Units")
     parser.add_option("--contour_ticks", dest="contour_ticks",type='string',default=None,help="List of comma seperated tick marks for the contours [default = automatic]")
     parser.add_option("--quiver_type", dest="quiver_type",type='string',default='wind',help="Type of quiver being plotted [defualt = wind]")
     parser.add_option("--thin", dest="thin",type='int',default=1,help="Thinning factor for plotting wind vectors [defualt = 1]")
@@ -218,8 +240,9 @@ if __name__ == '__main__':
 	    --dates          ->  Four integer times (start_date end_date) [default = None]
 	                         e.g. 1980-09-01 1980-09-27  (for monthly data would give Sept 1980)
 	    --region         ->  Selector defining a region (for cylindrical projection). Inbuilt regions are WORLD_GRENEWICH, WORLD_DATELINE, AUSTRALIA, AUS_NZ [default = WORLD_DATELINE]
-	    --title          ->  Plot title [default = None]
+	    --title          ->  Plot title [default = date only]
 	    --ticks          ->  List of comma seperataed tick marks to appear on the colour bar [default = automatic]
+	    --units          ->  Units of the data - appears as a label below the colourbar
 	    --contour_ticks  ->  List of comma seperated tick marks for the contours [default = automatic]
 	    --quiver_type    ->  Type of quiver being plotted (determines units for quiver key). Can be 'wind' or 'waf' (wave activity flux) [default = 'wind']
 	    --thin           ->  Thinning factor for plotting wind vectors (e.g. 2 = every second vector; 3 = every third) [default = 1]
@@ -231,12 +254,14 @@ if __name__ == '__main__':
 	    /opt/cdat/bin/cdat plot_layers.py
 	    /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc ts
 	    /work/dbirving/processed/spatial_maps/ts-sf-waf_Merra_surface-250hPa-250hPa_monthly-anom-wrt-1981-2010_native.png
-	    -c /work/dbirving/datasets/Merra/data/processed/sf_Merra_surface_monthly-anom-wrt-1981-2010_native.nc sf
+	    -c /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc sf
 	    -q /work/dbirving/datasets/Merra/data/processed/wafx_Merra_250hPa_monthly_native.nc wafx
 	       /work/dbirving/datasets/Merra/data/processed/wafy_Merra_250hPa_monthly_native.nc wafy  
+	    --title Merra_skin_temp_anomaly_and_250hPa_streamfunction_anomaly,
 	    --ticks -5,-4.5,-4,-3.5,-3,-2.5,-2,-1.5,-1,-0.5,0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5 
-	    --contour_ticks -30,-25,-20,-15,-10,-5,0,5,10,15,20,25,30
-	    --dates 1980-09-01 1980-09-27
+	    --units Celsius
+	    --dates 2009-05-01 2009-05-27
+	    -o /work/dbirving/processed/spatial_maps/ts-sf_Merra_surface-250hPa_May2009-anom-wrt-1981-2010_native-ocean.png
 	    
 	Author
             Damien Irving, 5 Nov 2012
@@ -269,6 +294,7 @@ if __name__ == '__main__':
 	     options.dates,
 	     options.region,
 	     options.ticks,
+	     options.units,
 	     options.contour_ticks,
 	     options.quiver_type,
 	     options.thin,

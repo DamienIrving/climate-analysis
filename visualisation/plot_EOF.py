@@ -121,9 +121,11 @@ def main(neofs,ifile,var,ofile,title,ticks,segments,equator):
 	img_headings.append('EOF%s  (%3.1f%% variance explained)' %(str(i),data.data))
         fin.close()
     img_headings_list = shuffle(img_headings,rows,cols)
-    
+
+
     plot_map.multiplot(ifile_list,
                        variable_list,
+		       ofile=ofile,
 		       dimensions=dims,
 		       minlat=minlat,maxlat=maxlat,minlon=minlon,maxlon=maxlon,
 		       img_headings=img_headings_list,
@@ -132,7 +134,8 @@ def main(neofs,ifile,var,ofile,title,ticks,segments,equator):
 		       equator=equator,
 		       contour=True,
 		       ticks=unpack_comma_list(ticks,data_type='float'),
-		       discrete_segments=unpack_comma_list(segments),title=title
+		       discrete_segments=unpack_comma_list(segments),
+		       title=title
 		       )
 
 
@@ -145,6 +148,7 @@ if __name__ == '__main__':
 
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
     parser.add_option("-e", "--equator",action="store_true",dest="equator",default=False,help="plot a distinct gridline for the equator [default = False]")
+    parser.add_option("--ofile",dest="ofile",type='string',default=None,help="name of output file [default = test.png]")
     parser.add_option("--ticks", dest="ticks",type='string',default=None,help="List of comma seperataed tick marks to appear on the colour bar")
     parser.add_option("--segments", dest="segments",type='string',default=None,help="List of comma seperated colours to appear on the colour bar")
     parser.add_option("--title",dest="title",type='string',default=None,help="plot title [default = None]")
@@ -154,12 +158,13 @@ if __name__ == '__main__':
     if options.manual == True or len(sys.argv) == 1:
 	print """
 	Usage:
-            cdat plot_EOF.py [-h] [options] {neofs} {input file} {variable} {output file}
+            cdat plot_EOF.py [-h] [options] {neofs} {input file} {variable}
 
 	Options
             -M  ->  Display this on-line manual page and exit
             -h  ->  Display a help/usage message and exit
 	    
+	    --ofile    ->  Name of output file [default = test.png]
 	    --equator  ->  Plot a distinct gridline for the equator [default = False]
 	    --title    ->  Plot title [default = None]
 	    --ticks    ->  List of comma seperataed tick marks to appear on the colour bar [default = automatic]
@@ -167,7 +172,8 @@ if __name__ == '__main__':
 	    
 	Example (abyss.earthsci.unimelb.edu.au)
 	    /opt/cdat/bin/cdat plot_EOF.py 4 
-	    /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.nc sf test.png
+	    /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.nc sf 
+	    /work/dbirving/processed/indices/figures/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.png
 	    --title 250hPa_streamfunction_EOF_analysis,_1979-2012,_Merra
 	    --ticks -2.5,-2.0,-1.5,-1.0,-0.5,0,0.5,1.0,1.5,2.0,2.5,3.0
 	    --segments 'blue7','blue6','blue5','blue4','blue3','red3','red4','red5','red6','red7','red8'
@@ -185,5 +191,4 @@ if __name__ == '__main__':
     
     else:
 
-        main(int(args[0]),args[1],args[2],args[3],options.title,options.ticks,options.segments,options.equator)
-    
+        main(int(args[0]),args[1],args[2],options.ofile,options.title,options.ticks,options.segments,options.equator)
