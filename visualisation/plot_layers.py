@@ -253,7 +253,6 @@ if __name__ == '__main__':
 	Example (abyss.earthsci.unimelb.edu.au)
 	    /opt/cdat/bin/cdat plot_layers.py
 	    /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc ts
-	    /work/dbirving/processed/spatial_maps/ts-sf-waf_Merra_surface-250hPa-250hPa_monthly-anom-wrt-1981-2010_native.png
 	    -c /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc sf
 	    -q /work/dbirving/datasets/Merra/data/processed/wafx_Merra_250hPa_monthly_native.nc wafx
 	       /work/dbirving/datasets/Merra/data/processed/wafy_Merra_250hPa_monthly_native.nc wafy  
