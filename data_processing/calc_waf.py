@@ -370,7 +370,12 @@ if __name__ == '__main__':
             Damien Irving, 12 Oct 2012.
 
 	Bugs
-            Please report any problems to: d.irving@student.unimelb.edu.au
+            At the moment the program outputs NaNf and -Infinityf values.
+	    These need to be identified and removed, or perhaps the tropics
+	    and high latitudes could just be maksed (or the areas where climatology
+	    is not westerly)  
+	    
+	    Please report any problems to: d.irving@student.unimelb.edu.au
 	"""
 	sys.exit(0)
 
