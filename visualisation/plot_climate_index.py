@@ -46,8 +46,8 @@ import math
 ## Define global variables ##
 
 
-pcolor_list = ['red','blue','green','yellow','orange']
-scolor_list = ['purple','brown','aqua']
+#pcolor_list = ['red','blue','green','yellow','orange']
+#scolor_list = ['purple','brown','aqua']
 
 
 class InputFile(object):
@@ -83,6 +83,21 @@ class InputFile(object):
             else:
                 raise
 
+def unpack_comma_list(comma_list,data_type='str'):
+    """Converts a comma separated list into a python array"""
+    
+    if comma_list:  # because it might be 'None'
+	if data_type == 'int':
+	    python_array = [int(s) for s in str(comma_list).split(',')]
+	elif data_type == 'float':
+	    python_array = [float(s) for s in str(comma_list).split(',')]
+	else:
+	    python_array = [str(s) for s in str(comma_list).split(',')]
+    else:
+	python_array = None
+
+    return python_array
+
 
 def get_times(years,months,window):
     """Adjusts time axis according to window"""
@@ -108,7 +123,7 @@ def get_times(years,months,window):
     return int(start_year),int(start_month),int(end_year),int(end_month)
 
 
-def set_units(index,orig_units,axis):
+def set_units(var,index,orig_units,axis):
     """Sets the units for the plot"""
     
     if index[0:4] == 'NINO':
@@ -118,7 +133,13 @@ def set_units(index,orig_units,axis):
     elif index == 'SAMI':
         units = 'Monthly SAM index'
     elif index[0:3] == 'EOF':
-        units = '1.e+6 m2 s-1'
+        if var == 'sf':
+	    units = '1.e+6 m2 s-1'
+	elif var == 'ts' or var == 'tos':
+	    units = 'deg C'
+	else:
+	    print 'Index/variable combination not recognised'
+            sys.exit(0)
     else:
         print 'Index not recognised'
         sys.exit(0)
@@ -430,7 +451,8 @@ def get_xticks(xdata):
     return minor_xticks,major_xticks,major_xlabels
     
     
-def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,legsize,nrows):
+def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,
+                  outfile_name,leglocp,leglocs,legsize,pcolor_list,scolor_list,linep,lines,nrows,title):
     """Creates the plot"""
     
     #initialise figure
@@ -454,8 +476,8 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
 	    sfile = secondary_file_list[count]
 	    xplot2,yplot2 = split_data(xaxis_full_float,xdata[sfile.fname],ydata[sfile.fname],nrows)
 	    if ((count + len(primary_file_list)) in error_list):
-	        xplot2,yplot_error2 = split_data(xaxis_full_float,xdata[pfile.fname],ydata[pfile.fname,'error'],nrows)
-	    
+	        xplot2,yplot_error2 = split_data(xaxis_full_float,xdata[sfile.fname],ydata[sfile.fname,'error'],nrows)
+		
 	for row in range(0,nrows):
 
             pnum = row + 1
@@ -465,12 +487,10 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
             
 	    if count < len_sec:
 	        ax2 = ax.twinx()
-		sfile = secondary_file_list[count]
 		
 	    #plot data
 	    label = pfile.variable_name+', '+pfile.index+', '+pfile.dataset
-	    print label
-	    ax.plot(numpy.ma.array(xplot[pnum]),numpy.ma.array(yplot[pnum]),color=pcolor_list[count],lw=2.0,label=label,linestyle='-',marker='None')
+	    ax.plot(numpy.ma.array(xplot[pnum]),numpy.ma.array(yplot[pnum]),color=pcolor_list[count],lw=2.0,label=label,linestyle=linep,marker='None')
 	    if (count in error_list):
 	        upper = numpy.ma.array(yplot[pnum]) + 2*numpy.ma.array(yplot_error[pnum])
 		lower = numpy.ma.array(yplot[pnum]) - 2*numpy.ma.array(yplot_error[pnum])
@@ -479,21 +499,20 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
                 ax.fill_between(numpy.ma.array(xplot[pnum]),upper,lower,facecolor=pcolor_list[count],alpha=0.4)
 	    
 	    if count < len_sec:
-	        label = sfile.variable_name+', '+sfile.index+', '+sfile.dataset
-	        print label
-		ax2.plot(numpy.ma.array(xplot2[pnum]),numpy.ma.array(yplot2[pnum]),color=scolor_list[count],lw=2.0,label=label,linestyle='--',marker='None')
+	        label2 = sfile.variable_name+', '+sfile.index+', '+sfile.dataset
+		ax2.plot(numpy.ma.array(xplot2[pnum]),numpy.ma.array(yplot2[pnum]),color=scolor_list[count],lw=2.0,label=label2,linestyle=lines,marker='None')
 		if ((count + len(primary_file_list)) in error_list):
-	            upper = numpy.ma.array(yplot[pnum]) + 2*numpy.ma.array(yplot_error[pnum])
-		    lower = numpy.ma.array(yplot[pnum]) - 2*numpy.ma.array(yplot_error[pnum])
-		    ax.plot(numpy.ma.array(xplot[pnum]),upper,color=pcolor_list[count],lw=0.5)
-                    ax.plot(numpy.ma.array(xplot[pnum]),lower,color=pcolor_list[count],lw=0.5)
-                    ax.fill_between(numpy.ma.array(xplot[pnum]),upper,lower,facecolor=pcolor_list[count],alpha=0.4)
+	            upper2 = numpy.ma.array(yplot2[pnum]) + 2*numpy.ma.array(yplot_error2[pnum])
+		    lower2 = numpy.ma.array(yplot2[pnum]) - 2*numpy.ma.array(yplot_error2[pnum])
+		    ax2.plot(numpy.ma.array(xplot2[pnum]),upper,color=scolor_list[count],lw=0.5)
+                    ax2.plot(numpy.ma.array(xplot2[pnum]),lower,color=scolor_list[count],lw=0.5)
+                    ax2.fill_between(numpy.ma.array(xplot2[pnum]),upper2,lower2,facecolor=scolor_list[count],alpha=0.4)
 		
 	    #plot extra guidelines
-	    units_text = set_units(pfile.index,units_text,'Primary')
+	    units_text = set_units(pfile.variable_name,pfile.index,units_text,'Primary')
 
             if count < len_sec:
-	        units_text2 = set_units(sfile.index,units_text2,'Secondary')
+	        units_text2 = set_units(sfile.variable_name,sfile.index,units_text2,'Secondary')
 
 	    if units_text == 'Anomaly (deg C)' or units_text2 == 'Anomaly (deg C)':
         	ax.axhline(y=0.5,linestyle='--',color='0.5')
@@ -503,6 +522,10 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
 	    ax.set_ylim(ybounds['min','a'],ybounds['max','a'])
 	    if count < len_sec:
 	        ax2.set_ylim(ybounds['min','b'],ybounds['max','b'])
+	    	    
+	    ax.set_xlim(xplot[pnum][0],xplot[pnum][-1])
+	    if count < len_sec:
+	        ax2.set_xlim(xplot[pnum][0],xplot[pnum][-1])
 	    
 	    #xticks
 	    minor_xticks,major_xticks,major_xlabels = get_xticks(xplot[pnum])
@@ -519,22 +542,22 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
 	        ax.axhline(y=0,linestyle='-',color='0.5')
 
 	    #axis labels
-	    print units_text
-	    print units_text2
 	    ax.set_ylabel(units_text,fontsize='medium')
             
 	    if count < len_sec:
 	        ax2.set_ylabel(units_text2,fontsize='medium',rotation=270)
 
 	    #legend
-	    
             if row == (nrows-1): 	   
 		font = font_manager.FontProperties(size=legsize)
 		if leglocp:
 	            ax.legend(loc=leglocp,prop=font,ncol=2)
                 
 		if leglocs:
-                    ax2.legend(loc=leglocs,prop=font)  #,ncol=2)
+                    ax2.legend(loc=leglocs,prop=font,ncol=2)
+            #title
+	    if pfile == primary_file_list[0] and title and pnum == 1:
+	        ax.set_title(title.replace('_',' ')) 
 
 	count = count + 1
     
@@ -546,7 +569,8 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
         plt.show()
 
 
-def main(primary_file_list,secondary_file_list,error_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,leglocp,leglocs,legsize,nrows):
+def main(primary_file_list,secondary_file_list,error_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,
+         leglocp,leglocs,legsize,pcolor_list,scolor_list,linep,lines,nrows,title):
     """Run the program"""
     
     primary_file_list = [InputFile(f) for f in primary_file_list]
@@ -569,7 +593,8 @@ def main(primary_file_list,secondary_file_list,error_list,outfile_name,windowp,w
     
     ## Generate the plot ##
     
-    generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,outfile_name,leglocp,leglocs,legsize,nrows)
+    generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,
+                  outfile_name,leglocp,leglocs,legsize,pcolor_list,scolor_list,linep,lines,nrows,title)
     
 
 if __name__ == '__main__':
@@ -585,14 +610,19 @@ if __name__ == '__main__':
     parser.add_option("-b", "--buffer",dest="buffer",type='float',default=1.0,help="Scale factor for y axis upper buffer [default = 4]")
     parser.add_option("-r", "--rows",dest="nrows",type='int',default=1,help="Number of rows (long time axes can be split onto numerous rows [default = 1]")
     parser.add_option("-x", "--setx",dest="setx",default=None,nargs=4,type='int',help="Time axis bounds (start_year start_month end_year end_month) [default = None]")
-    parser.add_option("-e", "--error",dest="error",default=None,help="Comma separated list of file numbers corresponding to those with error shading [default = None]")
+    parser.add_option("-e", "--error",dest="error",type='str',default=1000,help="Comma separated list of file numbers corresponding to those with error shading [default = None]")
     parser.add_option("--lp",dest="legendp",default=None,type='int',help="Location of the primary figure legend [defualt = None]")
     parser.add_option("--ls",dest="legends",default=None,type='int',help="Location of the secondary figure legend [defualt = None]")
     parser.add_option("--lsize",dest="legendsize",default='medium',type='string',help="Size of the legend text [defualt = medium]")
+    parser.add_option("--colorp",dest="colorp",default='red,blue,green,yellow,orange',help="Comma separated list of colors for the primary plot [default = auto]")
+    parser.add_option("--colors",dest="colors",default='purple,brown,aqua',help="Comma separated list of colors for the secondary plot [default = auto]")
+    parser.add_option("--linep",dest="linep",default='-',help="Line style for the primary plot [default = solid]")
+    parser.add_option("--lines",dest="lines",default='--',help="Line style for the secondary plot [default = dahsed]")
     parser.add_option("--wp",dest="windowp",type='int',default=1,help="Window for primary axis running average [default = 1]")
     parser.add_option("--ws",dest="windows",type='int',default=1,help="Window for secondary axis running average [default = 1]")
     parser.add_option("--setyp",dest="setyp",default=None,nargs=2,type='float',help="Primary y axis bounds (min max) [default = None]")
     parser.add_option("--setys",dest="setys",default=None,nargs=2,type='float',help="Secondary y axis bounds (min max) [default = None]")
+    parser.add_option("--title",dest="title",default=None,help="Title for plot [default = None]")
     
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
@@ -610,20 +640,27 @@ if __name__ == '__main__':
 	    -s  ->  Comma separated list files to be plotted on the secondary y axis [default = None]
 	    -x  ->  Time axis bounds (start_year start_month end_year end_month) [default = None]
 	    -e  ->  Comma separated list of file numbers corresponding to those with error shading [default = None]
-	    --lp  ->  Location of the primary legend [default = None]
-	    --ls  ->  Location of the secondary legend [default = None]
-	    --lsize  ->  Size of the legend text [default = medium]
-            --wp  ->  Window for primary axis running average [default = 1]
-	    --ws  ->  Window for secondary axis running average [default = 1]
-	    --setyp  ->  Primary y axis bounds (min,max) [default = None]
-	    --setys  ->  Secondary y axis bounds (min,max) [default = None]
+	    --lp      ->  Location of the primary legend [default = None]
+	    --ls      ->  Location of the secondary legend [default = None]
+	    --lsize   ->  Size of the legend text [default = medium]
+	    --colorp  ->  Comma separated list of colors for the primary plot [default = auto]
+	    --colors  ->  Comma separated list of colors for the secondary plot [default = auto]
+	    --linep   ->  Line style for the primary plot [default = solid]
+	    --lines   ->  Line style for the secondary plot [default = dashed]
+            --wp      ->  Window for primary axis running average [default = 1]
+	    --ws      ->  Window for secondary axis running average [default = 1]
+	    --setyp   ->  Primary y axis bounds (min,max) [default = None]
+	    --setys   ->  Secondary y axis bounds (min,max) [default = None]
+	    --title   ->  Title for plot (underscores will be replaced with white space) [default = None]
 	
 	Legend options
-	    Location:  1 upper right, 2 upper left, 3 lower left, 4 lower_right, 5 right, 6 center left, 
-	               7 center right, 8 lower center, 9 upper center, 10 center, None no legend 
+	    Location:   1 upper right, 2 upper left, 3 lower left, 4 lower_right, 5 right, 6 center left, 
+	                7 center right, 8 lower center, 9 upper center, 10 center, None no legend 
 	
-	    Text size: Either xx-small, x-small, small, medium, large, x-large, xx-large, 
-	               or an absolute font size, e.g. 12
+	    Text size:  Either xx-small, x-small, small, medium, large, x-large, xx-large, 
+	                or an absolute font size, e.g. 12
+	
+	    Linestyles: - solid, -- dashed, -. dash dot, : dotted
 	
 	Examples (abyss.earthsci.unimelb.edu.au)
 	    /opt/cdat/bin/cdat plot_climate_index.py --wp 5 
@@ -642,28 +679,37 @@ if __name__ == '__main__':
 	    
 	Note
 	    The number of primary files must be greater or equal to the number of secondary files.
+	    
 	    The expected measure of error is the standard deviation (twice the standard deviation either side
 	    of the central estimate is plotted).
 	    
 	Bugs
-            Please report any problems to: d.irving@student.unimelb.edu.au
+            For the secondary axis, only the final timeseries is shown in the legend.
+	    
+	    Please report any other problems to: d.irving@student.unimelb.edu.au
 	"""
 	sys.exit(0)
     
     else:
         
-	if options.secondary:
-	    secondary_file_list = [str(s) for s in options.secondary.split(',')]
-	else:
-	    secondary_file_list = None
-	
-	if options.error:
-	    error_list = [int(s) for s in options.error.split(',')]
-	else:
-	    error_list = [1000]   # Dummy number (purposely high)
-	    
-        primary_file_list = args[:]   
-
-        main(primary_file_list,secondary_file_list,error_list,options.outfile,options.windowp,options.windows,
-	options.setx,options.setyp,options.setys,options.buffer,options.legendp,options.legends,options.legendsize,options.nrows)
+        main(args[:],                                           # primary_file_list
+	     unpack_comma_list(options.secondary),              # secondary_file_list
+	     unpack_comma_list(options.error,data_type='int'),  # error_list      
+	     options.outfile,
+	     options.windowp,
+	     options.windows,
+	     options.setx,
+	     options.setyp,
+	     options.setys,
+	     options.buffer,
+	     options.legendp,
+	     options.legends,
+	     options.legendsize,
+	     unpack_comma_list(options.colorp),                 #pcolor_list
+	     unpack_comma_list(options.colors),                 #scolor_list
+	     options.linep,
+	     options.lines,
+	     options.nrows,
+	     options.title
+	     )
     
