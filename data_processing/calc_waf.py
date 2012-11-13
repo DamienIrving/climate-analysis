@@ -99,7 +99,7 @@ def write_binary(data,outfile):
 
 
 def read_binary(infile,dims):
-    """Reads a binary data file and puts data in a numpy array"""
+    """Reads a binary data file and puts data in an array"""
 
     fileobj = open(infile, mode='rb')
     
@@ -189,6 +189,40 @@ def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,
 
 
     outfile.close()
+
+
+def apply_mask(input_data,input_clim_u,fin):
+    """Apply mask, because WAF only valid where the climatological mean flow is westerly"""  
+    
+    # Get the time axis info #
+
+    time_data = fin.getAxis('time').asComponentTime()
+    months = []
+    for ii in range(0,len(time_data)):
+	months.append(int(str(time_data[ii]).split('-')[1]))
+    
+    # Expand input climatology to match size of input data (with correct month matching) #
+
+    ntime,nlat,nlon = numpy.shape(input_data)
+    input_clim_u_expanded = numpy.ma.ones([ntime,nlat,nlon]) * 9.999e+20
+    for i in range(0,ntime):
+	month_index = months[i]
+	input_clim_u_expanded[i,:,:] = input_clim_u[month_index-1,:,:]
+    
+    # Define the mask #
+    
+    mask_u = numpy.where(input_clim_u_expanded > 1.0, 0, 1)   # exclude points where climtological wind has easterly component
+    mask_inf = numpy.isinf(input_data)                        # exclude infinity values
+    mask_nan = numpy.isnan(input_data)                        # exclude NaN values
+    
+    mask = numpy.sum([mask_u,mask_inf,mask_nan],axis=0)
+    
+    # Apply the mask #
+    
+    input_data_masked = MV2.array(numpy.ma.masked_array(input_data, mask=mask))
+    
+ 
+    return input_data_masked
 
 
 def main(fname_u, fname_uclim, vname_u, fname_v, fname_vclim, vname_v, fname_zg, fname_zgclim, vname_zg, fname_wafx, fname_wafy):
@@ -294,12 +328,15 @@ def main(fname_u, fname_uclim, vname_u, fname_v, fname_vclim, vname_v, fname_zg,
     ### Write the output netCDF file ###
     
     wafx_data = read_binary('wafx.bin',[ntime,73,144])
-    wafy_data = read_binary('wafy.bin',[ntime,73,144])
-    
+    wafy_data = read_binary('wafy.bin',[ntime,73,144])    
+        
+    wafx_data_masked = apply_mask(wafx_data,uclim_data_regrid,infile_u)
+    wafy_data_masked = apply_mask(wafy_data,uclim_data_regrid,infile_u)
+  
     sourcefile_text = '%s, %s, %s, %s, %s, %s' %(fname_u, fname_uclim, fname_v, fname_vclim, fname_zg, fname_zgclim)
     
-    write_netcdf(fname_wafx,wafx_data,time_u,lat_regrid,lon_regrid,sourcefile_text,'wafx')
-    write_netcdf(fname_wafy,wafy_data,time_u,lat_regrid,lon_regrid,sourcefile_text,'wafy')
+    write_netcdf(fname_wafx,wafx_data_masked,time_u,lat_regrid,lon_regrid,sourcefile_text,'wafx')
+    write_netcdf(fname_wafy,wafy_data_masked,time_u,lat_regrid,lon_regrid,sourcefile_text,'wafy')
 
     
     ### Clean up ###
@@ -370,10 +407,8 @@ if __name__ == '__main__':
             Damien Irving, 12 Oct 2012.
 
 	Bugs
-            At the moment the program outputs NaNf and -Infinityf values.
-	    These need to be identified and removed, or perhaps the tropics
-	    and high latitudes could just be maksed (or the areas where climatology
-	    is not westerly)  
+	    At the moment the output produces some very large values and also a zonal line of missing values at
+	    22.5 N.
 	    
 	    Please report any problems to: d.irving@student.unimelb.edu.au
 	"""
