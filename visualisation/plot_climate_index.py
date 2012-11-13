@@ -241,7 +241,7 @@ def extract_data(file_list,file_list_dims,error_list,windowp,windows):
 def convert_datetime(dates):
     """Converts a series of datetime instances to floating point numbers"""
     
-    dates_float = numpy.zeros(len(dates[:]))
+    dates_float = numpy.ma.zeros(len(dates[:]))
     for i in range(0,len(dates[:])):    # SLOW
         dates_float[i] = dates[i].year + ((dates[i].month - 1) / 12.0) 
     
@@ -398,7 +398,7 @@ def split_data(xaxis_full_float,xdata,ydata,nrows):
     """Splits up the data according to the number of rows"""
     
     #initialise output y data array	
-    ydata_full = numpy.ones(len(xaxis_full_float)) * 1.e20
+    ydata_full = numpy.ma.ones(len(xaxis_full_float)) * 1.e20
     
     #find location of the first time point
     start_loc = numpy.int(numpy.where(xaxis_full_float==xdata[0])[0])
@@ -455,111 +455,121 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
                   outfile_name,leglocp,leglocs,legsize,pcolor_list,scolor_list,linep,lines,nrows,title):
     """Creates the plot"""
     
-    #initialise figure
+    # Initialise figure #
+    
     fig = plt.figure()
        
     units_text='temp'
     units_text2='temp'
+    
+    # Prepare the data according to the number of rows #
+   
     if secondary_file_list:
-        len_sec = len(secondary_file_list)
+        all_file_list = primary_file_list + secondary_file_list
     else:
-        len_sec = 0
-    count = 0
-    for pfile in primary_file_list:
+        all_file_list = primary_file_list
+    
+    xplot = {}
+    yplot = {}
+    yplot_error = {}
+    for afile in all_file_list:
+	xplot[afile.fname],yplot[afile.fname] = split_data(xaxis_full_float,xdata[afile.fname],ydata[afile.fname],nrows)
+	if (afile.fname in error_list):
+	    xplot[afile.fname],yplot_error[afile.fname] = split_data(xaxis_full_float,xdata[afile.fname],ydata[afile.fname,'error'],nrows)
 
-	#split data according to nrows
-	xplot,yplot = split_data(xaxis_full_float,xdata[pfile.fname],ydata[pfile.fname],nrows)
-	if (count in error_list):
-	    xplot,yplot_error = split_data(xaxis_full_float,xdata[pfile.fname],ydata[pfile.fname,'error'],nrows)
-	
-	if count < len_sec:
-	    sfile = secondary_file_list[count]
-	    xplot2,yplot2 = split_data(xaxis_full_float,xdata[sfile.fname],ydata[sfile.fname],nrows)
-	    if ((count + len(primary_file_list)) in error_list):
-	        xplot2,yplot_error2 = split_data(xaxis_full_float,xdata[sfile.fname],ydata[sfile.fname,'error'],nrows)
-		
-	for row in range(0,nrows):
+    # Make the plot #
+    
+    for row in range(0,nrows):
 
-            pnum = row + 1
+        pnum = row + 1
 
-	    #initialise plot
-	    ax = fig.add_subplot(nrows,1,pnum)  # rows, columns, plot number
-            
-	    if count < len_sec:
-	        ax2 = ax.twinx()
-		
-	    #plot data
+	#initialise plot
+	ax = fig.add_subplot(nrows,1,pnum)  # rows, columns, plot number
+
+	if secondary_file_list:
+	    ax2 = ax.twinx()
+
+	#plot primary axis data	
+	count = 0
+	for pfile in primary_file_list:
 	    label = pfile.variable_name+', '+pfile.index+', '+pfile.dataset
-	    ax.plot(numpy.ma.array(xplot[pnum]),numpy.ma.array(yplot[pnum]),color=pcolor_list[count],lw=2.0,label=label,linestyle=linep,marker='None')
-	    if (count in error_list):
-	        upper = numpy.ma.array(yplot[pnum]) + 2*numpy.ma.array(yplot_error[pnum])
-		lower = numpy.ma.array(yplot[pnum]) - 2*numpy.ma.array(yplot_error[pnum])
-		ax.plot(numpy.ma.array(xplot[pnum]),upper,color=pcolor_list[count],lw=0.5)
-                ax.plot(numpy.ma.array(xplot[pnum]),lower,color=pcolor_list[count],lw=0.5)
-                ax.fill_between(numpy.ma.array(xplot[pnum]),upper,lower,facecolor=pcolor_list[count],alpha=0.4)
+	    ax.plot(numpy.ma.array(xplot[pfile.fname][pnum]),numpy.ma.array(yplot[pfile.fname][pnum]),color=pcolor_list[count],lw=2.0,label=label,linestyle=linep,marker='None')
+	    if (pfile.fname in error_list):
+		upper = numpy.ma.array(yplot[pfile.fname][pnum]) + 2*numpy.ma.array(yplot_error[pfile.fname][pnum])
+		lower = numpy.ma.array(yplot[pfile.fname][pnum]) - 2*numpy.ma.array(yplot_error[pfile.fname][pnum])
+		ax.plot(numpy.ma.array(xplot[pfile.fname][pnum]),upper,color=pcolor_list[count],lw=0.5)
+        	ax.plot(numpy.ma.array(xplot[pfile.fname][pnum]),lower,color=pcolor_list[count],lw=0.5)
+        	ax.fill_between(numpy.ma.array(xplot[pfile.fname][pnum]),upper,lower,facecolor=pcolor_list[count],alpha=0.4)
+            count = count + 1
 	    
-	    if count < len_sec:
-	        label2 = sfile.variable_name+', '+sfile.index+', '+sfile.dataset
-		ax2.plot(numpy.ma.array(xplot2[pnum]),numpy.ma.array(yplot2[pnum]),color=scolor_list[count],lw=2.0,label=label2,linestyle=lines,marker='None')
-		if ((count + len(primary_file_list)) in error_list):
-	            upper2 = numpy.ma.array(yplot2[pnum]) + 2*numpy.ma.array(yplot_error2[pnum])
-		    lower2 = numpy.ma.array(yplot2[pnum]) - 2*numpy.ma.array(yplot_error2[pnum])
-		    ax2.plot(numpy.ma.array(xplot2[pnum]),upper,color=scolor_list[count],lw=0.5)
-                    ax2.plot(numpy.ma.array(xplot2[pnum]),lower,color=scolor_list[count],lw=0.5)
-                    ax2.fill_between(numpy.ma.array(xplot2[pnum]),upper2,lower2,facecolor=scolor_list[count],alpha=0.4)
-		
-	    #plot extra guidelines
-	    units_text = set_units(pfile.variable_name,pfile.index,units_text,'Primary')
+        #plot secondary axis data
+	if secondary_file_list:
+	    count = 0
+	    for sfile in secondary_file_list:
+		label = sfile.variable_name+', '+sfile.index+', '+sfile.dataset
+		ax2.plot(numpy.ma.array(xplot[sfile.fname][pnum]),numpy.ma.array(yplot[sfile.fname][pnum]),color=scolor_list[count],lw=2.0,label=label,linestyle=lines,marker='None')
+		if (sfile.fname in error_list):
+		    upper = numpy.ma.array(yplot[sfile.fname][pnum]) + 2*numpy.ma.array(yplot_error[sfile.fname][pnum])
+		    lower = numpy.ma.array(yplot[sfile.fname][pnum]) - 2*numpy.ma.array(yplot_error[sfile.fname][pnum])
+		    ax2.plot(numpy.ma.array(xplot[sfile.fname][pnum]),upper,color=scolor_list[count],lw=0.5)
+        	    ax2.plot(numpy.ma.array(xplot[sfile.fname][pnum]),lower,color=scolor_list[count],lw=0.5)
+        	    ax2.fill_between(numpy.ma.array(xplot[sfile.fname][pnum]),upper,lower,facecolor=scolor_list[count],alpha=0.4)
+                count = count + 1
 
-            if count < len_sec:
-	        units_text2 = set_units(sfile.variable_name,sfile.index,units_text2,'Secondary')
+	#plot extra guidelines
+	units_text = set_units(primary_file_list[0].variable_name,primary_file_list[0].index,units_text,'Primary')
 
-	    if units_text == 'Anomaly (deg C)' or units_text2 == 'Anomaly (deg C)':
-        	ax.axhline(y=0.5,linestyle='--',color='0.5')
-        	ax.axhline(y=-0.5,linestyle='--',color='0.5')
-            
-	    #axis limits
-	    ax.set_ylim(ybounds['min','a'],ybounds['max','a'])
-	    if count < len_sec:
-	        ax2.set_ylim(ybounds['min','b'],ybounds['max','b'])
-	    	    
-	    ax.set_xlim(xplot[pnum][0],xplot[pnum][-1])
-	    if count < len_sec:
-	        ax2.set_xlim(xplot[pnum][0],xplot[pnum][-1])
-	    
-	    #xticks
-	    minor_xticks,major_xticks,major_xlabels = get_xticks(xplot[pnum])
-	    
-	    ax.set_xticks(major_xticks,minor=False)
-	    ax.set_xticks(minor_xticks,minor=True)
-	    ax.set_xticklabels(major_xlabels,minor=False,fontsize='medium')
-	    
-            #gridlines 
-	    if secondary_file_list == None:
-	        ax.grid(True,'major',color='0.2')
-	        ax.grid(True,'minor',color='0.6')
-	    else:
-	        ax.axhline(y=0,linestyle='-',color='0.5')
+        if secondary_file_list:
+	    units_text2 = set_units(secondary_file_list[0].variable_name,secondary_file_list[0].index,units_text2,'Secondary')
 
-	    #axis labels
-	    ax.set_ylabel(units_text,fontsize='medium')
-            
-	    if count < len_sec:
-	        ax2.set_ylabel(units_text2,fontsize='medium',rotation=270)
+	if units_text == 'Anomaly (deg C)' or units_text2 == 'Anomaly (deg C)':
+            ax.axhline(y=0.5,linestyle='--',color='0.5')
+            ax.axhline(y=-0.5,linestyle='--',color='0.5')
 
-	    #legend
-            if row == (nrows-1): 	   
-		font = font_manager.FontProperties(size=legsize)
-		if leglocp:
-	            ax.legend(loc=leglocp,prop=font,ncol=2)
-                
-		if leglocs:
-                    ax2.legend(loc=leglocs,prop=font,ncol=2)
-            #title
-	    if pfile == primary_file_list[0] and title and pnum == 1:
-	        ax.set_title(title.replace('_',' ')) 
+	#axis limits
+	ax.set_ylim(ybounds['min','a'],ybounds['max','a'])
+	if secondary_file_list:
+	    ax2.set_ylim(ybounds['min','b'],ybounds['max','b'])
 
-	count = count + 1
+	ax.set_xlim(xplot[primary_file_list[0].fname][pnum][0],xplot[primary_file_list[0].fname][pnum][-1])
+	if secondary_file_list:
+	    ax2.set_xlim(xplot[secondary_file_list[0].fname][pnum][0],xplot[secondary_file_list[0].fname][pnum][-1])
+
+	#xticks
+	minor_xticks,major_xticks,major_xlabels = get_xticks(xplot[primary_file_list[0].fname][pnum])
+
+	ax.set_xticks(major_xticks,minor=False)
+	ax.set_xticks(minor_xticks,minor=True)
+	ax.set_xticklabels(major_xlabels,minor=False,fontsize='medium')
+
+        #gridlines 
+	if secondary_file_list == None:
+	    ax.grid(True,'major',color='0.2')
+	    ax.grid(True,'minor',color='0.6')
+	else:
+	    ax.axhline(y=0,linestyle='-',color='0.5')
+
+	#axis labels
+	ax.set_ylabel(units_text,fontsize='medium')
+
+	if secondary_file_list:
+	    ax2.set_ylabel(units_text2,fontsize='medium',rotation=270)
+
+	#legend
+
+	if row == (nrows-1): 	   
+	    font = font_manager.FontProperties(size=legsize)
+	    if leglocp:
+		ax.legend(loc=leglocp,prop=font,ncol=2)
+
+	    if leglocs:
+		ax2.legend(loc=leglocs,prop=font,ncol=2)
+
+	#title
+	if title and pnum == 1:
+	    ax.set_title(title.replace('_',' ')) 
+
+    count = count + 1
     
     # Output the figure #
     
@@ -678,14 +688,10 @@ if __name__ == '__main__':
             Damien Irving, 22 Jun 2012
 	    
 	Note
-	    The number of primary files must be greater or equal to the number of secondary files.
-	    
 	    The expected measure of error is the standard deviation (twice the standard deviation either side
 	    of the central estimate is plotted).
 	    
 	Bugs
-            For the secondary axis, only the final timeseries is shown in the legend.
-	    
 	    Please report any other problems to: d.irving@student.unimelb.edu.au
 	"""
 	sys.exit(0)
