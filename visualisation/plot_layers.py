@@ -85,6 +85,7 @@ def unpack_comma_list(comma_list,data_type='str'):
 
     return python_array
 
+
 def month_text(month_number):
     """Converts a month number to the text name"""
     
@@ -95,7 +96,8 @@ def month_text(month_number):
 
 
 def main(primary_files,primary_variables,ofile,contour_files,quiver_files,title,
-         dates,region,ticks,units,contour_ticks,quiver_type,thin,key_value,equator,image_size):
+         dates,region,palette,ticks,units,contour_ticks,quiver_type,quiver_scale,
+	 thin,key_value,equator,image_size):
 
     # Dimensions
     nfiles = len(primary_files)
@@ -154,14 +156,17 @@ def main(primary_files,primary_variables,ofile,contour_files,quiver_files,title,
 
     # Title
     
-    start_year, start_month, start_day = dates[0].split('-')
-    end_year, end_month, end_day = dates[1].split('-')
-    
-    if (start_year == end_year) and (start_month == end_month):
-        new_title = '%s %s %s' %(title,month_text(start_month),start_year)
-    else:
-        new_title = '%s %s %s to %s %s ' %(title,month_text(start_month),start_year,month_text(end_month),end_year)
+    if dates:
+	start_year, start_month, start_day = dates[0].split('-')
+	end_year, end_month, end_day = dates[1].split('-')
 
+	if (start_year == end_year) and (start_month == end_month):
+            new_title = '%s %s %s' %(title,month_text(start_month),start_year)
+	else:
+            new_title = '%s %s %s to %s %s ' %(title,month_text(start_month),start_year,month_text(end_month),end_year)
+    else:
+        new_title = title
+	
     
     plot_map.multiplot(primary_file_list,
                        primary_variable_list,
@@ -170,10 +175,10 @@ def main(primary_files,primary_variables,ofile,contour_files,quiver_files,title,
 		       title=new_title,
 		       timmean=dates,
 		       region=region,
-		       colourbar_colour='RdBu_r',
+		       colourbar_colour=palette,
 		       extend='both',
 		       ticks=unpack_comma_list(ticks,data_type='float'),
-		       units=units,
+		       units=units,  #'$m^2 s^{-2}$',    		       
 		       draw_contours=draw_contours,
 		       contour_files=contour_file_list,
 		       contour_variables=contour_variable_list,
@@ -184,6 +189,7 @@ def main(primary_files,primary_variables,ofile,contour_files,quiver_files,title,
 		       uwnd_variables=quiverx_variable_list,
 		       vwnd_files=quivery_file_list,
 		       vwnd_variables=quivery_variable_list,
+		       quiver_scale=quiver_scale,
 		       thin=thin,
 		       key_value=key_value,
 		       draw_axis=True,
@@ -210,12 +216,14 @@ if __name__ == '__main__':
     parser.add_option('-d',"--dates",dest="dates",type='string',nargs=2,default=None,help="Two integer times (start_date end_date) [default = None]")
     parser.add_option("--title",dest="title",type='string',default='',help="plot title [default = date only]")
     parser.add_option("--region",dest="region",type='string',default='WORLD_DATELINE',help="name of region to plot [default = WORLD_DATELINE]")
+    parser.add_option("--palette", dest="palette",type='string',default='RdBu_r',help="Colour palette for colourbar [default = RdBu_r]")
     parser.add_option("--ticks", dest="ticks",type='string',default=None,help="List of comma seperated tick marks to appear on the colour bar [default = automatic]")
     parser.add_option("--units", dest="units",type='string',default=None,help="Units")
     parser.add_option("--contour_ticks", dest="contour_ticks",type='string',default=None,help="List of comma seperated tick marks for the contours [default = automatic]")
     parser.add_option("--quiver_type", dest="quiver_type",type='string',default='wind',help="Type of quiver being plotted [defualt = wind]")
+    parser.add_option("--quiver_scale",dest="quiver_scale",type='float',default=170,help="Data units per arrow length unit (smaller means longer arrow) [defualt = 170]")
     parser.add_option("--thin", dest="thin",type='int',default=1,help="Thinning factor for plotting wind vectors [defualt = 1]")
-    parser.add_option("--key_value", dest="key_value",type='float',default=1.0,help="Size of the wind vector in the key (plot is not scaled to this) [defualt = 1]")
+    parser.add_option("--key_value", dest="key_value",type='float',default=5.0,help="Size of the wind vector in the key (plot is not scaled to this) [defualt = 1]")
     parser.add_option("--equator",action="store_true",dest="equator",default=False,help="plot a distinct gridline for the equator [default = False]")
     parser.add_option("--image_size", dest="image_size",type='float',default=10.,help="Size of image [default = 10]")
     
@@ -241,12 +249,15 @@ if __name__ == '__main__':
 	                         e.g. 1980-09-01 1980-09-27  (for monthly data would give Sept 1980)
 	    --region         ->  Selector defining a region (for cylindrical projection). Inbuilt regions are WORLD_GRENEWICH, WORLD_DATELINE, AUSTRALIA, AUS_NZ [default = WORLD_DATELINE]
 	    --title          ->  Plot title [default = date only]
+	    --palette        ->  Colour palette for the colourbar [default = RdBu_r]
 	    --ticks          ->  List of comma seperataed tick marks to appear on the colour bar [default = automatic]
 	    --units          ->  Units of the data - appears as a label below the colourbar
 	    --contour_ticks  ->  List of comma seperated tick marks for the contours [default = automatic]
 	    --quiver_type    ->  Type of quiver being plotted (determines units for quiver key). Can be 'wind' or 'waf' (wave activity flux) [default = 'wind']
+	    --quiver_scale   ->  Data units per arrow length unit, e.g. m/s per plot width; a smaller scale parameter makes the arrow longer. 
+	                         If None, autoscaling algorithm used [default = 170]
 	    --thin           ->  Thinning factor for plotting wind vectors (e.g. 2 = every second vector; 3 = every third) [default = 1]
-            --key_value      ->  Magnitude of the vector shown in the legend (plot vectors are not scaled to this) [default = 1]
+            --key_value      ->  Magnitude of the vector shown in the legend (plot vectors are not scaled to this) [default = 5]
 	    --equator        ->  Plot a distinct gridline for the equator [default = False]
 	    --image_size     ->  Width of individual images (in inches) [default = 10]
 	    
@@ -292,10 +303,12 @@ if __name__ == '__main__':
 	     options.title,
 	     options.dates,
 	     options.region,
+	     options.palette,
 	     options.ticks,
 	     options.units,
 	     options.contour_ticks,
 	     options.quiver_type,
+	     options.quiver_scale,
 	     options.thin,
 	     options.key_value,
 	     options.equator,
