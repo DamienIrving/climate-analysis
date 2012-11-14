@@ -79,8 +79,8 @@ def read_climatology(fname,vname,nlat,nlon):
     
     infile = cdms2.open(fname)
     months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
-    monthly_climatology = numpy.zeros([12,nlat,nlon])
-    for i in range(0,12):
+    monthly_climatology = numpy.zeros([len(months),nlat,nlon])
+    for i in range(0,len(months)):
         data = infile(vname+'_'+months[i],order='yx')
 	monthly_climatology[i,:,:] = data
     
@@ -117,7 +117,9 @@ def read_binary(infile,dims):
 def regrid(data,oldgrid):
     """Takes input data and regrids to a 2.5 degree global grid"""
     
-    latitude = cdms2.createAxis(numpy.arange(-90,92.5,2.5,'f'),id='latitude')
+    #tnf_xy_onelevel.run requires North to South latitude axis
+    latitude = cdms2.createAxis(numpy.arange(90,-92.5,-2.5,'f'),id='latitude') #-90,92.5,2.5
+    
     latitude.designateLatitude()
     latitude.units = 'degrees_north'
     latitude.long_name = 'Latitude'
@@ -144,8 +146,8 @@ def regrid(data,oldgrid):
 def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,outvar):
     """Writes the output netcdf file"""
     
-    outfile = netCDF4.Dataset(fname_out, 'w', format='NETCDF3_CLASSIC')   ## Found error using cdo on abyss with format='NETCDF4' 
-
+    outfile = netCDF4.Dataset('/work/dbirving/temp_data/temp.nc', 'w', format='NETCDF3_CLASSIC')   ## Found error using cdo on abyss with format='NETCDF4' 
+    
     # Global attributes #
 
     setattr(outfile,'Title','Calculated wave activity flux from U wind, V wind and geopotential height')
@@ -186,9 +188,13 @@ def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,
     
     waf_data = waf_data.astype(numpy.float32)
     out_data[:] = waf_data
-
-
+    
     outfile.close()
+    
+    # Re-write the output file with conventional south to north latitude axis #
+    
+    os.system("ncpdq -a -latitude /work/dbirving/temp_data/temp.nc %s" %(fname_out))
+    os.system("rm /work/dbirving/temp_data/temp.nc")
 
 
 def apply_mask(input_data,input_clim_u,fin):
@@ -406,10 +412,7 @@ if __name__ == '__main__':
 	Author
             Damien Irving, 12 Oct 2012.
 
-	Bugs
-	    At the moment the output produces some very large values and also a zonal line of missing values at
-	    22.5 N.
-	    
+	Bugs 
 	    Please report any problems to: d.irving@student.unimelb.edu.au
 	"""
 	sys.exit(0)
