@@ -75,9 +75,10 @@ def xy_axis_check(axis1, axis2):
 
 
 def read_climatology(fname,vname,nlat,nlon):
-    """Reads the climatology data, assuming a certain file format"""
+    """Reads the climatology data, assuming a 12 step monthly file format"""
     
     infile = cdms2.open(fname)
+    
     months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
     monthly_climatology = numpy.zeros([len(months),nlat,nlon])
     for i in range(0,len(months)):
@@ -114,12 +115,31 @@ def read_binary(infile,dims):
     return read_data
 
 
-def regrid(data,oldgrid):
+def regrid(data,in_lat,in_lon,oldgrid):
     """Takes input data and regrids to a 2.5 degree global grid"""
+    
+#    len_test_lat = (len(in_lat) == 73)
+#    len_test_lon = (len(in_lon) == 144)
+#    start_test_lat = (in_lat[0] > in_lat[-1])
+#    
+#    if len_test_lat and len_test_lon and start_test_lat:  # no change - correct input
+#        print 'no regridding...'
+#	new_data = data
+#	latitude = in_lat
+#	longitude = in_lon
+#	
+#    elif len_test_lat and len_test_lon:  # flip latitude axis only
+#        print 'flip latitude axis...'
+#        new_data = data[:,::-1,:]
+#	latitude = in_lat[::-1]
+#	longitude = in_lon
+#    
+#    else:
+#        print 'regridding...'
     
     #tnf_xy_onelevel.run requires North to South latitude axis
     latitude = cdms2.createAxis(numpy.arange(90,-92.5,-2.5,'f'),id='latitude') #-90,92.5,2.5
-    
+
     latitude.designateLatitude()
     latitude.units = 'degrees_north'
     latitude.long_name = 'Latitude'
@@ -143,10 +163,10 @@ def regrid(data,oldgrid):
     return new_data,latitude,longitude
     
 
-def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,outvar):
+def write_netcdf(fname_out,waf_data_ns,time_axis,lat_axis,lon_axis,sourcefile_text,outvar):
     """Writes the output netcdf file"""
     
-    outfile = netCDF4.Dataset('/work/dbirving/temp_data/temp.nc', 'w', format='NETCDF3_CLASSIC')   ## Found error using cdo on abyss with format='NETCDF4' 
+    outfile = netCDF4.Dataset(fname_out, 'w', format='NETCDF3_CLASSIC')   ## Found error using cdo on abyss with format='NETCDF4' 
     
     # Global attributes #
 
@@ -171,11 +191,7 @@ def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,
     for att_name in lat_axis.attributes.keys():
         setattr(lats, att_name, lat_axis.attributes[att_name])
     for att_name in lon_axis.attributes.keys():
-        setattr(lons, att_name, lon_axis.attributes[att_name])
-
-    times[:] = time_axis         
-    lats[:] = lat_axis           
-    lons[:] = lon_axis            
+        setattr(lons, att_name, lon_axis.attributes[att_name])           
 
     # Variable #
 
@@ -186,23 +202,23 @@ def write_netcdf(fname_out,waf_data,time_axis,lat_axis,lon_axis,sourcefile_text,
     setattr(out_data, 'missing_value', 9.999e+20) 
     setattr(out_data, 'history', 'Calculated wave activity flux from U wind, V wind and geopotential height')
     
-    waf_data = waf_data.astype(numpy.float32)
-    out_data[:] = waf_data
+    waf_data_ns = waf_data_ns.astype(numpy.float32)
+    
+    #reshape output data so latitude axis is south to north
+    times[:] = time_axis         
+    lats[:] = lat_axis[::-1]           
+    lons[:] = lon_axis 
+    out_data[:] = waf_data_ns[:,::-1,:]
     
     outfile.close()
     
-    # Re-write the output file with conventional south to north latitude axis #
-    
-    os.system("ncpdq -a -latitude /work/dbirving/temp_data/temp.nc %s" %(fname_out))
-    os.system("rm /work/dbirving/temp_data/temp.nc")
 
-
-def apply_mask(input_data,input_clim_u,fin):
+def apply_mask(input_data,input_clim_u,time_axis):
     """Apply mask, because WAF only valid where the climatological mean flow is westerly"""  
     
     # Get the time axis info #
 
-    time_data = fin.getAxis('time').asComponentTime()
+    time_data = time_axis.asComponentTime()
     months = []
     for ii in range(0,len(time_data)):
 	months.append(int(str(time_data[ii]).split('-')[1]))
@@ -227,90 +243,84 @@ def apply_mask(input_data,input_clim_u,fin):
     
     input_data_masked = MV2.array(numpy.ma.masked_array(input_data, mask=mask))
     
- 
     return input_data_masked
 
+
+def read_data(fname,vname):
+    """Reads the data from a typical input file"""
+    
+    infile = cdms2.open(fname)
+    
+    data = infile(vname,order='tyx')  
+    time = data.getTime()
+    lat = data.getLatitude()
+    lon = data.getLongitude()
+
+    infile.close()
+
+    return data,time,lat,lon
+    
 
 def main(fname_u, fname_uclim, vname_u, fname_v, fname_vclim, vname_v, fname_zg, fname_zgclim, vname_zg, fname_wafx, fname_wafy):
     """Run the program"""
 
-    ### Read the raw input data ###
+    ### Read the input data ###
 
-    ## u wind ##
-    infile_u = cdms2.open(fname_u)
-    u_data = infile_u(vname_u,order='tyx')
+    ## u wind, v wind, zg ##
     
-    ## v wind ##
-    infile_v = cdms2.open(fname_v)
-    v_data = infile_v(vname_v,order='tyx')
-
-    ## zg ##
-    infile_zg = cdms2.open(fname_zg)
-    zg_data = infile_zg(vname_zg,order='tyx')
-    
+    data_u,time_u,lat_u,lon_u = read_data(fname_u,vname_u)
+    data_v,time_v,lat_v,lon_v = read_data(fname_v,vname_v)
+    data_zg,time_zg,lat_zg,lon_zg = read_data(fname_zg,vname_zg)
 
     ### Check that the input data are all on the same coordinate axes ###
 
     ## Time ##
 
-    time_u = u_data.getTime()
-    time_v = v_data.getTime()
-    time_zg = zg_data.getTime()
-    
     time_axis_check(time_u, time_v)
     time_axis_check(time_u, time_zg)
     
     ## Latitude ##
-    
-    lat_u = u_data.getLatitude()
-    lat_v = v_data.getLatitude()
-    lat_zg = zg_data.getLatitude()
-
+        
     xy_axis_check(lat_u, lat_v)
     xy_axis_check(lat_u, lat_zg)
 
     ## Longitude ##
     
-    lon_u = u_data.getLongitude()
-    lon_v = v_data.getLongitude()
-    lon_zg = zg_data.getLongitude()
-
     xy_axis_check(lon_u, lon_v)
     xy_axis_check(lon_u, lon_zg)
 
     ## Find grid characteristics ##
 
-    ntime, nlat, nlon = numpy.shape(u_data)
-    input_grid = u_data.getGrid() 
+    ntime, nlat, nlon = numpy.shape(data_u)
+    input_grid = data_u.getGrid() 
     
+    ## u wind, v wind, zg climatology ##
     
-    ### Read the climatology data ###
-    
-    uclim_data = read_climatology(fname_uclim,vname_u,nlat,nlon)
-    vclim_data = read_climatology(fname_vclim,vname_v,nlat,nlon)
-    zgclim_data = read_climatology(fname_zgclim,vname_zg,nlat,nlon)
+    data_uclim = read_climatology(fname_uclim,vname_u,nlat,nlon)  
+    data_vclim = read_climatology(fname_vclim,vname_v,nlat,nlon)
+    data_zgclim = read_climatology(fname_zgclim,vname_zg,nlat,nlon)
     
     
     ### Regrid the data ###
     
-    u_data_regrid, lat_regrid, lon_regrid = regrid(u_data,input_grid)
-    uclim_data_regrid, lat_regrid, lon_regrid = regrid(uclim_data,input_grid)
+    data_u_regrid, lat_regrid, lon_regrid = regrid(data_u,lat_u,lon_u,input_grid)
+    data_uclim_regrid, lat_regrid, lon_regrid = regrid(data_uclim,lat_u,lon_u,input_grid)
     
-    v_data_regrid, lat_regrid, lon_regrid = regrid(v_data,input_grid)
-    vclim_data_regrid, lat_regrid, lon_regrid = regrid(vclim_data,input_grid)
+    data_v_regrid, lat_regrid, lon_regrid = regrid(data_v,lat_u,lon_u,input_grid)
+    data_vclim_regrid, lat_regrid, lon_regrid = regrid(data_vclim,lat_u,lon_u,input_grid)
     
-    zg_data_regrid, lat_regrid, lon_regrid = regrid(zg_data,input_grid)
-    zgclim_data_regrid, lat_regrid, lon_regrid = regrid(zgclim_data,input_grid)
+    data_zg_regrid, lat_regrid, lon_regrid = regrid(data_zg,lat_u,lon_u,input_grid)
+    data_zgclim_regrid, lat_regrid, lon_regrid = regrid(data_zgclim,lat_u,lon_u,input_grid)
    
     
     ### Create the binary data files for input into the Fortran wap script ### 
     
-    write_binary(u_data_regrid,'u.bin')
-    write_binary(uclim_data_regrid,'uclim.bin')
-    write_binary(v_data_regrid,'v.bin')
-    write_binary(vclim_data_regrid,'vclim.bin')
-    write_binary(zg_data_regrid,'zg.bin')
-    write_binary(zgclim_data_regrid,'zgclim.bin')
+    write_binary(data_u_regrid,'u.bin')
+    write_binary(data_uclim_regrid,'uclim.bin')
+    write_binary(data_v_regrid,'v.bin')
+    write_binary(data_vclim_regrid,'vclim.bin')
+    write_binary(data_zg_regrid,'zg.bin')
+    write_binary(data_zgclim_regrid,'zgclim.bin')
 
     
     ### Calculate the wave activity flux ###
@@ -333,25 +343,21 @@ def main(fname_u, fname_uclim, vname_u, fname_v, fname_vclim, vname_v, fname_zg,
     
     ### Write the output netCDF file ###
     
-    wafx_data = read_binary('wafx.bin',[ntime,73,144])
-    wafy_data = read_binary('wafy.bin',[ntime,73,144])    
+    wafx_data_ns = read_binary('wafx.bin',[ntime,73,144])
+    wafy_data_ns = read_binary('wafy.bin',[ntime,73,144])    
         
-    wafx_data_masked = apply_mask(wafx_data,uclim_data_regrid,infile_u)
-    wafy_data_masked = apply_mask(wafy_data,uclim_data_regrid,infile_u)
+    wafx_data_ns_masked = apply_mask(wafx_data_ns,data_uclim_regrid,time_u)
+    wafy_data_ns_masked = apply_mask(wafy_data_ns,data_uclim_regrid,time_u)
   
     sourcefile_text = '%s, %s, %s, %s, %s, %s' %(fname_u, fname_uclim, fname_v, fname_vclim, fname_zg, fname_zgclim)
     
-    write_netcdf(fname_wafx,wafx_data_masked,time_u,lat_regrid,lon_regrid,sourcefile_text,'wafx')
-    write_netcdf(fname_wafy,wafy_data_masked,time_u,lat_regrid,lon_regrid,sourcefile_text,'wafy')
+    write_netcdf(fname_wafx,wafx_data_ns_masked,time_u,lat_regrid,lon_regrid,sourcefile_text,'wafx')
+    write_netcdf(fname_wafy,wafy_data_ns_masked,time_u,lat_regrid,lon_regrid,sourcefile_text,'wafy')
 
     
     ### Clean up ###
     
-    os.system("rm answers.txt zg.bin zgclim.bin u.bin uclim.bin v.bin vclim.bin wafx.bin wafy.bin")
-
-    infile_u.close()
-    infile_v.close()
-    infile_zg.close()
+    #os.system("rm answers.txt zg.bin zgclim.bin u.bin uclim.bin v.bin vclim.bin wafx.bin wafy.bin")
 
 
 if __name__ == '__main__':
@@ -383,8 +389,9 @@ if __name__ == '__main__':
 	
 	Assumptions (i.e. hard wired elements) 
 	    The WAF Fortran code is hard wired to produce output on a 
-	    global 2.5 by 2.5 deg grid (i.e. 73 lats, 144 lons)
-	    It is hard wired that the input data is from the 250 hPa level 
+	    global 2.5 by 2.5 deg grid (i.e. 73 lats, 144 lons).
+	    It is hard wired that the input data is from the 250 hPa level.
+	    It is assumed that the input data is three dimensional (time, lat, lon). 
 	
 	Reference
 	    Takaya, K., Nakamura, H., 2001.
@@ -428,7 +435,7 @@ if __name__ == '__main__':
 	print 'Input zg: ', args[6]
 	print 'Input zg climatology: ', args[7]
 	print 'Ouput wafx: ', args[9]
-	print 'Ouput wafx: ', args[10]
+	print 'Ouput wafy: ', args[10]
 
     fname_u, fname_uclim, vname_u, fname_v, fname_vclim, vname_v, fname_zg, fname_zgclim, vname_zg, fname_wafx, fname_wafy = args  
     
