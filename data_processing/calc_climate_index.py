@@ -33,7 +33,7 @@ import cdms2
 import genutil
 
 import numpy
-import numpy.ma as ma
+import numpy.ma
 import math
 
 from datetime import datetime
@@ -52,7 +52,7 @@ EMI_B = cdms2.selectors.Selector(latitude=(-15,5,'cc'),longitude=(250,290,'cc'))
 EMI_C = cdms2.selectors.Selector(latitude=(-10,20,'cc'),longitude=(125,145,'cc'))
 
 
-version_info = 'Created %s using %s \n' %(datetime.utcnow().isoformat(),__file__) #,__version__)  #%(datetime.utcnow().isoformat(), sys.argv[0])
+version_info = 'Created %s using %s \n' %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"),__file__) #,__version__)  #%(datetime.utcnow().isoformat(), sys.argv[0])
 
 
 ## Define relevant functions and classes ##
@@ -112,13 +112,14 @@ def define_region(region_name):
 
     return region,minlat,maxlat,minlon,maxlon
 
+
 def calc_monthly_climatology(base_timeseries):
     ntime_base = len(base_timeseries)
-    monthly_climatology_mean = numpy.zeros(12)
-    monthly_climatology_std = numpy.zeros(12)
+    monthly_climatology_mean = numpy.ma.zeros(12)
+    monthly_climatology_std = numpy.ma.zeros(12)
     for i in range(0,12):
-        monthly_climatology_mean[i] = numpy.mean(base_timeseries[i:ntime_base:12])
-	monthly_climatology_std[i] = numpy.std(base_timeseries[i:ntime_base:12])
+        monthly_climatology_mean[i] = numpy.ma.mean(base_timeseries[i:ntime_base:12])
+	monthly_climatology_std[i] = numpy.ma.std(base_timeseries[i:ntime_base:12])
 
     return monthly_climatology_mean, monthly_climatology_std
 
@@ -133,10 +134,10 @@ def calc_monthly_anomaly(complete_timeseries,base_timeseries,months):
     # Calculate the monthly anomaly #
     
     ntime_complete = len(complete_timeseries)
-    monthly_anomaly = numpy.zeros(ntime_complete)
+    monthly_anomaly = numpy.ma.zeros(ntime_complete)
     for i in range(0,ntime_complete):
 	month_index = months[i]
-	monthly_anomaly[i] = complete_timeseries[i] - monthly_climatology_mean[month_index-1]
+	monthly_anomaly[i] = numpy.ma.subtract(complete_timeseries[i], monthly_climatology_mean[month_index-1])
     
     
     return monthly_anomaly 
@@ -152,19 +153,17 @@ def monthly_normalisation(complete_timeseries,base_timeseries,months):
     # Normalise the entire timeseries #
     
     ntime_complete = len(complete_timeseries)
-    monthly_normalised = numpy.zeros(ntime_complete)
+    monthly_normalised = numpy.ma.zeros(ntime_complete)
     for i in range(0,ntime_complete):
 	month_index = months[i]
-	monthly_normalised[i] = (complete_timeseries[i] - monthly_climatology_mean[month_index-1]) / monthly_climatology_std[month_index-1]
+	monthly_normalised[i] = numpy.ma.divide((numpy.ma.subtract(complete_timeseries[i], monthly_climatology_mean[month_index-1])), monthly_climatology_std[month_index-1])
     
     
     return monthly_normalised
 
 
-def calc_SAM(index,ifile,efile,outfile_name,base_period):
-    """Calculates an index of the Southern Annular Mode"""
-    
-    # Read the input file #
+def read_input(ifile):
+    """Reads relevant data from the input file"""
 
     try:
         fin=cdms2.open(ifile.fname,'r')
@@ -181,13 +180,99 @@ def calc_SAM(index,ifile,efile,outfile_name,base_period):
     for ii in range(0,len(time)):
         years.append(int(str(time[ii]).split('-')[0]))
 	months.append(int(str(time[ii]).split('-')[1]))
+
+
+    return fin, time, years, months
+
+
+def write_output(index,ifile,outfile_name,base_period,header,years,months,timeseries,error=None):
+    """Writes the output file"""
+    
+    fout = open(outfile_name,'w')
+    fout.write(header)
+    base = 'Base period = %s  to %s \n' %(base_period[0],base_period[1])
+    fout.write(base)  
+    fout.write(version_info)
+    fout.write('Input file = '+ifile.fname+'\n')
+    
+    if error:
+        fout.write(' YR   MON   %s   error \n' %(index)) 
+	for ii in range(0,len(timeseries)):
+            print >> fout, '%4i %3i %7.2f %7.2f' %(years[ii],months[ii],timeseries[ii],error[ii])
+    else:
+	fout.write(' YR   MON  %s \n' %(index)) 
+	for ii in range(0,len(timeseries)):
+            print >> fout, '%4i %3i %7.2f' %(years[ii],months[ii],timeseries[ii])
+
+    fout.close()
+    
+
+def calc_error(fin,regions):
+    """Calculates the error timeseries for SST indices"""
+    
+    var_error_flat = {}
+    for reg in regions: 
+
+	region = globals()[reg]
+
+	var_error=fin('err',region,order='tyx')
+	ntime_error,nlats_error,nlons_error = numpy.shape(var_error)
+
+	var_error_flat[reg] = numpy.ma.reshape(var_error,(int(ntime_error),int(nlats_error * nlons_error)))
+
+    if len(regions) == 1:
+        var_error_stack = var_error_flat
+    elif len(regions) == 2: 
+        var_error_stack = numpy.ma.hstack((var_error_flat[regions[0]],var_error_flat[regions[1]]))
+    elif len(regions) == 3: 
+        var_error_stack = numpy.ma.hstack((var_error_flat[regions[0]],var_error_flat[regions[1]],var_error_flat[regions[2]]))
+
+    error_timeseries = numpy.ma.mean(var_error_stack,axis=1)  #Could use numpy.max for a slightly different error measurement
+
+
+    return error_timeseries
+
+
+def calc_reg_anomaly_timeseries(reg,fin,ifile,base_period,months):
+    """Calculates the anomaly timeseries for a given region"""
+    
+    region = globals()[reg]
+	
+    var_complete=fin(ifile.variable_name,region,order='tyx')
+    var_base=fin(ifile.variable_name,region,time=(base_period[0],base_period[1]),order='tyx')
+
+    assert (hasattr(var_complete, 'missing_value')), 'Input variable must have missing_value attribute'
+
+    ntime_complete,nlats,nlons = numpy.shape(var_complete)
+    ntime_base,nlats,nlons = numpy.shape(var_base)
+
+    var_complete_flat = numpy.ma.reshape(var_complete,(int(ntime_complete),int(nlats * nlons)))    # Flattens the spatial dimension
+    var_base_flat = numpy.ma.reshape(var_base,(int(ntime_base),int(nlats * nlons)))
+
+   # Calculate the anomalies #
+
+    complete_timeseries = numpy.ma.mean(var_complete_flat,axis=1)
+    base_timeseries = numpy.ma.mean(var_base_flat,axis=1)
+
+    anomaly_timeseries = calc_monthly_anomaly(complete_timeseries,base_timeseries,months)
+
+
+    return anomaly_timeseries
+
+
+def calc_SAM(index,ifile,efile,outfile_name,base_period):
+    """Calculates an index of the Southern Annular Mode"""
+    
+    # Read the input file #
+    
+    fin, time, years, months = read_input(ifile)
     
     # Read data, extract the required latitudes, calculate zonal mean anomalies #
         
     latitude = fin.getAxis('latitude')
     var_complete=fin(ifile.variable_name,order='tyx')
     var_base=fin(ifile.variable_name,time=(base_period[0],base_period[1]),order='tyx')
-    
+     
     lats = [-40,-65]
     monthly_normalised_timeseries = {}
     
@@ -196,29 +281,20 @@ def calc_SAM(index,ifile,efile,outfile_name,base_period):
 	index, value = min(enumerate(latitude), key=lambda x: abs(x[1]-float(lat)))
 	print 'File latitude for', lat, '=', value
 
-	complete_timeseries = numpy.mean(var_complete[:,index,:],axis=1)
-	base_timeseries = numpy.mean(var_base[:,index,:],axis=1)
+	complete_timeseries = numpy.ma.mean(var_complete[:,index,:],axis=1)
+	base_timeseries = numpy.ma.mean(var_base[:,index,:],axis=1)
 
         monthly_normalised_timeseries[lat] = monthly_normalisation(complete_timeseries,base_timeseries,months)
 
-    
-    SAMI_timeseries = monthly_normalised_timeseries[-40] - monthly_normalised_timeseries[-65]
-
+    SAMI_timeseries = numpy.ma.subtract(monthly_normalised_timeseries[-40], monthly_normalised_timeseries[-65])
 
     # Write the text file output #
-
-    fout = open(outfile_name,'w')
-    fout.write('SAM Index (as per Marshall 2003 and Gong & Wang 1999) \n')
-    base = 'Base period = %s  to %s \n' %(base_period[0],base_period[1])
-    fout.write(base)   
-    fout.write(version_info)
-    fout.write('Input file = '+ifile.fname+'\n')
-    fout.write(' YR   MON  SAMI \n') 
-
-    for ii in range(0,len(time)):
-        print >> fout, '%4i %3i %7.2f' %(years[ii],months[ii],SAMI_timeseries[ii])
     
-    fout.close()
+    header = 'SAM Index (as per Marshall 2003 and Gong & Wang 1999) \n'
+    write_output(index,ifile,outfile_name,base_period,header,years,months,SAMI_timeseries)
+    
+    
+    fin.close()
 
 
 def calc_IEMI(index,ifile,efile,outfile_name,base_period):
@@ -227,22 +303,8 @@ def calc_IEMI(index,ifile,efile,outfile_name,base_period):
     ## Calculate the index ##
     
     # Read the input file #
-
-    try:
-        fin=cdms2.open(ifile.fname,'r')
-    except cdms2.CDMSError:
-        print 'Unable to open file: ', ifile
-	sys.exit(0)
     
-    # Get the time axis information #
-    
-    time = fin.getAxis('time').asComponentTime()
-    years = []
-    months = []
-    
-    for ii in range(0,len(time)):
-        years.append(int(str(time[ii]).split('-')[0]))
-	months.append(int(str(time[ii]).split('-')[1]))
+    fin, time, years, months = read_input(ifile)
     
     # Calculate the index #
     
@@ -250,71 +312,23 @@ def calc_IEMI(index,ifile,efile,outfile_name,base_period):
     anomaly_timeseries = {}
     
     for reg in regions: 
-        
-	region = globals()[reg]
-	
-	var_complete=fin(ifile.variable_name,region,order='tyx')
-        var_base=fin(ifile.variable_name,region,time=(base_period[0],base_period[1]),order='tyx')
-
-        ntime_complete,nlats,nlons = numpy.shape(var_complete)
-        ntime_base,nlats,nlons = numpy.shape(var_base)
-
-        var_complete_flat = numpy.reshape(var_complete,(int(ntime_complete),int(nlats * nlons)))    # Flattens the spatial dimension
-        var_base_flat = numpy.reshape(var_base,(int(ntime_base),int(nlats * nlons)))
-
-       # Calculate the index #
-
-        complete_timeseries = numpy.mean(var_complete_flat,axis=1)
-        base_timeseries = numpy.mean(var_base_flat,axis=1)
-        
-	anomaly_timeseries[reg] = calc_monthly_anomaly(complete_timeseries,base_timeseries,months)	
-
-
-    IEMI_timeseries = 3*anomaly_timeseries['EMI_A'] - 2*anomaly_timeseries['EMI_B'] - anomaly_timeseries['EMI_C']
+	anomaly_timeseries[reg] = calc_reg_anomaly_timeseries(reg,fin,ifile,base_period,months)
+    
+    IEMI_timeseries = numpy.ma.subtract(numpy.ma.subtract(numpy.ma.multiply(anomaly_timeseries['EMI_A'],3.0),numpy.ma.multiply(anomaly_timeseries['EMI_B'],2.0)),anomaly_timeseries['EMI_C'])
 
 
     ## Calculate the error ##
     
-    if efile:
+    error_timeseries = calc_error(fin,regions) if efile else None
     
-        # Calculate the mean error at each timestep #
-	
-	var_error_flat = {}
-	for reg in regions: 
-        
-	    region = globals()[reg]
-	
-	    var_error=fin('err',region,order='tyx')
-	    ntime_error,nlats_error,nlons_error = numpy.shape(var_error)
-	    
-	    var_error_flat[reg] = numpy.reshape(var_error,(int(ntime_error),int(nlats_error * nlons_error)))
-	
-	var_error_stack = numpy.hstack((var_error_flat['EMI_A'],var_error_flat['EMI_B'],var_error_flat['EMI_C']))
-	
-        error_timeseries = numpy.mean(var_error_stack,axis=1)
-
-
-    fin.close()
     
     ## Write the text file output ##
 
-    fout = open(outfile_name,'w')
-    fout.write('Improved ENSO Modoki Index (as per Gen et al. 2010) \n')
-    base = 'Base period = %s  to %s \n' %(base_period[0],base_period[1])
-    fout.write(base)  
-    fout.write(version_info)
-    fout.write('Input file = '+ifile.fname+'\n')
+    header = 'Improved ENSO Modoki Index (as per Gen et al. 2010) \n'
+    write_output(index,ifile,outfile_name,base_period,header,years,months,IEMI_timeseries,error=error_timeseries)
+
     
-    if efile:
-        fout.write(' YR   MON   IEMI   error \n') 
-	for ii in range(0,len(time)):
-            print >> fout, '%4i %3i %7.2f %7.2f' %(years[ii],months[ii],IEMI_timeseries[ii],error_timeseries[ii])
-    else:
-	fout.write(' YR   MON  IEMI \n') 
-	for ii in range(0,len(time)):
-            print >> fout, '%4i %3i %7.2f' %(years[ii],months[ii],IEMI_timeseries[ii])
-    
-    fout.close()
+    fin.close()
     
 
 def calc_NINO(index,ifile,efile,outfile_name,base_period):
@@ -323,89 +337,85 @@ def calc_NINO(index,ifile,efile,outfile_name,base_period):
     ## Calculate the index ##
     
     # Read the input file #
-
-    try:
-        fin=cdms2.open(ifile.fname,'r')
-    except cdms2.CDMSError:
-        print 'Unable to open file: ', ifile
-	sys.exit(0)
     
-    # Get the time axis information #
-    
-    time = fin.getAxis('time').asComponentTime()
-    years = []
-    months = []
-    
-    for ii in range(0,len(time)):
-        years.append(int(str(time[ii]).split('-')[0]))
-	months.append(int(str(time[ii]).split('-')[1]))
-    
-    # Calculate each index #
-
+    fin, time, years, months = read_input(ifile)
     region,minlat,maxlat,minlon,maxlon = define_region(index)
-
-    var_complete=fin(ifile.variable_name,region,order='tyx')
-    var_base=fin(ifile.variable_name,region,time=(base_period[0],base_period[1]),order='tyx')
-
-    ntime_complete,nlats,nlons = numpy.shape(var_complete)
-    ntime_base,nlats,nlons = numpy.shape(var_base)
-
-    var_complete_flat = numpy.reshape(var_complete,(int(ntime_complete),int(nlats * nlons)))    # Flattens the spatial dimension
-    var_base_flat = numpy.reshape(var_base,(int(ntime_base),int(nlats * nlons)))
-
-    # Calculate the index #
-
-    complete_timeseries = numpy.mean(var_complete_flat,axis=1)
-    base_timeseries = numpy.mean(var_base_flat,axis=1)
-
-    NINO_timeseries = calc_monthly_anomaly(complete_timeseries,base_timeseries,months)	
-
     
+    # Calculate the NINO index
     
+    NINO_timeseries = calc_reg_anomaly_timeseries(index,fin,ifile,base_period,months)
+ 
+ 
     ## Calculate the error ##
     
-    if efile:
+    error_timeseries = calc_error(fin,index) if efile else None
  
-        # Calculate the mean error at each timestep #
+        
+    ## Write the text file output ##
+
+    coords = ' (lat: %s to %s, lon: %s to %s)' %(str(minlat),str(maxlat),str(minlon),str(maxlon))
+    header = index+coords+'\n'
+    
+    write_output(index,ifile,outfile_name,base_period,header,years,months,NINO_timeseries,error=error_timeseries)
+
+    
+    fin.close()
+
+
+def calc_NINO_new(index,ifile,efile,outfile_name,base_period):
+    """Calculates the new Nino indices of Ren & Jin (2011)"""
+    
+    ## Calculate the index ##
+    
+    # Read the input file #
+    
+    fin, time, years, months = read_input(ifile)
+
+    # Calculate the traditional NINO3 and NINO4 indices #
+    
+    regions = ['NINO3','NINO4']
+    anomaly_timeseries = {}
+    
+    for reg in regions: 
+	anomaly_timeseries[reg] = calc_reg_anomaly_timeseries(reg,fin,ifile,base_period,months)
 	
-	var_error=fin('err',region,order='tyx') 
-	ntime_error,nlats_error,nlons_error = numpy.shape(var_error)
+    # Calculate the new Ren & Jin index #
+
+    ntime = len(anomaly_timeseries['NINO3'])
+    
+    NINO_new_timeseries = numpy.ma.zeros(ntime)
+    for i in range(0,ntime):
+        NINO3_val = anomaly_timeseries['NINO3'][i]
+	NINO4_val = anomaly_timeseries['NINO4'][i]
+        product = NINO3_val * NINO4_val
 	
-	var_error_flat = numpy.reshape(var_error,(int(ntime_error),int(nlats_error * nlons_error)))
+	alpha = 0.4 if product > 0 else 0.0
 	
-	error_timeseries = numpy.mean(var_error_flat,axis=1)   #Could use numpy.max for a slightly different error measurement
+	if index == 'NINOCT':
+	    NINO_new_timeseries[i] = numpy.ma.subtract(NINO3_val,(numpy.ma.multiply(NINO4_val,alpha)))
+	elif index == 'NINOWP':
+	    NINO_new_timeseries[i] = numpy.ma.subtract(NINO4_val,(numpy.ma.multiply(NINO3_val,alpha)))
+	
+
+    ## Calculate the error ##
+    
+    error_timeseries = calc_error(fin,regions) if efile else None
+	
+    
+    ## Write the text file output ##
+
+    header = '%s index of Ren & Jin (2011) \n'  %(index)
+    write_output(index,ifile,outfile_name,base_period,header,years,months,NINO_new_timeseries,error=error_timeseries)
+
 
     fin.close()
 
-    ## Write the text file output ##
 
-    fout = open(outfile_name,'w')
-    coords = ' (lat: %s to %s, lon: %s to %s)' %(str(minlat),str(maxlat),str(minlon),str(maxlon))
-    title = index+coords+'\n'
-    fout.write(title)
-    base = 'Base period = %s  to %s \n' %(base_period[0],base_period[1])
-    fout.write(base)  
-    fout.write(version_info)
-    fout.write('Input file = '+ifile.fname+'\n')
-    
-    if efile:
-        headers = ' YR   MON  %s   error \n' %(index)
-        fout.write(headers) 
-        for ii in range(0,len(time)):
-            print >> fout, '%4i %3i %7.2f %7.2f' %(years[ii],months[ii],NINO_timeseries[ii],error_timeseries[ii])
-    else:
-        headers = ' YR   MON  %s \n' %(index)
-        fout.write(headers) 
-        for ii in range(0,len(time)):
-            print >> fout, '%4i %3i %7.2f' %(years[ii],months[ii],NINO_timeseries[ii])
-    
-    fout.close()
-
-	    
 function_for_index = {
     'NINO':        calc_NINO,
+    'NINO_new':    calc_NINO_new,
     'IEMI':        calc_IEMI,
-    'SAMI':        calc_SAM,
+    'SAM':         calc_SAM,
                 	  }     
 
 def main(index,infile_name,efile,outfile_name,base_period):
@@ -417,7 +427,13 @@ def main(index,infile_name,efile,outfile_name,base_period):
         
     ## Initialise relevant index function ##
     
-    calc_index = function_for_index[index[0:4]]
+    if index[0:4] == 'NINO':
+        if index == 'NINOCT' or index == 'NINOWP':
+	    calc_index = function_for_index['NINO_new']
+	else:
+	    calc_index = function_for_index['NINO']
+    else:
+        calc_index = function_for_index[index]
 
     ## Calculate the index ##
 
@@ -449,12 +465,13 @@ if __name__ == '__main__':
 	    -b  ->  Start and end date for base period [default=('1981-01-01','2010-12-31')]
 
         Pre-defined indices
-            NINO12, NINO3, NINO4, NINO34 
-	    IEMI, SAMI
+            NINO12, NINO3, NINO4, NINO34
+	    NINOCT, NINOWP 
+	    IEMI, SAM
 	
 	Example
-	    /opt/cdat/bin/cdat calc_climate_index.py NINO34 /work/dbirving/datasets/Merra/data/ts_Merra_surface_monthly_native.nc 
-	    /work/dbirving/processed/indices/data/ts_Merra_NINO34_monthly_native.txt
+	    /opt/cdat/bin/cdat calc_climate_index.py NINO34 /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly_native-ocean.nc 
+	    /work/dbirving/processed/indices/data/ts_Merra_surface_NINO34_monthly_native-ocean.txt
 	    
 	Author
             Damien Irving, 26 Jun 2012.
