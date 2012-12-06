@@ -38,6 +38,8 @@ import numpy
 
 import netCDF4
 from scipy.io.numpyio import fwrite, fread
+# note that in later versions of scipy numpyio this has been replaced.
+# For a work around, see http://stackoverflow.com/questions/10637376/import-error-no-module-named-numpyio 
 
 import regrid2
 from regrid2 import Regridder
@@ -357,7 +359,7 @@ def main(fname_u, fname_uclim, vname_u, fname_v, fname_vclim, vname_v, fname_zg,
     
     ### Clean up ###
     
-    #os.system("rm answers.txt zg.bin zgclim.bin u.bin uclim.bin v.bin vclim.bin wafx.bin wafy.bin")
+    os.system("rm answers.txt zg.bin zgclim.bin u.bin uclim.bin v.bin vclim.bin wafx.bin wafy.bin")
 
 
 if __name__ == '__main__':
