@@ -4,12 +4,12 @@ SVN INFO: $Id$
 Filename:     calc_eof.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
 Description:  Performs and Empiricial Orthogonal Function (EOF) analysis
-Reference:    Uses PyClimate package
-              http://fisica.ehu.es/pyclimate/ExampleEOF
+Reference:    Uses eof2 package: https://github.com/ajdawson/eof2
 
 Updates | By | Description
 --------+----+------------
 23 October 2012 | Damien Irving | Initial version.
+10 December 2012 | Damien Irving | Switched over to eof2 package
 
 """
 
@@ -25,109 +25,131 @@ from datetime import datetime
 import os
 
 import numpy
-import math
 
 import cdms2
-import netCDF4
 
-import pyclimate.svdeofs
-import pyclimate.ncstruct
+## CDAT Version 5.2 File are now written with compression and shuffling ##
+#You can query different values of compression using the functions:
+#cdms2.getNetcdfShuffleFlag() returning 1 if shuffling is enabled, 0 otherwise
+#cdms2.getNetcdfDeflateFlag() returning 1 if deflate is used, 0 otherwise
+#cdms2.getNetcdfDeflateLevelFlag() returning the level of compression for the deflate method
+#If you want to turn that off or set different values of compression use the functions:
+#cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
+#cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
+#cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
+
+cdms2.setNetcdfShuffleFlag(0)
+cdms2.setNetcdfDeflateFlag(0)
+cdms2.setNetcdfDeflateLevelFlag(0)
+
+import eof2
+
+
+### Define globals ###
+
+eqpacific = cdms2.selectors.Selector(latitude=(-30,30,'cc'),longitude=(120,280,'cc'))
 
 
 ### Define functions ###
 
-
-def extract_region(infile_name,region):
-    """Creates a new file with the region of interest extracted"""
+def calc_eofs(data,neofs,eof_scaling,pc_scaling):
+    """Calculates the eof2 package: https://github.com/ajdawson/eof2"""
     
-    if region == 'entire':
-        regional_infile_name = infile_name
+    solver = eof2.Eof(data, weights='area')
+    
+    if eof_scaling == 'correlation':
+        eofs = solver.eofsAsCorrelation(neofs=neofs)
+	eof_scaling_text = 'EOF scaled as the correlation of the PCs with the original field - used eofsAsCorrelation() function'
+	eof_units = ''
+    else: 
+	eofs = solver.eofs(neofs=neofs,eofscaling=int(eof_scaling))
+        eof_units = ''
+	if eof_scaling == 0:
+	    eof_scaling_text = 'None'
+	elif eof_scaling == 1:
+	    eof_scaling_text = 'EOF is divided by the square-root of its eigenvalue'  # gives a larger value in the end
+	elif eof_scaling == 2:
+	    eof_scaling_text = 'EOF is multiplied by the square-root of its eigenvalue'    
+	else:
+	    print 'EOF scaling method not recongnised'
+	    sys.exit(1)
+    
+    pcs = solver.pcs(npcs=neofs, pcscaling=pc_scaling)
+    if pc_scaling == 0:
+        pc_scaling_text = 'None'
+    elif pc_scaling == 1:
+        pc_scaling_text = 'PC scaled to unit variance (divided by the square-root of its eigenvalue)'
+    elif pc_scaling == 2:
+        pc_scaling_text = 'PC multiplied by the square-root of its eigenvalue'    
     else:
-	function = '/home/dbirving/data_processing/named_region.sh'
-	regional_infile_name = infile_name.replace('.nc','.%s.nc' %(region))
-	os.system("%s %s %s /work/dbirving/temp_data/%s" %(function,region,infile_name,regional_infile_name))
-        
-    return regional_infile_name 
-
-
-def deg2rad(d):
-    """Converts from degrees to radians"""
+	print 'PC scaling method not recongnised'
+	sys.exit(1)    
     
-    return d*math.acos(-1.)/180.
+    varfracs = solver.varianceFraction(neigs=neofs)
+
+    return eofs, eof_scaling_text, eof_units, pcs, pc_scaling_text, pc_units, varfracs
 
 
-def calc_EOF(regional_infile_name,var_id,lat_id):
-    """Calculates the EOF using pyclimate - uses outdated modules because pyclimate is old"""
-    # http://fisica.ehu.es/pyclimate/ExampleEOF
-    
-    import Numeric
-    import Scientific.IO.NetCDF
-    
-    fin = Scientific.IO.NetCDF.NetCDFFile(regional_infile_name)
-    in_data = fin.variables[var_id]
-    areafactor = numpy.sqrt(numpy.cos(deg2rad(fin.variables[lat_id][:])))
-    data = in_data[:,:,:] * areafactor[numpy.newaxis,:,numpy.newaxis]
-    oldshape = data.shape
-    data.shape = (oldshape[0], oldshape[1]*oldshape[2])
-
-    pcs, lambdas, eofs = pyclimate.svdeofs.svdeofs(data)
-
-    fin.close()
-
-    return areafactor, pcs, lambdas, eofs
-
-
-def write_eof(outfile_eof_name,neofs,in_lat,in_lon,eof_output,lambdas,infile_name,outfile_pc_name,region):
+def write_eofs(outfile_eof_name,neofs,eofs,varfracs,infile_name,in_lat,in_lon,in_history,outfile_pc_name,region_name,eof_scaling_text,eof_units):
     """Writes output netCDF file with EOFs in it"""
+    
+    outfile = cdms2.open(outfile_eof_name,'w')
     
     # Global attributes #
 
-    fout = netCDF4.Dataset(outfile_eof_name,'w',format='NETCDF3_CLASSIC')
+    global_atts = {'title': 'Empirical Orthogonal Function analysis over %s region' %(region_name),
+                   'contact': 'Damien Irving (d.irving@student.unimelb.edu.au)',
+                   'reference': 'https://github.com/ajdawson/eof2',
+		   'history': '%s: Calculated EOF from %s using %s, format=NETCDF3_CLASSIC\n%s' %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
+                   infile_name,sys.argv[0],in_history)
+                  }
+                      
+    for key, value in global_atts.iteritems():
+        setattr(outfile, key, value)
 
-    setattr(fout,'Title','Empirical Orthogonal Function analysis over %s region' %(region))
-    setattr(fout,'Contact','Damien Irving (d.irving@student.unimelb.edu.au)')
-    setattr(fout,'History','EOF calculated using PyClimate software')
-    setattr(fout,'Reference','http://www.pyclimate.org/')
-    setattr(fout,'SourceFile',infile_name)
-    setattr(fout,'CompanionFiles',outfile_pc_name)
-    creation_text = 'Created %s using %s' %(datetime.utcnow().isoformat(), sys.argv[0])
-    setattr(fout,'Created',creation_text)
-    setattr(fout,'Format','NETCDF3_CLASSIC')
+    # Variables #
 
-    # Axes #
-
-    fout.createDimension('latitude',len(in_lat))
-    fout.createDimension('longitude',len(in_lon))
-
-    lats = fout.createVariable('latitude',numpy.dtype('float32').char,('latitude',))
-    lons = fout.createVariable('longitude',numpy.dtype('float32').char,('longitude',))
-
-    # Copy values from input file
-    
-    lats[:] = in_lat
-    lons[:] = in_lon
-
-    # Copy attributes from input file
-    
-    for att_name in in_lat.attributes.keys():
-        setattr(lats, att_name, in_lat.attributes[att_name])
-    for att_name in in_lon.attributes.keys():
-        setattr(lons, att_name, in_lon.attributes[att_name])
-
-    # Output data #
+    axisInLat = outfile.copyAxis(in_lat)  
+    axisInLon = outfile.copyAxis(in_lon)  
     
     for i in range(0,neofs):
-        out_data = fout.createVariable('eof'+str(i+1),numpy.dtype('float32').char,('latitude','longitude'))    #,fill_value=9.999e+20)
-	out_data.standard_name = 'eof'+str(i+1)
-        out_data.history = "EOF-%s, accounting for %f %% of the variance"%(i+1,100*pyclimate.svdeofs.getvariancefraction(lambdas)[i],)
+	var = eofs[i,:,:]
+	var = cdms2.MV2.array(var)
+	var = var.astype(numpy.float32)
+	var.setAxisList([axisInLat,axisInLon])
+	var.id = 'eof'+str(i+1)
 
-        out_data[:] = eof_output[i,:,:]
+	var_atts = {'name': 'eof'+str(i+1),
+                    'standard_name': 'eof'+str(i+1),
+                    'units': eof_units, 
+		    'scaling': eof_scaling_text, 
+                    'variance_explained': '%7.3f' %(varfracs[i])
+        	   } 
 
-    fout.close()
+	for key, value in var_atts.iteritems():
+            setattr(var, key, value)
+
+        outfile.write(var)  
 
 
-def write_pcs(outfile_pc_name,neofs,pcs,years,months,infile_name,outfile_eof_name,region):
+    outfile.close()
+
+
+def write_pcs(outfile_pc_name,neofs,pcs,infile_name,in_time,outfile_eof_name,region_name,pc_scaling_text,pc_units):
     """Writes an output text file for each of the Principle Components (pcs)"""
+    
+    ## Get time axis info ##
+    
+    times = in_time.asComponentTime()
+    years = []
+    months = []
+    
+    for ii in range(0,len(times)):
+        years.append(int(str(times[ii]).split('-')[0]))
+        months.append(int(str(times[ii]).split('-')[1]))
+    
+    
+    ## Write outfiles ##
     
     for i in range(0,neofs):
         
@@ -138,14 +160,15 @@ def write_pcs(outfile_pc_name,neofs,pcs,years,months,infile_name,outfile_eof_nam
 	        
 	# Global attributes #
 	
-	fout.write('Title: Principle Component %s from EOF analysis over %s region \n' %(i+1,region))
+	fout.write('Title: Principle Component %s from EOF analysis over %s region \n' %(i+1,region_name))
         fout.write('Contact: Damien Irving (d.irving@student.unimelb.edu.au) \n')
-        fout.write('History: EOF calculated using PyClimate software \n')
-        fout.write('Reference: http://www.pyclimate.org/ \n')
+        fout.write('History: EOF calculated using eof2 cdat module \n')
+        fout.write('Reference: https://github.com/ajdawson/eof2 \n')
         fout.write('Sourcefile: %s \n' %(infile_name))
 	fout.write('Companion EOF file: %s \n' %(outfile_eof_name))
-        creation_text = 'Created %s using %s \n' %(datetime.utcnow().isoformat(), sys.argv[0])
-        fout.write(creation_text)
+        fout.write('Created %s using %s \n' %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"), sys.argv[0]))
+	fout.write('Scaling: %s \n' %(pc_scaling_text))
+	fout.write('Units: %s \n' %(pc_units))
 	
 	# Data #
 	
@@ -155,56 +178,51 @@ def write_pcs(outfile_pc_name,neofs,pcs,years,months,infile_name,outfile_eof_nam
             print >> fout, '%4i %3i %7.2f' %(years[t],months[t],pcs[t,i])
 
 
-def main(infile_name,var_id,outfile_eof_name,outfile_pc_name,neofs,region):
+def main(infile_name,var_id,outfile_eof_name,outfile_pc_name,neofs,region_name,time_bounds,eof_scaling,pc_scaling):
     """Run the program"""
     
-    ## Create a new file with the region of interest, if necessary ##
+    fin = cdms2.open(infile_name)
     
-    regional_infile_name = extract_region(infile_name,region)
+    ## Get input data ##
     
-    ## Get input data details ##
+    if region_name:
+        try:
+	    region = globals()[region_name]
+	except KeyError:
+	    print 'region not defined - using all spatial data...'
+	    region = None
+    else:
+        region = None 
+    
+    if time_bounds and region:
+	in_data = fin(var_id,region,time=(time_bounds[0],time_bounds[1]),squeeze=1)
+    elif time_bounds: 
+        in_data = fin(var_id,time=(time_bounds[0],time_bounds[1]),squeeze=1)
+    elif region:
+        in_data = fin(var_id,region,squeeze=1)
+    else:
+	in_data = fin(var_id,squeeze=1)
 
-    fin = cdms2.open(regional_infile_name)
-    
-    in_data = fin(var_id)   # order='tzyx'
-    
-    # Lat/lon info #
-    
+    in_time = in_data.getTime()
     in_lat = in_data.getLatitude()
     in_lon = in_data.getLongitude()
-    
-    lat_id = in_lat.id
-    
-    # Time axis info #
-    
-    in_time = fin.getAxis('time').asComponentTime()
-    years = []
-    months = []
-    
-    for ii in range(0,len(in_time)):
-        years.append(int(str(in_time[ii]).split('-')[0]))
-        months.append(int(str(in_time[ii]).split('-')[1]))
-    
-    fin.close()
-    
-    ## Calculate the EOF using outdated pyclimate routine ##
-    
-    areafactor, pcs, lambdas, eofs = calc_EOF(regional_infile_name,var_id,lat_id)
+    in_history = fin.attributes['history'] if ('history' in fin.attributes.keys()) else ''
 
-    # Prepate output data #
     
-    eof_output = numpy.zeros([neofs,len(in_lat),len(in_lon)])
-    for i in range(0,neofs):
-        eof_output[i,:,:] = (numpy.reshape(eofs[:,i],(len(in_lat),len(in_lon))) / areafactor[:,numpy.newaxis]).astype(numpy.float32)
+    ## Calculate the EOFs ##
+    
+    eofs, eof_scaling_text, eof_units, pcs, pc_scaling_text, pc_units, varfracs = calc_eofs(in_data,neofs,eof_scaling,pc_scaling)
 
+    
     ## Write the output files ##
     
-    write_eof(outfile_eof_name,neofs,in_lat,in_lon,eof_output,lambdas,infile_name,outfile_pc_name,region)
-    write_pcs(outfile_pc_name,neofs,pcs,years,months,infile_name,outfile_eof_name,region)
+    write_eofs(outfile_eof_name,neofs,eofs,varfracs,infile_name,in_lat,in_lon,in_history,outfile_pc_name,region_name,eof_scaling_text,eof_units)
+    write_pcs(outfile_pc_name,neofs,pcs,infile_name,in_time,outfile_eof_name,region_name,pc_scaling_text,pc_units)
 
-    if regional_infile_name =! infile_name:
-        os.system("rm %s" %(regional_infile_name))
-
+    ## Clean up ##
+        
+    fin.close()
+    
 
 if __name__ == '__main__':
 
@@ -215,44 +233,53 @@ if __name__ == '__main__':
 
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
     parser.add_option("-n", "--neofs",dest="neofs",type='int',default=5,help="Number of EOFs for output [default=5]")
-    parser.add_option("-r", "--region",dest="region",type='string',default='entire',help="Regional over which to calculate EOF [default=entire]")
+    parser.add_option("-r", "--region",dest="region",type='string',default=None,help="Region over which to calculate EOF [default=entire]")
+    parser.add_option("-t", "--time_bounds",dest="time_bounds",default=None,nargs=2,type='str',help="Period over which to calculate time mean [default = entire time period]")
+    parser.add_option("-e", "--eof_scaling",dest="eof_scaling",type='string',default='0',help="Scaling method applied to EOF post calculation [default = None]")
+    parser.add_option("-p", "--pc_scaling",dest="pc_scaling",type='int',default=0,help="Scaling method applied to EOF post calculation [default = None]")
     
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
     if options.manual == True or len(sys.argv) == 1:
         print """
         Usage:
-            calc_eof.py [-M] [-h] [-n] [-r] {input_file} {input_variable} {output_eof_file} {output_pc_file}
+            calc_eof.py [-M] [-h] [-n] [-r] [-t] [-p] [-e] {input_file} {input_variable} {output_eof_file} {output_pc_file}
 
         Options
             -M -> Display this on-line manual page and exit
             -h -> Display a help/usage message and exit
 	    -n -> Number of EOFs that are output [default = 5]
 	    -r -> Region over which to calculate the EOF [default = entire; i.e whole input region]
+            -t -> Time period over which to calculate the EOF (2 args: start_date end_date) [default = entire]
+	    -e -> Scaling method applied to EOF post calculation [default = None] 
+            -p -> Scaling method applied to PC post calculation [default = None] 
+		   
+	Note
+	    The output PC files will take the user supplied file name and replace the string PC with PC1, PC2 etc 
+        
+	Options
+	    region: eqpacific
+	    
+	    eof_scaling:      
+                0 : Un-scaled EOFs (default).
+                1 : EOFs are divided by the square-root of their eigenvalues.
+                2 : EOFs are multiplied by the square-root of their eigenvalues.
+		'correlation' : EOFs scaled as the correlation of the PCs with the original field. 
 
-        Note
-	    The output PC files will take the user supplied file name 
-	    and replace the string PC with PC1, PC2 etc 
-        
-	Regions
-	    eqpacific
-	   
-        Description
-
-        
-        Assumptions (i.e. hard wired elements) 
-        
+	    pc_scaling:
+                0 : Un-scaled principal components (default).
+                1 : Principal components are scaled to unit variance (divided by the square-root of their eigenvalue).
+                2 : Principal components are multiplied by the square-root of their eigenvalue.
+       
         Reference
-
-        Environment
-            Need to load cdat
+            Uses eof2 package: https://github.com/ajdawson/eof2
 
         Example (abyss.earthsci.unimelb.edu.au)
-	    /opt/cdat/bin/cdat calc_eof.py /work/dbirving/test_data/ncepslp.djf.nc djfslp test_EOF.nc test_PC.txt
-	    /opt/cdat/bin/cdat calc_eof.py -r eqpacific /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly_native-ocean.nc ts test_EOF.nc test_PC.txt
+	    /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_eof.py -r eqpacific -t 1979-01-01 2010-12-31 
+	    /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc ts test_EOF.nc test_PC.txt
 	    
         Author
-            Damien Irving, 12 Oct 2012.
+            Damien Irving, 10 Dec 2012.
 
         Bugs
             Please report any problems to: d.irving@student.unimelb.edu.au
@@ -270,4 +297,5 @@ if __name__ == '__main__':
         
         infile_name, var_id, outfile_eof_name, outfile_pc_name = args  
     
-        main(infile_name, var_id, outfile_eof_name, outfile_pc_name, options.neofs, options.region)
+        main(infile_name, var_id, outfile_eof_name, outfile_pc_name, options.neofs, options.region, options.time_bounds, 
+	options.eof_scaling, options.pc_scaling)
