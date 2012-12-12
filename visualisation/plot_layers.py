@@ -225,7 +225,7 @@ if __name__ == '__main__':
     parser.add_option("--thin", dest="thin",type='int',default=1,help="Thinning factor for plotting wind vectors [defualt = 1]")
     parser.add_option("--key_value", dest="key_value",type='float',default=5.0,help="Size of the wind vector in the key (plot is not scaled to this) [defualt = 1]")
     parser.add_option("--equator",action="store_true",dest="equator",default=False,help="plot a distinct gridline for the equator [default = False]")
-    parser.add_option("--image_size", dest="image_size",type='float',default=10.,help="Size of image [default = 10]")
+    parser.add_option("--image_size", dest="image_size",type='float',default=12.,help="Size of image [default = 10]")
     
     
     (options, args) = parser.parse_args()
@@ -242,24 +242,24 @@ if __name__ == '__main__':
             -M  ->  Display this on-line manual page and exit
             -h  ->  Display a help/usage message and exit
 	    
-	    --ofile          ->  Name of output file [default = test.png]
-	    --contour_files  ->  Two comma seperated contour lists (files variables) [default = None]
-	    --quiver_files   ->  Four comma seperated quiver lists (x_dir_files x_vars y_files y_vars) [default = None]
-	    --dates          ->  Four integer times (start_date end_date) [default = None]
-	                         e.g. 1980-09-01 1980-09-27  (for monthly data would give Sept 1980)
-	    --region         ->  Selector defining a region (for cylindrical projection). Inbuilt regions are WORLD_GRENEWICH, WORLD_DATELINE, AUSTRALIA, AUS_NZ [default = WORLD_DATELINE]
-	    --title          ->  Plot title [default = date only]
-	    --palette        ->  Colour palette for the colourbar [default = RdBu_r]
-	    --ticks          ->  List of comma seperataed tick marks to appear on the colour bar [default = automatic]
-	    --units          ->  Units of the data - appears as a label below the colourbar
-	    --contour_ticks  ->  List of comma seperated tick marks for the contours [default = automatic]
-	    --quiver_type    ->  Type of quiver being plotted (determines units for quiver key). Can be 'wind' or 'waf' (wave activity flux) [default = 'wind']
-	    --quiver_scale   ->  Data units per arrow length unit, e.g. m/s per plot width; a smaller scale parameter makes the arrow longer. 
-	                         If None, autoscaling algorithm used [default = 170]
-	    --thin           ->  Thinning factor for plotting wind vectors (e.g. 2 = every second vector; 3 = every third) [default = 1]
-            --key_value      ->  Magnitude of the vector shown in the legend (plot vectors are not scaled to this) [default = 5]
-	    --equator        ->  Plot a distinct gridline for the equator [default = False]
-	    --image_size     ->  Width of individual images (in inches) [default = 10]
+	    -o  --ofile          ->  Name of output file [default = test.png]
+	    -c  --contour_files  ->  Two comma seperated contour lists (files variables) [default = None]
+	    -q  --quiver_files   ->  Four comma seperated quiver lists (x_dir_files x_vars y_files y_vars) [default = None]
+	    -d  --dates          ->  Four integer times (start_date end_date) [default = None]
+	                             e.g. 1980-09-01 1980-09-27  (for monthly data would give Sept 1980)
+	        --region         ->  Selector defining a region (for cylindrical projection). Inbuilt regions are WORLD_GRENEWICH, WORLD_DATELINE, AUSTRALIA, AUS_NZ [default = WORLD_DATELINE]
+	        --title          ->  Plot title [default = date only]
+	        --palette        ->  Colour palette for the colourbar [default = RdBu_r]
+	        --ticks          ->  List of comma seperataed tick marks to appear on the colour bar [default = automatic]
+	        --units          ->  Units of the data - appears as a label below the colourbar
+	        --contour_ticks  ->  List of comma seperated tick marks for the contours [default = automatic]
+	        --quiver_type    ->  Type of quiver being plotted (determines units for quiver key). Can be 'wind' or 'waf' (wave activity flux) [default = 'wind']
+	        --quiver_scale   ->  Data units per arrow length unit, e.g. m/s per plot width; a smaller scale parameter makes the arrow longer. 
+	                             If None, autoscaling algorithm used [default = 170]
+	        --thin           ->  Thinning factor for plotting wind vectors (e.g. 2 = every second vector; 3 = every third) [default = 1]
+                --key_value      ->  Magnitude of the vector shown in the legend (plot vectors are not scaled to this) [default = 5]
+	        --equator        ->  Plot a distinct gridline for the equator [default = False]
+	        --image_size     ->  Width of individual images (in inches) [default = 12]
 	    
 	Example (abyss.earthsci.unimelb.edu.au)
 	    /opt/cdat/bin/cdat plot_layers.py
@@ -271,7 +271,13 @@ if __name__ == '__main__':
 	    --ticks -5,-4.5,-4,-3.5,-3,-2.5,-2,-1.5,-1,-0.5,0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5 
 	    --units Celsius
 	    --dates 2009-05-01 2009-05-27
-	    -o /work/dbirving/processed/spatial_maps/ts-sf_Merra_surface-250hPa_May2009-anom-wrt-1981-2010_native-ocean.png
+	    --quiver_type waf 
+	    --thin 2 
+	    --quiver_scale 400 
+	    --key_value 10.0
+	    -o /work/dbirving/processed/spatial_maps/ts-sf-waf_Merra_surface-250hPa_May2009-anom-wrt-1981-2010_native-ocean-cyl.png
+	    
+	    (for chi plots, thin = 9, quiver_scale = 130 and key_value = 3.0 works well)
 	    
 	Author
             Damien Irving, 5 Nov 2012

@@ -84,7 +84,7 @@ def unpack_comma_list(comma_list,data_type='str'):
     return python_array
 
 
-def main(neofs,ifile,var,ofile,title,ticks,segments,equator):
+def main(neofs,ifile,ofile,title,palette,ticks,segments,equator):
 
     # Dimensions
     rows,cols = dimensions(neofs)
@@ -97,7 +97,7 @@ def main(neofs,ifile,var,ofile,title,ticks,segments,equator):
     # Variable lists
     variables = []
     for i in range(1,neofs+1):
-        variables.append(var+'_spatial_eof'+str(i))
+        variables.append('eof'+str(i))
     variable_list = shuffle(variables,rows,cols)
     
     # Map bounds
@@ -117,25 +117,26 @@ def main(neofs,ifile,var,ofile,title,ticks,segments,equator):
     img_headings = []
     for i in range(1,neofs+1):
         fin = cdms2.open(ifiles[i-1])
-	data = fin(var+'_perc_eof'+str(i))
-	img_headings.append('EOF%s  (%3.1f%% variance explained)' %(str(i),data.data))
+	data = fin('eof'+str(i))
+	img_headings.append('EOF%s  (%3.1f%% variance explained)' %(str(i),float(data.variance_explained)*100.0) )
         fin.close()
     img_headings_list = shuffle(img_headings,rows,cols)
 
 
     plot_map.multiplot(ifile_list,
                        variable_list,
-		       ofile=ofile,
 		       dimensions=dims,
+		       ofile=ofile,
+		       title=title,
 		       minlat=minlat,maxlat=maxlat,minlon=minlon,maxlon=maxlon,
+                       colourbar_colour=palette,
 		       img_headings=img_headings_list,
 		       draw_axis=True,
 		       delat=15,delon=15,
 		       equator=equator,
 		       contour=True,
 		       ticks=unpack_comma_list(ticks,data_type='float'),
-		       discrete_segments=unpack_comma_list(segments),
-		       title=title
+		       discrete_segments=unpack_comma_list(segments)
 		       )
 
 
@@ -152,13 +153,14 @@ if __name__ == '__main__':
     parser.add_option("--ticks", dest="ticks",type='string',default=None,help="List of comma seperataed tick marks to appear on the colour bar")
     parser.add_option("--segments", dest="segments",type='string',default=None,help="List of comma seperated colours to appear on the colour bar")
     parser.add_option("--title",dest="title",type='string',default=None,help="plot title [default = None]")
+    parser.add_option("--palette",dest="palette",type='string',default='RdBu_r',help="Colourbar name [default = RdBu_r]")
     
     (options, args) = parser.parse_args()
 
     if options.manual == True or len(sys.argv) == 1:
 	print """
 	Usage:
-            cdat plot_EOF.py [-h] [options] {neofs} {input file} {variable}
+            cdat plot_EOF.py [-h] [options] {neofs} {input file}
 
 	Options
             -M  ->  Display this on-line manual page and exit
@@ -169,11 +171,12 @@ if __name__ == '__main__':
 	    --title    ->  Plot title [default = None]
 	    --ticks    ->  List of comma seperataed tick marks to appear on the colour bar [default = automatic]
 	    --segments ->  List of comma seperated colours to appear on the colour bar [default = automatic]
+	    --palette  ->  Selector defining a matplotlib colourbar (e.g. 'RdBu', 'RdBu_r')
 	    
 	Example (abyss.earthsci.unimelb.edu.au)
 	    /opt/cdat/bin/cdat plot_EOF.py 4 
-	    /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.nc sf 
-	    /work/dbirving/processed/indices/figures/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.png
+	    /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.nc 
+	    --ofile /work/dbirving/processed/indices/figures/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.png
 	    --title 250hPa_streamfunction_EOF_analysis,_1979-2012,_Merra
 	    --ticks -2.5,-2.0,-1.5,-1.0,-0.5,0,0.5,1.0,1.5,2.0,2.5,3.0
 	    --segments 'blue7','blue6','blue5','blue4','blue3','red3','red4','red5','red6','red7','red8'
@@ -191,4 +194,4 @@ if __name__ == '__main__':
     
     else:
 
-        main(int(args[0]),args[1],args[2],options.ofile,options.title,options.ticks,options.segments,options.equator)
+        main(int(args[0]),args[1],options.ofile,options.title,options.palette,options.ticks,options.segments,options.equator)
