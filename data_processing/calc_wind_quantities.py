@@ -54,59 +54,59 @@ var_atts = {}
 
 var_atts['magnitude'] = {'id': 'spd',
     'name': 'wind speed',
-    'units': '',
+    'units': 'm s-1',
     'history': 'windspharm magnitude() function - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['vorticity'] = {'id': 'vrt',
     'name': 'relative vorticity',
-    'units': '',   ### The output variables from vorticity() might be automatically given a units attribute ###
+    'units': 's-1',   
     'history': 'windspharm vorticity(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['absolutevorticity'] = {'id': 'avrt',
     'name': 'absolute vorticity',
     'long_name': 'absolute vorticity (sum of relative and planetary)',
-    'units': '',
+    'units': 's-1',
     'history': 'windspharm absolutevorticity(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['irrotationalcomponent','u'] = {'id': 'uchi',
     'name': 'irrotational zonal wind',
     'long_name': 'zonal irrotational (divergent) component of the vector wind (from Helmholtz decomposition)',
-    'units': '',
+    'units': 'm s-1',
     'history': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['irrotationalcomponent','v'] = {'id': 'vchi',
     'name': 'irrotational meridional wind',
     'long_name': 'meridional irrotational (divergent) component of the vector wind (from Helmholtz decomposition)',
-    'units': '',
-    'history': 'calculated using windspharm irrotationalcomponent() function - http://ajdawson.github.com/windspharm/index.html'}
+    'units': 'm s-1',
+    'history': 'windspharm irrotationalcomponent() - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['nondivergentcomponent','u'] = {'id': 'upsi',
     'name': 'non-divergent zonal wind',
     'long_name': 'zonal non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)',
-    'units': '',
+    'units': 'm s-1',
     'history': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['nondivergentcomponent','v'] = {'id': 'vpsi',
-    'name','v': 'non-divergent meridional wind',
+    'name': 'non-divergent meridional wind',
     'long_name': 'meridional non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)',
-    'units': '',
+    'units': 'm s-1',
     'history': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['streamfunction'] = {'id': 'sf',
     'name': 'streamfunction',
-    'long_name': 'streamfunction (rotational wind blows along streamfunction contours, speed proportional to gradient)'
-    'units': '',
+    'long_name': 'streamfunction (rotational wind blows along streamfunction contours, speed proportional to gradient)',
+    'units': '1.e+6 m2 s-1',  #m2 s-1
     'history': 'windspharm streamfunction() - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['velocitypotential'] = {'id':'vp',
     'name': 'velocity potential',
-    'long_name': 'velocity potential (divergent wind blows along velocity potential contours, speed proportional to gradient)'
-    'units': '',
+    'long_name': 'velocity potential (divergent wind blows along velocity potential contours, speed proportional to gradient)',
+    'units': '1.e+6 m2 s-1',  #m2 s-1,
     'history': 'windspharm velocitypotential() - http://ajdawson.github.com/windspharm/index.html'}
 
-var_atts['rossbywavesource'] = {'id': 's',
+var_atts['rossbywavesource'] = {'id': 'rws',
     'name': 'Rossby wave source',
-    'units': '',
+    'units': '1.e-11 s-1',  # I think it should be s-2
     'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
 
 
@@ -161,12 +161,13 @@ def calc_quantity(data_u,data_v,time_u,lat_u,lon_u,quantity):
     # either 2D or 3D arrays. The data read in is 4D and has latitude and
     # longitude as the last dimensions. The bundled tools can make the process of
     # re-shaping the data a lot easier to manage.
-    uwnd, uwnd_info = prep_data(uwnd, 'tzyx')
-    vwnd, vwnd_info = prep_data(vwnd, 'tzyx')
+    uwnd, uwnd_info = prep_data(uwnd, 'tyx')#'tzyx')
+    vwnd, vwnd_info = prep_data(vwnd, 'tyx')#'tzyx')
 
     # It is also required that the latitude dimension is north-to-south. Again the
     # bundled tools make this easy.
     lats, uwnd, vwnd = order_latdim(lats, uwnd, vwnd)
+    flip = False if (lats[0] == lat_u[0]) else True   # Flag to see if lats was flipped 
 
     # Create a VectorWind instance to handle the computation of streamfunction and
     # velocity potential.
@@ -175,7 +176,7 @@ def calc_quantity(data_u,data_v,time_u,lat_u,lon_u,quantity):
     # Compute the desired quantity. Also use the bundled tools to re-shape the 
     # outputs to the 4D shape of the wind components as they were read off files.
     
-    if quantity == 'rossbywavesource':
+    if quantity == 'rossbywavesource':   ## FIX THIS HUGE IF STATEMENT!!!
 	# Compute components of rossby wave source: absolute vorticity, divergence,
 	# irrotational (divergent) wind components, gradients of absolute vorticity.
 	eta = w.absolutevorticity()
@@ -184,24 +185,57 @@ def calc_quantity(data_u,data_v,time_u,lat_u,lon_u,quantity):
 	etax, etay = w.gradient(eta)
 
 	# Combine the components to form the Rossby wave source term.
-	output = -eta * div - uchi * etax + vchi * etay
+	data_out = -eta * div - uchi * etax + vchi * etay	
+	data_out = data_out / (1.e-11)
 
+    elif quantity == 'magnitude':
+        data_out = w.magnitude()
+    
+    elif quantity == 'vorticity':
+        data_out = w.vorticity()
+    
+    elif quantity == 'divergence':
+        data_out = w.divergence()
+    
+    elif quantity == 'absolutevorticity':
+        data_out = w.absolutevorticity()
+    
+    elif quantity == 'irrotationalcomponent':
+        data_out = {}
+	data_out['u'],data_out['v'] = w.irrotationalcomponent()    
+    
+    elif quantity == 'nondivergentcomponent':
+        data_out = {}
+	data_out['u'],data_out['v'] = w.nondivergentcomponent() 
+    
+    elif quantity == 'streamfunction':
+        data_out = w.streamfunction()
+	data_out = data_out / (1.e+6)
+    
+    elif quantity == 'velocitypotential':
+        data_out = w.velocitypotential()
+    	data_out = data_out / (1.e+6)
+	
     else:
-
-	try:
-	    
-	    output = getattr(w,quantity)   ### How do I get method??
-	except AttributeError:
-	    sys.exit('Wind quantity not recognised')
+	sys.exit('Wind quantity not recognised')
     
-    
-    data_out = recover_data(data_out, uwnd_info)
+    # Put the data back together #
+   
+    if quantity == 'irrotationalcomponent' or quantity == 'nondivergentcomponent':
+        for comp in ['u','v']:
+	    data_out[comp] = recover_data(data_out[comp], uwnd_info)
+	    if flip:
+	        data_out[comp] = data_out[comp][:,::-1,:]    
+    else:
+	data_out = recover_data(data_out, uwnd_info)
+	if flip:
+	    data_out = data_out[:,::-1,:]
 
     return data_out
 
 
 
-def write_outfile(quantity, fname_u, fname_v, fname_out, infile_u, data_out, time_u, lat_u, lon_u):
+def write_outfile(quantity, fname_u, fname_v, fname_out, infile_u, data_out, data_u, time_u, lat_u, lon_u):
     """Writes output netCDF file"""
     
     outfile = cdms2.open(fname_out,'w')
@@ -213,9 +247,14 @@ def write_outfile(quantity, fname_u, fname_v, fname_out, infile_u, data_out, tim
             setattr(outfile, att_name, infile_u.attributes[att_name])
     
     old_history = infile_u.attributes['history'] if ('history' in infile_u.attributes.keys()) else ''
-        
+    
+    if quantity == 'irrotationalcomponent' or quantity == 'nondivergentcomponent':
+        qname = var_atts[quantity,'u']['name']+' and '+var_atts[quantity,'v']['name']
+    else:
+        qname = var_atts[quantity]['name']
+    
     setattr(outfile, 'history', """%s: %s calculated from %s and %s using %s, format=NETCDF3_CLASSIC\n%s""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
-            var_atts[quantity]['name'],fname_u,fname_v,sys.argv[0],old_history))
+            qname,fname_u,fname_v,sys.argv[0],old_history))
     
     
     # Variables #
@@ -224,15 +263,36 @@ def write_outfile(quantity, fname_u, fname_v, fname_out, infile_u, data_out, tim
     axisInLat = outfile.copyAxis(lat_u)  
     axisInLon = outfile.copyAxis(lon_u)  
     
-    var = data_out
-    var = cdms2.MV2.array(var)
-    var = var.astype(numpy.float32)
-    var.setAxisList([axisInTime,axisInLat,axisInLon])
+    if quantity == 'irrotationalcomponent' or quantity == 'nondivergentcomponent':  ## FIX THIS UGLY IF STATEMENT
+        for comp in ['u','v']:
+	    var = data_out[comp]
+	    var = cdms2.MV2.array(var)
+	    var = var.astype(numpy.float32)
+	    var.setAxisList([axisInTime,axisInLat,axisInLon])
 
-    for key, value in var_atts[quantity].iteritems():
-        setattr(var, key, value)
+	    for key, value in var_atts[quantity,comp].iteritems():
+        	if key == 'history':
+		    old_history = data_u.attributes['history'] if ('history' in data_u.attributes.keys()) else ''
+		    new_history = value+'. '+old_history
+		    setattr(var, key, new_history)
+		else:
+		    setattr(var, key, value)
+	    outfile.write(var)  
+    else:
+	var = data_out
+	var = cdms2.MV2.array(var)
+	var = var.astype(numpy.float32)
+	var.setAxisList([axisInTime,axisInLat,axisInLon])
 
-    outfile.write(var)  
+	for key, value in var_atts[quantity].iteritems():
+            if key == 'history':
+		old_history = data_u.attributes['history'] if ('history' in data_u.attributes.keys()) else ''
+		new_history = value+'. '+old_history
+		setattr(var, key, new_history)
+	    else:
+		setattr(var, key, value)
+	
+	outfile.write(var)  
 
     outfile.close()
 
@@ -279,7 +339,7 @@ def main(quantity, fname_u, vname_u, fname_v, vname_v, fname_out):
     
     ## Write the output file ##
     
-    write_outfile(quantity, fname_u, fname_v, fname_out, infile_u, data_out, time_u, lat_u, lon_u)
+    write_outfile(quantity, fname_u, fname_v, fname_out, infile_u, data_out, data_u, time_u, lat_u, lon_u)
 
     ## Clean up ##
         
@@ -291,7 +351,7 @@ if __name__ == '__main__':
 
     ## Help and manual information ##
 
-    usage = "usage: %prog [options] {wind_quantity} {input_U_file} {input_U_variable} {input_U_file} {input_U_variable} {output_file}"
+    usage = "usage: %prog [options] {wind_quantity} {input_U_file} {input_U_variable} {input_V_file} {input_V_variable} {output_file}"
     parser = OptionParser(usage=usage)
 
     parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
@@ -301,7 +361,7 @@ if __name__ == '__main__':
     if options.manual == True or len(sys.argv) == 1:
         print """
         Usage:
-            calc_eof.py [-M] [-h] {wind_quantity} {input_U_file} {input_U_variable} {input_U_file} {input_U_variable} {output_file}
+            calc_eof.py [-M] [-h] {wind_quantity} {input_U_file} {input_U_variable} {input_V_file} {input_V_variable} {output_file}
 
         Options
             -M -> Display this on-line manual page and exit
@@ -327,16 +387,23 @@ if __name__ == '__main__':
             Uses the windspharm package: http://ajdawson.github.com/windspharm/intro.html
 
         Example (abyss.earthsci.unimelb.edu.au)
-	    /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_wind_quantities.py  
-	    /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc ts 
-	    /work/dbirving/processed/indices/data/ts_Merra_surface_EOF_monthly-1979-2011_native-ocean-eqpacific.nc
-	    /work/dbirving/processed/indices/data/ts_Merra_surface_PC_monthly_native-ocean-eqpacific.txt
+	    /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_wind_quantities.py streamfunction  
+	    /work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc ua
+	    /work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc va
+	    /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly_native.nc
+	    
+	    /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_wind_quantities.py streamfunction  
+	    /work/dbirving/datasets/Merra/data/processed/ua_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc ua
+	    /work/dbirving/datasets/Merra/data/processed/va_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc va
+	    /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc
 	    
         Author
             Damien Irving, 10 Dec 2012.
 
         Bugs
-            Please report any problems to: d.irving@student.unimelb.edu.au
+            Rossby wave source output needs to be checked
+	    Some of the if statements are fairly ugly - need to clean those up
+	    Please report any problems to: d.irving@student.unimelb.edu.au
         """
         sys.exit(0)
 

@@ -48,7 +48,7 @@ import eof2
 ### Define globals ###
 
 eqpacific = cdms2.selectors.Selector(latitude=(-30,30,'cc'),longitude=(120,280,'cc'))
-
+tropics = cdms2.selectors.Selector(latitude=(-30,30,'cc'),longitude=(0,360,'cc'))
 
 ### Define functions ###
 
