@@ -267,7 +267,7 @@ if __name__ == '__main__':
 	    -c /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc sf
 	    -q /work/dbirving/datasets/Merra/data/processed/wafx_Merra_250hPa_monthly_native.nc wafx
 	       /work/dbirving/datasets/Merra/data/processed/wafy_Merra_250hPa_monthly_native.nc wafy  
-	    --title Merra_skin_temp_anomaly_and_250hPa_streamfunction_anomaly,
+	    --title Merra_skin_temp_anomaly,_250hPa_streamfunction_anomaly_and_WAF,
 	    --ticks -5,-4.5,-4,-3.5,-3,-2.5,-2,-1.5,-1,-0.5,0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5 
 	    --units Celsius
 	    --dates 2009-05-01 2009-05-27

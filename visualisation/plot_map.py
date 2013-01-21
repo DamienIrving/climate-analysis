@@ -347,14 +347,17 @@ def matrixplot(ifiles,variables,
     
     ## Define the contour plot ticks, if required ##
     
-    if draw_contours and (contour_ticks == None):
-        contour_min_level,contour_max_level = get_min_max(contour_files,contour_variables,timmean,region,plot='contour')
-	contour_diff = contour_max_level - contour_min_level
-	contour_step = contour_diff/10.0
+    if draw_contours:
+        if contour_ticks == None:
+            contour_min_level,contour_max_level = get_min_max(contour_files,contour_variables,timmean,region,plot='contour')
+	    contour_diff = contour_max_level - contour_min_level
+	    contour_step = contour_diff/10.0
 
-	contour_ticks = list(numpy.arange(contour_min_level,contour_max_level+(contour_step/2),contour_step))
-        if contour_max_level > 0 and contour_min_level < 0:
-	    contour_ticks[5] = 0.0
+	    contour_ticks = list(numpy.arange(contour_min_level,contour_max_level+(contour_step/2),contour_step))
+            if contour_max_level > 0 and contour_min_level < 0:
+		contour_ticks[5] = 0.0
+	else:
+	    contour_min_level,contour_max_level = [contour_ticks[0],contour_ticks[-1]]
 	    
 	contour_dec = decimal_places(contour_max_level - contour_min_level)
     
