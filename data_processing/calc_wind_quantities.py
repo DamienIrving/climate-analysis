@@ -26,6 +26,7 @@ import os
 import numpy
 
 import cdms2
+import cdutil
 
 ## CDAT Version 5.2 File are now written with compression and shuffling ##
 #You can query different values of compression using the functions:
@@ -144,15 +145,33 @@ def xy_axis_check(axis1, axis2):
         sys.exit('Input files do not all have the same %s axis' %(axis1.id))
 
 
-def calc_quantity(data_u,data_v,time_u,lat_u,lon_u,quantity):
+def calc_quantity(data_u, data_v, time_u, lat_u, lon_u, quantity, eddy):
     """Calculates a single wind quantity using windspharm (ajdawson.github.com/windspharm/index.html)"""
     
     # Do all the data preparation, because I'm using the windspharm.standard instead of
     # windspharm.cdms (when the latter is included in the UV-CDAT release, I should use it
     # because it makes the code much simplier    
 
+#    if eddy:
+#        uwnd_zonal_ave = cdutil.averager(data_u, axis='x')
+#        vwnd_zonal_ave = cdutil.averager(data_v, axis='x')
+#	
+#	print numpy.shape(data_u)
+#	print numpy.shape(uwnd_zonal_ave)
+#	
+#	eddy_uwnd = numpy.subtract(data_u, numpy.resize(uwnd_zonal_ave, numpy.shape(data_u)))
+#	eddy_vwnd = numpy.subtract(data_v, numpy.resize(vwnd_zonal_ave, numpy.shape(data_v)))
+#	
+#	print numpy.shape(eddy_uwnd)
+#	
+#	uwnd = eddy_uwnd[:]
+#	vwnd = eddy_uwnd[:]
+#    else:
+    
+    
     uwnd = data_u[:]
     vwnd = data_v[:]
+    
     lons = lon_u[:]
     lats = lat_u[:]
     
@@ -176,7 +195,7 @@ def calc_quantity(data_u,data_v,time_u,lat_u,lon_u,quantity):
     # Compute the desired quantity. Also use the bundled tools to re-shape the 
     # outputs to the 4D shape of the wind components as they were read off files.
     
-    if quantity == 'rossbywavesource':   ## FIX THIS HUGE IF STATEMENT!!!
+    if quantity == 'rossbywavesource':   ## FIX THIS HUGE IF STATEMENT - A CLASS MIGHT BE THE ANSWER!!!
 	# Compute components of rossby wave source: absolute vorticity, divergence,
 	# irrotational (divergent) wind components, gradients of absolute vorticity.
 	eta = w.absolutevorticity()
@@ -230,6 +249,13 @@ def calc_quantity(data_u,data_v,time_u,lat_u,lon_u,quantity):
 	data_out = recover_data(data_out, uwnd_info)
 	if flip:
 	    data_out = data_out[:,::-1,:]
+
+    if eddy:
+        data_out_zonal_ave = cdutil.averager(data_out, axis='2')
+	print numpy.shape(data_out_zonal_ave)
+	
+	data_out = numpy.subtract(data_out, numpy.resize(data_out_zonal_ave, numpy.shape(data_out)))
+
 
     return data_out
 
@@ -297,7 +323,7 @@ def write_outfile(quantity, fname_u, fname_v, fname_out, infile_u, data_out, dat
     outfile.close()
 
     
-def main(quantity, fname_u, vname_u, fname_v, vname_v, fname_out):
+def main(quantity, fname_u, vname_u, fname_v, vname_v, fname_out, eddy):
     """Run the program"""
 
     ## Read the input data ##
@@ -334,7 +360,7 @@ def main(quantity, fname_u, vname_u, fname_v, vname_v, fname_out):
     
     ## Calculate the desired quantity ##
     
-    data_out = calc_quantity(data_u,data_v,time_u,lat_u,lon_u,quantity)
+    data_out = calc_quantity(data_u, data_v, time_u, lat_u, lon_u, quantity, eddy)
 
     
     ## Write the output file ##
@@ -354,18 +380,23 @@ if __name__ == '__main__':
     usage = "usage: %prog [options] {wind_quantity} {input_U_file} {input_U_variable} {input_V_file} {input_V_variable} {output_file}"
     parser = OptionParser(usage=usage)
 
-    parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
+    parser.add_option("-M", "--manual", action="store_true", dest="manual", default=False,
+                      help="output a detailed description of the program")
+    parser.add_option("-e", "--eddy", action="store_true", dest="eddy", default=False,
+                      help="return the eddy component of the wind quantity (i.e. remove the zonal mean")
     
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
     if options.manual == True or len(sys.argv) == 1:
         print """
         Usage:
-            calc_eof.py [-M] [-h] {wind_quantity} {input_U_file} {input_U_variable} {input_V_file} {input_V_variable} {output_file}
+            calc_eof.py [-M] [-h] [-e] {wind_quantity} {input_U_file} {input_U_variable} {input_V_file} {input_V_variable} {output_file}
 
         Options
             -M -> Display this on-line manual page and exit
             -h -> Display a help/usage message and exit
+	    -e -> Return the eddy component of the wind quantity
+	          (i.e. remove the zonal mean from U and V before calculation) 
         
 	Wind quantities 
 	    magnitude             ->  Wind speed    
@@ -418,4 +449,4 @@ if __name__ == '__main__':
         
         quantity, fname_u, vname_u, fname_v, vname_v, fname_out = args  
     
-        main(quantity, fname_u, vname_u, fname_v, vname_v, fname_out)
+        main(quantity, fname_u, vname_u, fname_v, vname_v, fname_out, options.eddy)

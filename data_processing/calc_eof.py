@@ -34,8 +34,10 @@ import eof2
 
 eqpacific = cdms2.selectors.Selector(latitude=(-30, 30, 'cc'),
                                      longitude=(120, 280, 'cc'))
-sh = cdms2.selectors.Selector(latitude=(-30, 30, 'cc'),
-                              longitude=(120, 280, 'cc'))				     
+sh = cdms2.selectors.Selector(latitude=(-90, 0, 'cc'),
+                              longitude=(0, 360, 'cc'))	
+shextrop = cdms2.selectors.Selector(latitude=(-90, -30, 'cc'),
+                                    longitude=(0, 360, 'cc'))			      			     
 tropics = cdms2.selectors.Selector(latitude=(-30, 30, 'cc'),
                                    longitude=(0, 360, 'cc'))
 
