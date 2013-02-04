@@ -155,6 +155,63 @@ def _extract_region(region):
 	    
     return latitude, longitude
 
+def _get_datetime(times):
+    """Returns a datetime instance for a given list dates/times
+    
+    **Arguments**
+
+    *times*
+        List values must be expressed in component time, 
+        consistent with the cdat asComponentTime() method
+        e.g. 1979-01-01 12:00:0.0  
+
+    """
+
+    datetimes = []
+    for i in range(0,len(times)
+        year, month, day = str(time_axis[0]).split(' ')[0].split('-')
+        hour, minute, second = str(time_axis[0]).split(' ')[1].split('-')
+        
+        datetimes[i] = datetime.datetime(year, month, day, hour, minute, int(second))
+
+
+    return datetimes
+
+
+def _get_timescale(times):
+    """Detetimes the timescale.
+    
+    **Arguments**
+        
+    *times*
+        Tuple containing two datetime instances.
+        The difference between them is used to 
+        determine the timescale. 
+
+    """
+
+    diff = times[1] - times[0]
+
+    thresholds = {'yearly': datetime.timedelta(days=365),
+                  'monthly': datetime.timedelta(days=27),
+                  'daily': datetime.timedelta(days=1),
+                  '12hourly': datetime.timedelta(hours=12)
+                  '6hourly': datetime.timedelta(hours=6),
+                  'hourly': datetime.timedelta(hours=1)]
+    
+    timescale = None
+    for key in thresholds:
+        if diff >= thresholds[key]:
+            timescale = key
+            break
+    
+    if not timescale:
+        print 'Invalid timescale data.'
+        print 'Must be between hourly and yearly.'
+        sys.exit(1)
+
+    return timescale
+
 
 class InputData:
     """
@@ -242,13 +299,10 @@ class InputData:
 	infile.close()
 	
 
-    def temporal_subset(self, input_timescale, output_timescale, climatology=False):
+    def temporal_subset(self, output_timescale, climatology=False):
         """Takes a temporal subset of the data.
         
         **Arguments**
-        
-        *input_timescale*
-            Can be daily, monthly or yearly
         
         *output_timescale*
             Can be 
@@ -264,6 +318,12 @@ class InputData:
 
         """
 
+        ## Find input timescale ##
+ 
+        time_axis = self.data.getTime().asComponentTime()
+        input_timescale = _get_timescale(_get_datetime(time_axis[0:2]))
+        
+        
         ## Set time bounds ##
 
         daily_freq = {'hourly': 24, '6hourly': 4, '12hourly': 2, 'daily': 1}
