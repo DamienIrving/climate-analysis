@@ -13,12 +13,26 @@ __author__ = 'Damien Irving'
 
 
 import sys
+from datetime import datetime
 
 import numpy
 
 import cdutil
 import genutil
 import cdms2
+
+## CDAT Version 5.2 File are now written with compression and shuffling ##
+#You can query different values of compression using the functions:
+#cdms2.getNetcdfShuffleFlag() returning 1 if shuffling is enabled, 0 otherwise
+#cdms2.getNetcdfDeflateFlag() returning 1 if deflate is used, 0 otherwise
+#cdms2.getNetcdfDeflateLevelFlag() returning the level of compression for the deflate method
+#If you want to turn that off or set different values of compression use the functions:
+#cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
+#cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
+#cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
+cdms2.setNetcdfShuffleFlag(0)
+cdms2.setNetcdfDeflateFlag(0)
+cdms2.setNetcdfDeflateLevelFlag(0)
 
 
 
@@ -29,44 +43,47 @@ import cdms2
 #   'b' bounds, 'n' node, 'e' extranode, 's' select
    
 
-aus = cdms2.selectors.Selector(latitude=(-45,-10,'cc'), 
-                               longitude=(110,160,'cc'))
-ausnz = cdms2.selectors.Selector(latitude=(-50,0,'cc'),
-                                 longitude=(100,185,'cc'))
-worldgreenwhich = cdms2.selectors.Selector(latitude=(-90,90,'cc'),
-                                           longitude=(-180,180,'cc'))
-worlddateline = cdms2.selectors.Selector(latitude=(-90,90,'cc'),
-                                         longitude=(0,360,'cc'))
+aus = cdms2.selectors.Selector(latitude=(-45, -10, 'cc'), 
+                               longitude=(110, 160, 'cc'))
+ausnz = cdms2.selectors.Selector(latitude=(-50, 0, 'cc'),
+                                 longitude=(100, 185, 'cc'))
+wgreenwhich = cdms2.selectors.Selector(latitude=(-90, 90, 'cc'),
+                                       longitude=(-180, 180, 'cc'))
+wdateline = cdms2.selectors.Selector(latitude=(-90, 90, 'cc'),
+                                     longitude=(0, 360, 'cc'))
 
 
 ## Colours ##
 
-blue = ['#EAF4FF','#DFEFFF','#BFDFFF','#95CAFF','#55AAFF',
-        '#0B85FF','#006AD5','#004080','#002B55','#001B35']
+blue = ['#EAF4FF', '#DFEFFF', '#BFDFFF', '#95CAFF', '#55AAFF',
+        '#0B85FF', '#006AD5', '#004080', '#002B55', '#001B35']
 
-brown = ['#FFFAEA','#FFF8DF','#FFEFBF','#FFE495','#FFD555',
-         '#FFC20B','#D59F00','#806000','#554000','#352800']
+brown = ['#FFFAEA', '#FFF8DF', '#FFEFBF', '#FFE495', '#FFD555',
+         '#FFC20B', '#D59F00', '#806000', '#554000', '#352800']
 
-hot = ['#FFFFEA','#FFFFDF','#FFFF95','#FFFF0B','#FFAA0B',
-       '#FF660B','#FF0B0B','#800000','#550000','#350000']
+hot = ['#FFFFEA', '#FFFFDF', '#FFFF95', '#FFFF0B', '#FFAA0B',
+       '#FF660B', '#FF0B0B', '#800000', '#550000', '#350000']
 
-red = ['#FFEAEA','#FFDFDF','#FFBFBF','#FF9595','#FF5555',
-       '#FF0B0B','#D50000','#800000','#550000','#350000']
+red = ['#FFEAEA', '#FFDFDF', '#FFBFBF', '#FF9595', '#FF5555',
+       '#FF0B0B', '#D50000', '#800000', '#550000', '#350000']
 
-green = ['#F4FFEA','#EFFFDF','#DFFFBF','#CAFF95','#AAFF55',
-         '#85FF0B','#6AD500','#408000','#2B5500','#1B3500']
+green = ['#F4FFEA', '#EFFFDF', '#DFFFBF', '#CAFF95', '#AAFF55',
+         '#85FF0B', '#6AD500', '#408000', '#2B5500', '#1B3500']
 
-purple = ['#F4EAFF','#EFDFFF','#DFBFFF','#CA95FF','#AA55FF',
-          '#850BFF','#6A00D5','#400080','#2B0055','#1B0035']
+purple = ['#F4EAFF', '#EFDFFF', '#DFBFFF', '#CA95FF', '#AA55FF',
+          '#850BFF', '#6A00D5', '#400080', '#2B0055', '#1B0035']
 
-grey = ['#FFFFFF','#EBEBEB','#E6E6E6','#DCDCDC','#D2D2D2','#CCCCCC',
-        '#787878','#666666','#4B4B4B','#333333','#1E1E1E','#000000']
+grey = ['#FFFFFF', '#EBEBEB', '#E6E6E6', '#DCDCDC', 
+        '#D2D2D2', '#CCCCCC', '#787878', '#666666', 
+        '#4B4B4B', '#333333', '#1E1E1E', '#000000']
 
-jet= ['#001B35','#000080','#0000D5','#006AD5','#55AAFF','#55FFFF','#55FFAA',
-      '#D5FF55','#FFD555','#FF850B','#D51B00','#800000','#350000']
+jet = ['#001B35', '#000080', '#0000D5', '#006AD5', 
+       '#55AAFF', '#55FFFF', '#55FFAA', '#D5FF55', 
+       '#FFD555', '#FF850B', '#D51B00', '#800000', '#350000']
 
-IPCCrain = ['#FFF295','#FFD555','#FF850B','#D55000','#D50000','#550040',
-            '#600080','#000080','#0000D5','#0B85FF','#55AAFF','#95CAFF']
+ipccrain = ['#FFF295', '#FFD555', '#FF850B', '#D55000', 
+            '#D50000', '#550040', '#600080', '#000080', 
+            '#0000D5', '#0B85FF', '#55AAFF', '#95CAFF']
 
 grey = '#CCCCCC'
 white = '#FFFFFF'
@@ -80,6 +97,12 @@ def convert_units(data):
     kg m-2 s-1 or K will be converted to 
     mm/day or Celsius
 
+    **Arguments**
+    
+    *data*
+        InputData instance or cdms2 transient variable
+        (i.e. must have a 'units' attribute)
+
     """
     #There would be scope to use the genutil udunits module
     #here, however I couldn't figure out how to get it to
@@ -89,25 +112,30 @@ def convert_units(data):
     # Switch units #
     
     if data.units[0:10] == 'kg m-2 s-1':
-        return numpy.ma.multiply(data,86400.0)
+        newdata = numpy.ma.multiply(data, 86400.0)
     
-    elif units[0] = 'K':
-        return numpy.ma.subtract(data,273.16)
+    elif data.units[0] == 'K':
+        newdata = numpy.ma.subtract(data, 273.16)
     
     else:
-        print 'original units not recognised'
-        sys.exit(1)
-    
+        print 'Original units not recognised.'
+        print 'Units have not been converted.'
 
-def scale_offset(data, scale=1.0, offset=1.0):
+        newdata = data
+
+
+    return newdata 
+
+
+def scale_offset(data, scale=1.0, offset=0.0):
     """Applies scaling and offset factors to data.
     
     new_data = (old_data*scale) + offset
 
     """
     
-    return numpy.ma.add(numpy.ma.multiply(new_data, float(scale_offset[0])),
-                        float(scale_offset[1]))
+    return numpy.ma.add(numpy.ma.multiply(data, float(scale)),
+                        float(offset))
     
 
 def _extract_region(region):
@@ -161,7 +189,7 @@ class InputData:
 	
 	"""
         
-        ## Read the input data, just to set the order and check for missing value ##
+        ## Read the input data to set order & check missing value ##
 
         infile = cdms2.open(fname)
         temp_data = infile(var_id)
@@ -209,6 +237,9 @@ class InputData:
 	self.data = data
         self.fname = fname
 	self.id = var_id
+	self.global_atts = infile.attributes
+	
+	infile.close()
 	
 
     def temporal_subset(self, input_timescale, output_timescale, climatology=False):
@@ -235,7 +266,7 @@ class InputData:
 
         ## Set time bounds ##
 
-        daily_freq = {'hourly': 24; '6hourly': 4; '12hourly': 2; 'daily': 1}
+        daily_freq = {'hourly': 24, '6hourly': 4, '12hourly': 2, 'daily': 1}
 
         if input_timescale in daily_freq.keys():
             cdutil.setTimeBoundsDaily(self.data, frequency=daily_freq[input_timescale])
@@ -250,15 +281,15 @@ class InputData:
         
         ## Extract subset of interest ##
         
-	accepted_timescales = ['SEASONALCYCLE','ANNUALCYCLE','YEAR',
-	                       'DJF','MAM','JJA','SON',
-			       'JAN','FEB','MAR','APR','MAY','JUN',
-                               'JUL','AUG','SEP','OCT','NOV','DEC']
+	accepted_timescales = ['SEASONALCYCLE', 'ANNUALCYCLE', 'YEAR',
+	                       'DJF', 'MAM', 'JJA', 'SON',
+			       'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                               'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
         
         end = '.climatology(self.data)' if climatology else '(self.data)'
         if output_timescale in accepted_timescales:
-	    FunctionToCall = 'cdutil.' + output_timescale + end
-            outdata = eval(FunctionToCall)
+	    function = 'cdutil.' + output_timescale + end
+            outdata = eval(function)
 
 	elif output_timescale in 'JFMAMJJASONDJFMAMJJASOND':
             custom = cdutil.Seasons(output_timescale)
@@ -301,4 +332,78 @@ class InputData:
 
 
 
-#def write_outfile()
+def write_nefcdf(outfile_name, out_quantity, indata, 
+                 outdata, outvar_atts, out_axes):
+    """Writes an output netCDF file.
+    
+    Intended for use with a calculated quantity.
+    Many attributes and axes are copied from the
+    existing input files.
+    
+    All output variables must have the axes.
+    
+    **Arguments**
+        
+        *outfile_name*
+	    string
+	
+	*indata*
+            List of InputData instances
+	
+	*outdata*
+	    List of numpy arrays, containing the data for 
+            each output variable
+	
+        *outvar_atts*
+            List of dictionaries, containing the attriubtes
+            for each output variable
+
+        *out_axes*
+            List of the output variable axes (must be in order)
+            Should get generated using the cdat  getLatitide(), 
+            getLongitude() or getTime() methods.
+    
+    """
+    
+    outfile = cdms2.open(outfile_name,'w')
+    
+    # Global attributes #
+    
+    infile_global_atts = indata[0].global_atts
+    
+    for att_name in infile_global_atts.keys():
+        if att_name != "history":
+            setattr(outfile, att_name, infile_global_atts[att_name])
+    
+    old_history = infile_global_atts.attributes['history'] if ('history' in 
+                  infile_global_atts.keys()) else ''
+    
+    infile_names = ''
+    for item in indata:
+        infile_names = infile_names + item.fname +', '
+        
+    setattr(outfile, 'history', """%s: %s calculated from %s using %s, 
+            format=NETCDF3_CLASSIC\n%s""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
+            out_quantity,infile_names,sys.argv[0],old_history))
+
+
+    # Variables #
+
+    axis_list = []
+    for axis in out_axes:
+        axis_list.append(outfile.copyAxis(axis))
+    
+    for var in outdata:
+
+	var = cdms2.MV2.array(var)
+	var = var.astype(numpy.float32)
+	var.setAxisList(axis_list)
+
+	for key, value in outvar_atts.iteritems():
+            setattr(var, key, value)
+
+	outfile.write(var)  
+
+    
+    outfile.close()
+
