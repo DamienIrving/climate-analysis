@@ -86,146 +86,41 @@ def tempcorr(data1_month_ave,data2_month_ave,raw,nlats,nlons):
     return tempcorr_data1_data2
     
     
-
-
-def unit_convert(data):
-    """Convert units to mm/day and Celsius"""
-    units = data.units
-    if units[0:10] == 'kg m-2 s-1':
-	new_data = data*86400
-    elif units[0] == 'K':
-        new_data = data - 273.16
-    else:
-        new_data = data
     
-    return new_data
-
-    
-function_for_metric = {
-    'tempcorr':    tempcorr,
-    'tempstd':     tempstd,
-    'spatcorr':    spatcorr,
-    'spatstd':     spatstd,
-    'bias':        bias
-                      }    
+function_for_metric = {'tempcorr': tempcorr}    
     
 
-def main(metric,var,infile1,infile2,outfile):
+def main(metric, infile1, var1, infile2, var2, selection, subset):
     """Run the program.
+    
+    INCLUDE MORE DETAILS
+
     """
     
-    ## Initialise relevant function ##
-    
-    calc_stat = function_for_metric[metric]
-
-
     ## Read input data from both input files ##
 
-    indata1 = my_modules.InputData(infile1,var)
-    indata2 = my_modules.InputData(infile2,var)
-
+    indata1 = my_modules.InputData(infile1, var1, **selection)
+    indata2 = my_modules.InputData(infile2, var2, **selection)
     
+    if subset:
+        data1 = indata1.temporal_subset(subset)
+        data2 = indata2.temporal_subset(subset)
+    else:
+        data1 = indata1
+        data2 = indata2
 
-    
-    ## Make necessary modifications to the input data ##
-    
+    ## Calulcate the statistic
 
-
-    ## Calculate the temporal statistic ##
-
-    stat = calc_stat(indata1, indata2)
-
-
-
+    calc_stat = function_for_metric[metric]
+    stat = calc_stat(data1, data2)
 
     ## Write the output file ##
 
+    calc_stat.func_doc
+ 
     fout = cdms2.createDataset(outfile) 
 
-    # Global attributes
 
-    global_atts = {'institution': 'CSIRO Marine and Atmospheric Research, Melbourne, Australia',
-		   'contact': 'Damien Irving (irv033), damien.irving@csiro.au',
-		   'title': '%s' %(calc_stat.func_doc), 
-		   'created': 'Created %s using %s' %(datetime.utcnow().isoformat(), sys.argv[0])
-		  }
-
-    for key, value in global_atts.iteritems():
-	setattr(fout, key, value)
-
-
-    if metric[0:4] == 'temp':
-
-	# Axes
-
-	latitude = fout.copyAxis(fin1['lat'])
-	longitude = fout.copyAxis(fin1['lon'])
-	axeslist = [latitude,longitude]
-
-	# Variable
-
-	outvar = fout.createVariable(metric,'f',axeslist)
-
-	history = '%s between %s and %s\n' %(calc_stat.func_doc,infile1,infile2)
-	history += '%s SVN revision %s and %s\n' %(__file__,
-                                        	   __version__,
-                                        	   datetime.now().isoformat())
-
-	var_atts = {'long_name': '%s' %(calc_stat.func_doc),
-		    'name': '%s' %(metric),
-		    'history': '%s' %(history)
-		   } 
-
-	for key, value in var_atts.iteritems():
-	    setattr(outvar, key, value)
-
-	# Data
-
-	outdata = MV2.array(stat)
-	outdata = outdata.astype(numpy.float32)
-	outdata.setAxisList([latitude,longitude])
-	outdata.id = metric
-	
-	fout.write(outdata)
-
-    else:
-
-        months = ['january','february','march','april','may','june','july','august','september','october','november','december','djf','mam','jja','son','mjjaso','ndjfma','annual']
-	time = fout.copyAxis(fin1['time'])
-	axeslist = [time]
-	
-	for tt in range(0,len(months)):
-
-	    metric_name = var+'_'+months[tt]
-	    outvar = fout.createVariable(metric_name,'f',axeslist)
-
-	    history = '%s between %s and %s\n' %(calc_stat.func_doc,infile1,infile2)
-	    history += '%s SVN revision %s and %s\n' %(__file__,
-                                        	       __version__,
-                                        	       datetime.now().isoformat())
-
-	    var_atts = {'long_name': '%s' %(calc_stat.func_doc),
-			'name': '%s' %(metric_name),
-			'history': '%s' %(history)
-		       } 
-
-	    for key, value in var_atts.iteritems():
-		setattr(outvar, key, value)
-
-	    # Data
-
-	    outdata = MV2.array(stat[tt])
-	    outdata = outdata.astype(numpy.float32)
-	    outdata.id = metric_name
-
-            fout.write(outdata)
-	    del outdata
-
-            
-    fout.close()
-    fin1.close()
-    fin2.close()
- 
  
 if __name__ == '__main__':
     
@@ -234,8 +129,15 @@ if __name__ == '__main__':
     usage = "usage: %prog [options]"
     parser = OptionParser(usage=usage)
 
-    parser.add_option("-M","--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
-    parser.add_option("-r", "--raw",action="store_true",dest='raw',default=False,help="output raw results instead of ratio")
+    parser.add_option("-M","--manual",action="store_true",dest="manual",default=False,
+                      help="output a detailed description of the program")
+    parser.add_option("-r", "--region",dest='region',default=False,
+                      help="spatial region selector")
+    parser.add_option("-t", "--time",dest='time',default=False,
+                      help="time period selector")
+    parser.add_option("-s", "--subset",dest='subset', default=False,
+                      help="temporal subset selector")
+
 
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
@@ -247,25 +149,20 @@ if __name__ == '__main__':
 	Options:
             -M or --manual      Display this on-line manual page and exit
             -h or --help        Display a help/usage message and exit
-	    -r or --raw         Output raw result (for the first input file) instead of a ratio
+	    -r or --region      Spatial region over which to calculate statistic [default = entire]
+	    -t or --times       Time period (start_date, end_date) [default = entire]
+            -s or --subset      Temporal subset of the data (provide in_timescale out_timescale) [default = entire]
 	    
 	Input arguments:
 	    {metric}            Temporal correlation ('tempcorr'); temporal standard deviation ratio ('tempstd')
 	                        spatial correlation ('spatcorr'); spatial standard deviation ratio ('spatstd')
-	    {variable}          File variable names must be the same for both input files
-	                        
+	    {in_timescale}      
+                    
 	Description:
-            Python script to calculate a number of commonly used temporal statistics. Assumes that the input netCDF file contains
-	    a climatological mean field for each month (e.g. the file variable list might be: pr_january, pr_february, ..., pr_december). 
-
-	Note:
-            Need to load the cdat module
-	    The temproal standard deviation ratio is {input_file1} / {input_file2}
-	    For documentation of the methods used to calculate these metrics, see Section 2.2 of Irving et al (2011). Evaluating global 
-	    climate models for the Pacific island region. Climate Research 49, 169-187; doi:10.3354/cr01028 
+            Python script to calculate a number of commonly used statistics.
 
 	Author:
-            Damien Irving, Jan 2012.
+            Damien Irving, Feb 2013.
 
 	Bugs:
             Please report any problems to: Damien.Irving@csiro.au
@@ -281,4 +178,17 @@ if __name__ == '__main__':
     print 'Input file 2: ', args[3]
     print 'Output_file: ', args[4]
 
-    main(args[0], args[1], args[2], args[3], args[4], options.raw)
+    # Prepare options #
+    
+    #Remove empty
+    for key in options:
+        if options[key] == False:    
+            del options[key]
+
+    select_opts = ['region', 'time']
+    selection = {}
+    for item in select_opts:
+        if options[item]:
+            selection[item] = options[item]
+
+    main(args[0], args[1], args[2], args[3], args[4], selection, options.subset)
