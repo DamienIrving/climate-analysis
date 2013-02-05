@@ -1,5 +1,6 @@
 """
 Collection of commonly used classes, functions and global variables
+for reading/writing variables to a netCDF file
 
 To import:
 
@@ -20,16 +21,7 @@ import numpy
 import cdutil
 import genutil
 import cdms2
-
-## CDAT Version 5.2 File are now written with compression and shuffling ##
-#You can query different values of compression using the functions:
-#cdms2.getNetcdfShuffleFlag() returning 1 if shuffling is enabled, 0 otherwise
-#cdms2.getNetcdfDeflateFlag() returning 1 if deflate is used, 0 otherwise
-#cdms2.getNetcdfDeflateLevelFlag() returning the level of compression for the deflate method
-#If you want to turn that off or set different values of compression use the functions:
-#cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
-#cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
-#cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
+#if hasattr(cdms2, 'setNetcdfDeflateFlag'):
 cdms2.setNetcdfShuffleFlag(0)
 cdms2.setNetcdfDeflateFlag(0)
 cdms2.setNetcdfDeflateLevelFlag(0)
@@ -37,6 +29,7 @@ cdms2.setNetcdfDeflateLevelFlag(0)
 
 
 ## Regions ##
+
 # The 3rd argument here works as follows:
 # - First two letters: 'c' or 'o' for closed or open upper/loweer bounds
 # - Third letter represents the search method: 
@@ -47,49 +40,33 @@ aus = cdms2.selectors.Selector(latitude=(-45, -10, 'cc'),
                                longitude=(110, 160, 'cc'))
 ausnz = cdms2.selectors.Selector(latitude=(-50, 0, 'cc'),
                                  longitude=(100, 185, 'cc'))
+emia = cdms2.selectors.Selector(latitude=(-10, 10, 'cc'),
+                                longitude=(165, 220, 'cc'))
+emib = cdms2.selectors.Selector(latitude=(-15, 5, 'cc'),
+                                longitude=(250, 290, 'cc'))
+emic = cdms2.selectors.Selector(latitude=(-10, 20, 'cc'),
+                                longitude=(125, 145, 'cc'))
+nino1 = cdms2.selectors.Selector(latitude=(-10, -5, 'cc'),
+                                 longitude=(270,280,'cc'))   
+nino2 = cdms2.selectors.Selector(latitude=(-5, 0, 'cc'),
+                                 longitude=(270, 280, 'cc'))
+nino12 = cdms2.selectors.Selector(latitude=(-10, 0, 'cc'),
+                                  longitude=(270, 280, 'cc'))
+nino3 = cdms2.selectors.Selector(latitude=(-5, 5, 'cc'),
+                                 longitude=(210, 270, 'cc'))
+nino34 = cdms2.selectors.Selector(latitude=(-5, 5, 'cc'),
+                                  longitude=(190, 240, 'cc'))
+nino4 = cdms2.selectors.Selector(latitude=(-5, 5, 'cc'),
+                                 longitude=(160, 210, 'cc'))
 wgreenwhich = cdms2.selectors.Selector(latitude=(-90, 90, 'cc'),
                                        longitude=(-180, 180, 'cc'))
 wdateline = cdms2.selectors.Selector(latitude=(-90, 90, 'cc'),
                                      longitude=(0, 360, 'cc'))
 
 
-## Colours ##
-
-blue = ['#EAF4FF', '#DFEFFF', '#BFDFFF', '#95CAFF', '#55AAFF',
-        '#0B85FF', '#006AD5', '#004080', '#002B55', '#001B35']
-
-brown = ['#FFFAEA', '#FFF8DF', '#FFEFBF', '#FFE495', '#FFD555',
-         '#FFC20B', '#D59F00', '#806000', '#554000', '#352800']
-
-hot = ['#FFFFEA', '#FFFFDF', '#FFFF95', '#FFFF0B', '#FFAA0B',
-       '#FF660B', '#FF0B0B', '#800000', '#550000', '#350000']
-
-red = ['#FFEAEA', '#FFDFDF', '#FFBFBF', '#FF9595', '#FF5555',
-       '#FF0B0B', '#D50000', '#800000', '#550000', '#350000']
-
-green = ['#F4FFEA', '#EFFFDF', '#DFFFBF', '#CAFF95', '#AAFF55',
-         '#85FF0B', '#6AD500', '#408000', '#2B5500', '#1B3500']
-
-purple = ['#F4EAFF', '#EFDFFF', '#DFBFFF', '#CA95FF', '#AA55FF',
-          '#850BFF', '#6A00D5', '#400080', '#2B0055', '#1B0035']
-
-grey = ['#FFFFFF', '#EBEBEB', '#E6E6E6', '#DCDCDC', 
-        '#D2D2D2', '#CCCCCC', '#787878', '#666666', 
-        '#4B4B4B', '#333333', '#1E1E1E', '#000000']
-
-jet = ['#001B35', '#000080', '#0000D5', '#006AD5', 
-       '#55AAFF', '#55FFFF', '#55FFAA', '#D5FF55', 
-       '#FFD555', '#FF850B', '#D51B00', '#800000', '#350000']
-
-ipccrain = ['#FFF295', '#FFD555', '#FF850B', '#D55000', 
-            '#D50000', '#550040', '#600080', '#000080', 
-            '#0000D5', '#0B85FF', '#55AAFF', '#95CAFF']
-
-grey = '#CCCCCC'
-white = '#FFFFFF'
-
 
 ## Classes/functions ##
+
 
 def convert_units(data):
     """Converts the units of the data.
@@ -154,6 +131,7 @@ def _extract_region(region):
 	sys.exit()
 	    
     return latitude, longitude
+
 
 def _get_datetime(times):
     """Returns a datetime instance for a given list dates/times
@@ -236,6 +214,12 @@ class InputData:
             * longitude='(120, 165)'
             * region='aus'
             * time=('1979-01-01', '2000-12-31') or slice(index1,index2,step)
+	      (i.e. selects the time period of interest)
+	    * agg=('DJF', False)
+	      (i.e. aggregates the data into a timeseries of DJF values)
+	      (2nd element of the tuple indicates where the climatology
+	      is desired)
+	       
 	
 	    Note that self.data has all the attributes and methods
 	    of a typical cdms2 variable. For instance:
@@ -253,7 +237,8 @@ class InputData:
 
         input_order = temp_data.getOrder()
         
-        assert hasattr(temp_data, 'missing_value')
+        assert hasattr(temp_data, 'missing_value'), 
+        'Input variable must have missing_value attribute'
 
         del temp_data
        
@@ -275,94 +260,42 @@ class InputData:
             try:
                 region = globals()[kwargs['region']]
                 kwargs['latitude'], kwargs['longitude'] = _extract_region(region)
+                self.minlat, self.maxlat = kwargs['latitude']
+                self.minlon, self.maxlon = kwargs['longitude']
 	    except KeyError:
                 print 'region not defined - using all spatial data...'
 	    
 	    del kwargs['region']
 
-        # Remove empty kwargs #
+        # Prepare kwargs #
 
-        for key in kwargs:
+        for key in kwargs:  #remove None values
             if not kwargs[key]:
 	        del kwargs[key]
         
+	if kwargs.has_key('agg'):
+	    aggregate = kwargs['agg']
+	    del kwargs['agg']
+	else:
+	    aggregate = False
+	    
 
 	## Set object attributes ##
 	
         data = infile(var_id, **kwargs)
 
-	self.data = data
-        self.fname = fname
+        if aggregate:
+	    self.data = temporal_aggregation(data, aggregate[0], climatology=aggregate[1])
+	else:
+            self.data = data
+        
+	self.fname = fname
 	self.id = var_id
 	self.global_atts = infile.attributes
 	
 	infile.close()
 	
-
-    def temporal_subset(self, output_timescale, climatology=False):
-        """Takes a temporal subset of the data.
-        
-        **Arguments**
-        
-        *output_timescale*
-            Can be 
-            * SEASONALCYCLE (i.e. DJF/MAM/JJA/SON)
-            * ANNUALCYCLE (i.e. JAN/FEB/MAR/.../DEC)
-            * YEAR
-	    * DJF,MAM,JJA,SON
-	    * JAN,FEB,MAR,...,DEC
-            * Any custom season (e.g. MJJASO, DJFM)
-
-        **Reference**
-            http://www2-pcmdi.llnl.gov/cdat/source/api-reference/cdutil.times.html
-
-        """
-
-        ## Find input timescale ##
- 
-        time_axis = self.data.getTime().asComponentTime()
-        input_timescale = _get_timescale(_get_datetime(time_axis[0:2]))
-        
-        
-        ## Set time bounds ##
-
-        daily_freq = {'hourly': 24, '6hourly': 4, '12hourly': 2, 'daily': 1}
-
-        if input_timescale in daily_freq.keys():
-            cdutil.setTimeBoundsDaily(self.data, frequency=daily_freq[input_timescale])
-        elif input_timescale == 'monthly':
-            cdutil.setTimeBoundsMonthly(self.data)
-        elif input_timescale == 'yearly':
-            cdutil.setTimeBoundsYearly(self.data)
-        else:
-            print 'Unrecognised input timescale.'
-            print 'Must be daily, monthly or yearly.'
-            sys.exit(1)
-        
-        ## Extract subset of interest ##
-        
-	accepted_timescales = ['SEASONALCYCLE', 'ANNUALCYCLE', 'YEAR',
-	                       'DJF', 'MAM', 'JJA', 'SON',
-			       'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-                               'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-        
-        end = '.climatology(self.data)' if climatology else '(self.data)'
-        if output_timescale in accepted_timescales:
-	    function = 'cdutil.' + output_timescale + end
-            outdata = eval(function)
-
-	elif output_timescale in 'JFMAMJJASONDJFMAMJJASOND':
-            custom = cdutil.Seasons(output_timescale)
-            outdata = custom(self.data)
-
-        else:
-            print 'Unrecognised temporal subset.'
-            sys.exit(1)
-    
-
-        return outdata
-
-    
+   
     def picker(self, **kwargs):
 	"""Takes input data and extracts non-contigious values of an axis.
 
@@ -383,17 +316,92 @@ class InputData:
         
         return self.data(pick)
 
+     
+     def months_years(self):
+        """Returns arryas containing the months and years"""        
+ 
+        time = self.data.getTime.asComponentTime()
+        years = []
+        months = []
+    
+	for i in range(0,len(time)):
+            years.append(int(str(time[i]).split('-')[0]))
+	    months.append(int(str(time[i]).split('-')[1]))    
 
-#    def time_mean(self,season):
-        
+        return months, years
+
 
 #    def smooth
 #    def eddy
 
 
+def temporal_aggregation(data, output_timescale, climatology=False):
+    """Takes a temporal aggregate of the data.
+    (e.g. turns a monthly timeseries into a seasonal timeseries)
+
+    **Arguments**
+
+    *output_timescale*
+        Can be 
+        * SEASONALCYCLE (i.e. DJF/MAM/JJA/SON)
+        * ANNUALCYCLE (i.e. JAN/FEB/MAR/.../DEC)
+        * YEAR
+	* DJF,MAM,JJA,SON
+	* JAN,FEB,MAR,...,DEC
+        * Any custom season (e.g. MJJASO, DJFM)
+
+    **Reference**
+        http://www2-pcmdi.llnl.gov/cdat/source/api-reference/cdutil.times.html
+
+    """
+
+    ## Find input timescale ##
+
+    time_axis = data.getTime().asComponentTime()
+    input_timescale = _get_timescale(_get_datetime(time_axis[0:2]))
+
+
+    ## Set time bounds ##
+
+    daily_freq = {'hourly': 24, '6hourly': 4, '12hourly': 2, 'daily': 1}
+
+    if input_timescale in daily_freq.keys():
+        cdutil.setTimeBoundsDaily(data, frequency=daily_freq[input_timescale])
+    elif input_timescale == 'monthly':
+        cdutil.setTimeBoundsMonthly(data)
+    elif input_timescale == 'yearly':
+        cdutil.setTimeBoundsYearly(data)
+    else:
+        print 'Unrecognised input timescale.'
+        print 'Must be daily, monthly or yearly.'
+        sys.exit(1)
+
+    ## Extract subset of interest ##
+
+    accepted_timescales = ['SEASONALCYCLE', 'ANNUALCYCLE', 'YEAR',
+	                   'DJF', 'MAM', 'JJA', 'SON',
+			   'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                           'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+
+    end = '.climatology(data)' if climatology else '(data)'
+    if output_timescale in accepted_timescales:
+	function = 'cdutil.' + output_timescale + end
+        outdata = eval(function)
+
+    elif output_timescale in 'JFMAMJJASONDJFMAMJJASOND':
+        custom = cdutil.Seasons(output_timescale)
+        outdata = custom(data)
+
+    else:
+        print 'Unrecognised temporal subset.'
+        sys.exit(1)
+
+
+    return outdata
+
 
 def write_nefcdf(outfile_name, out_quantity, indata, 
-                 outdata, outvar_atts, out_axes):
+                 outdata, outvar_atts, out_axes, clear_history=False):
     """Writes an output netCDF file.
     
     Intended for use with a calculated quantity.
@@ -407,24 +415,34 @@ def write_nefcdf(outfile_name, out_quantity, indata,
         *outfile_name*
 	    string
 	
+        *out_quantity*
+            e.g. variable or statistic name
+          
 	*indata*
-            List of InputData instances
+            Tuple of InputData instances
 	
 	*outdata*
-	    List of numpy arrays, containing the data for 
+	    Tuple of numpy arrays, containing the data for 
             each output variable
 	
         *outvar_atts*
-            List of dictionaries, containing the attriubtes
-            for each output variable
+            Tuple of dictionaries, containing the attriubtes
+            for each output variable.
+            Suggested minumum attributes include: id, long_name, 
+            missing_value, units, history
 
         *out_axes*
-            List of the output variable axes (must be in order)
-            Should get generated using the cdat  getLatitide(), 
-            getLongitude() or getTime() methods.
+            Tuple of the output variable axes (must be in order tyx)
+            Should get generated using the cdat getTime() 
+            getLatitide() or getLongitude() methods.
     
     """
     
+    assert (type(indata) == tuple), 'indata argument must be a tuple, e.g. (data,)'
+    assert type(outdata) == tuple, 'outdata argument must be a tuple, e.g. (data,)'
+    assert type(outvar_atts) == tuple, 'outvar_atts argument must be a tuple, e.g. (atts,)'
+    assert type(out_axes) == tuple
+
     outfile = cdms2.open(outfile_name,'w')
     
     # Global attributes #
@@ -435,8 +453,11 @@ def write_nefcdf(outfile_name, out_quantity, indata,
         if att_name != "history":
             setattr(outfile, att_name, infile_global_atts[att_name])
     
-    old_history = infile_global_atts.attributes['history'] if ('history' in 
-                  infile_global_atts.keys()) else ''
+    if not clear_history:
+        old_history = infile_global_atts.attributes['history'] if ('history' in 
+                      infile_global_atts.keys()) else ''
+    else:
+        old_history = ''
     
     infile_names = ''
     for item in indata:
@@ -444,7 +465,7 @@ def write_nefcdf(outfile_name, out_quantity, indata,
         
     setattr(outfile, 'history', """%s: %s calculated from %s using %s, 
             format=NETCDF3_CLASSIC\n%s""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
-            out_quantity,infile_names,sys.argv[0],old_history))
+            out_quantity, infile_names, sys.argv[0], old_history))
 
 
     # Variables #
@@ -453,13 +474,13 @@ def write_nefcdf(outfile_name, out_quantity, indata,
     for axis in out_axes:
         axis_list.append(outfile.copyAxis(axis))
     
-    for var in outdata:
+    for i in range(0, len(outdata)):
 
-	var = cdms2.MV2.array(var)
+	var = cdms2.MV2.array(outdata[i])
 	var = var.astype(numpy.float32)
 	var.setAxisList(axis_list)
 
-	for key, value in outvar_atts.iteritems():
+	for key, value in outvar_atts[i].iteritems():
             setattr(var, key, value)
 
 	outfile.write(var)  
