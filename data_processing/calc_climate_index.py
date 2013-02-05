@@ -38,79 +38,12 @@ import math
 
 from datetime import datetime
 
-
-## Define global variables ##
-
-NINO1 = cdms2.selectors.Selector(latitude=(-10,-5,'cc'),longitude=(270,280,'cc'))   # the 'cc' means a closed interval [] e.g. [260,270]
-NINO2 = cdms2.selectors.Selector(latitude=(-5,0,'cc'),longitude=(270,280,'cc'))
-NINO12 = cdms2.selectors.Selector(latitude=(-10,0,'cc'),longitude=(270,280,'cc'))
-NINO3 = cdms2.selectors.Selector(latitude=(-5,5,'cc'),longitude=(210,270,'cc'))
-NINO34 = cdms2.selectors.Selector(latitude=(-5,5,'cc'),longitude=(190,240,'cc'))
-NINO4 = cdms2.selectors.Selector(latitude=(-5,5,'cc'),longitude=(160,210,'cc'))
-EMI_A = cdms2.selectors.Selector(latitude=(-10,10,'cc'),longitude=(165,220,'cc'))
-EMI_B = cdms2.selectors.Selector(latitude=(-15,5,'cc'),longitude=(250,290,'cc'))
-EMI_C = cdms2.selectors.Selector(latitude=(-10,20,'cc'),longitude=(125,145,'cc'))
-
-
-version_info = 'Created %s using %s \n' %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"),__file__) #,__version__)  #%(datetime.utcnow().isoformat(), sys.argv[0])
+module_dir = os.path.join(os.environ['HOME'],'dbirving','modules')
+sys.path.insert(0,module_dir)
+import netcdf_io
 
 
 ## Define relevant functions and classes ##
-
-
-class InputFile(object):
-    patterns = [
-        ('data',
-         True,
-         re.compile(r'(?P<variable_name>\S+)_(?P<dataset>\S+)_(?P<level>\S+)_(?P<timescale>\S+)_(?P<grid>\S+).nc'))  
-    ]
-    def __init__(self, fname):
-        self.fname = fname
-        self.atts = {}
-
-        basename = os.path.basename(fname)
-        for name, isfile, pattern in InputFile.patterns:
-            m = pattern.match(basename)
-            if m:
-                self.atts = m.groupdict()
-                self.type = name
-                self.isfile = isfile
-                break
-        if not self.atts:
-           raise ValueError("Unknown file type: " + fname)
-
-    def __repr__(self):
-        return self.fname
-
-    def __getattr__(self, key):
-        try:
-            return super(InputFile, self).__getattr__(key)
-        except AttributeError:
-            if key in self.atts:
-                return self.atts[key]
-            else:
-                raise
-
-
-def define_region(region_name):
-    
-    # map string region to selector object
-    if isinstance(region_name, basestring):
-        if region_name in globals():
-            region = globals()[region_name]
-	else:
-            print "Region is not defined in code"
-            sys.exit(1)
-    
-    for selector_component in region.components():
-        if selector_component.id == 'lat':
-            minlat = selector_component.spec[0]
-            maxlat = selector_component.spec[1]
-        elif selector_component.id == 'lon':
-            minlon = selector_component.spec[0]
-            maxlon = selector_component.spec[1]
-
-    return region,minlat,maxlat,minlon,maxlon
 
 
 def calc_monthly_climatology(base_timeseries):
@@ -124,8 +57,15 @@ def calc_monthly_climatology(base_timeseries):
     return monthly_climatology_mean, monthly_climatology_std
 
 
-def calc_monthly_anomaly(complete_timeseries,base_timeseries,months):
-    """Calculates the monthly anomaly"""  # assumes that the base_timeseries starts in January
+def calc_monthly_anomaly(complete_timeseries, base_timeseries, months):
+    """Calculates the monthly anomaly
+    
+    **Arguments**
+    
+    *base_timeseries*
+        It is assumed that the base period starts in January
+    
+    """ 
     
     # Calculate the monthly climatology #
     
@@ -135,7 +75,7 @@ def calc_monthly_anomaly(complete_timeseries,base_timeseries,months):
     
     ntime_complete = len(complete_timeseries)
     monthly_anomaly = numpy.ma.zeros(ntime_complete)
-    for i in range(0,ntime_complete):
+    for i in range(0, ntime_complete):
 	month_index = months[i]
 	monthly_anomaly[i] = numpy.ma.subtract(complete_timeseries[i], monthly_climatology_mean[month_index-1])
     
@@ -233,28 +173,22 @@ def calc_error(fin,regions):
     return error_timeseries
 
 
-def calc_reg_anomaly_timeseries(reg,fin,ifile,base_period,months):
+def calc_reg_anomaly_timeseries(data_complete, data_base):
     """Calculates the anomaly timeseries for a given region"""
-    
-    region = globals()[reg]
-	
-    var_complete=fin(ifile.variable_name,region,order='tyx')
-    var_base=fin(ifile.variable_name,region,time=(base_period[0],base_period[1]),order='tyx')
 
-    assert (hasattr(var_complete, 'missing_value')), 'Input variable must have missing_value attribute'
+    ntime_complete, nlats, nlons = numpy.shape(data_complete)
+    ntime_base, nlats, nlons = numpy.shape(data_base)
 
-    ntime_complete,nlats,nlons = numpy.shape(var_complete)
-    ntime_base,nlats,nlons = numpy.shape(var_base)
+    data_complete_flat = numpy.ma.reshape(data_complete, (int(ntime_complete), int(nlats * nlons)))    # Flattens the spatial dimension
+    data_base_flat = numpy.ma.reshape(data_base,(int(ntime_base), int(nlats * nlons)))
 
-    var_complete_flat = numpy.ma.reshape(var_complete,(int(ntime_complete),int(nlats * nlons)))    # Flattens the spatial dimension
-    var_base_flat = numpy.ma.reshape(var_base,(int(ntime_base),int(nlats * nlons)))
+    # Calculate the anomalies #
 
-   # Calculate the anomalies #
+    complete_timeseries = numpy.ma.mean(data_complete_flat, axis=1)
+    base_timeseries = numpy.ma.mean(data_base_flat, axis=1)
 
-    complete_timeseries = numpy.ma.mean(var_complete_flat,axis=1)
-    base_timeseries = numpy.ma.mean(var_base_flat,axis=1)
-
-    anomaly_timeseries = calc_monthly_anomaly(complete_timeseries,base_timeseries,months)
+    anomaly_timeseries = calc_monthly_anomaly(complete_timeseries, 
+                         base_timeseries, complete_timeseries.months()[0])
 
 
     return anomaly_timeseries
@@ -331,19 +265,17 @@ def calc_IEMI(index,ifile,efile,outfile_name,base_period):
     fin.close()
     
 
-def calc_NINO(index,ifile,efile,outfile_name,base_period):
+def calc_NINO(index, ifile, var_id, base_period):
     """Calculates the NINO SST indices"""
     
-    ## Calculate the index ##
+    # Read the input data #
     
-    # Read the input file #
-    
-    fin, time, years, months = read_input(ifile)
-    region,minlat,maxlat,minlon,maxlon = define_region(index)
+    indata_complete = netcdf_io.InputData(ifile, var_id, region='nino'+index[4:])
+    indata_base = netcdf_io.InputData(ifile, var_id, region='nino'+index[4:], time=base_period)  
     
     # Calculate the NINO index
     
-    NINO_timeseries = calc_reg_anomaly_timeseries(index,fin,ifile,base_period,months)
+    NINO_timeseries = calc_reg_anomaly_timeseries(indata_complete, indata_base)
  
  
     ## Calculate the error ##
@@ -411,21 +343,15 @@ def calc_NINO_new(index,ifile,efile,outfile_name,base_period):
     fin.close()
 
 
-function_for_index = {
-    'NINO':        calc_NINO,
-    'NINO_new':    calc_NINO_new,
-    'IEMI':        calc_IEMI,
-    'SAM':         calc_SAM,
-                	  }     
-
-def main(index,infile_name,efile,outfile_name,base_period):
+def main(index, infile_name, outfile_name, base_period):
     """Run the program"""
-
-    ## Get the input file attributes ##
-
-    ifile = InputFile(infile_name)
         
     ## Initialise relevant index function ##
+    
+    function_for_index = {'NINO': calc_NINO,
+                          'NINO_new': calc_NINO_new,
+                          'IEMI': calc_IEMI,
+                          'SAM': calc_SAM}   
     
     if index[0:4] == 'NINO':
         if index == 'NINOCT' or index == 'NINOWP':
@@ -437,8 +363,15 @@ def main(index,infile_name,efile,outfile_name,base_period):
 
     ## Calculate the index ##
 
-    calc_index(index,ifile,efile,outfile_name,base_period)
+    assert (base_period[0].split('-')[1] == 1), 'the base period must start in January'    
+
+    index_data, axes, atts = netcdf_io.calc_index(index, infile_name, base_period)
     
+    ## Write the outfile ##
+    
+    netcdf_io.write_netcdf(index_data, axes, atts)
+
+        
  
 if __name__ == '__main__':
 
@@ -456,7 +389,7 @@ if __name__ == '__main__':
     if options.manual == True or len(args) != 3:
 	print """
 	Usage:
-            cdat calc_climate_index.py [-M] [-h] [-e] {index} {input file} {output file}
+            cdat calc_climate_index.py [-M] [-h] [-e] {index} {input file} {variable} {output file}
 
 	Options
             -M  ->  Display this on-line manual page and exit
@@ -487,5 +420,5 @@ if __name__ == '__main__':
         print 'Input file:', args[1]
         print 'Output file:', args[2]
 
-        main(args[0],args[1],options.error,args[2],options.base_period)
+        main(args[0], args[1], args[2], options.error, options.base_period)
     

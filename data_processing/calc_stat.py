@@ -25,100 +25,109 @@ __version__= '$Revision$'
 
 import sys
 import os
-module_dir = os.path.join(os.environ['HOME'],'dbirving','modules')
-sys.path.insert(0,module_dir)
-
 
 from optparse import OptionParser
 from datetime import datetime
 
-import cdms2 
-if hasattr(cdms2, 'setNetcdfDeflateFlag'):
-    cdms2.setNetcdfDeflateFlag(0)
-    cdms2.setNetcdfDeflateLevelFlag(0)
-    cdms2.setNetcdfShuffleFlag(0)
-    
-from cdms2 import MV2
 import numpy
 from numpy import *
 
 import genutil
+import cdms2 
+
+module_dir = os.path.join(os.environ['HOME'],'dbirving','modules')
+sys.path.insert(0,module_dir)
+import netcdf_io
 
 
-
-def axis_check(data1,data2):
+def temporal_axis_check(data1, data2):
     """Check whether the input data are on the same axis"""
     
-    dims1 = numpy.shape(numpy.squeeze(data1))
-    nlats1 = dims1[0]
-    nlons1 = dims1[1]
-    
-    dims2 = numpy.shape(numpy.squeeze(data2))
-    nlats2 = dims2[0]
-    nlons2 = dims2[1]
-    
-    if (nlats1 != nlats2):
-        sys.exit('Input data do not all have the same latitude axis')
-    elif (nlons1 != nlons2):
-        sys.exit('Input data do not all have the same longitude axis')
-    else:
-        return nlats1,nlons1
+    # Ensure that both data have the same time axis #
+
+    assert len(data1.getTime()) > 1.0
+    assert len(data1.getTime()) == len(data2.getTime())    
+
+    data1_hasspatial = 'yx' in data1.getOrder()
+    data2_hasspatial = 'yx' in data2.getOrder()
+
+    if data1_hasspatial and 'yx' in data2_hasspatial:
+        assert len(data1.getLatitude()) == len(data2.getLatitude())
+        assert len(data1.getLongitude()) == len(data2.getLongitude())
+
+    return data1_hasspatial, data2_hasspatial
 
 
-
-def tempcorr(data1_month_ave,data2_month_ave,raw,nlats,nlons):
-    """Temporal correlation"""
+def temporal_corr(data1, data2):
+    """Temporal correlation.
     
-    axis_check() #time axis
-    
-    tempcorr_data1_data2=numpy.zeros((nlats,nlons))
-    for ii in range(0,nlats):
-	for hh in range(0,nlons):	
-	    data1=data1_month_ave[:,ii,hh]
-	    data2=data2_month_ave[:,ii,hh]
-	    data1=data1.compressed() 
-	    data2=data2.compressed()  
-	    if len(data1) == 0.0 or len(data2) == 0.0:
-	        tempcorr_data1_data2[ii,hh] = 1e20
-	    else:
-	        tempcorr_data1_data2[ii,hh]=genutil.statistics.correlation(data1,data2,centered=1,biased=1)
-    
-    return tempcorr_data1_data2
-    
-    
-    
-function_for_metric = {'tempcorr': tempcorr}    
-    
-
-def main(metric, infile1, var1, infile2, var2, selection, subset):
-    """Run the program.
-    
-    INCLUDE MORE DETAILS
+    Comparison can be between data of order:
+    * tyx vs. tyx
+    * tyx vs. t
+    * t vs. tyx
 
     """
     
+    data1_hasspat, data2_hasspat = temporal_axis_check(data1, data2)
+
+    primary_data, secondary_data = data2, data1 if (data2_hasspat 
+                                   and not data1_hasspat) else data1, data2
+
+    if (data1_hasspat + data2_hasspat) >= 1:
+        output_axes = (primary_data.getTime(),
+                       primary_data.getLatitude(),
+                       primary_Data.getLongitude(),)
+        nlats = len(primary_data.getLatitude())
+        nlons = len(primary_data.getLongitude())
+        tempcorr = numpy.zeros((nlats,nlons))
+    
+	for y in range(0,nlats):
+	    for x in range(0,nlons):	
+		input1 = primary_data[:, y, x].compressed()
+                input2 = secondary_data[:, y, x].compressed() if (data1_hasspat 
+                         + data2_hasspat) == 2 else secondary_data[:]
+                
+                if len(input1) == 0.0 or len(input2) == 0.0:
+	            tempcorr[ii,hh] = 1e20
+		else:
+	            tempcorr[ii,hh] = genutil.statistics.correlation(input1,
+                                      input2, centered=1, biased=1)
+
+    else:
+        output_axes = primary_data.getTime()       
+        tempcorr = genutil.statistics.correlation(primary_data, 
+                   secondary_data, centered=1, biased=1)
+    
+    attributes = {'id': 'tempcorr',
+                  'long_name': 'temporal correlation',
+                  'units': '',
+                  'missing_value': 1e20, 
+                  'history': 'genutil.statistics.correlation(centered=1, biased=1)'
+                 }
+                  
+
+    return tempcorr, output_axes, attributes
+    
+
+def main(metric, infile1, var1, infile2, var2, outfile, **selection):
+    """Run the program."""
+    
     ## Read input data from both input files ##
 
-    indata1 = my_modules.InputData(infile1, var1, **selection)
-    indata2 = my_modules.InputData(infile2, var2, **selection)
-    
-    if subset:
-        data1 = indata1.temporal_subset(subset)
-        data2 = indata2.temporal_subset(subset)
-    else:
-        data1 = indata1
-        data2 = indata2
+    indata1 = netcdf_io.InputData(infile1, var1, **selection)
+    indata2 = netcdf_io.InputData(infile2, var2, **selection)
 
     ## Calulcate the statistic
 
+    function_for_metric = {'tempcorr': tempcorr}
+    
     calc_stat = function_for_metric[metric]
-    stat = calc_stat(data1, data2)
+    stat, axes, atts = calc_stat(indata1, indata2)
 
     ## Write the output file ##
-
-    calc_stat.func_doc
  
-    fout = cdms2.createDataset(outfile) 
+    netcdf_io.write_netcdf(outfile, metric, (indata1, indata2), (stat,), 
+                          (atts,), axes, clear_axes=True)   
 
 
  
@@ -135,8 +144,8 @@ if __name__ == '__main__':
                       help="spatial region selector")
     parser.add_option("-t", "--time",dest='time',default=False,
                       help="time period selector")
-    parser.add_option("-s", "--subset",dest='subset', default=False,
-                      help="temporal subset selector")
+    parser.add_option("-a", "--agg",dest='agg', default=None,
+                      help="temporal aggregation selector")
 
 
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
@@ -144,19 +153,19 @@ if __name__ == '__main__':
     if options.manual == True or len(args) != 5:
 	print """
 	Usage:
-            temporal_metrics.py [-M] {metric} {variable} {input_file1} {input_file2} {output_file}
+            temporal_metrics.py [-M] {metric} {input_file1} {variable1} {input_file2} {variable2} {output_file}
 
 	Options:
             -M or --manual      Display this on-line manual page and exit
             -h or --help        Display a help/usage message and exit
 	    -r or --region      Spatial region over which to calculate statistic [default = entire]
-	    -t or --times       Time period (start_date, end_date) [default = entire]
-            -s or --subset      Temporal subset of the data (provide in_timescale out_timescale) [default = entire]
+	    -t or --time        Time period selector [default = entire]. Tuple: (start_date, end_date)
+            -a or --agg         Temporal aggregation selector [default = None]. Tuple: (season, climatology)
 	    
 	Input arguments:
-	    {metric}            Temporal correlation ('tempcorr'); temporal standard deviation ratio ('tempstd')
-	                        spatial correlation ('spatcorr'); spatial standard deviation ratio ('spatstd')
-	    {in_timescale}      
+	    {metric}            Temporal correlation ('tempcorr')
+	    {climatology}       True/False
+            {season}            
                     
 	Description:
             Python script to calculate a number of commonly used statistics.
@@ -173,22 +182,23 @@ if __name__ == '__main__':
     ## Read the input data and repeat back to user ##
 
     print 'Metric: ', args[0]
-    print 'Variable: ', args[1]
-    print 'Input file 1: ', args[2]
+    print 'Input file 1: ', args[1]
+    print 'Variable: ', args[2]
     print 'Input file 2: ', args[3]
-    print 'Output_file: ', args[4]
+    print 'Variable: ', args[4]
+    print 'Output file: ', args[5]
 
     # Prepare options #
     
-    #Remove empty
+    #Remove empty options
     for key in options:
-        if options[key] == False:    
+        if not options[key]:    
             del options[key]
 
-    select_opts = ['region', 'time']
-    selection = {}
-    for item in select_opts:
-        if options[item]:
-            selection[item] = options[item]
+#    select_opts = ['region', 'time']
+#    selection = {}
+#    for item in select_opts:
+#        if options[item]:
+#            selection[item] = options[item]
 
-    main(args[0], args[1], args[2], args[3], args[4], selection, options.subset)
+    main(args[0], args[1], args[2], args[3], args[4], args[5], options)
