@@ -4,9 +4,18 @@ for reading/writing variables to a netCDF file
 
 To import:
 
-module_dir = os.path.join(os.environ['HOME'],'dbirving','modules')
-sys.path.insert(0,module_dir)
+module_dir = os.path.join(os.environ['HOME'], 'modules')
+sys.path.insert(0, module_dir)
 
+Included functions:
+convert_units        -- Convert units
+scale_offset         -- Apply scaling and offset factors
+temproal_aggregation -- Create a temporal aggregate of 
+                        the input data
+write_netcdf         -- Write an output netCDF file
+
+Included classes:
+InputData -- Extract and subset data
 
 """
 
@@ -69,16 +78,14 @@ wdateline = cdms2.selectors.Selector(latitude=(-90, 90, 'cc'),
 
 
 def convert_units(data):
-    """Converts the units of the data.
+    """Convert units.
         
     kg m-2 s-1 or K will be converted to 
-    mm/day or Celsius
+    mm/day or Celsius.
 
-    **Arguments**
-    
-    *data*
-        InputData instance or cdms2 transient variable
-        (i.e. must have a 'units' attribute)
+    Arguments:
+    data -- InputData instance or cdms2 transient variable
+            (i.e. must have a 'units' attribute)
 
     """
     #There would be scope to use the genutil udunits module
@@ -105,7 +112,7 @@ def convert_units(data):
 
 
 def scale_offset(data, scale=1.0, offset=0.0):
-    """Applies scaling and offset factors to data.
+    """Apply scaling and offset factors.
     
     new_data = (old_data*scale) + offset
 
@@ -116,7 +123,7 @@ def scale_offset(data, scale=1.0, offset=0.0):
     
 
 def _extract_region(region):
-    """Obtains lat and lon info from a cdms2.selector region"""
+    """Obtain lat and lon info from a cdms2.selector region"""
     
     if isinstance(region, cdms2.selectors.Selector):
 	for selector_component in region.components():
@@ -134,19 +141,18 @@ def _extract_region(region):
 
 
 def _get_datetime(times):
-    """Returns a datetime instance for a given list dates/times
+    """Return a datetime instance for a given list dates/times.
     
-    **Arguments**
+    Arguments:
 
-    *times*
-        List values must be expressed in component time, 
-        consistent with the cdat asComponentTime() method
-        e.g. 1979-01-01 12:00:0.0  
+    times -- List values must be expressed in component time, 
+             consistent with the cdat asComponentTime() method
+             e.g. 1979-01-01 12:00:0.0  
 
     """
 
     datetimes = []
-    for i in range(0,len(times)
+    for i in range(0,len(times)):
         year, month, day = str(time_axis[0]).split(' ')[0].split('-')
         hour, minute, second = str(time_axis[0]).split(' ')[1].split('-')
         
@@ -157,14 +163,12 @@ def _get_datetime(times):
 
 
 def _get_timescale(times):
-    """Detetimes the timescale.
+    """Get the timescale.
     
-    **Arguments**
-        
-    *times*
-        Tuple containing two datetime instances.
-        The difference between them is used to 
-        determine the timescale. 
+    Arguments:
+    times -- Tuple containing two datetime instances.
+             The difference between them is used to 
+             determine the timescale. 
 
     """
 
@@ -173,9 +177,9 @@ def _get_timescale(times):
     thresholds = {'yearly': datetime.timedelta(days=365),
                   'monthly': datetime.timedelta(days=27),
                   'daily': datetime.timedelta(days=1),
-                  '12hourly': datetime.timedelta(hours=12)
+                  '12hourly': datetime.timedelta(hours=12),
                   '6hourly': datetime.timedelta(hours=6),
-                  'hourly': datetime.timedelta(hours=1)]
+                  'hourly': datetime.timedelta(hours=1)}
     
     timescale = None
     for key in thresholds:
@@ -192,43 +196,33 @@ def _get_timescale(times):
 
 
 class InputData:
-    """
-    Simple data extraction and subsetting/manipulation.
-    
-    """
+    """Extract and subset data."""
 
     def __init__(self, fname, var_id, **kwargs):
-	"""Takes an input file and extracts the desired data.
-
-	**Arguments:**
-
-	*fname*, *var_id*
-	    File name and id of the variable to extract
-
-	**Optional arguments**
-
-	    Valid key word arguments include (with examples)
-            * grid
-            * latitude='(-30, 30)'
-            * level=(1000.)
-            * longitude='(120, 165)'
-            * region='aus'
-            * time=('1979-01-01', '2000-12-31') or slice(index1,index2,step)
-	      (i.e. selects the time period of interest)
-	    * agg=('DJF', False)
-	      (i.e. aggregates the data into a timeseries of DJF values)
-	      (2nd element of the tuple indicates where the climatology
-	      is desired)
-	       
+	"""Extract desired data from an input file.
 	
-	    Note that self.data has all the attributes and methods
-	    of a typical cdms2 variable. For instance:
-	    * self.data.getLatitude()
-	    * self.data.getLatitude()
-	    * self.data.getTime()
-	    * self.data.attributes (dictionary incl. _FillValue, units etc)
+	Keyword arguments (with examples):
+	grid      -- 
+        latitude  -- (-30, 30)
+        level     -- (1000.)
+        longitude -- (120, 165)
+        region    -- aus
+        time      -- ('1979-01-01', '2000-12-31'), or 
+                     slice(index1,index2,step)
+	agg       -- ('DJF', False)
+	             (i.e. aggregates the data into 
+                      a timeseries of DJF values)
+	             (2nd element of the tuple indicates 
+                      whether the climatology is desired)
 	
-	"""
+        self.data has all the attributes and methods
+	of a typical cdms2 variable. For instance:
+        - self.data.getLatitude()
+	- self.data.getLatitude()
+	- self.data.getTime()
+	- self.data.attributes (dictionary incl. _FillValue, units etc)       
+	
+        """
         
         ## Read the input data to set order & check missing value ##
 
@@ -237,7 +231,7 @@ class InputData:
 
         input_order = temp_data.getOrder()
         
-        assert hasattr(temp_data, 'missing_value'), 
+        assert hasattr(temp_data, 'missing_value'), \
         'Input variable must have missing_value attribute'
 
         del temp_data
@@ -249,8 +243,8 @@ class InputData:
 
         order = 'tyxz'
         for item in 'tyxz':
-            if item in input_order:
-                order = order.replace(item,'')
+            if not item in input_order:
+                order = order.replace(item, '')
         
         kwargs['order'] = order
 
@@ -297,18 +291,15 @@ class InputData:
 	
    
     def picker(self, **kwargs):
-	"""Takes input data and extracts non-contigious values of an axis.
+	"""Extract non-contigious values of an axis.
 
-	**Arguments:**
+	Keyword arguments (with examples):
 
-	**Optional arguments**
-
-	    Valid key word arguments include (with examples)
-            * latitude='(-30, 30)'
-            * level=(100, 850, 200)
-            * longitude='(120, 135, 65)'
-            * time=('1979-01-01', '2000-12-31') or slice(index1,index2,step)
-
+        latitude  -- (-30, 30)
+        level     -- (100, 850, 200)
+        longitude -- (120, 135, 65)
+        time      -- ('1979-01-01', '2000-12-31'), or 
+                     slice(index1,index2,step)        
         
         """
         
@@ -317,18 +308,28 @@ class InputData:
         return self.data(pick)
 
      
-     def months_years(self):
-        """Returns arryas containing the months and years"""        
+    def months(self):
+        """Return array containing the months"""        
  
-        time = self.data.getTime.asComponentTime()
-        years = []
+        time = self.data.getTime().asComponentTime()
+        
         months = []
-    
-	for i in range(0,len(time)):
-            years.append(int(str(time[i]).split('-')[0]))
+	for i in range(0, len(time)):
 	    months.append(int(str(time[i]).split('-')[1]))    
 
-        return months, years
+        return months
+
+
+    def years(self):
+        """Return array containing the years"""        
+ 
+        time = self.data.getTime.asComponentTime()
+        
+        years = []
+	for i in range(0, len(time)):
+            years.append(int(str(time[i]).split('-')[0]))
+	        
+        return years
 
 
 #    def smooth
@@ -336,22 +337,20 @@ class InputData:
 
 
 def temporal_aggregation(data, output_timescale, climatology=False):
-    """Takes a temporal aggregate of the data.
-    (e.g. turns a monthly timeseries into a seasonal timeseries)
+    """Create a temporal aggregate of the input data.
+    (e.g. turn a monthly timeseries into a seasonal timeseries)
 
-    **Arguments**
+    Arguments:
+    output_timescale can be: 
+    - SEASONALCYCLE (i.e. DJF/MAM/JJA/SON)
+    - ANNUALCYCLE (i.e. JAN/FEB/MAR/.../DEC)
+    - YEAR
+    - DJF,MAM,JJA,SON
+    - JAN,FEB,MAR,...,DEC
+    - Any custom season (e.g. MJJASO, DJFM)
 
-    *output_timescale*
-        Can be 
-        * SEASONALCYCLE (i.e. DJF/MAM/JJA/SON)
-        * ANNUALCYCLE (i.e. JAN/FEB/MAR/.../DEC)
-        * YEAR
-	* DJF,MAM,JJA,SON
-	* JAN,FEB,MAR,...,DEC
-        * Any custom season (e.g. MJJASO, DJFM)
-
-    **Reference**
-        http://www2-pcmdi.llnl.gov/cdat/source/api-reference/cdutil.times.html
+    Reference:
+    http://www2-pcmdi.llnl.gov/cdat/source/api-reference/cdutil.times.html
 
     """
 
@@ -400,9 +399,9 @@ def temporal_aggregation(data, output_timescale, climatology=False):
     return outdata
 
 
-def write_nefcdf(outfile_name, out_quantity, indata, 
+def write_netcdf(outfile_name, out_quantity, indata, 
                  outdata, outvar_atts, out_axes, clear_history=False):
-    """Writes an output netCDF file.
+    """Write an output netCDF file.
     
     Intended for use with a calculated quantity.
     Many attributes and axes are copied from the
@@ -410,37 +409,32 @@ def write_nefcdf(outfile_name, out_quantity, indata,
     
     All output variables must have the axes.
     
-    **Arguments**
-        
-        *outfile_name*
-	    string
-	
-        *out_quantity*
-            e.g. variable or statistic name
-          
-	*indata*
-            Tuple of InputData instances
-	
-	*outdata*
-	    Tuple of numpy arrays, containing the data for 
-            each output variable
-	
-        *outvar_atts*
-            Tuple of dictionaries, containing the attriubtes
-            for each output variable.
-            Suggested minumum attributes include: id, long_name, 
-            missing_value, units, history
-
-        *out_axes*
-            Tuple of the output variable axes (must be in order tyx)
-            Should get generated using the cdat getTime() 
-            getLatitide() or getLongitude() methods.
+    Arguments (incl. type/description):
+    outfile_name -- string
+    out_quantity -- e.g. variable or statistic name
+    indata       -- Tuple of InputData instances
+    outdata      -- Tuple of numpy arrays, containing the 
+                    data for each output variable
+    outvar_atts  -- Tuple of dictionaries, containing the 
+                    attriubtes for each output variable.
+                    Suggested minumum attributes include: id, 
+                    long_name, missing_value, units, history
+    out_axes     -- Tuple of the output variable axes (must 
+                    be in order tyx)
+                    Should get generated using the cdat getTime() 
+                    getLatitide() or getLongitude() methods.
     
     """
     
-    assert (type(indata) == tuple), 'indata argument must be a tuple, e.g. (data,)'
-    assert type(outdata) == tuple, 'outdata argument must be a tuple, e.g. (data,)'
-    assert type(outvar_atts) == tuple, 'outvar_atts argument must be a tuple, e.g. (atts,)'
+    assert type(indata) == tuple, \
+    'indata argument must be a tuple, e.g. (data,)'
+    
+    assert type(outdata) == tuple, \
+    'outdata argument must be a tuple, e.g. (data,)'
+    
+    assert type(outvar_atts) == tuple, \
+    'outvar_atts argument must be a tuple, e.g. (atts,)'
+    
     assert type(out_axes) == tuple
 
     outfile = cdms2.open(outfile_name,'w')
@@ -454,7 +448,7 @@ def write_nefcdf(outfile_name, out_quantity, indata,
             setattr(outfile, att_name, infile_global_atts[att_name])
     
     if not clear_history:
-        old_history = infile_global_atts.attributes['history'] if ('history' in 
+        old_history = infile_global_atts['history'] if ('history' in \
                       infile_global_atts.keys()) else ''
     else:
         old_history = ''
