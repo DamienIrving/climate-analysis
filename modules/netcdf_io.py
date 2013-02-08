@@ -55,6 +55,8 @@ emib = cdms2.selectors.Selector(latitude=(-15, 5, 'cc'),
                                 longitude=(250, 290, 'cc'))
 emic = cdms2.selectors.Selector(latitude=(-10, 20, 'cc'),
                                 longitude=(125, 145, 'cc'))
+eqpacific = cdms2.selectors.Selector(latitude=(-30, 30, 'cc'),
+                                     longitude=(120, 280, 'cc'))
 nino1 = cdms2.selectors.Selector(latitude=(-10, -5, 'cc'),
                                  longitude=(270,280,'cc'))   
 nino2 = cdms2.selectors.Selector(latitude=(-5, 0, 'cc'),
@@ -67,6 +69,12 @@ nino34 = cdms2.selectors.Selector(latitude=(-5, 5, 'cc'),
                                   longitude=(190, 240, 'cc'))
 nino4 = cdms2.selectors.Selector(latitude=(-5, 5, 'cc'),
                                  longitude=(160, 210, 'cc'))
+sh = cdms2.selectors.Selector(latitude=(-90, 0, 'cc'),
+                              longitude=(0, 360, 'cc'))	
+shextrop = cdms2.selectors.Selector(latitude=(-90, -30, 'cc'),
+                                    longitude=(0, 360, 'cc'))	
+tropics = cdms2.selectors.Selector(latitude=(-30, 30, 'cc'),
+                                   longitude=(0, 360, 'cc'))
 wgreenwhich = cdms2.selectors.Selector(latitude=(-90, 90, 'cc'),
                                        longitude=(-180, 180, 'cc'))
 wdateline = cdms2.selectors.Selector(latitude=(-90, 90, 'cc'),
