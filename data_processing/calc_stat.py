@@ -30,12 +30,9 @@ from optparse import OptionParser
 from datetime import datetime
 
 import numpy
-from numpy import *
-
 import genutil
-import cdms2 
 
-module_dir = os.path.join(os.environ['HOME'],'dbirving','modules')
+module_dir = os.path.join(os.environ['HOME'],'modules')
 sys.path.insert(0,module_dir)
 import netcdf_io
 
@@ -144,7 +141,7 @@ if __name__ == '__main__':
                       help="spatial region selector")
     parser.add_option("-t", "--time",dest='time',default=False,
                       help="time period selector")
-    parser.add_option("-a", "--agg",dest='agg', default=None,
+    parser.add_option("-a", "--agg", dest='agg', default=None,
                       help="temporal aggregation selector")
 
 
@@ -178,27 +175,22 @@ if __name__ == '__main__':
 	"""
 	sys.exit(0)
 
-
-    ## Read the input data and repeat back to user ##
-
-    print 'Metric: ', args[0]
-    print 'Input file 1: ', args[1]
-    print 'Variable: ', args[2]
-    print 'Input file 2: ', args[3]
-    print 'Variable: ', args[4]
-    print 'Output file: ', args[5]
-
-    # Prepare options #
+    else:
     
-    #Remove empty options
-    for key in options:
-        if not options[key]:    
-            del options[key]
+	##Read the input data and repeat back to user #
 
-#    select_opts = ['region', 'time']
-#    selection = {}
-#    for item in select_opts:
-#        if options[item]:
-#            selection[item] = options[item]
+	print 'Metric: ', args[0]
+	print 'Input file 1: ', args[1]
+	print 'Variable: ', args[2]
+	print 'Input file 2: ', args[3]
+	print 'Variable: ', args[4]
+	print 'Output file: ', args[5]
 
-    main(args[0], args[1], args[2], args[3], args[4], args[5], options)
+	# Remove empty options #
+
+	for key in options:
+            if not options[key]:    
+        	del options[key]
+
+
+	main(args[0], args[1], args[2], args[3], args[4], args[5], options)
