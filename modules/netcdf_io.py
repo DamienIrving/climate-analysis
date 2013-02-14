@@ -160,11 +160,12 @@ def _get_datetime(times):
     """
 
     datetimes = []
-    for i in range(0,len(times)):
-        year, month, day = str(time_axis[0]).split(' ')[0].split('-')
-        hour, minute, second = str(time_axis[0]).split(' ')[1].split('-')
+    for index, item in enumerate(times):
+	year, month, day = str(item).split(' ')[0].split('-')
+        hour, minute, second = str(item).split(' ')[1].split(':')
         
-        datetimes[i] = datetime.datetime(year, month, day, hour, minute, int(second))
+        datetimes[index] = datetime(int(year), int(month), int(day), 
+	                            int(hour), int(minute), int(float(second)))
 
 
     return datetimes
