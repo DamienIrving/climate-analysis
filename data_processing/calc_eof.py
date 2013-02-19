@@ -17,8 +17,6 @@ import sys
 import os
 from optparse import OptionParser
 
-import numpy
-
 import eof2
 
 module_dir = os.path.join(os.environ['HOME'], 'modules')
@@ -62,7 +60,7 @@ class EofAnalysis:
             eofs = self.solver.eofs(neofs=self.neofs, eofscaling=eof_scaling)
             eof_units = ''
             if eof_scaling == 0:
-                eof_scaling_text = 'None'
+                eof_scaling_text = 'No scaling applied'
             elif eof_scaling == 1:
                 eof_scaling_text = 'EOF is divided by the square-root of its eigenvalue'  
             elif eof_scaling == 2:
@@ -74,9 +72,9 @@ class EofAnalysis:
         attributes = ['']*self.neofs
         for i in range(0, self.neofs):
             attributes[i] = {'id': 'eof'+str(i + 1),
-                             'long_name': 'Empirical Orthogonal Function '+str(i),
+                             'long_name': 'Empirical Orthogonal Function '+str(i + 1),
                              'units': eof_units,
-                             'var_exp': self.var_exp,
+                             'var_exp': self.var_exp[i],
                              'reference': 'https://github.com/ajdawson/eof2',
                              'history': eof_scaling_text}
   
@@ -89,7 +87,7 @@ class EofAnalysis:
         pcs = self.solver.pcs(npcs=self.neofs, pcscaling=pc_scaling)
         pc_units = ''
         if pc_scaling == 0:
-            pc_scaling_text = 'None'
+            pc_scaling_text = 'No scaling applied'
         elif pc_scaling == 1:
             pc_scaling_text = 'PC scaled to unit variance (divided by the square-root of its eigenvalue)'
         elif pc_scaling == 2:
@@ -101,9 +99,9 @@ class EofAnalysis:
         attributes = ['']*self.neofs
         for i in range(0, self.neofs):
             attributes[i] = {'id': 'pc'+str(i + 1),
-                             'long_name': 'Principle component '+str(i),
+                             'long_name': 'Principle component '+str(i + 1),
                              'units': pc_units,
-                             'var_exp': self.var_exp,
+                             'var_exp': self.var_exp[i],
                              'reference': 'https://github.com/ajdawson/eof2',
                              'history': pc_scaling_text}
 
@@ -128,32 +126,34 @@ def main(infile_name, var_id, outfile_name, **kwargs):
     eof_anal = EofAnalysis(indata, kwargs['neofs'])
     
     eof_data, eof_atts = eof_anal.eof(kwargs['eof_scaling'])
-    pc_data, pc_atts = eof_anal.eof(kwargs['eof_scaling'])
+    pc_data, pc_atts = eof_anal.pcs(kwargs['eof_scaling'])
 
     # Write output file #
 
     outdata_list = []
     outvar_atts_list = []
-    out_axes_list = []
-    eof_axes = (indata.data.getLatitude(), indata.data.getLongitude(),)
-    pc_axes = (indata.data.getTime(),)    
+    outvar_axes_list = []   
+    eof_axes = (indata.data.getLatitude(),
+                indata.data.getLongitude(),)  
+    pc_axes = (indata.data.getTime(),)
     for index in range(0, kwargs['neofs']*2):
         if index < kwargs['neofs']:
-            outdata_list.append(eof_data[index,::])
+            outdata_list.append(eof_data[index, ::])
             outvar_atts_list.append(eof_atts[index])
-            out_axes_list.append(eof_axes)   
+            outvar_axes_list.append(eof_axes)   
         else:
             adj_index = index - kwargs['neofs']
-            outdata_list.append(pc_data[adj_index,::])
+            outdata_list.append(pc_data[:, adj_index])
             outvar_atts_list.append(pc_atts[adj_index])
-            out_axes_list.append(pc_axes) 
+            outvar_axes_list.append(pc_axes) 
         
     indata_list = [indata,]*kwargs['neofs']
     
-    netcdf_io.write_netcdf(outfile_name, 'EOF', indata_list, 
+    netcdf_io.write_netcdf(outfile_name, 'EOF', 
+                           indata_list, 
                            outdata_list,
 			   outvar_atts_list, 
-                           out_axes_list)
+			   outvar_axes_list)
 
 
 if __name__ == '__main__':

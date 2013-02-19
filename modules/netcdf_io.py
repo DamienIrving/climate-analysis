@@ -358,7 +358,8 @@ def temporal_aggregation(data, output_timescale, climatology=False):
 
 
 def write_netcdf(outfile_name, out_quantity, indata, 
-                 outdata, outvar_atts, out_axes, clear_history=False):
+                 outdata, outvar_atts, outvar_axes, 
+                 clear_history=False):
     """Write an output netCDF file.
     
     Intended for use with a calculated quantity.
@@ -370,18 +371,18 @@ def write_netcdf(outfile_name, out_quantity, indata,
     Arguments (incl. type/description):
     outfile_name -- string
     out_quantity -- e.g. variable or statistic name
-    indata       -- Tuple of InputData instances
-    outdata      -- Tuple of numpy arrays, containing the 
-                    data for each output variable
-    outvar_atts  -- Tuple of dictionaries, containing the 
-                    attriubtes for each output variable.
+    indata       -- List or tuple of InputData instances
+    outdata      -- List or tuple of numpy arrays, containing 
+                    the data for each output variable
+    outvar_atts  -- List or tuple of dictionaries, containing 
+                    the attriubtes for each output variable
                     Suggested minumum attributes include: id, 
                     long_name, missing_value, units, history
-    out_axes     -- Tuple of the output variable axes (must 
-                    be in order tyx)
-                    Should get generated using the cdat getTime() 
-                    getLatitide() or getLongitude() methods.
-    
+    outvar_axes  -- List or tuple of axis lists or tuples for 
+                    each outdata element (must be in order tyx)
+		    Should be generated using the cdat getTime(),
+                    getLatitude() or getLongitude() methods
+                    
     """
 
     assert isinstance(indata, (list, tuple)) and isinstance(indata[0], InputData), \
@@ -393,17 +394,17 @@ def write_netcdf(outfile_name, out_quantity, indata,
     assert isinstance(outvar_atts, (list, tuple)) and type(outvar_atts[0]) == dict, \
     '5th argument (outvar_atts) must be a list or tuple of dictionaries, e.g. (atts,)'
     
-    assert isinstance(out_axes, (list, tuple)), \
-    '6th argument (out_axes) must be a list or tuple of axis lists or tuples, e.g. (atts,)'
+    assert isinstance(outvar_axes, (list, tuple)), \
+    '6th argument (outvar_axes) must be a list or tuple of axis lists or tuples, e.g. (data.getTime(),)'
     
-    for axes in out_axes:
-        index = 0
-        for axis in axes:
+    for axes in outvar_axes:
+	index = 0
+	for axis in axes:
             test = (axis.isTime(), axis.isLatitude(), axis.isLongitude())
             assert sum(test) == 1 and test.index(1) >= index, \
-            '6th argument (out_axes) elements must a time, latitude or longitude axis, in that order'
-            index = index + 1
-            
+            '6th argument (outvar_axes) elements must a time, latitude or longitude axis, in that order'
+            index = test.index(1)
+    
 
     outfile = cdms2.open(outfile_name, 'w')
     
@@ -421,26 +422,28 @@ def write_netcdf(outfile_name, out_quantity, indata,
     else:
         old_history = ''
     
-    infile_names = ''
+    infile_names = []
     for item in indata:
-        infile_names = infile_names + item.fname +', '
+        infile_names.append(item.fname)
+    
+    infile_names_unique = str(set(infile_names)).strip('set([').strip('])')
         
-    setattr(outfile, 'history', """%s: %s calculated from %s using %s, 
-            format=NETCDF3_CLASSIC\n%s""" %(datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
-            out_quantity, infile_names, sys.argv[0], old_history))
+    setattr(outfile, 'history', 
+    """%s: %s calculated from %s using %s, format=NETCDF3_CLASSIC\n%s""" %(datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
+    out_quantity, infile_names_unique, sys.argv[0], old_history))
 
     # Variables #
 
     nvars = len(outdata)
     for index in range(0, nvars):
 
-	axis_list = []
-	for axis in out_axes[index]:
-            axis_list.append(outfile.copyAxis(axis))
+        outvar_axis_list = []
+        for axis in outvar_axes[index]:
+            outvar_axis_list.append(outfile.copyAxis(axis))
 
 	var = cdms2.MV2.array(outdata[index])
-	var = var.astype(numpy.float32)
-	var.setAxisList(axis_list)
+        var = var.astype(numpy.float32)
+	var.setAxisList(outvar_axis_list)
 
 	for key, value in outvar_atts[index].iteritems():
             setattr(var, key, value)
