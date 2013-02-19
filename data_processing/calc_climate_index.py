@@ -22,7 +22,6 @@ from optparse import OptionParser
 import numpy
 
 module_dir = os.path.join(os.environ['HOME'], 'modules')
-print module_dir
 sys.path.insert(0, module_dir)
 import netcdf_io
 
@@ -80,28 +79,6 @@ def monthly_normalisation(complete_timeseries, base_timeseries, months):
     
     return monthly_normalised
 
-
-#def write_output(index,ifile,outfile_name,base_period,header,years,months,timeseries,error=None):
-#    """Write output file."""
-#    
-#    fout = open(outfile_name,'w')
-#    fout.write(header)
-#    base = 'Base period = %s  to %s \n' %(base_period[0],base_period[1])
-#    fout.write(base)  
-#    fout.write(version_info)
-#    fout.write('Input file = '+ifile.fname+'\n')
-#    
-#    if error:
-#        fout.write(' YR   MON   %s   error \n' %(index)) 
-#	for ii in range(0,len(timeseries)):
-#            print >> fout, '%4i %3i %7.2f %7.2f' %(years[ii],months[ii],timeseries[ii],error[ii])
-#    else:
-#	fout.write(' YR   MON  %s \n' %(index)) 
-#	for ii in range(0,len(timeseries)):
-#            print >> fout, '%4i %3i %7.2f' %(years[ii],months[ii],timeseries[ii])
-#
-#    fout.close()
-    
 
 def calc_reg_anomaly_timeseries(data_complete, data_base):
     """Calculate the monthly anomaly timeseries for a given region.
@@ -187,7 +164,7 @@ def calc_iemi(index, ifile, var_id, base_period):
     iemi_timeseries = numpy.ma.subtract(numpy.ma.subtract(numpy.ma.multiply(anomaly_timeseries['emia'], 3.0),
                       numpy.ma.multiply(anomaly_timeseries['emib'],2.0)), anomaly_timeseries['emic'])
 
-    # Determine the attributes    
+    # Determine the attributes #  
 
     hx = 'Ref: Li et al 2010, Adv Atmos Sci, 27, 1210-20. Base period: %s to %s' %(base_period[0], 
                                                                                    base_period[1])
@@ -254,7 +231,7 @@ def calc_nino_new(index, ifile, var_id, base_period):
 	elif index == 'NINOWP':
 	    nino_new_timeseries[i] = numpy.ma.subtract(nino4_val, (numpy.ma.multiply(nino3_val, alpha)))
     
-    # Determine the attributes    
+    # Determine the attributes #   
 
     hx = 'Ref: Ren & Jin 2011, GRL, 38, L04704. Base period: %s to %s'  %(base_period[0], 
                                                                           base_period[1])
@@ -273,7 +250,7 @@ def calc_nino_new(index, ifile, var_id, base_period):
 def main(index, infile_name, var, outfile_name, base_period):
     """Run the program."""
         
-    ## Initialise relevant index function ##
+    # Initialise relevant index function #
     
     function_for_index = {'NINO': calc_nino,
                           'NINO_new': calc_nino_new,
@@ -288,11 +265,11 @@ def main(index, infile_name, var, outfile_name, base_period):
     else:
         calc_index = function_for_index[index]
 
-    ## Calculate the index ##  
+    # Calculate the index #  
 
     index_data, atts, indata = calc_index(index, infile_name, var, base_period)
     
-    ## Write the outfile ##
+    # Write the outfile #
     
     netcdf_io.write_netcdf(outfile_name, index, (indata,), (index_data,), 
                           (atts,), (indata.data.getTime(),))     
@@ -300,19 +277,17 @@ def main(index, infile_name, var, outfile_name, base_period):
         
 if __name__ == '__main__':
 
-    ### Help and manual information ###
-
     usage = "usage: %prog [options] {}"
     parser = OptionParser(usage=usage)
 
     parser.add_option("-M", "--manual", action="store_true", dest="manual", default=False,
                       help="output a detailed description of the program")
-#    parser.add_option("-e", "--error", action="store_true", dest="error", default=False,
-#                      help="Input file contains an additional error variable")
     parser.add_option("-b", "--base", dest="base_period", nargs=2, type='string', default=('1981-01-01', '2010-12-31'),
                       help="Start and end date for base period [default=('1981-01-01', '2010-12-31')]")
+#   parser.add_option("-e", "--error", action="store_true", dest="error", default=False,
+#                     help="Input file contains an additional error variable")
     
-    (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
+    (options, args) = parser.parse_args()
 
     if options.manual == True or len(args) != 4:
 	print """

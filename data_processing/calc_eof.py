@@ -17,6 +17,8 @@ import sys
 import os
 from optparse import OptionParser
 
+import numpy
+
 import eof2
 
 module_dir = os.path.join(os.environ['HOME'], 'modules')
@@ -77,7 +79,7 @@ class EofAnalysis:
                              'var_exp': self.var_exp,
                              'reference': 'https://github.com/ajdawson/eof2',
                              'history': eof_scaling_text}
-            
+  
         return eofs, attributes
      
 
@@ -111,6 +113,8 @@ class EofAnalysis:
 def main(infile_name, var_id, outfile_name, **kwargs):
     """Run the program."""
     
+    # Prepate input data #
+
     selectors = ['time', 'agg', 'region']
     data_opts = {}
     for item in selectors:
@@ -119,26 +123,40 @@ def main(infile_name, var_id, outfile_name, **kwargs):
 
     indata = netcdf_io.InputData(infile_name, var_id, **data_opts)
     
+    # Perform EOF analysis
+
     eof_anal = EofAnalysis(indata, kwargs['neofs'])
     
     eof_data, eof_atts = eof_anal.eof(kwargs['eof_scaling'])
     pc_data, pc_atts = eof_anal.eof(kwargs['eof_scaling'])
 
-    eof_axes = []
-    pc_axes = []
-    for i in range(0, kwargs['neofs']):
-        eof_axes.append((indata.data.getLatitude(), indata.data.getLongitude(),)) 
-        pc_axes.append((indata.data.getTime(),))
+    # Write output file #
+
+    outdata_list = []
+    outvar_atts_list = []
+    out_axes_list = []
+    eof_axes = (indata.data.getLatitude(), indata.data.getLongitude(),)
+    pc_axes = (indata.data.getTime(),)    
+    for index in range(0, kwargs['neofs']*2):
+        if index < kwargs['neofs']:
+            outdata_list.append(eof_data[index,::])
+            outvar_atts_list.append(eof_atts[index])
+            out_axes_list.append(eof_axes)   
+        else:
+            adj_index = index - kwargs['neofs']
+            outdata_list.append(pc_data[adj_index,::])
+            outvar_atts_list.append(pc_atts[adj_index])
+            out_axes_list.append(pc_axes) 
         
-    netcdf_io.write_netcdf(outfile_name, 'EOF', (indata,)*kwargs['neofs'], 
-                           (eof_data + pc_data), 
-                           (eof_atts + pc_atts), 
-                           (eof_axes + pc_axes))
+    indata_list = [indata,]*kwargs['neofs']
+    
+    netcdf_io.write_netcdf(outfile_name, 'EOF', indata_list, 
+                           outdata_list,
+			   outvar_atts_list, 
+                           out_axes_list)
 
 
 if __name__ == '__main__':
-
-    ## Help and manual information ##
 
     usage = "usage: %prog [options] {input_file} {input_variable} {output_file}"
     parser = OptionParser(usage=usage)
@@ -194,7 +212,7 @@ if __name__ == '__main__':
             Uses eof2 package: https://github.com/ajdawson/eof2
 
         Example (abyss.earthsci.unimelb.edu.au)
-	    /usr/local/uvcdat/1.2.0rc1/bin/cdat eof_anal.py -r eqpacific -t 1981-01-01 2010-12-31 
+	    /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_eof.py -r eqpacific -t 1981-01-01 2010-12-31 
 	    /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc ts 
 	    /work/dbirving/processed/indices/data/ts_Merra_surface_EOF_monthly-1981-2010_native-ocean-eqpacific.nc
 	

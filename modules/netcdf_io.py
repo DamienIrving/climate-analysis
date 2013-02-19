@@ -15,7 +15,7 @@ temproal_aggregation -- Create a temporal aggregate of
 write_netcdf         -- Write an output netCDF file
 
 Included classes:
-InputData -- Extract and subset data
+InputData            -- Extract and subset data
 
 """
 
@@ -23,7 +23,7 @@ __author__ = 'Damien Irving'
 
 
 import sys
-from datetime import datetime
+import datetime
 
 import numpy
 
@@ -36,50 +36,33 @@ cdms2.setNetcdfDeflateFlag(0)
 cdms2.setNetcdfDeflateLevelFlag(0)
 
 
-
-## Regions ##
+## Define regions ##
 
 # The 3rd argument here works as follows:
 # - First two letters: 'c' or 'o' for closed or open upper/loweer bounds
 # - Third letter represents the search method: 
 #   'b' bounds, 'n' node, 'e' extranode, 's' select
-   
 
-aus = cdms2.selectors.Selector(latitude=(-45, -10, 'cc'), 
-                               longitude=(110, 160, 'cc'))
-ausnz = cdms2.selectors.Selector(latitude=(-50, 0, 'cc'),
-                                 longitude=(100, 185, 'cc'))
-emia = cdms2.selectors.Selector(latitude=(-10, 10, 'cc'),
-                                longitude=(165, 220, 'cc'))
-emib = cdms2.selectors.Selector(latitude=(-15, 5, 'cc'),
-                                longitude=(250, 290, 'cc'))
-emic = cdms2.selectors.Selector(latitude=(-10, 20, 'cc'),
-                                longitude=(125, 145, 'cc'))
-eqpacific = cdms2.selectors.Selector(latitude=(-30, 30, 'cc'),
-                                     longitude=(120, 280, 'cc'))
-nino1 = cdms2.selectors.Selector(latitude=(-10, -5, 'cc'),
-                                 longitude=(270,280,'cc'))   
-nino2 = cdms2.selectors.Selector(latitude=(-5, 0, 'cc'),
-                                 longitude=(270, 280, 'cc'))
-nino12 = cdms2.selectors.Selector(latitude=(-10, 0, 'cc'),
-                                  longitude=(270, 280, 'cc'))
-nino3 = cdms2.selectors.Selector(latitude=(-5, 5, 'cc'),
-                                 longitude=(210, 270, 'cc'))
-nino34 = cdms2.selectors.Selector(latitude=(-5, 5, 'cc'),
-                                  longitude=(190, 240, 'cc'))
-nino4 = cdms2.selectors.Selector(latitude=(-5, 5, 'cc'),
-                                 longitude=(160, 210, 'cc'))
-sh = cdms2.selectors.Selector(latitude=(-90, 0, 'cc'),
-                              longitude=(0, 360, 'cc'))	
-shextrop = cdms2.selectors.Selector(latitude=(-90, -30, 'cc'),
-                                    longitude=(0, 360, 'cc'))	
-tropics = cdms2.selectors.Selector(latitude=(-30, 30, 'cc'),
-                                   longitude=(0, 360, 'cc'))
-wgreenwhich = cdms2.selectors.Selector(latitude=(-90, 90, 'cc'),
-                                       longitude=(-180, 180, 'cc'))
-wdateline = cdms2.selectors.Selector(latitude=(-90, 90, 'cc'),
-                                     longitude=(0, 360, 'cc'))
+# [(minlat, maxlat), (minlon, maxlon)]
 
+regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
+           'ausnz': [(-50, 0, 'cc'), (100, 185, 'cc')],
+           'emia': [(-10, 10, 'cc'), (165, 220, 'cc')],
+           'emib': [(-15, 5, 'cc'), (250, 290, 'cc')],
+           'emic': [(-10, 20, 'cc'), (125, 145, 'cc')],
+           'eqpacific': [(-30, 30, 'cc'), (120, 280, 'cc')],
+           'nino1': [(-10, -5, 'cc'), (270,280,'cc')],
+           'nino2': [(-5, 0, 'cc'), (270, 280, 'cc')],
+           'nino12': [(-10, 0, 'cc'), (270, 280, 'cc')],
+           'nino3': [(-5, 5, 'cc'), (210, 270, 'cc')],
+           'nino34': [(-5, 5, 'cc'), (190, 240, 'cc')],
+           'nino4': [(-5, 5, 'cc'), (160, 210, 'cc')],
+           'sh': [(-90, 0, 'cc'), (0, 360, 'cc')],
+           'shextropics': [(-90, -30, 'cc'), (0, 360, 'cc')],
+           'tropics': [(-30, 30, 'cc'), (0, 360, 'cc')],
+           'greenwich': [(-90, 90, 'cc'), (-180, 180, 'cc')],
+           'dateline': [(-90, 90, 'cc'), (0, 360, 'cc')]
+           }
 
 
 ## Classes/functions ##
@@ -105,9 +88,11 @@ def convert_units(data):
     
     if data.units[0:10] == 'kg m-2 s-1':
         newdata = numpy.ma.multiply(data, 86400.0)
+        newdata.units = 'mm d-1'
     
     elif data.units[0] == 'K':
         newdata = numpy.ma.subtract(data, 273.16)
+        newdata.units = 'Celsius'
     
     else:
         print 'Original units not recognised.'
@@ -128,24 +113,6 @@ def scale_offset(data, scale=1.0, offset=0.0):
     
     return numpy.ma.add(numpy.ma.multiply(data, float(scale)),
                         float(offset))
-    
-
-def _extract_region(region):
-    """Obtain lat and lon info from a cdms2.selector region"""
-    
-    if isinstance(region, cdms2.selectors.Selector):
-	for selector_component in region.components():
-            if selector_component.id == 'lat':
-                minlat, maxlat = selector_component.spec[0:2]
-            elif selector_component.id == 'lon':
-                minlon, maxlon = selector_component.spec[0:2] 
-	latitude = (minlat, maxlat)
-	longitude = (minlon, maxlon)
-    else: 
-	print 'region must be a cdms2 selector'
-	sys.exit()
-	    
-    return latitude, longitude
 
 
 def _get_datetime(times):
@@ -159,14 +126,13 @@ def _get_datetime(times):
 
     """
 
-    datetimes = []
+    datetimes = ['','']
     for index, item in enumerate(times):
 	year, month, day = str(item).split(' ')[0].split('-')
         hour, minute, second = str(item).split(' ')[1].split(':')
         
-        datetimes[index] = datetime(int(year), int(month), int(day), 
-	                            int(hour), int(minute), int(float(second)))
-
+        datetimes[index] = datetime.datetime(int(year), int(month), int(day), 
+	                                     int(hour), int(minute), int(float(second)))
 
     return datetimes
 
@@ -191,7 +157,8 @@ def _get_timescale(times):
                   'hourly': datetime.timedelta(hours=1)}
     
     timescale = None
-    for key in thresholds:
+    scales = ['yearly', 'monthly', 'daily', '12hourly', '6hourly', 'hourly']
+    for key in scales:
         if diff >= thresholds[key]:
             timescale = key
             break
@@ -200,6 +167,8 @@ def _get_timescale(times):
         print 'Invalid timescale data.'
         print 'Must be between hourly and yearly.'
         sys.exit(1)
+
+    print timescale
 
     return timescale
 
@@ -261,10 +230,10 @@ class InputData:
 
         if kwargs.has_key('region'):   
             try:
-                region = globals()[kwargs['region']]
-                kwargs['latitude'], kwargs['longitude'] = _extract_region(region)
-                self.minlat, self.maxlat = kwargs['latitude']
-                self.minlon, self.maxlon = kwargs['longitude']
+                kwargs['latitude'], kwargs['longitude'] = regions[kwargs['region']]
+                self.minlat, self.maxlat = kwargs['latitude'][0:2]
+                self.minlon, self.maxlon = kwargs['longitude'][0:2]
+                self.region = kwargs['region']
 	    except KeyError:
                 print 'region not defined - using all spatial data...'
 	    
@@ -297,24 +266,6 @@ class InputData:
 	self.global_atts = infile.attributes
 	
 	infile.close()
-	
-   
-    def picker(self, **kwargs):
-	"""Extract non-contigious values of an axis.
-
-	Keyword arguments (with examples):
-
-        latitude  -- (-30, 30)
-        level     -- (100, 850, 200)
-        longitude -- (120, 135, 65)
-        time      -- ('1979-01-01', '2000-12-31'), or 
-                     slice(index1,index2,step)        
-        
-        """
-        
-        pick = genutil.picker(**kwargs)
-        
-        return self.data(pick)
 
      
     def months(self):
@@ -332,7 +283,7 @@ class InputData:
     def years(self):
         """Return array containing the years"""        
  
-        time = self.data.getTime.asComponentTime()
+        time = self.data.getTime().asComponentTime()
         
         years = []
 	for i in range(0, len(time)):
@@ -363,13 +314,12 @@ def temporal_aggregation(data, output_timescale, climatology=False):
 
     """
 
-    ## Find input timescale ##
-
+    # Find input timescale #
+    
     time_axis = data.getTime().asComponentTime()
     input_timescale = _get_timescale(_get_datetime(time_axis[0:2]))
 
-
-    ## Set time bounds ##
+    # Set time bounds #
 
     daily_freq = {'hourly': 24, '6hourly': 4, '12hourly': 2, 'daily': 1}
 
@@ -384,7 +334,7 @@ def temporal_aggregation(data, output_timescale, climatology=False):
         print 'Must be daily, monthly or yearly.'
         sys.exit(1)
 
-    ## Extract subset of interest ##
+    # Extract subset of interest #
 
     accepted_timescales = ['SEASONALCYCLE', 'ANNUALCYCLE', 'YEAR',
 	                   'DJF', 'MAM', 'JJA', 'SON',
@@ -403,7 +353,6 @@ def temporal_aggregation(data, output_timescale, climatology=False):
     else:
         print 'Unrecognised temporal subset.'
         sys.exit(1)
-
 
     return outdata
 
@@ -434,19 +383,29 @@ def write_netcdf(outfile_name, out_quantity, indata,
                     getLatitide() or getLongitude() methods.
     
     """
-    
-    assert type(indata) == tuple, \
-    'indata argument must be a tuple, e.g. (data,)'
-    
-    assert type(outdata) == tuple, \
-    'outdata argument must be a tuple, e.g. (data,)'
-    
-    assert type(outvar_atts) == tuple, \
-    'outvar_atts argument must be a tuple, e.g. (atts,)'
-    
-    assert type(out_axes) == tuple
 
-    outfile = cdms2.open(outfile_name,'w')
+    assert isinstance(indata, (list, tuple)) and isinstance(indata[0], InputData), \
+    '3rd argument (indata) must be a list or tuple of InputData instances, e.g. (data,)'
+    
+    assert isinstance(outdata, (list, tuple)), \
+    '4th argument (outdata) must be a list or tuple of data arrays, e.g. (data,)'
+    
+    assert isinstance(outvar_atts, (list, tuple)) and type(outvar_atts[0]) == dict, \
+    '5th argument (outvar_atts) must be a list or tuple of dictionaries, e.g. (atts,)'
+    
+    assert isinstance(out_axes, (list, tuple)), \
+    '6th argument (out_axes) must be a list or tuple of axis lists or tuples, e.g. (atts,)'
+    
+    for axes in out_axes:
+        index = 0
+        for axis in axes:
+            test = (axis.isTime(), axis.isLatitude(), axis.isLongitude())
+            assert sum(test) == 1 and test.index(1) >= index, \
+            '6th argument (out_axes) elements must a time, latitude or longitude axis, in that order'
+            index = index + 1
+            
+
+    outfile = cdms2.open(outfile_name, 'w')
     
     # Global attributes #
     
@@ -467,27 +426,25 @@ def write_netcdf(outfile_name, out_quantity, indata,
         infile_names = infile_names + item.fname +', '
         
     setattr(outfile, 'history', """%s: %s calculated from %s using %s, 
-            format=NETCDF3_CLASSIC\n%s""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
+            format=NETCDF3_CLASSIC\n%s""" %(datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
             out_quantity, infile_names, sys.argv[0], old_history))
-
 
     # Variables #
 
-    axis_list = []
-    for axis in out_axes:
-        axis_list.append(outfile.copyAxis(axis))
-    
-    for i in range(0, len(outdata)):
+    nvars = len(outdata)
+    for index in range(0, nvars):
 
-	var = cdms2.MV2.array(outdata[i])
+	axis_list = []
+	for axis in out_axes[index]:
+            axis_list.append(outfile.copyAxis(axis))
+
+	var = cdms2.MV2.array(outdata[index])
 	var = var.astype(numpy.float32)
 	var.setAxisList(axis_list)
 
-	for key, value in outvar_atts[i].iteritems():
+	for key, value in outvar_atts[index].iteritems():
             setattr(var, key, value)
 
 	outfile.write(var)  
 
-    
     outfile.close()
-
