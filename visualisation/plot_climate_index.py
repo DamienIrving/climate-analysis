@@ -42,6 +42,10 @@ import numpy
 import numpy.ma as ma
 import math
 
+module_dir = os.path.join(os.environ['HOME'], 'modules')
+sys.path.insert(0, module_dir)
+import netcdf_io
+
 
 ## Define global variables ##
 
@@ -132,7 +136,7 @@ def set_units(var,index,orig_units,axis):
         units = 'Anomaly (deg C)'
     elif index == 'SAMI':
         units = 'Monthly SAM index'
-    elif index[0:3] == 'EOF':
+    elif index[0:3] == 'EOF' or index[0:2] == 'PC':
         if var == 'sf':
 	    units = '1.e+6 m2 s-1'
 	elif var == 'ts' or var == 'tos':
@@ -579,8 +583,9 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
         plt.show()
 
 
-def main(primary_file_list,secondary_file_list,error_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,
-         leglocp,leglocs,legsize,pcolor_list,scolor_list,linep,lines,nrows,title):
+def main(primary_file_list, **kwargs)
+#secondary_file_list,error_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,
+#         leglocp,leglocs,legsize,pcolor_list,scolor_list,linep,lines,nrows,title):
     """Run the program"""
     
     primary_file_list = [InputFile(f) for f in primary_file_list]
@@ -614,54 +619,73 @@ if __name__ == '__main__':
     usage = "usage: %prog [options] {}"
     parser = OptionParser(usage=usage)
 
-    parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
-    parser.add_option("-o", "--outfile",dest="outfile",type='str',default=None,help="Name of output file [default = None]")
-    parser.add_option("-s", "--secondary",dest="secondary",default=None,help="Comma separated list files to be plotted on the secondary y axis [default = None]")
-    parser.add_option("-b", "--buffer",dest="buffer",type='float',default=1.0,help="Scale factor for y axis upper buffer [default = 4]")
-    parser.add_option("-r", "--rows",dest="nrows",type='int',default=1,help="Number of rows (long time axes can be split onto numerous rows [default = 1]")
-    parser.add_option("-x", "--setx",dest="setx",default=None,nargs=4,type='int',help="Time axis bounds (start_year start_month end_year end_month) [default = None]")
-    parser.add_option("-e", "--error",dest="error",type='str',default=1000,help="Comma separated list of file numbers corresponding to those with error shading [default = None]")
-    parser.add_option("--lp",dest="legendp",default=None,type='int',help="Location of the primary figure legend [defualt = None]")
-    parser.add_option("--ls",dest="legends",default=None,type='int',help="Location of the secondary figure legend [defualt = None]")
-    parser.add_option("--lsize",dest="legendsize",default='medium',type='string',help="Size of the legend text [defualt = medium]")
-    parser.add_option("--colorp",dest="colorp",default='red,blue,green,yellow,orange',help="Comma separated list of colors for the primary plot [default = auto]")
-    parser.add_option("--colors",dest="colors",default='purple,brown,aqua',help="Comma separated list of colors for the secondary plot [default = auto]")
-    parser.add_option("--linep",dest="linep",default='-',help="Line style for the primary plot [default = solid]")
-    parser.add_option("--lines",dest="lines",default='--',help="Line style for the secondary plot [default = dahsed]")
-    parser.add_option("--wp",dest="windowp",type='int',default=1,help="Window for primary axis running average [default = 1]")
-    parser.add_option("--ws",dest="windows",type='int',default=1,help="Window for secondary axis running average [default = 1]")
-    parser.add_option("--setyp",dest="setyp",default=None,nargs=2,type='float',help="Primary y axis bounds (min max) [default = None]")
-    parser.add_option("--setys",dest="setys",default=None,nargs=2,type='float',help="Secondary y axis bounds (min max) [default = None]")
-    parser.add_option("--title",dest="title",default=None,help="Title for plot [default = None]")
+    parser.add_option("-M", "--manual", action="store_true", dest="manual", default=False,
+                      help="output a detailed description of the program")
+    parser.add_option("--outfile", dest="outfile", type='str', default=None,
+                      help="Name of output file [default = None]")
+    parser.add_option("--secondary", dest="secondary", default=None, 
+                      help="Comma separated list files to be plotted on the secondary y axis [default = None]")
+    parser.add_option("--buffer", dest="buffer", type='float', default=1.0,
+                      help="Scale factor for y axis upper buffer [default = 4]")
+    parser.add_option("--rows", dest="nrows", type='int', default=1,
+                      help="Number of rows (long time axes can be split onto numerous rows [default = 1]")
+    parser.add_option("--setx", dest="setx", default=None, nargs=4, type='int',
+                      help="Time axis bounds (start_year start_month end_year end_month) [default = None]")
+    parser.add_option("--error", dest="error", type='str', default=1000,
+                      help="Comma separated list of file numbers corresponding to those with error shading [default = None]")
+    parser.add_option("--locp", dest="legendp", default=None, type='int',
+                      help="Location of the primary figure legend [defualt = None]")
+    parser.add_option("--locs", dest="legends", default=None, type='int',
+                      help="Location of the secondary figure legend [defualt = None]")
+    parser.add_option("--lsize", dest="legendsize", default='medium', type='string',
+                      help="Size of the legend text [defualt = medium]")
+    parser.add_option("--colorp", dest="colorp", default='red,blue,green,yellow,orange',
+                      help="Comma separated list of colors for the primary plot [default = auto]")
+    parser.add_option("--colors", dest="colors", default='purple,brown,aqua',
+                      help="Comma separated list of colors for the secondary plot [default = auto]")
+    parser.add_option("--linep", dest="linep", default='-',
+                      help="Line style for the primary plot [default = solid]")
+    parser.add_option("--lines", dest="lines", default='--',
+                      help="Line style for the secondary plot [default = dahsed]")
+    parser.add_option("--wp", dest="windowp", type='int', default=1,
+                      help="Window for primary axis running average [default = 1]")
+    parser.add_option("--ws", dest="windows", type='int', default=1,
+                      help="Window for secondary axis running average [default = 1]")
+    parser.add_option("--setyp", dest="setyp", default=None, nargs=2, type='float',
+                      help="Primary y axis bounds (min max) [default = None]")
+    parser.add_option("--setys", dest="setys", default=None, nargs=2, type='float',
+                      help="Secondary y axis bounds (min max) [default = None]")
+    parser.add_option("--title", dest="title", default=None, 
+                      help="Title for plot [default = None]")
     
     (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
 
     if options.manual == True or len(sys.argv) == 1:
 	print """
 	Usage:
-            python plot_climate_index.py [-h] [options] {input file 1} {input file 2} ... {input file N}
+            python plot_climate_index.py [-h] [options] {input file 1} {var 1} ... {input file N} {var N}
 
 	Options
-            -M  ->  Display this on-line manual page and exit
-            -h  ->  Display a help/usage message and exit
-	    -o  ->  Name of the output file [default = None = image is just shown instead]
-	    -b  ->  Scale factor for y axis upper buffer [default = 1]
-	    -r  ->  Number of rows (long time axes can be split onto numerous rows [default = 1]
-	    -s  ->  Comma separated list files to be plotted on the secondary y axis [default = None]
-	    -x  ->  Time axis bounds (start_year start_month end_year end_month) [default = None]
-	    -e  ->  Comma separated list of file numbers corresponding to those with error shading [default = None]
-	    --lp      ->  Location of the primary legend [default = None]
-	    --ls      ->  Location of the secondary legend [default = None]
-	    --lsize   ->  Size of the legend text [default = medium]
-	    --colorp  ->  Comma separated list of colors for the primary plot [default = auto]
-	    --colors  ->  Comma separated list of colors for the secondary plot [default = auto]
-	    --linep   ->  Line style for the primary plot [default = solid]
-	    --lines   ->  Line style for the secondary plot [default = dashed]
-            --wp      ->  Window for primary axis running average [default = 1]
-	    --ws      ->  Window for secondary axis running average [default = 1]
-	    --setyp   ->  Primary y axis bounds (min,max) [default = None]
-	    --setys   ->  Secondary y axis bounds (min,max) [default = None]
-	    --title   ->  Title for plot (underscores will be replaced with white space) [default = None]
+            -M          ->  Display this on-line manual page and exit
+            -h          ->  Display a help/usage message and exit
+	    --outfile   ->  Name of the output file [default = None = image is just shown instead]
+	    --buffer    ->  Scale factor for y axis upper buffer [default = 1]
+	    --rows      ->  Number of rows (long time axes can be split onto numerous rows [default = 1]
+	    --secondary ->  Comma separated list files to be plotted on the secondary y axis [default = None]
+	    --setx      ->  Time axis bounds (start_year start_month end_year end_month) [default = None]
+	    --error     ->  Comma separated list of file numbers corresponding to those with error shading [default = None]
+	    --locp      ->  Location of the primary legend [default = None]
+	    --locs      ->  Location of the secondary legend [default = None]
+	    --lsize     ->  Size of the legend text [default = medium]
+	    --colorp    ->  Comma separated list of colors for the primary plot [default = auto]
+	    --colors    ->  Comma separated list of colors for the secondary plot [default = auto]
+	    --linep     ->  Line style for the primary plot [default = solid]
+	    --lines     ->  Line style for the secondary plot [default = dashed]
+            --wp        ->  Window for primary axis running average [default = 1]
+	    --ws        ->  Window for secondary axis running average [default = 1]
+	    --setyp     ->  Primary y axis bounds (min,max) [default = None]
+	    --setys     ->  Secondary y axis bounds (min,max) [default = None]
+	    --title     ->  Title for plot (underscores will be replaced with white space) [default = None]
 	
 	Legend options
 	    Location:   1 upper right, 2 upper left, 3 lower left, 4 lower_right, 5 right, 6 center left, 
@@ -698,24 +722,24 @@ if __name__ == '__main__':
     
     else:
         
-        main(args[:],                                           # primary_file_list
-	     unpack_comma_list(options.secondary),              # secondary_file_list
-	     unpack_comma_list(options.error,data_type='int'),  # error_list      
-	     options.outfile,
-	     options.windowp,
-	     options.windows,
-	     options.setx,
-	     options.setyp,
-	     options.setys,
-	     options.buffer,
-	     options.legendp,
-	     options.legends,
-	     options.legendsize,
-	     unpack_comma_list(options.colorp),                 #pcolor_list
-	     unpack_comma_list(options.colors),                 #scolor_list
-	     options.linep,
-	     options.lines,
-	     options.nrows,
-	     options.title
+        main(args[0::2], args[1::2],                            
+	     secondary=unpack_comma_list(options.secondary),              
+	     error=unpack_comma_list(options.error, data_type='int'),        
+	     outfile=options.outfile,
+	     windowp=options.windowp,
+	     windows=options.windows,
+	     setx=options.setx,
+	     sety=options.setyp,
+	     setys=options.setys,
+	     buff=options.buffer,
+	     legendp=options.legendp,
+	     legends=options.legends,
+	     legendsize=options.legendsize,
+	     colorp=unpack_comma_list(options.colorp),                 #pcolor_list
+	     colors=unpack_comma_list(options.colors),                 #scolor_list
+	     linep=options.linep,
+	     lines=options.lines,
+	     nrows=options.nrows,
+	     title=options.title
 	     )
     
