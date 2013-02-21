@@ -18,23 +18,17 @@ Updates | By | Description
 
 """
 
-__version__= '$Revision$'
-
-
-### Import required modules ###
-
 import sys
 import os
 
-from optparse import OptionParser
-from datetime import datetime
+import argparse
 
 import numpy
 import genutil
 
 module_dir = os.path.join(os.environ['HOME'],'modules')
-sys.path.insert(0,module_dir)
-import netcdf_io
+sys.path.insert(0, module_dir)
+import netcdf_io as nio
 
 
 def temporal_axis_check(data1, data2):
@@ -73,7 +67,7 @@ def temporal_corr(data1, data2):
                        primary_data.getLongitude(),)
         nlats = len(primary_data.getLatitude())
         nlons = len(primary_data.getLongitude())
-        tempcorr = numpy.zeros((nlats,nlons))
+        tempcorr = numpy.zeros((nlats, nlons))
     
 	for y in xrange(nlats):
 	    for x in xrange(nlons):	
@@ -82,9 +76,9 @@ def temporal_corr(data1, data2):
                          + data2_hasspat) == 2 else secondary_data[:]
                 
                 if len(input1) == 0.0 or len(input2) == 0.0:
-	            tempcorr[y ,x] = 1e20
+	            tempcorr[y, x] = 1e20
 		else:
-	            tempcorr[y ,x] = genutil.statistics.correlation(input1,
+	            tempcorr[y, x] = genutil.statistics.correlation(input1,
                                      input2, centered=1, biased=1)
 
     else:       
@@ -104,25 +98,21 @@ def temporal_corr(data1, data2):
     return tempcorr, output_axes, attributes
     
 
-def main(metric, infile1, var1, infile2, var2, outfile, **kwargs):
+def main(inargs):
     """Run the program."""
     
     # Prepate input data #
 
-    selectors = ['time', 'agg', 'region']
-    data_opts = {}
-    for item in selectors:
-        if kwargs[item]:
-            data_opts[item] = kwargs[item]
-
-    indata1 = netcdf_io.InputData(infile1, var1, **data_opts)
-    indata2 = netcdf_io.InputData(infile2, var2, **data_opts)
+    indata1 = nio.InputData(inargs.infile1, inargs.variable1, 
+                            **nio.dict_filter(vars(inargs), ['time', 'agg', 'region']))
+    indata2 = nio.InputData(inargs.infile2, inargs.variable2, 
+                            **nio.dict_filter(vars(inargs), ['time', 'agg', 'region']))
 
     # Calulcate the statistic #
 
     function_for_metric = {'tempcorr': temporal_corr}
     
-    calc_stat = function_for_metric[metric]
+    calc_stat = function_for_metric[inargs.stat]
     stat, axes, atts = calc_stat(indata1.data, indata2.data)
 
     # Write the output file #
@@ -132,66 +122,39 @@ def main(metric, infile1, var1, infile2, var2, outfile, **kwargs):
     outvar_atts_list = (atts,)
     outvar_axes_list = (axes,)
     
-    netcdf_io.write_netcdf(outfile, metric, 
-                           indata_list, outdata_list, 
-                           outvar_atts_list, outvar_axes_list, 
-                           clear_history=True)   
+    nio.write_netcdf(inargs.outfile, inargs.stat, 
+                     indata_list, outdata_list, 
+                     outvar_atts_list, outvar_axes_list, 
+                     clear_history=True)   
 
 
 if __name__ == '__main__':
     
-    usage = "usage: %prog [options]"
-    parser = OptionParser(usage=usage)
+    description = 'Calculate statistic'
+    parser = argparse.ArgumentParser(description=description,
+                                     argument_default=argparse.SUPPRESS,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_option("-M","--manual",action="store_true",dest="manual",default=False,
-                      help="output a detailed description of the program")
-    parser.add_option("-r", "--region",dest='region',default=False,
-                      help="spatial region selector")
-    parser.add_option("-t", "--time",dest='time',default=False,
-                      help="time period selector")
-    parser.add_option("-a", "--agg", dest='agg', default=None,
-                      help="temporal aggregation selector")
+    parser.add_argument("stat", type=str, choices=['tempcorr'], 
+                        help="Statistic to calculate")
+    parser.add_argument("infile1", type=str, help="Name of first input file")
+    parser.add_argument("variable1", type=str, help="Name of first input file variable")
+    parser.add_argument("infile2", type=str, help="Name of second input file")
+    parser.add_argument("variable2", type=str, help="Name of second input file variable")
+    parser.add_argument("outfile", type=str, help="Output file name")
 
+    parser.add_argument("--region", type=str, choices=nio.regions.keys(),
+                        help="Region over which to calculate EOF [default = entire]")
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
+                        help="Time period over which to calculate the EOF [default = entire]")
+    parser.add_argument("--agg", type=str,
+                        help="temporal aggregation selector")
 
-    (options, args) = parser.parse_args()     
+    args = parser.parse_args()     
 
-    if options.manual == True or len(args) != 6:
-	print """
-	Usage:
-            temporal_metrics.py [-M] {metric} {input_file1} {variable1} {input_file2} {variable2} {output_file}
+    print 'Statistic: ', args.stat
+    print 'Input file 1: ', args.infile1
+    print 'Input file 2: ', args.infile2
+    print 'Output file: ', args.outfile
 
-	Options:
-            -M or --manual     Display this on-line manual page and exit
-            -h or --help       Display a help/usage message and exit
-	    -r or --region     Spatial region over which to calculate statistic [default = entire]
-	    -t or --time       Time period selector [default = entire]. List/tuple: (start_date, end_date)
-            -a or --agg        Temporal aggregation selector [default = None]. List/tuple: (season, climatology)
-	   
-	Input arguments:
-	    {metric}           Temporal correlation ('tempcorr')
-	    {climatology}      True/False
-            {season}            
-                    
-	Description:
-            Python script to calculate a number of commonly used statistics.
-
-	Author:
-            Damien Irving, Feb 2013.
-
-	Bugs:
-            Please report any problems to: Damien.Irving@csiro.au
-	"""
-	sys.exit(0)
-
-    else:
-
-	print 'Metric: ', args[0]
-	print 'Input file 1: ', args[1]
-	print 'Variable: ', args[2]
-	print 'Input file 2: ', args[3]
-	print 'Variable: ', args[4]
-	print 'Output file: ', args[5]
-
-	main(args[0], args[1], args[2], args[3], args[4], args[5], region = options.region,
-                                                                   time = options.time,
-                                                                   agg = options.agg)
+    main(args)

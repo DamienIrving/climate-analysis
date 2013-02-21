@@ -17,13 +17,13 @@ Updates | By | Description
 
 import os
 import sys
-from optparse import OptionParser
 
+import argparse
 import numpy
 
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
-import netcdf_io
+import netcdf_io as nio
 
 
 def calc_monthly_climatology(base_timeseries, months):
@@ -87,11 +87,11 @@ def calc_reg_anomaly_timeseries(data_complete, data_base):
 
     """
 
-    assert isinstance(data_complete, netcdf_io.InputData), \
-    'input arguments must be netcdf_io.InputData instances'
+    assert isinstance(data_complete, nio.InputData), \
+    'input arguments must be nio.InputData instances'
 
-    assert isinstance(data_base, netcdf_io.InputData), \
-    'input arguments must be netcdf_io.InputData instances'
+    assert isinstance(data_base, nio.InputData), \
+    'input arguments must be nio.InputData instances'
 
     ntime_complete, nlats, nlons = numpy.shape(data_complete.data)
     ntime_base, nlats, nlons = numpy.shape(data_base.data)
@@ -119,8 +119,8 @@ def calc_sam(index, ifile, var_id, base_period):
     
     # Read data, extract the required latitudes, calculate zonal mean anomalies #
              
-    indata_complete = netcdf_io.InputData(ifile, var_id) 
-    indata_base = netcdf_io.InputData(ifile, var_id, time=base_period)    
+    indata_complete = nio.InputData(ifile, var_id) 
+    indata_base = nio.InputData(ifile, var_id, time=base_period)    
     
     latitude = indata_complete.data.getLatitude()
     lats = [-40, -65]
@@ -157,8 +157,8 @@ def calc_iemi(index, ifile, var_id, base_period):
     regions = ['emia', 'emib', 'emic']
     anomaly_timeseries = {}
     for reg in regions: 
-	indata_complete = netcdf_io.InputData(ifile, var_id, region=reg)
-        indata_base = netcdf_io.InputData(ifile, var_id, region=reg, time=base_period) 
+	indata_complete = nio.InputData(ifile, var_id, region=reg)
+        indata_base = nio.InputData(ifile, var_id, region=reg, time=base_period) 
         anomaly_timeseries[reg] = calc_reg_anomaly_timeseries(indata_complete, indata_base)
     
     iemi_timeseries = numpy.ma.subtract(numpy.ma.subtract(numpy.ma.multiply(anomaly_timeseries['emia'], 3.0),
@@ -181,8 +181,8 @@ def calc_nino(index, ifile, var_id, base_period):
     
     # Read the input data #
     
-    indata_complete = netcdf_io.InputData(ifile, var_id, region='nino'+index[4:])
-    indata_base = netcdf_io.InputData(ifile, var_id, region='nino'+index[4:], time=base_period)  
+    indata_complete = nio.InputData(ifile, var_id, region='nino'+index[4:])
+    indata_base = nio.InputData(ifile, var_id, region='nino'+index[4:], time=base_period)  
     
     # Calculate the NINO index #
     
@@ -247,7 +247,7 @@ def calc_nino_new(index, ifile, var_id, base_period):
     return nino_new_timeseries, attributes, indata_complete
 
 
-def main(index, infile_name, var, outfile_name, base_period):
+def main(inargs):
     """Run the program."""
         
     # Initialise relevant index function #
@@ -257,83 +257,78 @@ def main(index, infile_name, var, outfile_name, base_period):
                           'IEMI': calc_iemi,
                           'SAM': calc_sam}   
     
-    if index[0:4] == 'NINO':
-        if index == 'NINOCT' or index == 'NINOWP':
+    if inargs.index[0:4] == 'NINO':
+        if inargs.index == 'NINOCT' or inargs.index == 'NINOWP':
 	    calc_index = function_for_index['NINO_new']
 	else:
 	    calc_index = function_for_index['NINO']
     else:
-        calc_index = function_for_index[index]
+        calc_index = function_for_index[inargs.index]
 
     # Calculate the index #  
 
-    index_data, atts, indata = calc_index(index, infile_name, var, base_period)
+    index_data, atts, indata = calc_index(inargs.index, 
+                                          inargs.infile, 
+                                          inargs.variable, 
+                                          inargs.base)
     
     # Write the outfile #
-    
-    netcdf_io.write_netcdf(outfile_name, index, (indata,), (index_data,), 
-                          (atts,), (indata.data.getTime(),))     
+ 
+    indata_list = [indata,]
+    outdata_list = [index_data,]
+    outvar_atts_list = [atts,]
+    outvar_axes_list = [(indata.data.getTime(),),]
+
+    nio.write_netcdf(inargs.outfile, inargs.index, indata_list, 
+                     outdata_list, outvar_atts_list, outvar_axes_list)     
 
         
 if __name__ == '__main__':
 
-    usage = "usage: %prog [options] {}"
-    parser = OptionParser(usage=usage)
+    extra_info ="""
 
-    parser.add_option("-M", "--manual", action="store_true", dest="manual", default=False,
-                      help="output a detailed description of the program")
-    parser.add_option("-b", "--base", dest="base_period", nargs=2, type='string', default=('1981-01-01', '2010-12-31'),
-                      help="Start and end date for base period [default=('1981-01-01', '2010-12-31')]")
-#   parser.add_option("-e", "--error", action="store_true", dest="error", default=False,
-#                     help="Input file contains an additional error variable")
-    
-    (options, args) = parser.parse_args()
-
-    if options.manual == True or len(args) != 4:
-	print """
-	Usage:
-            cdat calc_climate_index.py [-M] [-h] [-e] {index} {input file} {variable} {output file}
-
-	Options
-            -M  ->  Display this on-line manual page and exit
-            -h  ->  Display a help/usage message and exit
-	    -b  ->  Start and end date for base period [default=('1981-01-01','2010-12-31')]
-
-        Pre-defined indices
-            NINO12, NINO3, NINO4, NINO34
-	    NINOCT, NINOWP 
-	    IEMI, SAM
-	
-	Example
-	    /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_climate_index.py NINO34 
-            /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly_native-ocean.nc 
-	    /work/dbirving/processed/indices/data/ts_Merra_surface_NINO34_monthly_native-ocean.nc
+example:
+  /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_climate_index.py NINO34 
+  /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly_native-ocean.nc ts 
+  /work/dbirving/processed/indices/data/ts_Merra_surface_NINO34_monthly_native-ocean.nc
 	    
-	Author
-            Damien Irving, 26 Jun 2012.
+author:
+  Damien Irving, d.irving@student.unimelb.edu.au
 
-        Planned enhancements
-            Confidence intervals will be calculated for any SST indices calculated 
-            using the ERSSTv3b data (as this contains an additional error variance
-            variable, which is the standard error squared). To calculate the error 
-            for a region (like a Nino region) you need to average the error variance
-            and divide by the effective number of degrees of freedom for the area.
-            Then take the square root of that for the standard error for the region.
-            A simple way to estimate the effective number of degrees of freedom is 
-            to use the S method described by Wang & Shen (1999). J Clim, 12, 1280-91.
-            Once you get the standard error for the area average, you can use it to
-            define confidence intervals. For example, 1.96 times stardard error for 
-            the 95% confidence.   	
+planned enhancements:
+  Confidence intervals will be calculated for any SST indices calculated 
+  using the ERSSTv3b data (as this contains an additional error variance
+  variable, which is the standard error squared). To calculate the error 
+  for a region (like a Nino region) you need to average the error variance
+  and divide by the effective number of degrees of freedom for the area.
+  Then take the square root of that for the standard error for the region.
+  A simple way to estimate the effective number of degrees of freedom is 
+  to use the S method described by Wang & Shen (1999). J Clim, 12, 1280-91.
+  Once you get the standard error for the area average, you can use it to
+  define confidence intervals. For example, 1.96 times stardard error for 
+  the 95% confidence.   	
 
-        Bugs
-            Please report any problems to: d.irving@student.unimelb.edu.au
-	"""
-	sys.exit(0)
+    """
+
+    description = 'Calculate climate index'
+    parser = argparse.ArgumentParser(description=description,
+                                     epilog=extra_info,
+                                     argument_default=argparse.SUPPRESS,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     
-    else:
+    parser.add_argument("index", type=str, help="Index to calculate",
+                        choices=['NINO12', 'NINO3', 'NINO4', 'NINO34', 'NINOCT', 'NINOWP', 'IEMI', 'SAM'])
+    parser.add_argument("infile", type=str, help="Input file name")
+    parser.add_argument("variable", type=str, help="Input file variable")
+    parser.add_argument("outfile", type=str, help="Output file name")
+    
+    parser.add_argument("--base", nargs=2, type=str, default=('1981-01-01', '2010-12-31'), metavar=('START_DATE', 'END_DATE'), 
+                        help="Start and end date for base period [default: %(default)s]")
+  
+    args = parser.parse_args()
                 
-        print 'Index:', args[0]
-        print 'Input file:', args[1]
-        print 'Output file:', args[3]
+    print 'Index:', args.index
+    print 'Input file:', args.infile
+    print 'Output file:', args.outfile
 
-        main(args[0], args[1], args[2], args[3], options.base_period)
+    main(args)

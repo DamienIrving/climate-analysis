@@ -9,6 +9,8 @@ sys.path.insert(0, module_dir)
 
 Included functions:
 convert_units        -- Convert units
+dict_filter          -- Filter dictionary 
+list_kwargs          -- List keyword arguments of a function
 scale_offset         -- Apply scaling and offset factors
 temproal_aggregation -- Create a temporal aggregate of 
                         the input data
@@ -23,6 +25,8 @@ __author__ = 'Damien Irving'
 
 
 import sys
+
+import inspect
 import datetime
 
 import numpy
@@ -104,6 +108,21 @@ def convert_units(data):
     return newdata 
 
 
+def dict_filter(indict, key_list):
+    """Filter dictionary according to specified keys."""
+    
+    return dict((key, value) for key, value in indict.iteritems() if key in key_list)
+
+
+def list_kwargs(func):
+    """List keyword arguments of a function."""
+    
+    details = inspect.getargspec(func)
+    nopt = len(details.defaults)
+    
+    return details.args[-nopt:]
+    
+    
 def scale_offset(data, scale=1.0, offset=0.0):
     """Apply scaling and offset factors.
     
@@ -190,8 +209,9 @@ class InputData:
 	agg       -- ('DJF', False)
 	             (i.e. aggregates the data into 
                       a timeseries of DJF values)
-	             (2nd element of the tuple indicates 
-                      whether the climatology is desired)
+	             (2nd element of the tuple is 
+                      optional & indicates whether the 
+                      climatology is desired)
 	
         self.data has all the attributes and methods
 	of a typical cdms2 variable. For instance:
@@ -246,18 +266,24 @@ class InputData:
 	        del kwargs[key]
         
 	if kwargs.has_key('agg'):
-	    aggregate = kwargs['agg']
-	    del kwargs['agg']
+	    if isinstance(kwargs['agg'], (list, tuple)):
+                assert len(kwargs['agg']) == 2 
+                assert type(kwargs['agg'][0]) == str
+                assert type(kwargs['agg'][1]) == bool
+                agg, clim = kwargs['agg']    
+	    else:
+	        agg = str(kwargs['agg'])
+                clim = False
+            del kwargs['agg']
 	else:
-	    aggregate = False
-	    
+            agg = False
 
 	## Set object attributes ##
 	
         data = infile(var_id, **kwargs)
 
-        if aggregate:
-	    self.data = temporal_aggregation(data, aggregate[0], climatology=aggregate[1])
+        if agg:
+	    self.data = temporal_aggregation(data, agg, climatology=clim)
 	else:
             self.data = data
         
