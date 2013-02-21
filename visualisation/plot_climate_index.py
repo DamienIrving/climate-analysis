@@ -15,17 +15,10 @@ Updates | By | Description
 
 """
 
-
-__version__= '$Revision$'
-
-
-### Import required modules ###
-
-import optparse
-from optparse import OptionParser
-import re
 import os
 import sys
+
+import argparse
 
 import cdms2 
 import genutil
@@ -44,48 +37,13 @@ import math
 
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
-import netcdf_io
-
-
-## Define global variables ##
+import netcdf_io as nio
 
 
 #pcolor_list = ['red','blue','green','yellow','orange']
 #scolor_list = ['purple','brown','aqua']
 
 
-class InputFile(object):
-    patterns = [
-        ('monthly_timeseries',
-         True, #meaning the model file
-         re.compile(r'(?P<variable_name>\S+)_(?P<dataset>\S+)_(?P<level>\S+)_(?P<index>\S+)_(?P<timescale>\S+)_(?P<grid>\S+).txt')),        
-    ]
-    def __init__(self, fname):
-        self.fname = fname
-        self.atts = {}
-
-        basename = os.path.basename(fname)
-        for name, isfile, pattern in InputFile.patterns:
-            m = pattern.match(basename)
-            if m:
-                self.atts = m.groupdict()
-                self.type = name
-                self.isfile = isfile
-                break
-        if not self.atts:
-           raise ValueError("Unknown file type: " + fname)
-
-    def __repr__(self):
-        return self.fname
-
-    def __getattr__(self, key):
-        try:
-            return super(InputFile, self).__getattr__(key)
-        except AttributeError:
-            if key in self.atts:
-                return self.atts[key]
-            else:
-                raise
 
 def unpack_comma_list(comma_list,data_type='str'):
     """Converts a comma separated list into a python array"""
@@ -173,7 +131,7 @@ def hi_lo(data_series,current_max,current_min):
     return new_max,new_min  
 
 
-def extract_data(file_list,file_list_dims,error_list,windowp,windows):
+def extract_data(file_list, file_list_dims, error_list, windowp, windows):
     
     # Extract the index #
 
@@ -583,12 +541,12 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
         plt.show()
 
 
-def main(primary_file_list, **kwargs)
+def main(inargs):
 #secondary_file_list,error_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,
 #         leglocp,leglocs,legsize,pcolor_list,scolor_list,linep,lines,nrows,title):
     """Run the program"""
     
-    primary_file_list = [InputFile(f) for f in primary_file_list]
+    primary_file_list = [nio.InputData(f, v, **nio.dict_filter(vars(inargs), ['setx'])) for f, v in inargs.pfiles, inargs.pvars]
     
     if secondary_file_list:
         secondary_file_list = [InputFile(f) for f in secondary_file_list]
@@ -600,146 +558,96 @@ def main(primary_file_list, **kwargs)
 
     ## Calculate the index ##
 
-    plot_data, plot_times = extract_data(file_list,file_list_dims,error_list,windowp,windows)
+    plot_data, plot_times = extract_data(file_list, file_list_dims, error_list, windowp, windows)
     
     ## Get all the setup details for the plot ##
         
-    xdata,ydata,ybounds,xaxis_full_float = setup_plot(file_list,file_list_dims,error_list,plot_data,plot_times,setx,setyp,setys,ybuffer)
+    xdata,ydata,ybounds,xaxis_full_float = setup_plot(file_list, file_list_dims ,error_list, plot_data, plot_times, setx, setyp, setys, ybuffer)
     
     ## Generate the plot ##
     
-    generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,
-                  outfile_name,leglocp,leglocs,legsize,pcolor_list,scolor_list,linep,lines,nrows,title)
+    generate_plot(primary_file_list, secondary_file_list, error_list, xdata, ydata, ybounds, xaxis_full_float,
+                  outfile_name, leglocp, leglocs, legsize, pcolor_list, scolor_list, linep, lines, nrows, title)
     
 
 if __name__ == '__main__':
 
-    ### Help and manual information ###
+    extra_info = """   
+legend options:
+  location:   1 upper right, 2 upper left, 3 lower left, 4 lower_right, 5 right, 6 center left, 
+	      7 center right, 8 lower center, 9 upper center, 10 center, None no legend 
 
-    usage = "usage: %prog [options] {}"
-    parser = OptionParser(usage=usage)
+examples (abyss.earthsci.unimelb.edu.au):
+  /opt/cdat/bin/cdat plot_climate_index.py --wp 5 
+  /work/dbirving/processed/indices/data/ts_Merra_NINO34_monthly_native-ocean.txt
+  /work/dbirving/processed/indices/data/tos_ERSSTv3b_NINO34_monthly_native.txt
 
-    parser.add_option("-M", "--manual", action="store_true", dest="manual", default=False,
-                      help="output a detailed description of the program")
-    parser.add_option("--outfile", dest="outfile", type='str', default=None,
-                      help="Name of output file [default = None]")
-    parser.add_option("--secondary", dest="secondary", default=None, 
-                      help="Comma separated list files to be plotted on the secondary y axis [default = None]")
-    parser.add_option("--buffer", dest="buffer", type='float', default=1.0,
-                      help="Scale factor for y axis upper buffer [default = 4]")
-    parser.add_option("--rows", dest="nrows", type='int', default=1,
-                      help="Number of rows (long time axes can be split onto numerous rows [default = 1]")
-    parser.add_option("--setx", dest="setx", default=None, nargs=4, type='int',
-                      help="Time axis bounds (start_year start_month end_year end_month) [default = None]")
-    parser.add_option("--error", dest="error", type='str', default=1000,
-                      help="Comma separated list of file numbers corresponding to those with error shading [default = None]")
-    parser.add_option("--locp", dest="legendp", default=None, type='int',
-                      help="Location of the primary figure legend [defualt = None]")
-    parser.add_option("--locs", dest="legends", default=None, type='int',
-                      help="Location of the secondary figure legend [defualt = None]")
-    parser.add_option("--lsize", dest="legendsize", default='medium', type='string',
-                      help="Size of the legend text [defualt = medium]")
-    parser.add_option("--colorp", dest="colorp", default='red,blue,green,yellow,orange',
-                      help="Comma separated list of colors for the primary plot [default = auto]")
-    parser.add_option("--colors", dest="colors", default='purple,brown,aqua',
-                      help="Comma separated list of colors for the secondary plot [default = auto]")
-    parser.add_option("--linep", dest="linep", default='-',
-                      help="Line style for the primary plot [default = solid]")
-    parser.add_option("--lines", dest="lines", default='--',
-                      help="Line style for the secondary plot [default = dahsed]")
-    parser.add_option("--wp", dest="windowp", type='int', default=1,
-                      help="Window for primary axis running average [default = 1]")
-    parser.add_option("--ws", dest="windows", type='int', default=1,
-                      help="Window for secondary axis running average [default = 1]")
-    parser.add_option("--setyp", dest="setyp", default=None, nargs=2, type='float',
-                      help="Primary y axis bounds (min max) [default = None]")
-    parser.add_option("--setys", dest="setys", default=None, nargs=2, type='float',
-                      help="Secondary y axis bounds (min max) [default = None]")
-    parser.add_option("--title", dest="title", default=None, 
-                      help="Title for plot [default = None]")
+  /opt/cdat/bin/cdat plot_climate_index.py 
+  /work/dbirving/processed/indices/data/ts_Merra_surface_EOF1_monthly_native-ocean-eqpacific.txt 
+  /work/dbirving/processed/indices/data/ts_Merra_surface_EOF2_monthly_native-ocean-eqpacific.txt 
+  -s /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF1_monthly_native-eqpacific.txt,
+  /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF2_monthly_native-eqpacific.txt 
+  -r 3 --wp 5 --ws 5 --lp 2 --ls 1
+
+note:
+  The expected measure of error is the standard deviation (twice the standard deviation either side
+  of the central estimate is plotted).
+
+"""
+
+    description='Plot timeseries data'
+    parser = argparse.ArgumentParser(description=description,
+                                     epilog=extra_info, 
+                                     argument_default=argparse.SUPPRESS,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+	
+    parser.add_argument("infile", type=str, help="Input file name")
+    parser.add_argument("variable", type=str, help="Input file variable")
+    parser.add_argument("tag", type=str, help="Input file tag (or label)")
+				     
+    parser.add_argument("--primary", type=str, action='append', default=None, nargs=3,
+                        metavar=('FILENAME', 'VAR', 'TAG'),  
+                        help="Additional primary file name, variable and tag [default: None]")
+    parser.add_argument("--secondary", type=str, action='append', default=None, nargs=3, 
+                        metavar=('FILENAME', 'VAR', 'TAG'),
+                        help="Secondary file name, variable and tag [default: None]")
+    parser.add_argument("--outfile", type=str, default=None,
+                        help="Name of output file [default: None]")
+    parser.add_argument("--buffer", type=float, default=1.0,
+                        help="Scale factor for y axis upper buffer [default: %(default)s]")
+    parser.add_argument("--nrows", type=int, default=1,
+                        help="Number of rows (long time axes can be split onto numerous rows [default: %(default)s]")
+    parser.add_argument("--setx", type=str, default=None, nargs=2, metavar=('START_DATE', 'END_DATE'),
+                        help="Time axis bounds [default: None]")
+    parser.add_argument("--error", type=str, default=1000,
+                        help="Comma separated list of file numbers corresponding to those with error shading [default: None]")
+    parser.add_argument("--locp", type=int, default=None, 
+                        help="Location of the primary figure legend [defualt: no legend]")
+    parser.add_argument("--locs", type=int, default=None, 
+                        help="Location of the secondary figure legend [defualt: non legend]")
+    parser.add_argument("--legsize", type=str, default='medium', 
+                        choices=['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'],
+                        help="Size of the legend text [default: %(default)s]")
+    parser.add_argument("--colorp", type=str, default=['red', 'blue', 'green', 'yellow', 'orange'], nargs='*',
+                        help="Comma separated list of colors for the primary plot [default: auto]")
+    parser.add_argument("--colors", type=str, default=['purple', 'brown','aqua'], nargs='*',
+                        help="Comma separated list of colors for the secondary plot [default: auto]")
+    parser.add_argument("--linep", type=str, default='-', choices=['-', '--', '-.', ':'],
+                        help="Line style for the primary plot [default: %(default)s]")
+    parser.add_argument("--lines", type=str, default='--', choices=['-', '--', '-.', ':'],
+                        help="Line style for the secondary plot [default: %(default)s]")
+    parser.add_argument("--windowp", type=int, default=1,
+                        help="Window for primary axis running average [default: %(default)s]")
+    parser.add_argument("--windows", type=int, default=1,
+                        help="Window for secondary axis running average [default: %(default)s]")
+    parser.add_argument("--setyp", type=float, default=None, nargs=2, metavar=('MIN', 'MAX'),
+                        help="Primary y axis bounds [default: auto]")
+    parser.add_argument("--setys", type=float, default=None, nargs=2, metavar=('MIN', 'MAX'),
+                        help="Secondary y axis bounds [default: auto]")
+    parser.add_argument("--title", type=str, default=None, 
+                        help="Title for plot [default: None]")
     
-    (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
-
-    if options.manual == True or len(sys.argv) == 1:
-	print """
-	Usage:
-            python plot_climate_index.py [-h] [options] {input file 1} {var 1} ... {input file N} {var N}
-
-	Options
-            -M          ->  Display this on-line manual page and exit
-            -h          ->  Display a help/usage message and exit
-	    --outfile   ->  Name of the output file [default = None = image is just shown instead]
-	    --buffer    ->  Scale factor for y axis upper buffer [default = 1]
-	    --rows      ->  Number of rows (long time axes can be split onto numerous rows [default = 1]
-	    --secondary ->  Comma separated list files to be plotted on the secondary y axis [default = None]
-	    --setx      ->  Time axis bounds (start_year start_month end_year end_month) [default = None]
-	    --error     ->  Comma separated list of file numbers corresponding to those with error shading [default = None]
-	    --locp      ->  Location of the primary legend [default = None]
-	    --locs      ->  Location of the secondary legend [default = None]
-	    --lsize     ->  Size of the legend text [default = medium]
-	    --colorp    ->  Comma separated list of colors for the primary plot [default = auto]
-	    --colors    ->  Comma separated list of colors for the secondary plot [default = auto]
-	    --linep     ->  Line style for the primary plot [default = solid]
-	    --lines     ->  Line style for the secondary plot [default = dashed]
-            --wp        ->  Window for primary axis running average [default = 1]
-	    --ws        ->  Window for secondary axis running average [default = 1]
-	    --setyp     ->  Primary y axis bounds (min,max) [default = None]
-	    --setys     ->  Secondary y axis bounds (min,max) [default = None]
-	    --title     ->  Title for plot (underscores will be replaced with white space) [default = None]
-	
-	Legend options
-	    Location:   1 upper right, 2 upper left, 3 lower left, 4 lower_right, 5 right, 6 center left, 
-	                7 center right, 8 lower center, 9 upper center, 10 center, None no legend 
-	
-	    Text size:  Either xx-small, x-small, small, medium, large, x-large, xx-large, 
-	                or an absolute font size, e.g. 12
-	
-	    Linestyles: - solid, -- dashed, -. dash dot, : dotted
-	
-	Examples (abyss.earthsci.unimelb.edu.au)
-	    /opt/cdat/bin/cdat plot_climate_index.py --wp 5 
-	    /work/dbirving/processed/indices/data/ts_Merra_NINO34_monthly_native-ocean.txt
-	    /work/dbirving/processed/indices/data/tos_ERSSTv3b_NINO34_monthly_native.txt
-	    
-	    /opt/cdat/bin/cdat plot_climate_index.py 
-	    /work/dbirving/processed/indices/data/ts_Merra_surface_EOF1_monthly_native-ocean-eqpacific.txt 
-	    /work/dbirving/processed/indices/data/ts_Merra_surface_EOF2_monthly_native-ocean-eqpacific.txt 
-	    -s /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF1_monthly_native-eqpacific.txt,
-	    /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF2_monthly_native-eqpacific.txt 
-	    -r 3 --wp 5 --ws 5 --lp 2 --ls 1
-
-	Author
-            Damien Irving, 22 Jun 2012
-	    
-	Note
-	    The expected measure of error is the standard deviation (twice the standard deviation either side
-	    of the central estimate is plotted).
-	    
-	Bugs
-	    Please report any other problems to: d.irving@student.unimelb.edu.au
-	"""
-	sys.exit(0)
-    
-    else:
+    args = parser.parse_args()  
         
-        main(args[0::2], args[1::2],                            
-	     secondary=unpack_comma_list(options.secondary),              
-	     error=unpack_comma_list(options.error, data_type='int'),        
-	     outfile=options.outfile,
-	     windowp=options.windowp,
-	     windows=options.windows,
-	     setx=options.setx,
-	     sety=options.setyp,
-	     setys=options.setys,
-	     buff=options.buffer,
-	     legendp=options.legendp,
-	     legends=options.legends,
-	     legendsize=options.legendsize,
-	     colorp=unpack_comma_list(options.colorp),                 #pcolor_list
-	     colors=unpack_comma_list(options.colors),                 #scolor_list
-	     linep=options.linep,
-	     lines=options.lines,
-	     nrows=options.nrows,
-	     title=options.title
-	     )
+    main(args)
     
