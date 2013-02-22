@@ -114,6 +114,31 @@ def dict_filter(indict, key_list):
     return dict((key, value) for key, value in indict.iteritems() if key in key_list)
 
 
+def hi_lo(data_series, current_max, current_min):
+    """Determines the new highest and lowest value"""
+         
+    if isinstance(dataseries, (numpy.ndarray)):
+        find_max = numpy.max
+        find_min = numpy.min
+    else:
+        find_max = numpy.max
+        find_min = numpy.min
+    
+    highest = find_max(data_series)
+    if highest > current_max:
+        new_max = highest
+    else:
+        new_max = current_max
+        
+    lowest = find_min(data_series)
+    if lowest < current_min:
+        new_min = lowest
+    else:
+        new_min = current_min
+    
+    return new_max, new_min
+
+
 def list_kwargs(func):
     """List keyword arguments of a function."""
     
@@ -134,8 +159,8 @@ def scale_offset(data, scale=1.0, offset=0.0):
                         float(offset))
 
 
-def _get_datetime(times):
-    """Return a datetime instance for a given list dates/times.
+def _get_datetime(datetime_list):
+    """Return a datetime instance for a given list of dates/times.
     
     Arguments:
 
@@ -145,15 +170,19 @@ def _get_datetime(times):
 
     """
 
-    datetimes = ['','']
-    for index, item in enumerate(times):
-	year, month, day = str(item).split(' ')[0].split('-')
-        hour, minute, second = str(item).split(' ')[1].split(':')
-        
-        datetimes[index] = datetime.datetime(int(year), int(month), int(day), 
-	                                     int(hour), int(minute), int(float(second)))
+    assert isinstance(datetime_list, (list, tuple)), \
+    'input argument must be a list or tuple of datetimes'
 
-    return datetimes
+    datetime_object_list = []
+    for datetime in datetime_list:
+	date, time = str(datetime).split(' ')
+        year, month, day = date.split('-')
+        hour, minute, second = time.split(':')
+        
+        datetime_object_list.append(datetime.datetime(int(year), int(month), int(day), 
+	                            int(hour), int(minute), int(float(second)))
+
+    return datetime_object_list
 
 
 def _get_timescale(times):
@@ -212,7 +241,11 @@ class InputData:
 	             (2nd element of the tuple is 
                       optional & indicates whether the 
                       climatology is desired)
+        runave    -- window size for the running average 
 	
+        note that the temporal aggregation will happen 
+        before the running average
+
         self.data has all the attributes and methods
 	of a typical cdms2 variable. For instance:
         - self.data.getLatitude()
@@ -222,7 +255,7 @@ class InputData:
 	
         """
         
-        ## Read the input data to set order & check missing value ##
+        # Read the input data to set order & check missing value #
 
         infile = cdms2.open(fname)
         temp_data = infile(var_id)
@@ -233,9 +266,6 @@ class InputData:
         'Input variable must have missing_value attribute'
 
         del temp_data
-       
-
-        ## Prepare kwargs ## 
 
         # Sort out the order #
 
@@ -259,12 +289,14 @@ class InputData:
 	    
 	    del kwargs['region']
 
-        # Prepare kwargs #
+        # Remove None values #
 
-        for key in kwargs:  #remove None values
+        for key in kwargs:
             if not kwargs[key]:
 	        del kwargs[key]
         
+        # Determine aggregation method #
+
 	if kwargs.has_key('agg'):
 	    if isinstance(kwargs['agg'], (list, tuple)):
                 assert len(kwargs['agg']) == 2 
@@ -278,30 +310,45 @@ class InputData:
 	else:
             agg = False
 
-	## Set object attributes ##
+        # Determine the running average #
+
+        if kwargs.has_key('runave'):
+            assert type(kwargs['runave']) == int, \
+            'Window for running average must be an integer'
+            window = kwargs['runave']
+            del kwargs['runave']
+        else:
+            window = None
+
+	# Set object attributes #
 	
         data = infile(var_id, **kwargs)
-
-        if agg:
-	    self.data = temporal_aggregation(data, agg, climatology=clim)
-	else:
-            self.data = data
         
+        data = temporal_aggregation(data, agg, climatology=clim) if agg else data
+        data = running_average(data, window) if window > 1 else data
+
+        self.data = data
 	self.fname = fname
 	self.id = var_id
 	self.global_atts = infile.attributes
 	
 	infile.close()
+    
 
+    def datetime_axis(self):
+        """Return the time axis, expressed asa list of datetime objects."""
      
+        return _get_datetime(self.data.getTime().asComponentTime())
+        
+
     def months(self):
         """Return array containing the months"""        
  
-        time = self.data.getTime().asComponentTime()
+        datetimes = self.data.getTime().asComponentTime()
         
         months = []
-	for i in range(0, len(time)):
-	    months.append(int(str(time[i]).split('-')[1]))    
+	for datetime in datetimes:
+	    months.append(int(str(datetime).split('-')[1]))    
 
         return months
 
@@ -309,16 +356,15 @@ class InputData:
     def years(self):
         """Return array containing the years"""        
  
-        time = self.data.getTime().asComponentTime()
+        datetimes = self.data.getTime().asComponentTime()
         
         years = []
-	for i in range(0, len(time)):
-            years.append(int(str(time[i]).split('-')[0]))
+	for datetime in datetimes:
+            years.append(int(str(datetime).split('-')[0]))
 	        
         return years
 
 
-#    def smooth
 #    def eddy
 
 
@@ -381,6 +427,12 @@ def temporal_aggregation(data, output_timescale, climatology=False):
         sys.exit(1)
 
     return outdata
+
+
+def running_average(data, window):
+    """Calculate running average with desired window."""
+
+    return genutil.filters.runningaverage(data,window) 
 
 
 def write_netcdf(outfile_name, out_quantity, indata, 
