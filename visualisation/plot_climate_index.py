@@ -27,9 +27,8 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 from pylab import *
 
-#import datetime
-from datetime import datetime
-from dateutil.rrule import *
+import datetime
+from dateutil.rrule import *  # it seems to not work unless you import *
 
 import numpy
 import numpy.ma as ma
@@ -39,305 +38,42 @@ module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
-
-#pcolor_list = ['red','blue','green','yellow','orange']
-#scolor_list = ['purple','brown','aqua']
-
-
-
-def unpack_comma_list(comma_list,data_type='str'):
-    """Converts a comma separated list into a python array"""
     
-    if comma_list:  # because it might be 'None'
-	if data_type == 'int':
-	    python_array = [int(s) for s in str(comma_list).split(',')]
-	elif data_type == 'float':
-	    python_array = [float(s) for s in str(comma_list).split(',')]
-	else:
-	    python_array = [str(s) for s in str(comma_list).split(',')]
-    else:
-	python_array = None
 
-    return python_array
+def set_datetime_axis(all_files, time_freq, xmax=datetime.min, xmin=datetime.max):
+    """Return the datetime axis.
+
+    Positional arguments:
+      all_files  --  dict netcdf_io.InputData instances as values
+      time_freq  --  datetime axis frequency
+                     can be: 'YEARLY', 'MONTHLY', 'WEEKLY', 
+                             'DAILY', 'HOURLY', 'MINUTELY',
+                             'SECONDLY'
+
+    Keyword arguments:
+      xmax, xmin --  user supplied max and min bounds on datetime axis 
+
+    """
+
+    assert isinstance(all_files, nio.InputData)
+    assert time_freq in ['YEARLY', 'MONTHLY', 'WEEKLY', 
+                         'DAILY', 'HOURLY', 'MINUTELY', 'SECONDLY']
+    assert isinstance(xmax, datetime.datetime)
+    assert isinstance(xmin, datetime.datetime)
 
 
-def get_times(years,months,window):
-    """Adjusts time axis according to window"""
+    max_datetime = datetime.min
+    min_datetime = datetime.max
+    for item in all_files.values():
+        max_datetime, min_datetime = nio.hi_lo(item.datetime_axis(), max_datetime, min_datetime)
 
-    start_year = years[0]
-    start_month = months[0]
-    end_year = years[-1]
-    end_month = months[-1]
+    max_datetime, min_datetime = nio.hi_lo([xmax, xmin], max_datetime, min_datetime)
     
-    if window > 1.0:
-        start_adjust = math.floor((window-1) / 2.0)
-	end_adjust = math.ceil((window-1) / 2.0)
-	start_month = start_month + start_adjust
-	if start_month > 12.0:
-	    start_month = start_month - 12
-	    start_year = start_year + 1
-
-        end_month = end_month - end_adjust
-	if end_month < 1.0:
-	    end_month = end_month + 12
-	    end_year = end_year - 1
-
-    return int(start_year),int(start_month),int(end_year),int(end_month)
-
-
-def set_units(var,index,orig_units,axis):
-    """Sets the units for the plot"""
-    
-    if index[0:4] == 'NINO':
-        units = 'Anomaly (deg C)'
-    elif index == 'IEMI':
-        units = 'Anomaly (deg C)'
-    elif index == 'SAMI':
-        units = 'Monthly SAM index'
-    elif index[0:3] == 'EOF' or index[0:2] == 'PC':
-        if var == 'sf':
-	    units = '1.e+6 m2 s-1'
-	elif var == 'ts' or var == 'tos':
-	    units = 'deg C'
-	else:
-	    print 'Index/variable combination not recognised'
-            sys.exit(0)
-    else:
-        print 'Index not recognised'
-        sys.exit(0)
-    
-    if units != orig_units and orig_units != 'temp':
-        print '%s axis data do not have the same units'  %(axis)
-	sys.exit(0)
-    
-    return units
-
-
-def hi_lo(data_series,current_max,current_min):
-    """Determines the new highest and lowest value"""
-    
-    highest = numpy.max(data_series)
-    if highest > current_max:
-        new_max = highest
-    else:
-        new_max = current_max
-        
-    lowest = numpy.min(data_series)
-    if lowest < current_min:
-        new_min = lowest
-    else:
-        new_min = current_min
-    
-    return new_max,new_min  
-
-
-def extract_data(file_list, file_list_dims, error_list, windowp, windows):
-    
-    # Extract the index #
-
-    plot_data = {}
-    plot_times = {}
-    count = 0
-    for ifile in file_list:
-        
-	# Initialise data variables #
-	
-	years = []
-	months = []
-	data = []
-	error = []
-	
-        # Read the input file, read the data and flatten the spatial dimension #
-   
-        fin = open(ifile.fname,'r')
-	line = fin.readline()
-	switch = False
-	while line:
-	
-	    if line.split()[0] == 'YR':
-	        loc = line.split().index(ifile.index)
-		switch = True
-
-	    elif switch: 
-		year = line.split()[0]
-		month = line.split()[1]
-		temp_data = line.split()[loc]
-		years.append(int(year))
-		months.append(int(month))
-		data.append(float(temp_data))
-		if (count in error_list):
-		    temp_error = line.split()[loc+1]
-		    error.append(float(temp_error))
-	        
-	    line = fin.readline()
-
-	    
-	# Apply the smoothing and adjust the time axis as necessary #
-	
-	if count < file_list_dims[0]:
-	    window = windowp
-	else:
-	    window = windows
-	
-	smooth_data = genutil.filters.runningaverage(data,window)
-	if (count in error_list):
-	    smooth_error = genutil.filters.runningaverage(error,window)
-	    
-	start_year,start_month,end_year,end_month = get_times(years,months,window)
-
-
-	# Define output values for plotting #
-	
-        plot_data[ifile.fname] = smooth_data
-	if (count in error_list):
-	    plot_data[ifile.fname,'error'] = smooth_error
-	
-	plot_times[ifile.fname] = [start_year,start_month,end_year,end_month]
-    
-        count = count + 1
-	
-
-    return plot_data,plot_times
-
-
-def convert_datetime(dates):
-    """Converts a series of datetime instances to floating point numbers"""
-    
-    dates_float = numpy.ma.zeros(len(dates[:]))
-    for i in range(0,len(dates[:])):    # SLOW
-        dates_float[i] = dates[i].year + ((dates[i].month - 1) / 12.0) 
-    
-    return dates_float
-    
-    
-def setup_plot(file_list,file_list_dims,error_list,plot_data,plot_times,setx,setyp,setys,ybuffer):
-    """Determines all the details for the plot (e.g. data, axis bounds, tick marks)"""
-
-    ## Define the data and details of the plot setup ##
-    
-    ydata = {}
-    xdata = {} 
-    ybounds = {}
-    
-    # Plot the data for each dataset #
-
-    count = 0
-    max_time = datetime(1000,1,1)
-    min_time = datetime(3000,12,31)
-    min_y_a = 1e10
-    max_y_a = -1e10
-    min_y_b = 1e10
-    max_y_b = -1e10
-    
-    for ifile in file_list:
-
-	# Intialise year and month variables #
-
-	start_year,start_month,end_year,end_month = plot_times[ifile.fname]
-
-        # Subset the data along the time axis if neceassry, according to user defined time bounds #
-
-        timeseries_complete = plot_data[ifile.fname] #read in timeseries data
-	if (count in error_list):
-	    error_complete = plot_data[ifile.fname,'error']
-	    
-	dates_complete = rrule(MONTHLY,dtstart=datetime(start_year,start_month,16),until=datetime(end_year,end_month,16))
-	
-	if setx:
-	    start_year_user,start_month_user,end_year_user,end_month_user = setx
-	    
-	    if datetime(start_year_user,start_month_user,16) > datetime(start_year,start_month,16):
-	        dates_user_a = rrule(MONTHLY,dtstart=datetime(start_year_user,start_month_user,16),until=datetime(end_year,end_month,16)) 
-	        new_start = len(dates_complete[:]) - len(dates_user_a[:])
-	    else:
-	        new_start = 0
-	    
-	    if datetime(end_year_user,end_month_user,16) < datetime(end_year,end_month,16):
-	        dates_user_b = rrule(MONTHLY,dtstart=datetime(start_year,start_month,16),until=datetime(end_year_user,end_month_user,16))
-	        new_end = len(dates_user_b[:])
-	    else:
-	        new_end = len(dates_complete[:])
-	    
-	    dates = dates_complete[new_start:new_end]
-	    timeseries = timeseries_complete[new_start:new_end]	
-	    if (count in error_list):
-	        error = error_complete[new_start:new_end]
-	
-	else:
-	    dates = dates_complete
-	    timeseries = timeseries_complete
-	    if (count in error_list):
-	        error = error_complete
-	
-	# Alter maximum time values, if appropriate #
-	
-	if max_time < dates[-1]:
-	    max_time = dates[-1]
-	
-	if min_time > dates[0]:
-	    min_time = dates[0]
-	
-	# Alter the maximum y axis bounds, if appropriate #
-	
-	if count < file_list_dims[0]:
-	    max_y_a,min_y_a = hi_lo(timeseries,max_y_a,min_y_a)
-	    if (count in error_list):
-	        max_y_a,min_y_a = hi_lo(timeseries+(2*error),max_y_a,min_y_a)  
-		max_y_a,min_y_a = hi_lo(timeseries-(2*error),max_y_a,min_y_a)   	
-	else:
-	    max_y_b,min_y_b = hi_lo(timeseries,max_y_b,min_y_b)
-	    if (count in error_list):
-	        max_y_b,min_y_b = hi_lo(timeseries+(2*error),max_y_b,min_y_b)  
-		max_y_b,min_y_b = hi_lo(timeseries-(2*error),max_y_b,min_y_b)
-	
-	# Write the data to be plotted #
-	
-	#Convert the x values to floats
-
-	dates_float = convert_datetime(dates) 
-	
-	xdata[ifile.fname] = dates_float
-        ydata[ifile.fname] = timeseries
-	if (count in error_list):
-	    ydata[ifile.fname,'error'] = error
-
-	count = count + 1 
-	         
-	
-    # Define the full x axis #
-    
-    xaxis_full_datetime = rrule(MONTHLY,dtstart=min_time,until=max_time)	    
-    xaxis_full_float = convert_datetime(xaxis_full_datetime)
-
-    # Define the range of the y axis #
-    
-    if setyp:
-        ybounds['min','a'] = setyp[0]
-	ybounds['max','a'] = setyp[1]
-    else:
-        y_maximum_a = max(abs(max_y_a),abs(min_y_a))
-        y_buffer_a = (2 * y_maximum_a) * 0.03
-  	
-	ybounds['min','a'] = -y_maximum_a - y_buffer_a
-	ybounds['max','a'] = y_maximum_a + ybuffer*y_buffer_a
-    
-    if file_list_dims[1] > 0:
-	if setys:
-	    ybounds['min','b'] = setys[0]
-	    ybounds['max','b'] = setys[1]
-	else:
-	    y_maximum_b = max(abs(max_y_b),abs(min_y_b))
-            y_buffer_b = (2 * y_maximum_b) * 0.03 
-            
-	    ybounds['min','b'] = -y_maximum_b - y_buffer_b
-	    ybounds['max','b'] = y_maximum_b + ybuffer*y_buffer_b
-   
-    
-    return xdata,ydata,ybounds,xaxis_full_float
+    return rrule(eval(timeres), dtstart=min_datetime ,until=max_datetime)
 
 
 def split_nrows(indata,nrows):
-    """Splits a give array according to the number of rows"""
+    """Split a given array according to the number of rows"""
 
     outdata = {}
 
@@ -356,13 +92,15 @@ def split_nrows(indata,nrows):
     return outdata
 
 
-def split_data(xaxis_full_float,xdata,ydata,nrows):
+def split_data(datetime_axis, xdata, ydata, nrows):
     """Splits up the data according to the number of rows"""
     
-    #initialise output y data array	
-    ydata_full = numpy.ma.ones(len(xaxis_full_float)) * 1.e20
+    ydata_full = numpy.ma.ones(len(datetime_axis)) * 1.e20
     
-    #find location of the first time point
+    #find location of first time point
+
+
+    min(range(len(xdata)), key=lambda i: abs(a[i] - datetime_axis[0]))
     start_loc = numpy.int(numpy.where(xaxis_full_float==xdata[0])[0])
     
     #drop original y data into ydata_full
@@ -382,40 +120,19 @@ def split_data(xaxis_full_float,xdata,ydata,nrows):
 def myroundup(x, base=10):
     return int(base * math.ceil(float(x)/base))
 
-
-def get_xticks(xdata):
-    """Determines the x axis ticks and labels"""
+ 
+def generate_plot(xaxis, ydata, 
+                  ybounds=None,
+                  outfile_name=None, 
+		  leglocp=None, leglocs=None, legsize='medium',
+		  pcolor_list=['red', 'blue', 'green', 'yellow', 'orange'], 
+		  scolor_list=['purple', 'brown','aqua'],
+		  linep='-', lines='--',
+		  nrows=1,
+		  title=''):
+    """Create timeseries plot.
     
-    # Determine the interval between major and minor ticks #
-    
-    len_xdata = len(xdata)
-    major_interval = (myroundup(len_xdata/12)) / 10
-    if major_interval == 1:
-        minor_interval = (1.0/12.0)
-    elif major_interval == 2:
-        minor_interval = 0.5
-    else:
-        minor_interval = (myroundup(major_interval,base=4)) / 4
-        
-    # Determine the actual tick locations and values #
-    	
-    test_major = xdata % major_interval
-    test_minor = xdata % minor_interval
-     
-    major_xticks = numpy.where(test_major == 0, xdata, 0)
-    minor_xticks = numpy.where(test_minor < 0.0000001, xdata, 0)
-    minor_xticks = numpy.where(major_xticks != 0, 0, minor_xticks)
-    
-    major_xticks = major_xticks[major_xticks != 0]
-    major_xlabels = major_xticks.astype(int)
-    minor_xticks = minor_xticks[minor_xticks != 0]
-
-    return minor_xticks,major_xticks,major_xlabels
-    
-    
-def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,ybounds,xaxis_full_float,
-                  outfile_name,leglocp,leglocs,legsize,pcolor_list,scolor_list,linep,lines,nrows,title):
-    """Creates the plot"""
+    """
     
     # Initialise figure #
     
@@ -541,28 +258,59 @@ def generate_plot(primary_file_list,secondary_file_list,error_list,xdata,ydata,y
         plt.show()
 
 
+def sort_files(file_list, set_name):
+    """Place input files into dict.
+
+    positional arguments:
+      set_name -- can be primary or secondary
+
+    """
+
+    out_dict = {}
+    order = []
+    for item in file_list:
+        key = item[0:2]
+        window = int(item[3])
+        out_dict{key} = nio.InputData(item[0], item[1], runave=window)
+        out_dict{key}.tag = item[2]
+        out_dict{key}.window = window
+        out_dict{key}.set = set_name
+        order.append(key)         
+
+    return out_dict, order
+
+
 def main(inargs):
-#secondary_file_list,error_list,outfile_name,windowp,windows,setx,setyp,setys,ybuffer,
-#         leglocp,leglocs,legsize,pcolor_list,scolor_list,linep,lines,nrows,title):
     """Run the program"""
     
-    primary_file_list = [nio.InputData(f, v, **nio.dict_filter(vars(inargs), ['setx'])) for f, v in inargs.pfiles, inargs.pvars]
-    
-    if secondary_file_list:
-        secondary_file_list = [InputFile(f) for f in secondary_file_list]
-        file_list = primary_file_list + secondary_file_list
-	file_list_dims = [len(primary_file_list),len(secondary_file_list)]
-    else:
-        file_list = primary_file_list
-	file_list_dims = [len(primary_file_list),0]
+    # Sort files - unique identifier is the filename, variable pair #
 
-    ## Calculate the index ##
-
-    plot_data, plot_times = extract_data(file_list, file_list_dims, error_list, windowp, windows)
+    primary_dict, primary_order = sort_files(inargs.primary, 'primary')
+    secondary_dict, secondary_order = sort_files(inargs.secondary, 'secondary')
     
-    ## Get all the setup details for the plot ##
+    allfile_dict = dict(primary_file_list.items() + secondary_file_list.items())
+    allfile_order = primary_order + secondary_order
+
+    error_files = {}
+    for item in inargs.error:
+        key = item[2:4]
+        error_files{key} = nio.InputData(item[0], item[1], runave=allfile_dict[key].window)
         
-    xdata,ydata,ybounds,xaxis_full_float = setup_plot(file_list, file_list_dims ,error_list, plot_data, plot_times, setx, setyp, setys, ybuffer)
+
+    ### FROM HERE DOWN COULD ALL GO IN GENERATE PLOT ##
+
+    # Set the x (datetime) axis #
+     
+    xaxis = set_datetime_axis(allfile_dict, freq, **nio.dict_filter(vars(inargs), nio.list_kwargs(set_datetime_axis)))   
+    
+    # Split the data according to the number of rows #
+
+    data = split_data()    
+
+    # Set the y-axis bounds #
+
+    define_function
+
     
     ## Generate the plot ##
     
@@ -604,38 +352,42 @@ note:
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("tag", type=str, help="Input file tag (or label)")
+    parser.add_argument("window", type=str, help="Input file running average window - can be 1 for no smoothing")
 				     
-    parser.add_argument("--primary", type=str, action='append', default=None, nargs=3,
-                        metavar=('FILENAME', 'VAR', 'TAG'),  
-                        help="Additional primary file name, variable and tag [default: None]")
-    parser.add_argument("--secondary", type=str, action='append', default=None, nargs=3, 
-                        metavar=('FILENAME', 'VAR', 'TAG'),
-                        help="Secondary file name, variable and tag [default: None]")
+    parser.add_argument("--primary", type=str, action='append', default=[], nargs=4,
+                        metavar=('FILENAME', 'VAR', 'TAG', 'WINDOW'),  
+                        help="Additional primary file name, variable, tag and running average window [default: None]")
+    parser.add_argument("--secondary", type=str, action='append', default=None, nargs=4, 
+                        metavar=('FILENAME', 'VAR', 'TAG', 'WINDOW'),
+                        help="Secondary file name, variable, tag and running average window [default: None]")
+    parser.add_argument("--error", type=str, action='append', default=None, nargs=4,
+                        metavar=('FILENAME', 'VAR', 'PARENT_FILE_NAME', 'PARENT_VAR'),
+                        help="Error file name, variable, parent file name, parent variable [default: None]")
     parser.add_argument("--outfile", type=str, default=None,
                         help="Name of output file [default: None]")
     parser.add_argument("--buffer", type=float, default=1.0,
                         help="Scale factor for y axis upper buffer [default: %(default)s]")
     parser.add_argument("--nrows", type=int, default=1,
                         help="Number of rows (long time axes can be split onto numerous rows [default: %(default)s]")
-    parser.add_argument("--setx", type=str, default=None, nargs=2, metavar=('START_DATE', 'END_DATE'),
-                        help="Time axis bounds [default: None]")
-    parser.add_argument("--error", type=str, default=1000,
-                        help="Comma separated list of file numbers corresponding to those with error shading [default: None]")
+    parser.add_argument("--xmax", type=str, metavar=('DATE'),
+                        help="Maximum time axis value [default: auto]")
+    parser.add_argument("--xmin", type=str, metavar=('DATE'),
+                        help="Minimum time axis value [default: auto]")
     parser.add_argument("--locp", type=int, default=None, 
                         help="Location of the primary figure legend [defualt: no legend]")
     parser.add_argument("--locs", type=int, default=None, 
                         help="Location of the secondary figure legend [defualt: non legend]")
-    parser.add_argument("--legsize", type=str, default='medium', 
+    parser.add_argument("--legsize", type=str, 
                         choices=['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'],
-                        help="Size of the legend text [default: %(default)s]")
-    parser.add_argument("--colorp", type=str, default=['red', 'blue', 'green', 'yellow', 'orange'], nargs='*',
-                        help="Comma separated list of colors for the primary plot [default: auto]")
-    parser.add_argument("--colors", type=str, default=['purple', 'brown','aqua'], nargs='*',
-                        help="Comma separated list of colors for the secondary plot [default: auto]")
-    parser.add_argument("--linep", type=str, default='-', choices=['-', '--', '-.', ':'],
-                        help="Line style for the primary plot [default: %(default)s]")
-    parser.add_argument("--lines", type=str, default='--', choices=['-', '--', '-.', ':'],
-                        help="Line style for the secondary plot [default: %(default)s]")
+                        help="Size of the legend text [default: medium]")
+    parser.add_argument("--colorp", type=str, nargs='*',
+                        help="Colors for the primary plot [default: auto]")
+    parser.add_argument("--colors", type=str, nargs='*',
+                        help="Colors for the secondary plot [default: auto]")
+    parser.add_argument("--linep", type=str, choices=['-', '--', '-.', ':'],
+                        help="Line style for the primary plot [default: solid]")
+    parser.add_argument("--lines", type=str, choices=['-', '--', '-.', ':'],
+                        help="Line style for the secondary plot [default: dashed]")
     parser.add_argument("--windowp", type=int, default=1,
                         help="Window for primary axis running average [default: %(default)s]")
     parser.add_argument("--windows", type=int, default=1,
@@ -646,8 +398,15 @@ note:
                         help="Secondary y axis bounds [default: auto]")
     parser.add_argument("--title", type=str, default=None, 
                         help="Title for plot [default: None]")
-    
+    parser.add_argument("--ylabel", type=str, default=None, 
+                        help="y axis label [default: None]")
+    parser.add_argument("--xlabel", type=str, default=None, 
+                        help="x axis label [default: None]")    
+
+
     args = parser.parse_args()  
-        
+
+    args.primary.insert(0, (args.infile, args.variable, args.tag, args.window))
+
     main(args)
     
