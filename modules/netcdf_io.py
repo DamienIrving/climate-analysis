@@ -117,12 +117,12 @@ def dict_filter(indict, key_list):
 def hi_lo(data_series, current_max, current_min):
     """Determines the new highest and lowest value"""
          
-    if isinstance(dataseries, (numpy.ndarray)):
+    if isinstance(data_series, (numpy.ndarray)):
         find_max = numpy.max
         find_min = numpy.min
     else:
-        find_max = numpy.max
-        find_min = numpy.min
+        find_max = max
+        find_min = min
     
     highest = find_max(data_series)
     if highest > current_max:
@@ -136,6 +136,8 @@ def hi_lo(data_series, current_max, current_min):
     else:
         new_min = current_min
     
+    print current_max, current_min
+    print new_max, new_min
     return new_max, new_min
 
 
@@ -174,13 +176,13 @@ def _get_datetime(datetime_list):
     'input argument must be a list or tuple of datetimes'
 
     datetime_object_list = []
-    for datetime in datetime_list:
-	date, time = str(datetime).split(' ')
+    for item in datetime_list:
+	date, time = str(item).split(' ')
         year, month, day = date.split('-')
         hour, minute, second = time.split(':')
         
         datetime_object_list.append(datetime.datetime(int(year), int(month), int(day), 
-	                            int(hour), int(minute), int(float(second)))
+	                            int(hour), int(minute), int(float(second))))
 
     return datetime_object_list
 
@@ -353,6 +355,22 @@ class InputData:
         return months
 
 
+    def picker(self, **kwargs):
+        """Select data based on non-contiguous axis values.
+	
+	Keyword arguments (with examples)
+	latitude  -- (-30, -15, 5, 30)
+        level     -- (1000.)
+        longitude -- (120, 165, 190)
+        time      -- ('1979-01', '1983-02', '2000-12-31', )
+		     
+        """
+
+        pick = genutil.picker(**kwargs)
+        
+        return self.data(pick)
+
+
     def years(self):
         """Return array containing the years"""        
  
@@ -366,6 +384,7 @@ class InputData:
 
 
 #    def eddy
+#    def mask
 
 
 def temporal_aggregation(data, output_timescale, climatology=False):
@@ -385,6 +404,10 @@ def temporal_aggregation(data, output_timescale, climatology=False):
     http://www2-pcmdi.llnl.gov/cdat/source/api-reference/cdutil.times.html
 
     """
+
+    ######
+    #does it need to be cdutil.times?????
+    #####
 
     # Find input timescale #
     
