@@ -40,7 +40,8 @@ import netcdf_io as nio
 
     
 
-def set_datetime_axis(all_files, time_freq, xmax=datetime.min, xmin=datetime.max):
+def set_datetime_axis(all_files, time_freq, xmax=datetime.datetime.max, 
+                                            xmin=datetime.datetime.min):
     """Return the datetime axis.
 
     Positional arguments:
@@ -54,22 +55,25 @@ def set_datetime_axis(all_files, time_freq, xmax=datetime.min, xmin=datetime.max
       xmax, xmin --  user supplied max and min bounds on datetime axis 
 
     """
-
-    assert isinstance(all_files, nio.InputData)
+    
+    for item in all_files.values():
+        assert isinstance(item, nio.InputData)
+    
     assert time_freq in ['YEARLY', 'MONTHLY', 'WEEKLY', 
                          'DAILY', 'HOURLY', 'MINUTELY', 'SECONDLY']
     assert isinstance(xmax, datetime.datetime)
     assert isinstance(xmin, datetime.datetime)
 
 
-    max_datetime = datetime.min
-    min_datetime = datetime.max
+    max_datetime = datetime.datetime.min
+    min_datetime = datetime.datetime.max
     for item in all_files.values():
         max_datetime, min_datetime = nio.hi_lo(item.datetime_axis(), max_datetime, min_datetime)
 
-    max_datetime, min_datetime = nio.hi_lo([xmax, xmin], max_datetime, min_datetime)
-    
-    return rrule(eval(timeres), dtstart=min_datetime ,until=max_datetime)
+    max_datetime = xmax if xmax < max_datetime else max_datetime
+    min_datetime = xmin if xmin > min_datetime else min_datetime
+      
+    return rrule(eval(time_freq), dtstart=min_datetime ,until=max_datetime)
 
 
 def split_nrows(indata,nrows):
@@ -262,20 +266,26 @@ def sort_files(file_list, set_name):
     """Place input files into dict.
 
     positional arguments:
-      set_name -- can be primary or secondary
+      file_list -- list of 
+      set_name  -- can be primary or secondary
 
     """
-
+    
     out_dict = {}
     order = []
-    for item in file_list:
-        key = item[0:2]
-        window = int(item[3])
-        out_dict{key} = nio.InputData(item[0], item[1], runave=window)
-        out_dict{key}.tag = item[2]
-        out_dict{key}.window = window
-        out_dict{key}.set = set_name
-        order.append(key)         
+    
+    if file_list:
+	for item in file_list:
+            key = item[0:2]
+            window = int(item[3])
+            out_dict[key] = nio.InputData(item[0], item[1], runave=window)
+            out_dict[key].tag = item[2]
+            out_dict[key].window = window
+            out_dict[key].set = set_name
+            order.append(key)         
+    else:
+        outdict = None
+	order = None
 
     return out_dict, order
 
@@ -288,22 +298,27 @@ def main(inargs):
     primary_dict, primary_order = sort_files(inargs.primary, 'primary')
     secondary_dict, secondary_order = sort_files(inargs.secondary, 'secondary')
     
-    allfile_dict = dict(primary_file_list.items() + secondary_file_list.items())
-    allfile_order = primary_order + secondary_order
+    allfile_dict = dict(primary_dict.items() + secondary_dict.items()) if secondary_dict else primary_dict
+    allfile_order = (primary_order + secondary_order) if secondary_dict else primary_order
 
-    error_files = {}
-    for item in inargs.error:
-        key = item[2:4]
-        error_files{key} = nio.InputData(item[0], item[1], runave=allfile_dict[key].window)
-        
+    
+    if inargs.error:
+        error_files = {}
+	for item in inargs.error:
+            key = item[2:4]
+            error_files[key] = nio.InputData(item[0], item[1], runave=allfile_dict[key].window)
+    else:
+        error_files = None
 
     ### FROM HERE DOWN COULD ALL GO IN GENERATE PLOT ##
 
     # Set the x (datetime) axis #
      
-    xaxis = set_datetime_axis(allfile_dict, freq, **nio.dict_filter(vars(inargs), nio.list_kwargs(set_datetime_axis)))   
+    xaxis = set_datetime_axis(allfile_dict, inargs.freq, **nio.dict_filter(vars(inargs), nio.list_kwargs(set_datetime_axis)))   
     
     # Split the data according to the number of rows #
+    
+    ### works to here ###
 
     data = split_data()    
 
@@ -326,10 +341,9 @@ legend options:
 	      7 center right, 8 lower center, 9 upper center, 10 center, None no legend 
 
 examples (abyss.earthsci.unimelb.edu.au):
-  /opt/cdat/bin/cdat plot_climate_index.py --wp 5 
-  /work/dbirving/processed/indices/data/ts_Merra_NINO34_monthly_native-ocean.txt
-  /work/dbirving/processed/indices/data/tos_ERSSTv3b_NINO34_monthly_native.txt
-
+  /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_climate_index.py
+  /work/dbirving/processed/indices/data/ts_Merra_surface_NINO34_monthly_native-ocean.nc nino34 Nino34 1
+  
   /opt/cdat/bin/cdat plot_climate_index.py 
   /work/dbirving/processed/indices/data/ts_Merra_surface_EOF1_monthly_native-ocean-eqpacific.txt 
   /work/dbirving/processed/indices/data/ts_Merra_surface_EOF2_monthly_native-ocean-eqpacific.txt 
@@ -348,7 +362,10 @@ note:
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-	
+    
+    parser.add_argument("freq", type=str, choices=['YEARLY', 'MONTHLY', 'WEEKLY', 
+                        'DAILY', 'HOURLY', 'MINUTELY', 'SECONDLY'],
+                        help="Time frequency of the plot")	
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("tag", type=str, help="Input file tag (or label)")
@@ -365,8 +382,8 @@ note:
                         help="Error file name, variable, parent file name, parent variable [default: None]")
     parser.add_argument("--outfile", type=str, default=None,
                         help="Name of output file [default: None]")
-    parser.add_argument("--buffer", type=float, default=1.0,
-                        help="Scale factor for y axis upper buffer [default: %(default)s]")
+    parser.add_argument("--buffer", type=float,
+                        help="Scale factor for y axis upper buffer")
     parser.add_argument("--nrows", type=int, default=1,
                         help="Number of rows (long time axes can be split onto numerous rows [default: %(default)s]")
     parser.add_argument("--xmax", type=str, metavar=('DATE'),
@@ -388,19 +405,15 @@ note:
                         help="Line style for the primary plot [default: solid]")
     parser.add_argument("--lines", type=str, choices=['-', '--', '-.', ':'],
                         help="Line style for the secondary plot [default: dashed]")
-    parser.add_argument("--windowp", type=int, default=1,
-                        help="Window for primary axis running average [default: %(default)s]")
-    parser.add_argument("--windows", type=int, default=1,
-                        help="Window for secondary axis running average [default: %(default)s]")
     parser.add_argument("--setyp", type=float, default=None, nargs=2, metavar=('MIN', 'MAX'),
                         help="Primary y axis bounds [default: auto]")
     parser.add_argument("--setys", type=float, default=None, nargs=2, metavar=('MIN', 'MAX'),
                         help="Secondary y axis bounds [default: auto]")
-    parser.add_argument("--title", type=str, default=None, 
+    parser.add_argument("--title", type=str, 
                         help="Title for plot [default: None]")
-    parser.add_argument("--ylabel", type=str, default=None, 
+    parser.add_argument("--ylabel", type=str, 
                         help="y axis label [default: None]")
-    parser.add_argument("--xlabel", type=str, default=None, 
+    parser.add_argument("--xlabel", type=str, 
                         help="x axis label [default: None]")    
 
 
