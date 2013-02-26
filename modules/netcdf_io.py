@@ -28,6 +28,7 @@ import sys
 
 import inspect
 import datetime
+from dateutil.parser import *
 
 import numpy
 
@@ -177,12 +178,7 @@ def _get_datetime(datetime_list):
 
     datetime_object_list = []
     for item in datetime_list:
-	date, time = str(item).split(' ')
-        year, month, day = date.split('-')
-        hour, minute, second = time.split(':')
-        
-        datetime_object_list.append(datetime.datetime(int(year), int(month), int(day), 
-	                            int(hour), int(minute), int(float(second))))
+        datetime_object_list.append(parse(item))
 
     return datetime_object_list
 
