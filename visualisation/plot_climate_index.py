@@ -25,10 +25,12 @@ import genutil
 
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
+from matplotlib import dates
 from pylab import *
 
 import datetime
 from dateutil.rrule import *  # it seems to not work unless you import *
+#from dateutil.relativedelta import *
 
 import numpy
 import numpy.ma as ma
@@ -38,10 +40,30 @@ module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
+
+def round_datetime(dt, freq):
+    """Strip information of out datetime instance that is 
+    less than the time frequency/resolution."""
+    
+    freq_list = ['YEARLY', 'MONTHLY', 'WEEKLY', 
+                 'DAILY', 'HOURLY', 'MINUTELY', 
+		 'SECONDLY']
+    
+    assert isinstance(dt, datetime.datetime)
+    assert freq in freq_list 
+    
+    year = dt.year
+    month = dt.month if eval('dates.'+freq) >= dates.MONTHLY else 1
+    day = dt.day if freq_rank >= 2 else 1
+    hour = dt.hour if freq_rank >= 4 else 0
+    minute = dt.minute if freq_rank >= 5 else 0
+    second = dt.second if freq_rank >= 6 else 0
+    
+    return datetime.datetime(year, month, day, hour, minute, second)
     
 
-def set_datetime_axis(all_files, time_freq, xmax=datetime.datetime.max, 
-                                            xmin=datetime.datetime.min):
+def set_datetime_axis(all_files, time_freq, nrows=1, xmax=datetime.datetime.max, 
+                                                     xmin=datetime.datetime.min):
     """Return the datetime axis.
 
     Positional arguments:
@@ -64,19 +86,33 @@ def set_datetime_axis(all_files, time_freq, xmax=datetime.datetime.max,
     assert isinstance(xmax, datetime.datetime)
     assert isinstance(xmin, datetime.datetime)
 
+    # Find highest and lowest datetimes from the input file #
 
     max_datetime = datetime.datetime.min
     min_datetime = datetime.datetime.max
     for item in all_files.values():
         max_datetime, min_datetime = nio.hi_lo(item.datetime_axis(), max_datetime, min_datetime)
 
+    # Check against the user defined upper and lower bounds #
+
     max_datetime = xmax if xmax < max_datetime else max_datetime
     min_datetime = xmin if xmin > min_datetime else min_datetime
       
-    return rrule(eval(time_freq), dtstart=min_datetime ,until=max_datetime)
+    # Create the x-axis #
+
+    min_datetime = round_datetime(min_datetime, time_freq)
+    max_datetime = round_datetime(max_datetime, time_freq)
+    xaxis = rrule(eval(time_freq), dtstart=min_datetime ,until=max_datetime)
+    
+    # Adjust the xaxis so it's length is divisible by the number of rows
+
+    while (xaxis.count() % nrows) != 0:
+        xaxis = rrule(eval(time_freq), count=(xaxis.count() + 1), dtstart=min_datetime)    
+        
+    return xaxis
 
 
-def split_nrows(indata,nrows):
+def split_nrows(indata, nrows):
     """Split a given array according to the number of rows"""
 
     outdata = {}
@@ -96,44 +132,65 @@ def split_nrows(indata,nrows):
     return outdata
 
 
-def split_data(datetime_axis, xdata, ydata, nrows):
-    """Splits up the data according to the number of rows"""
-    
-    ydata_full = numpy.ma.ones(len(datetime_axis)) * 1.e20
-    
-    #find location of first time point
+def redo_to_datetime(all_files, datetime_axis, time_freq, nrows=1):
+    """Reconfigure the yaxis data so that it matches the desired xaxis
+    and number of rows (i.e. crop or insert missing values as necessary)."""
+
+    new_ydata = {}
+    for key, value in all_files.iteritems():
+        
+	assert isinstance(value, nio.InputData)
+	
+	# Convert original xaxis to datetime objects #
+	
+	orig_dtaxis = value.datetime_axis()
+	orig_start = round_datetime(orig_dtaxis[0], time_freq)
+	orig_len = len(orig_dtaxis)
+	dtaxis = rrule(eval(time_freq), count=len(orig_dtaxis), dtstart=orig_start) 
+	
+	# Check the start point of original xaxis against the new datetime_axis #
+	
+	new_ydata[key] = value.data[:]
+	
+        if dtaxis[0] in datetime_axis[:]:
+	    index = datetime_axis[:].index(dtaxis[0])
+	    new_ydata[key] = new_ydata[index:]
+	else:
+	    nfill = rrule(eval(time_freq), dtstart=datetime_axis[0], until=dtaxis[0]).count()
+	    for i in xrange(nfill):
+	        new_ydata[key] = numpy.insert(new_ydata, 0, 1.e20)
+		 
+        # Check the end point of original xaxis against the new datetime_axis #
+	
+        if dtaxis[-1] in datetime_axis[:]:
+            nfill = rrule(eval(time_freq), dtstart=dtaxis[-1], until=datetime_axis[-1]).count()
+	    for i in xrange(nfill):
+	        new_ydata[key] = numpy.append(new_ydata, 1.e20)
+        else:
+	    index = datetime_axis[:].index(dtaxis[-1])
+	    new_ydata[key] = new_ydata[:index+1]
+
+        new_ydata[key] = split_nrows(numpy.ma.masked_values(new_ydata[key], 1.e20), nrows)
 
 
-    min(range(len(xdata)), key=lambda i: abs(a[i] - datetime_axis[0]))
-    start_loc = numpy.int(numpy.where(xaxis_full_float==xdata[0])[0])
-    
-    #drop original y data into ydata_full
-    end_loc = start_loc + len(ydata)
-    ydata_full[start_loc:end_loc] = ydata
-    
-    #apply the mask
-    ydata_full = ma.masked_values(ydata_full,1.e20)
-
-    #split as necessary
-    xplot = split_nrows(xaxis_full_float,nrows)
-    yplot = split_nrows(ydata_full,nrows)
-    
-    return xplot,yplot
+    return new_ydata
 
 
 def myroundup(x, base=10):
     return int(base * math.ceil(float(x)/base))
 
  
-def generate_plot(xaxis, ydata, 
-                  ybounds=None,
-                  outfile_name=None, 
-		  leglocp=None, leglocs=None, legsize='medium',
-		  pcolor_list=['red', 'blue', 'green', 'yellow', 'orange'], 
-		  scolor_list=['purple', 'brown','aqua'],
-		  linep='-', lines='--',
+def generate_plot(xaxis, yaxis_data, yaxis_error, file_order, freq,
+                  nrows=1,
+                  secondary=None,
+                  ypbounds=None, ysbounds=None,
+                  outfile_name=None,
+		  ploc=None, sloc=None, legsize='medium',
+                  phguide=None, pvguide=None, shguide=None, svguide=None,
+		  colors=['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'brown','aqua'],
+		  pline='-', sline='--',
 		  nrows=1,
-		  title=''):
+		  title=''): 
     """Create timeseries plot.
     
     """
@@ -145,65 +202,44 @@ def generate_plot(xaxis, ydata,
     units_text='temp'
     units_text2='temp'
     
-    # Prepare the data according to the number of rows #
-   
-    if secondary_file_list:
-        all_file_list = primary_file_list + secondary_file_list
-    else:
-        all_file_list = primary_file_list
-    
-    xplot = {}
-    yplot = {}
-    yplot_error = {}
-    for afile in all_file_list:
-	xplot[afile.fname],yplot[afile.fname] = split_data(xaxis_full_float,xdata[afile.fname],ydata[afile.fname],nrows)
-	if (afile.fname in error_list):
-	    xplot[afile.fname],yplot_error[afile.fname] = split_data(xaxis_full_float,xdata[afile.fname],ydata[afile.fname,'error'],nrows)
+    # Prepare the xaxis #
+
+    xaxis_data = split_nrows(dates.date2num(datetime_axis), nrows)
+    locators = {'YEARLY': [dates.YearLocator, '%m/%d %H:%M'],
+                'MONTHLY': [dates.MonthLocator, '%m/%d %H:%M'],
+                'WEEKLY': [dates.MonthLocator, '%m/%d %H:%M'],
+                'DAILY': [dates.DayLocator, '%m/%d %H:%M'],
+                'HOURLY': [dates.HourLocator, '%m/%d %H:%M'],
+                'MINUTELY': [dates.MinuteLocator, '%m/%d %H:%M'],
+                'SECONDLY': [dates.SecondLocator, '%m/%d %H:%M']}
 
     # Make the plot #
     
-    for row in range(0,nrows):
+    for row in range(0, nrows):
 
         pnum = row + 1
 
 	#initialise plot
-	ax = fig.add_subplot(nrows,1,pnum)  # rows, columns, plot number
-
-	if secondary_file_list:
+	ax = fig.add_subplot(nrows, 1, pnum)  # rows, columns, plot number
+ 
+	if secondary:
 	    ax2 = ax.twinx()
 
-	#plot primary axis data	
+	#plot data	
 	count = 0
-	for pfile in primary_file_list:
-	    label = pfile.variable_name+', '+pfile.index+', '+pfile.dataset
-	    ax.plot(numpy.ma.array(xplot[pfile.fname][pnum]),numpy.ma.array(yplot[pfile.fname][pnum]),color=pcolor_list[count],lw=2.0,label=label,linestyle=linep,marker='None')
-	    if (pfile.fname in error_list):
-		upper = numpy.ma.array(yplot[pfile.fname][pnum]) + 2*numpy.ma.array(yplot_error[pfile.fname][pnum])
-		lower = numpy.ma.array(yplot[pfile.fname][pnum]) - 2*numpy.ma.array(yplot_error[pfile.fname][pnum])
-		ax.plot(numpy.ma.array(xplot[pfile.fname][pnum]),upper,color=pcolor_list[count],lw=0.5)
-        	ax.plot(numpy.ma.array(xplot[pfile.fname][pnum]),lower,color=pcolor_list[count],lw=0.5)
-        	ax.fill_between(numpy.ma.array(xplot[pfile.fname][pnum]),upper,lower,facecolor=pcolor_list[count],alpha=0.4)
+	for key in file_order:
+	    label = yaxis_data[key].tag
+            axis, linestyle = ax, linep if yaxis_data[key].set == 'primary' else ax2, lines
+	    axis.plot(numpy.ma.array(xaxis_data[pnum]), numpy.ma.array(yaxis_data[key][pnum]), 
+                      color=colors[count], lw=2.0, label=label, linestyle=linestyle, marker='None')
+	    if key in yaxis_error.keys():
+		upper = numpy.ma.array(yaxis_data[key][pnum]) + 2*numpy.ma.array(yaxis_error[key][pnum])   ## should use the numpy.ma addition tool
+		lower = numpy.ma.array(yaxis_data[key][pnum]) - 2*numpy.ma.array(yaxis_error[key][pnum])
+		axis.plot(numpy.ma.array(xaxis_data[pnum]), upper, color=colors[count], lw=0.5)
+        	axis.plot(numpy.ma.array(xaxis_data[pnum]), lower, color=colors[count], lw=0.5)
+        	axis.fill_between(numpy.ma.array(xaxis_data[pnum]), upper, lower, facecolor=colors[count], alpha=0.4)
             count = count + 1
 	    
-        #plot secondary axis data
-	if secondary_file_list:
-	    count = 0
-	    for sfile in secondary_file_list:
-		label = sfile.variable_name+', '+sfile.index+', '+sfile.dataset
-		ax2.plot(numpy.ma.array(xplot[sfile.fname][pnum]),numpy.ma.array(yplot[sfile.fname][pnum]),color=scolor_list[count],lw=2.0,label=label,linestyle=lines,marker='None')
-		if (sfile.fname in error_list):
-		    upper = numpy.ma.array(yplot[sfile.fname][pnum]) + 2*numpy.ma.array(yplot_error[sfile.fname][pnum])
-		    lower = numpy.ma.array(yplot[sfile.fname][pnum]) - 2*numpy.ma.array(yplot_error[sfile.fname][pnum])
-		    ax2.plot(numpy.ma.array(xplot[sfile.fname][pnum]),upper,color=scolor_list[count],lw=0.5)
-        	    ax2.plot(numpy.ma.array(xplot[sfile.fname][pnum]),lower,color=scolor_list[count],lw=0.5)
-        	    ax2.fill_between(numpy.ma.array(xplot[sfile.fname][pnum]),upper,lower,facecolor=scolor_list[count],alpha=0.4)
-                count = count + 1
-
-	#plot extra guidelines
-	units_text = set_units(primary_file_list[0].variable_name,primary_file_list[0].index,units_text,'Primary')
-
-        if secondary_file_list:
-	    units_text2 = set_units(secondary_file_list[0].variable_name,secondary_file_list[0].index,units_text2,'Secondary')
 
 	if units_text == 'Anomaly (deg C)' or units_text2 == 'Anomaly (deg C)':
             ax.axhline(y=0.5,linestyle='--',color='0.5')
@@ -219,24 +255,25 @@ def generate_plot(xaxis, ydata,
 	    ax2.set_xlim(xplot[secondary_file_list[0].fname][pnum][0],xplot[secondary_file_list[0].fname][pnum][-1])
 
 	#xticks
-	minor_xticks,major_xticks,major_xlabels = get_xticks(xplot[primary_file_list[0].fname][pnum])
+	ax.xaxis.set_major_locator(locators[freq][0])
+        ax.xaxis.set_major_formatter(locators[freq][0])
 
 	ax.set_xticks(major_xticks,minor=False)
 	ax.set_xticks(minor_xticks,minor=True)
 	ax.set_xticklabels(major_xlabels,minor=False,fontsize='medium')
 
         #gridlines 
-	if secondary_file_list == None:
+	if not secondary:
 	    ax.grid(True,'major',color='0.2')
 	    ax.grid(True,'minor',color='0.6')
 	else:
 	    ax.axhline(y=0,linestyle='-',color='0.5')
 
 	#axis labels
-	ax.set_ylabel(units_text,fontsize='medium')
+	ax.set_ylabel(plabel, fontsize='medium')
 
-	if secondary_file_list:
-	    ax2.set_ylabel(units_text2,fontsize='medium',rotation=270)
+	if secondary:
+	    ax2.set_ylabel(slabel, fontsize='medium', rotation=270)
 
 	#legend
 
@@ -301,14 +338,13 @@ def main(inargs):
     allfile_dict = dict(primary_dict.items() + secondary_dict.items()) if secondary_dict else primary_dict
     allfile_order = (primary_order + secondary_order) if secondary_dict else primary_order
 
-    
     if inargs.error:
-        error_files = {}
+        error_dict = {}
 	for item in inargs.error:
             key = item[2:4]
-            error_files[key] = nio.InputData(item[0], item[1], runave=allfile_dict[key].window)
+            error_dict[key] = nio.InputData(item[0], item[1], runave=allfile_dict[key].window)
     else:
-        error_files = None
+        error_dict = None
 
     ### FROM HERE DOWN COULD ALL GO IN GENERATE PLOT ##
 
@@ -316,22 +352,15 @@ def main(inargs):
      
     xaxis = set_datetime_axis(allfile_dict, inargs.freq, **nio.dict_filter(vars(inargs), nio.list_kwargs(set_datetime_axis)))   
     
-    # Split the data according to the number of rows #
-    
-    ### works to here ###
+    # Reconfigure the data to be plotted, so that it is consistent with the new x axis #
 
-    data = split_data()    
+    yaxis_data = redo_to_datetime(allfile_dict, xaxis, inargs.freq, **nio.dict_filter(vars(inargs), nio.list_kwargs(redo_to_datetime)))
+    yaxis_error = redo_to_datetime(error_dict, xaxis, inargs.freq, **nio.dict_filter(vars(inargs), nio.list_kwargs(redo_to_datetime))) if error_dict else None
 
-    # Set the y-axis bounds #
+    # Generate the plot #
+    
+    generate_plot(xaxis, yaxis_data, yaxis_error, allfile_order, secondary=secondary_order, **nio.dict_filter(vars(inargs), nio.list_kwargs(generate_plot)))
 
-    define_function
-
-    
-    ## Generate the plot ##
-    
-    generate_plot(primary_file_list, secondary_file_list, error_list, xdata, ydata, ybounds, xaxis_full_float,
-                  outfile_name, leglocp, leglocs, legsize, pcolor_list, scolor_list, linep, lines, nrows, title)
-    
 
 if __name__ == '__main__':
 
@@ -354,6 +383,10 @@ examples (abyss.earthsci.unimelb.edu.au):
 note:
   The expected measure of error is the standard deviation (twice the standard deviation either side
   of the central estimate is plotted).
+
+improvements:
+  The ability to plot seasonal timescale data (e.g. like 3 or 6 month season) could be achieved by
+  simply using the interval keyword argument for the rrule method.
 
 """
 
@@ -390,24 +423,22 @@ note:
                         help="Maximum time axis value [default: auto]")
     parser.add_argument("--xmin", type=str, metavar=('DATE'),
                         help="Minimum time axis value [default: auto]")
-    parser.add_argument("--locp", type=int, default=None, 
+    parser.add_argument("--ploc", type=int, default=None, 
                         help="Location of the primary figure legend [defualt: no legend]")
-    parser.add_argument("--locs", type=int, default=None, 
+    parser.add_argument("--sloc", type=int, default=None, 
                         help="Location of the secondary figure legend [defualt: non legend]")
     parser.add_argument("--legsize", type=str, 
                         choices=['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'],
                         help="Size of the legend text [default: medium]")
-    parser.add_argument("--colorp", type=str, nargs='*',
-                        help="Colors for the primary plot [default: auto]")
     parser.add_argument("--colors", type=str, nargs='*',
-                        help="Colors for the secondary plot [default: auto]")
-    parser.add_argument("--linep", type=str, choices=['-', '--', '-.', ':'],
+                        help="Colors for each plot [default: auto]")
+    parser.add_argument("--pline", type=str, choices=['-', '--', '-.', ':'],
                         help="Line style for the primary plot [default: solid]")
-    parser.add_argument("--lines", type=str, choices=['-', '--', '-.', ':'],
+    parser.add_argument("--sline", type=str, choices=['-', '--', '-.', ':'],
                         help="Line style for the secondary plot [default: dashed]")
-    parser.add_argument("--setyp", type=float, default=None, nargs=2, metavar=('MIN', 'MAX'),
+    parser.add_argument("--ypbounds", type=float, nargs=2, metavar=('MIN', 'MAX'),
                         help="Primary y axis bounds [default: auto]")
-    parser.add_argument("--setys", type=float, default=None, nargs=2, metavar=('MIN', 'MAX'),
+    parser.add_argument("--ysbounds", type=float, nargs=2, metavar=('MIN', 'MAX'),
                         help="Secondary y axis bounds [default: auto]")
     parser.add_argument("--title", type=str, 
                         help="Title for plot [default: None]")
@@ -416,6 +447,10 @@ note:
     parser.add_argument("--xlabel", type=str, 
                         help="x axis label [default: None]")    
 
+phguide
+shguide
+pvguide
+svguide
 
     args = parser.parse_args()  
 
