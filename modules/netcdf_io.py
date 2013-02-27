@@ -3,14 +3,15 @@ Collection of commonly used classes, functions and global variables
 for reading/writing variables to a netCDF file
 
 To import:
-
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 
 Included functions:
 convert_units        -- Convert units
 dict_filter          -- Filter dictionary 
+hi_lo                -- Update highest and lowest value
 list_kwargs          -- List keyword arguments of a function
+running_average      -- Calculate running average
 scale_offset         -- Apply scaling and offset factors
 temproal_aggregation -- Create a temporal aggregate of 
                         the input data
@@ -71,152 +72,6 @@ regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
 
 
 ## Classes/functions ##
-
-
-def convert_units(data):
-    """Convert units.
-        
-    kg m-2 s-1 or K will be converted to 
-    mm/day or Celsius.
-
-    Arguments:
-    data -- InputData instance or cdms2 transient variable
-            (i.e. must have a 'units' attribute)
-
-    """
-    #There would be scope to use the genutil udunits module
-    #here, however I couldn't figure out how to get it to
-    #do the rainfall conversion, plus then all file variables
-    #would need to have unidata udunits consistent units
-    
-    # Switch units #
-    
-    if data.units[0:10] == 'kg m-2 s-1':
-        newdata = numpy.ma.multiply(data, 86400.0)
-        newdata.units = 'mm d-1'
-    
-    elif data.units[0] == 'K':
-        newdata = numpy.ma.subtract(data, 273.16)
-        newdata.units = 'Celsius'
-    
-    else:
-        print 'Original units not recognised.'
-        print 'Units have not been converted.'
-
-        newdata = data
-
-
-    return newdata 
-
-
-def dict_filter(indict, key_list):
-    """Filter dictionary according to specified keys."""
-    
-    return dict((key, value) for key, value in indict.iteritems() if key in key_list)
-
-
-def hi_lo(data_series, current_max, current_min):
-    """Determines the new highest and lowest value"""
-         
-    if isinstance(data_series, (numpy.ndarray)):
-        find_max = numpy.max
-        find_min = numpy.min
-    else:
-        find_max = max
-        find_min = min
-    
-    highest = find_max(data_series)
-    if highest > current_max:
-        new_max = highest
-    else:
-        new_max = current_max
-        
-    lowest = find_min(data_series)
-    if lowest < current_min:
-        new_min = lowest
-    else:
-        new_min = current_min
-    
-    print current_max, current_min
-    print new_max, new_min
-    return new_max, new_min
-
-
-def list_kwargs(func):
-    """List keyword arguments of a function."""
-    
-    details = inspect.getargspec(func)
-    nopt = len(details.defaults)
-    
-    return details.args[-nopt:]
-    
-    
-def scale_offset(data, scale=1.0, offset=0.0):
-    """Apply scaling and offset factors.
-    
-    new_data = (old_data*scale) + offset
-
-    """
-    
-    return numpy.ma.add(numpy.ma.multiply(data, float(scale)),
-                        float(offset))
-
-
-def _get_datetime(datetime_list):
-    """Return a datetime instance for a given list of dates/times.
-    
-    Arguments:
-
-    times -- List values must be expressed in component time, 
-             consistent with the cdat asComponentTime() method
-             e.g. 1979-01-01 12:00:0.0  
-
-    """
-
-    assert isinstance(datetime_list, (list, tuple)), \
-    'input argument must be a list or tuple of datetimes'
-
-    datetime_object_list = []
-    for item in datetime_list:
-        datetime_object_list.append(parse(item))
-
-    return datetime_object_list
-
-
-def _get_timescale(times):
-    """Get the timescale.
-    
-    Arguments:
-    times -- Tuple containing two datetime instances.
-             The difference between them is used to 
-             determine the timescale. 
-
-    """
-
-    diff = times[1] - times[0]
-
-    thresholds = {'yearly': datetime.timedelta(days=365),
-                  'monthly': datetime.timedelta(days=27),
-                  'daily': datetime.timedelta(days=1),
-                  '12hourly': datetime.timedelta(hours=12),
-                  '6hourly': datetime.timedelta(hours=6),
-                  'hourly': datetime.timedelta(hours=1)}
-    
-    timescale = None
-    scales = ['yearly', 'monthly', 'daily', '12hourly', '6hourly', 'hourly']
-    for key in scales:
-        if diff >= thresholds[key]:
-            timescale = key
-            break
-    
-    if not timescale:
-        print 'Invalid timescale data.'
-        print 'Must be between hourly and yearly.'
-        sys.exit(1)
-
-    print timescale
-
-    return timescale
 
 
 class InputData:
@@ -383,6 +238,157 @@ class InputData:
 #    def mask
 
 
+def _get_datetime(datetime_list):
+    """Return a datetime instance for a given list of dates/times.
+    
+    Arguments:
+
+    times -- List values must be expressed in component time, 
+             consistent with the cdat asComponentTime() method
+             e.g. 1979-01-01 12:00:0.0  
+
+    """
+
+    assert isinstance(datetime_list, (list, tuple)), \
+    'input argument must be a list or tuple of datetimes'
+
+    datetime_object_list = []
+    for item in datetime_list:
+        datetime_object_list.append(parse(str(item)))
+
+    return datetime_object_list
+
+
+def _get_timescale(times):
+    """Get the timescale.
+    
+    Arguments:
+    times -- Tuple containing two datetime instances.
+             The difference between them is used to 
+             determine the timescale. 
+
+    """
+
+    diff = times[1] - times[0]
+
+    thresholds = {'yearly': datetime.timedelta(days=365),
+                  'monthly': datetime.timedelta(days=27),
+                  'daily': datetime.timedelta(days=1),
+                  '12hourly': datetime.timedelta(hours=12),
+                  '6hourly': datetime.timedelta(hours=6),
+                  'hourly': datetime.timedelta(hours=1)}
+    
+    timescale = None
+    scales = ['yearly', 'monthly', 'daily', '12hourly', '6hourly', 'hourly']
+    for key in scales:
+        if diff >= thresholds[key]:
+            timescale = key
+            break
+    
+    if not timescale:
+        print 'Invalid timescale data.'
+        print 'Must be between hourly and yearly.'
+        sys.exit(1)
+
+    print timescale
+
+    return timescale
+
+
+def convert_units(data):
+    """Convert units.
+        
+    kg m-2 s-1 or K will be converted to 
+    mm/day or Celsius.
+
+    Arguments:
+    data -- InputData instance or cdms2 transient variable
+            (i.e. must have a 'units' attribute)
+
+    """
+    #There would be scope to use the genutil udunits module
+    #here, however I couldn't figure out how to get it to
+    #do the rainfall conversion, plus then all file variables
+    #would need to have unidata udunits consistent units
+    
+    # Switch units #
+    
+    if data.units[0:10] == 'kg m-2 s-1':
+        newdata = numpy.ma.multiply(data, 86400.0)
+        newdata.units = 'mm d-1'
+    
+    elif data.units[0] == 'K':
+        newdata = numpy.ma.subtract(data, 273.16)
+        newdata.units = 'Celsius'
+    
+    else:
+        print 'Original units not recognised.'
+        print 'Units have not been converted.'
+
+        newdata = data
+
+
+    return newdata 
+
+
+def dict_filter(indict, key_list):
+    """Filter dictionary according to specified keys."""
+    
+    return dict((key, value) for key, value in indict.iteritems() if key in key_list)
+
+
+def hi_lo(data_series, current_max, current_min):
+    """Determines the new highest and lowest value"""
+    
+    if isinstance(data_series, (numpy.ndarray)):
+        find_max = numpy.max
+        find_min = numpy.min
+    else:
+        find_max = max
+        find_min = min
+    
+    highest = find_max(data_series)
+    if highest > current_max:
+        new_max = highest
+    else:
+        new_max = current_max
+        
+    lowest = find_min(data_series)
+    if lowest < current_min:
+        new_min = lowest
+    else:
+        new_min = current_min
+    
+    
+    return new_max, new_min
+
+
+def list_kwargs(func):
+    """List keyword arguments of a function."""
+    
+    details = inspect.getargspec(func)
+    nopt = len(details.defaults)
+    
+    return details.args[-nopt:]
+    
+    
+def scale_offset(data, scale=1.0, offset=0.0):
+    """Apply scaling and offset factors.
+    
+    new_data = (old_data*scale) + offset
+
+    """
+    
+    return numpy.ma.add(numpy.ma.multiply(data, float(scale)),
+                        float(offset))
+
+
+def running_average(data, window):
+    """Calculate running average with desired window."""
+
+    return genutil.filters.runningaverage(data,window) 
+
+
 def temporal_aggregation(data, output_timescale, climatology=False):
     """Create a temporal aggregate of the input data.
     (e.g. turn a monthly timeseries into a seasonal timeseries)
@@ -446,12 +452,6 @@ def temporal_aggregation(data, output_timescale, climatology=False):
         sys.exit(1)
 
     return outdata
-
-
-def running_average(data, window):
-    """Calculate running average with desired window."""
-
-    return genutil.filters.runningaverage(data,window) 
 
 
 def write_netcdf(outfile_name, out_quantity, indata, 
