@@ -2,9 +2,9 @@
 
 """
 GIT INFO: $Id$
-Filename:     plot_climate_index.py
+Filename:     plot_timeseries.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Plots the selected climate index
+Description:  Plots timeseries
 
 Input:        List of netCDF files to plot
 Output:       An image in either bitmap (e.g. .png) or vector (e.g. .svg, .eps) format
