@@ -250,12 +250,15 @@ def get_datetime(datetime_list):
 
     """
 
-    assert isinstance(datetime_list, (list, tuple)), \
+    assert isinstance(datetime_list, (list, tuple, str)), \
     'input argument must be a list or tuple of datetimes'
 
     datetime_object_list = []
     for item in datetime_list:
-        print item
+        #compensate for 60.0 seconds which genutil.filters.runningaverage
+	#can produce
+	if not str(item)[-4] in ['0', '1', '2', '3', '4', '5', ':']:
+	    item = str(item)[0:-5]        
         datetime_object_list.append(parse(str(item)))
 
     return datetime_object_list
