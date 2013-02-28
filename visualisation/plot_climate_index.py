@@ -136,7 +136,7 @@ def generate_plot(xaxis, yaxis_data, yaxis_error, file_order,
                   secplot=None,
                   startint=None, majorint=None,
                   ypbounds=None, ysbounds=None, ybuffer=0.1,
-                  xlabel='', plabel='', slabel='',
+                  plabel='', slabel='',
                   outfile=None,
 		  ploc=None, sloc=None, legsize='medium',
                   phguide=None, shguide=None, vguide=None,
@@ -163,7 +163,6 @@ def generate_plot(xaxis, yaxis_data, yaxis_error, file_order,
       ysbounds     -- y-axis bounds, secondary plot [tuple or list: (min, max)]
       ybuffer      -- Buffer above max y value (and below min value) [float]
                       Expressed as fraction of data range     
-      xlabel       -- Label for x-axis [string]
       plabel       -- Label for primary y-axis [str]
       slabel       -- Label for secondary y-axis [str]       
       outfile      -- Name of output file [str]
@@ -309,30 +308,34 @@ def reconfig_to_datetime(all_files, datetime_axis, time_freq, nrows=1):
 	
 	# Convert original xaxis to datetime objects #
 	
-	dtaxis = value.datetimes
+	orig_dtaxis = value.datetimes
 	
 	# Check the start point of original xaxis against the new datetime_axis #
 	
 	missval = value.data.missing_value
 	ydata = value.data[:]
 	
-        if dtaxis[0] in datetime_axis[:]:
-	    index = datetime_axis[:].index(dtaxis[0])
-	    ydata = ydata[index:]
-	else:
-	    nfill = rrule(eval(time_freq), dtstart=datetime_axis[0], until=dtaxis[0]).count()
+        if orig_dtaxis[0] in datetime_axis[:]:
+	    nfill = rrule(eval(time_freq), dtstart=datetime_axis[0], until=orig_dtaxis[0]).count() - 1
 	    for i in xrange(nfill):
 	        ydata = numpy.insert(ydata, 0, missval)
+	else:
+	    count = 0
+	    while not orig_dtaxis[count] in datetime_axis[:]:
+	        count = count + 1
+	    ydata = ydata[count:]
 		 
         # Check the end point of original xaxis against the new datetime_axis #
 	
-        if dtaxis[-1] in datetime_axis[:]:
-            nfill = rrule(eval(time_freq), dtstart=dtaxis[-1], until=datetime_axis[-1]).count() - 1
+        if orig_dtaxis[-1] in datetime_axis[:]:
+            nfill = rrule(eval(time_freq), dtstart=orig_dtaxis[-1], until=datetime_axis[-1]).count() - 1
 	    for i in xrange(nfill):
 	        ydata = numpy.append(ydata, missval)
         else:
-	    index = datetime_axis[:].index(dtaxis[-1])
-	    ydata = ydata[:index+1]
+	    count = -1
+	    while not orig_dtaxis[count] in datetime_axis[:]:
+	        count = count - 1
+	    ydata = ydata[:count+1]
 
         # Update the minimum and maximum value #
 
@@ -396,9 +399,13 @@ def set_datetime_axis(all_files, time_freq, nrows=1, xmax=datetime.datetime.max,
     
     assert time_freq in ['YEARLY', 'MONTHLY', 'WEEKLY', 
                          'DAILY', 'HOURLY', 'MINUTELY', 'SECONDLY']
-    assert isinstance(xmax, datetime.datetime)
-    assert isinstance(xmin, datetime.datetime)
-
+    
+    if not isinstance(xmax, datetime.datetime):
+        xmax = nio.get_datetime([xmax,])[0]    
+    
+    if not isinstance(xmin, datetime.datetime):
+        xmin = nio.get_datetime([xmin,])[0]
+	
     # Find highest and lowest datetimes from the input file #
 
     max_datetime = datetime.datetime.min
@@ -585,17 +592,17 @@ improvements:
                         help="Number of rows (long time axes can be split onto numerous rows [default: %(default)s]")
     parser.add_argument("--title", type=str, 
                         help="Title for plot [default: None]")
-    parser.add_argument("--ylabel", type=str, 
-                        help="y axis label [default: None]")
-    parser.add_argument("--xlabel", type=str, 
-                        help="x axis label [default: None]")    
+    parser.add_argument("--plabel", type=str, 
+                        help="primary y-axis label [default: None]")
+    parser.add_argument("--slabel", type=str, 
+                        help="secondary y-axis label [default: None]")    
 
     parser.add_argument("--ypbounds", type=float, default=None, nargs=2, metavar=('MIN', 'MAX'),
-                        help="Primary y axis bounds [default: auto]")
+                        help="Primary y-axis bounds [default: auto]")
     parser.add_argument("--ysbounds", type=float, default=None, nargs=2, metavar=('MIN', 'MAX'),
-                        help="Secondary y axis bounds [default: auto]")
+                        help="Secondary y-axis bounds [default: auto]")
     parser.add_argument("--ybuffer", type=float,
-                        help="Scale factor for y axis upper buffer (i.e. expressed as a fraction)")
+                        help="Scale factor for y-axis upper buffer (i.e. expressed as a fraction)")
     parser.add_argument("--xmax", type=str, metavar=('DATE'),
                         help="Maximum time axis value [default: auto]")
     parser.add_argument("--xmin", type=str, metavar=('DATE'),
