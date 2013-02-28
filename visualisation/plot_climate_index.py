@@ -12,6 +12,7 @@ Output:       An image in either bitmap (e.g. .png) or vector (e.g. .svg, .eps) 
 Updates | By | Description
 --------+----+------------
 23 February 2012 | Damien Irving | Initial version.
+28 February 2013 | Damien Irving | Generalised beyond monthly data.
 
 """
 
@@ -39,20 +40,146 @@ sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
 
-def generate_plot(xaxis_data, major_xticks, major_xlabels, 
-                  yaxis_data, yaxis_error, file_order, freq,
+
+class YaxisElement:    
+    """Element to be plotted on yaxis."""
+
+    def __init__(self, data, label, group):
+	"""Define attributes."""
+  
+        self.data = data
+        self.label = label
+        self.group = group
+
+
+class DatetimeAxis:
+    """Datetime axis for a plot."""
+    
+    def __init__(self, dtdata, freq, nrows=1):
+	"""Convert datetime values to numeric and split according to nrows."""
+  
+        assert isinstance(dtdata, (list, tuple))
+        assert isinstance(dtdata[0], datetime.datetime)
+        assert freq in ['YEARLY', 'MONTHLY', 'WEEKLY', 
+                        'DAILY', 'HOURLY', 'MINUTELY', 
+		        'SECONDLY']
+
+        self.data_orig = dtdata
+        self.data_dt = split_nrows(dtdata[:], nrows)
+        self.data_numeric = split_nrows(dates.date2num(dtdata[:]), nrows)
+        self.freq = freq
+        self.nrows = nrows
+    
+
+    def major_ticks(self, startint=None, majorint=None):
+	"""Determine axis ticks and labels.
+
+	This method is necessary because matplotlib 
+	locators, which would usually be used to automate
+	the process of creating x axis labels, can't be 
+	shared among axes. The set_major_locator() method 
+	assigns its axis to that locator, overwriting any 
+	axis that was previously assigned. This is 
+	problematic for multi-panel plots.
+
+	Keyword arguments (description [type]):
+          startint -- index for start of major ticks
+          majorint -- interval between major ticks 
+
+	"""
+
+	# Set major interval if not supplied #
+
+	if majorint:
+            assert type(majorint) == int
+        else: 
+            majorint = myroundup(len(self.data_dt[1]) / 7.)    
+
+	print 'major tick interval:', majorint   
+
+	# Determine the ticks #
+
+	if startint:
+            assert type(startint) == int
+        else:
+            startint = 0
+	tick_points = range(startint, len(self.data_orig[:]), majorint)  
+
+	formats  = {'YEARLY': '%Y',
+                    'MONTHLY': '%b %Y',
+                    'WEEKLY': '%d/%m/%y',
+                    'DAILY': '%d/%m/%y',
+                    'HOURLY': '%m/%d %H:%M',
+                    'MINUTELY': '%m/%d %H:%M',
+                    'SECONDLY': '%m/%d %H:%M'}
+
+	major_xticks = {}
+	major_xlabels = {}
+	count = 0
+	for row in range(1, self.nrows+1):
+	    xticks = []
+	    labels = []
+	    for index, dt in enumerate(self.data_dt[row]):
+        	place = index + count
+        	if place in tick_points:
+        	    xticks.append(dates.date2num(dt))
+        	    labels.append(dt.strftime(formats[self.freq]))      
+
+            major_xticks[row] = xticks
+            major_xlabels[row] = labels
+            count = count + len(self.data_dt[row])
+
+	return major_xticks, major_xlabels
+
+
+def generate_plot(xaxis, yaxis_data, yaxis_error, file_order,
                   secplot=None,
+                  startint=None, majorint=None,
                   ypbounds=None, ysbounds=None, ybuffer=0.1,
-                  xlabel=None, plabel=None, slabel=None,
+                  xlabel='', plabel='', slabel='',
                   outfile=None,
 		  ploc=None, sloc=None, legsize='medium',
-                  phguide=None, shguide=None,
-		  colors=['red', 'blue', 'green', 'yellow', 'orange', 'purple', 'brown','aqua'],
+                  phguide=None, shguide=None, vguide=None,
+		  colors=['red', 'blue', 'green', 'yellow', 
+                          'orange', 'purple', 'brown','aqua'],
 		  pline='-', sline='--',
 		  nrows=1,
 		  title=''): 
     """Create timeseries plot.
     
+    Positional arguments (description [type]):
+      xaxis        -- DatetimeAxis instance
+      yaxis_data   -- y axis data to be plotted
+                      [dict (keys: (filename, var)) of YaxisElement instances]
+      yaxis_error  -- error of y data
+                      [dict (keys: (filename, var)) of YaxisElement instances]
+      file_order   -- List of tuples (filename, var) indicating order for plotting
+      
+    Keyword arguments (description [type]):
+      secplot      -- Secondary plot flag [None or anything else]
+      startint     -- Starting index for x-axis ticks [int]
+      majorint     -- Interval between x-axis ticks [int]
+      ypbounds     -- y-axis bounds, primary plot [tuple or list: (min, max)]
+      ysbounds     -- y-axis bounds, secondary plot [tuple or list: (min, max)]
+      ybuffer      -- Buffer above max y value (and below min value) [float]
+                      Expressed as fraction of data range     
+      xlabel       -- Label for x-axis [string]
+      plabel       -- Label for primary y-axis [str]
+      slabel       -- Label for secondary y-axis [str]       
+      outfile      -- Name of output file [str]
+                      If none, figure will be shown instead
+      ploc         -- Position of primary legend [int]
+      sloc         -- Position of secondary legend [int]
+      legsize      -- Size of text in legend
+      phguide      -- List of primary axis y-values for horizontal guidelines
+      shguide      -- List of secondary axis y-values for horizontal guidelines
+      vguide       -- List of datetimes for vertical guidelines 
+      colors       -- List of colours for plots
+      pline        -- Primary plot linestyle
+      sline        -- Secondary plot linestyle
+      nrows        -- Number of rows for the plot
+      title        -- Plot title
+
     """
     
     # Initialise figure #
@@ -60,6 +187,8 @@ def generate_plot(xaxis_data, major_xticks, major_xlabels,
     fig = plt.figure()
     plt.subplots_adjust(wspace=0.5) # make a little extra space between the subplots
     
+    major_xticks, major_xlabels = xaxis.major_ticks(startint=startint, majorint=majorint)
+
     # Make the plot #
     
     for row in range(0, nrows):
@@ -74,17 +203,17 @@ def generate_plot(xaxis_data, major_xticks, major_xlabels,
 	#plot data	
 	count = 0
 	for key in file_order:
-	    xdata = xaxis_data[pnum]
-            ydata = numpy.ma.array(yaxis_data[key][0][pnum])
-            label = yaxis_data[key][1]
-            group = yaxis_data[key][2]
+	    xdata = xaxis.data_numeric[pnum]
+            ydata = numpy.ma.array(yaxis_data[key].data[pnum])
+            label = yaxis_data[key].label
+            group = yaxis_data[key].group
             (axis, linestyle) = (ax, pline) if group == 'primary' else (ax2, sline)
 	    
             axis.plot(xdata, ydata, color=colors[count], lw=2.0, label=label, linestyle=linestyle, marker='None')
 	    
             if yaxis_error and (key in yaxis_error.keys()):
-		upper = ydata + 2*numpy.ma.array(yaxis_error[key][pnum])   ## should use the numpy.ma addition tool
-		lower = ydata - 2*numpy.ma.array(yaxis_error[key][pnum])
+		upper = ydata + 2*numpy.ma.array(yaxis_error[key].data[pnum])   ## should use the numpy.ma addition tool
+		lower = ydata - 2*numpy.ma.array(yaxis_error[key].data[pnum])
 		axis.plot(xdata, upper, color=colors[count], lw=0.5)
         	axis.plot(xdata, lower, color=colors[count], lw=0.5)
         	axis.fill_between(xdata, upper, lower, facecolor=colors[count], alpha=0.4)
@@ -92,12 +221,14 @@ def generate_plot(xaxis_data, major_xticks, major_xlabels,
             count = count + 1
 	    
 	#yaxis limits
-	ax.set_ylim(ypbounds[0]*(1 + ybuffer), ypbounds[1]*(1 + ybuffer))
+        pad = (ypbounds[1] - ypbounds[0]) * ybuffer
+	ax.set_ylim(ypbounds[0] - pad, ypbounds[1] + pad)
 	if secplot:
-	    ax2.set_ylim(ysbounds[0]*(1 + ybuffer), ysbounds[1]*(1 + ybuffer))
+	    pad = (ysbounds[1] - ysbounds[0]) * ybuffer
+            ax2.set_ylim(ysbounds[0] - pad, ysbounds[1] + pad)
 
 	#xticks
-        ax.set_xlim(xaxis_data[pnum][0], xaxis_data[pnum][-1])
+        ax.set_xlim(xaxis.data_numeric[pnum][0], xaxis.data_numeric[pnum][-1])
         ax.set_xticks(major_xticks[pnum], minor=False)
 #        ax.set_xticks(minor_xticks, minor=True)
         ax.set_xticklabels(major_xlabels[pnum], minor=False, rotation=0, fontsize='small')
@@ -109,7 +240,10 @@ def generate_plot(xaxis_data, major_xticks, major_xlabels,
         if shguide:
             for yval in shguide:
                 ax2.axhline(y=yval, linestyle='--', color='0.5')
-        
+        if vguide:
+            for xval in nio.get_datetime(vguide):
+                ax.axvline(x=dates.date2num(xval), linestyle='--', color='0.5')         
+
         #gridlines 
 	if not secplot:
 	    ax.grid(True, 'major', color='0.2')
@@ -145,70 +279,26 @@ def generate_plot(xaxis_data, major_xticks, major_xlabels,
         plt.show()
 
 
-def get_xticks(xdata, freq, startint=None, majorint=None, nrows=1):
-    """Determines the x axis ticks and labels.
-
-    This function is necessary because matplotlib 
-    locators, which would usually be used to automate
-    this process, can't be shared among axes. The 
-    set_major_locator() method assigns its axis to 
-    that locator, overwriting any axis that was 
-    previously assigned. This is problematic for 
-    multi-panel plots.
-    """
-    
-    # Split xdata according to the number of rows #
-    
-    xdata_dt_split = split_nrows(xdata[:], nrows)
-    xdata_num_split = split_nrows(dates.date2num(xdata[:]), nrows)
-
-    # Set major interval if not supplied #
-        
-    if not majorint: 
-        majorint = myroundup(len(xdata_dt_split[1]) / 7.)    
-    
-    print 'major tick interval:', majorint   
-
-    # Determine the ticks #
-        
-    if not startint:
-        startint = 0
-    tick_points = range(startint, len(xdata[:]), majorint)  
-
-    formats  = {'YEARLY': '%Y',
-                'MONTHLY': '%b %Y',
-                'WEEKLY': '%d/%m/%y',
-                'DAILY': '%d/%m/%y',
-                'HOURLY': '%m/%d %H:%M',
-                'MINUTELY': '%m/%d %H:%M',
-                'SECONDLY': '%m/%d %H:%M'}
-
-    major_xticks = {}
-    major_xlabels = {}
-    count = 0
-    for row in range(1, nrows+1):
-	xticks = []
-	labels = []
-	for index, dt in enumerate(xdata_dt_split[row]):
-            place = index + count
-            if place in tick_points:
-        	xticks.append(dates.date2num(dt))
-        	labels.append(dt.strftime(formats[freq]))      
-        
-        major_xticks[row] = xticks
-        major_xlabels[row] = labels
-        count = count + len(xdata_dt_split[row])
-
-    return xdata_num_split, major_xticks, major_xlabels
-
-
 def myroundup(x, base=1):
     return int(base * math.ceil(float(x)/base))
 
 
-def redo_to_datetime(all_files, datetime_axis, time_freq, nrows=1):
-    """Reconfigure the yaxis data so that it matches the desired xaxis
-    and number of rows (i.e. crop or insert missing values as necessary)."""
+def reconfig_to_datetime(all_files, datetime_axis, time_freq, nrows=1):
+    """Reconfigure the yaxis data so that it matches the desired x-axis
+    and number of rows (i.e. crop or insert missing values as necessary).
+      
+    Positional arguments:
+      all_files      --  dict with netcdf_io.InputData instances as values
+      datetime_axis  --  list of datetime instances corresponding to the x-axis
+      time_freq      --  datetime axis frequency
+                         can be: 'YEARLY', 'MONTHLY', 'WEEKLY', 
+                                 'DAILY', 'HOURLY', 'MINUTELY',
+                                 'SECONDLY'
+
+    Keyword arguments:
+      nrows  --  number of rows in plot
+
+    """
 
     new_ydata = {}
     max_primary = max_secondary = float("-inf")
@@ -219,10 +309,7 @@ def redo_to_datetime(all_files, datetime_axis, time_freq, nrows=1):
 	
 	# Convert original xaxis to datetime objects #
 	
-	orig_dtaxis = value.datetime_axis()
-	orig_start = round_datetime(orig_dtaxis[0], time_freq)
-	orig_len = len(orig_dtaxis)
-	dtaxis = rrule(eval(time_freq), count=len(orig_dtaxis), dtstart=orig_start) 
+	dtaxis = value.datetimes
 	
 	# Check the start point of original xaxis against the new datetime_axis #
 	
@@ -256,10 +343,12 @@ def redo_to_datetime(all_files, datetime_axis, time_freq, nrows=1):
         elif value.set == 'secondary':
             max_secondary, min_secondary = nio.hi_lo(ydata, max_secondary, min_secondary)
 
-        new_ydata[key] = [split_nrows(ydata, nrows), all_files[key].tag, all_files[key].set]
+        new_ydata[key] = YaxisElement(split_nrows(ydata, nrows), 
+                                      all_files[key].tag, 
+                                      all_files[key].set)
     
-    primary_bounds = (max_primary, min_primary)
-    secondary_bounds = None if max_secondary == float("inf") else (max_secondary, min_secondary)
+    primary_bounds = (min_primary, max_primary)
+    secondary_bounds = None if max_secondary == float("inf") else (min_secondary, max_secondary)
 
 
     return new_ydata, primary_bounds, secondary_bounds 
@@ -291,7 +380,7 @@ def set_datetime_axis(all_files, time_freq, nrows=1, xmax=datetime.datetime.max,
     """Return the datetime axis.
 
     Positional arguments:
-      all_files  --  dict netcdf_io.InputData instances as values
+      all_files  --  dict with netcdf_io.InputData instances as values
       time_freq  --  datetime axis frequency
                      can be: 'YEARLY', 'MONTHLY', 'WEEKLY', 
                              'DAILY', 'HOURLY', 'MINUTELY',
@@ -315,7 +404,7 @@ def set_datetime_axis(all_files, time_freq, nrows=1, xmax=datetime.datetime.max,
     max_datetime = datetime.datetime.min
     min_datetime = datetime.datetime.max
     for item in all_files.values():
-        max_datetime, min_datetime = nio.hi_lo(item.datetime_axis(), max_datetime, min_datetime)
+        max_datetime, min_datetime = nio.hi_lo(item.datetimes, max_datetime, min_datetime)
 
     # Check against the user defined upper and lower bounds #
 
@@ -335,13 +424,24 @@ def set_datetime_axis(all_files, time_freq, nrows=1, xmax=datetime.datetime.max,
         
     return xaxis
 
+def runave_time_correction(xaxis, time_freq):
+    """Resets time axis, because genutil.filters.runningaverage()
+    can mess them up."""
+    
+    return rrule(eval(time_freq), dtstart=round_datetime(xaxis[0], time_freq), count=len(xaxis))
 
-def sort_files(file_list, set_name):
+
+def sort_files(file_list, set_name, time_freq):
     """Place input files into dict.
 
     positional arguments:
       file_list -- list of 
       set_name  -- can be primary or secondary
+
+    output:
+      out_dict  -- dict of nio.InputData instances
+                   (key: (filename, var)
+      order     -- key order for plotting
 
     """
     
@@ -350,12 +450,13 @@ def sort_files(file_list, set_name):
     
     if file_list:
 	for item in file_list:
-            key = item[0:2]
+            key = tuple(item[0:2])
             window = int(item[3])
             out_dict[key] = nio.InputData(item[0], item[1], runave=window)
             out_dict[key].tag = item[2]
             out_dict[key].window = window
             out_dict[key].set = set_name
+            out_dict[key].datetimes =  runave_time_correction(out_dict[key].datetime_axis()[:], time_freq)
             order.append(key)         
     else:
         outdict = None
@@ -386,37 +487,38 @@ def split_nrows(indata, nrows):
 
 def main(inargs):
     """Run the program"""
-    
-    # Sort files - unique identifier is the filename, variable pair #
 
-    primary_dict, primary_order = sort_files(inargs.primary, 'primary')
-    secondary_dict, secondary_order = sort_files(inargs.secondary, 'secondary')
+    # Extract and sort data - unique identifier is the (filename, variable) pair #
+
+    pdata_dict, pplot_order = sort_files(inargs.primary, 'primary', inargs.freq)
+    sdata_dict, splot_order = sort_files(inargs.secondary, 'secondary', inargs.freq)
     
-    allfile_dict = dict(primary_dict.items() + secondary_dict.items()) if secondary_dict else primary_dict
-    allfile_order = (primary_order + secondary_order) if secondary_dict else primary_order
+    psdata_dict = dict(pdata_dict.items() + sdata_dict.items()) if sdata_dict else pdata_dict
+    psplot_order = (pplot_order + splot_order) if splot_order else pplot_order
 
     if inargs.error:
-        error_dict = {}
+        edata_dict = {}
 	for item in inargs.error:
             key = item[2:4]
-            error_dict[key] = nio.InputData(item[0], item[1], runave=allfile_dict[key].window)
-            error_dict[key].tag = None
-            error_dict[key].set = 'error'
+            edata_dict[key] = nio.InputData(item[0], item[1], runave=psdata_dict[key].window)
+            edata_dict[key].tag = None
+            edata_dict[key].set = 'error'
+            edata_dict[key].datetimes =  runave_time_correction(edata_dict[key].datetime_axis()[:], inargs.freq)
     else:
-        error_dict = None
+        edata_dict = None
 
-    # Set the x (datetime) axis #
+    # Set the x (or datetime) axis #
      
-    xaxis = set_datetime_axis(allfile_dict, inargs.freq, **nio.dict_filter(vars(inargs), nio.list_kwargs(set_datetime_axis)))   
+    dtaxis = set_datetime_axis(psdata_dict, inargs.freq, **nio.dict_filter(vars(inargs), nio.list_kwargs(set_datetime_axis)))   
     
-    # Reconfigure the data to be plotted, so that it is consistent with the new x axis #
+    # Reconfigure the data to be plotted, so that it is consistent with the new x-axis #
 
-    yaxis_data, pbounds, sbounds = redo_to_datetime(allfile_dict, xaxis, inargs.freq, 
-                                                    **nio.dict_filter(vars(inargs), nio.list_kwargs(redo_to_datetime)))
-    yaxis_error, epbounds, esbounds = redo_to_datetime(error_dict, xaxis, inargs.freq, 
-                                      **nio.dict_filter(vars(inargs), nio.list_kwargs(redo_to_datetime))) if error_dict else (None, None, None)
+    yaxis_data, pbounds, sbounds = reconfig_to_datetime(psdata_dict, dtaxis, inargs.freq, 
+                                                        **nio.dict_filter(vars(inargs), nio.list_kwargs(reconfig_to_datetime)))
+    yaxis_error, epbounds, esbounds = reconfig_to_datetime(edata_dict, dtaxis, inargs.freq, 
+                                      **nio.dict_filter(vars(inargs), nio.list_kwargs(reconfig_to_datetime))) if edata_dict else (None, None, None)
 
-    xaxis_data, major_xticks, minor_xlabels = get_xticks(xaxis, inargs.freq, **nio.dict_filter(vars(inargs), nio.list_kwargs(get_xticks)))
+    xaxis = DatetimeAxis(dtaxis[:], inargs.freq, **nio.dict_filter(vars(inargs), ['nrows',]))
 
     # Generate the plot #
 
@@ -426,10 +528,8 @@ def main(inargs):
     if not inargs.ysbounds:
         inargs.ysbounds = sbounds
 
-    print vars(inargs)
-
-    generate_plot(xaxis_data, major_xticks, minor_xlabels, yaxis_data, yaxis_error, allfile_order, inargs.freq, 
-                  secplot=secondary_order, **nio.dict_filter(vars(inargs), nio.list_kwargs(generate_plot)))
+    generate_plot(xaxis, yaxis_data, yaxis_error, psplot_order, 
+                  secplot=splot_order, **nio.dict_filter(vars(inargs), nio.list_kwargs(generate_plot)))
 
 
 if __name__ == '__main__':
@@ -442,13 +542,6 @@ legend options:
 examples (abyss.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_climate_index.py MONTHLY
   /work/dbirving/processed/indices/data/ts_Merra_surface_NINO34_monthly_native-ocean.nc nino34 Nino34 1
-  
-  /opt/cdat/bin/cdat plot_climate_index.py 
-  /work/dbirving/processed/indices/data/ts_Merra_surface_EOF1_monthly_native-ocean-eqpacific.txt 
-  /work/dbirving/processed/indices/data/ts_Merra_surface_EOF2_monthly_native-ocean-eqpacific.txt 
-  -s /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF1_monthly_native-eqpacific.txt,
-  /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF2_monthly_native-eqpacific.txt 
-  -r 3 --wp 5 --ws 5 --lp 2 --ls 1
 
 note:
   The expected measure of error is the standard deviation (twice the standard deviation either side
@@ -528,13 +621,16 @@ improvements:
                         help="Line style for the secondary plot [default: dashed]")
 
     parser.add_argument("--phguide", type=str, nargs='*',
-                        help="Primary axis values for which a horizontal guideline should be plotted [default: None]")
+                        help="Primary axis values for horizontal guidelines [default: None]")
     parser.add_argument("--shguide", type=str, nargs='*',
-                        help="Secondary axis values for which a horizontal guideline should be plotted [default: None]")
+                        help="Secondary axis values for horizontal guidelines [default: None]")
+    parser.add_argument("--vguide", type=str, nargs='*',
+                        help="Datetimes for vertical guidelines (e.g. 1979-01-01 [default: None]")
+
 
     args = parser.parse_args()  
 
-    args.primary.insert(0, (args.infile, args.variable, args.tag, args.window))
+    args.primary.insert(0, [args.infile, args.variable, args.tag, args.window])
 
     main(args)
     
