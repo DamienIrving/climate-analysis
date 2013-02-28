@@ -9,6 +9,7 @@ sys.path.insert(0, module_dir)
 Included functions:
 convert_units        -- Convert units
 dict_filter          -- Filter dictionary 
+get_datetime         -- Return datetime instances for list of dates/times
 hi_lo                -- Update highest and lowest value
 list_kwargs          -- List keyword arguments of a function
 running_average      -- Calculate running average
@@ -191,7 +192,7 @@ class InputData:
     def datetime_axis(self):
         """Return the time axis, expressed asa list of datetime objects."""
      
-        return _get_datetime(self.data.getTime().asComponentTime())
+        return get_datetime(self.data.getTime().asComponentTime())
         
 
     def months(self):
@@ -238,7 +239,7 @@ class InputData:
 #    def mask
 
 
-def _get_datetime(datetime_list):
+def get_datetime(datetime_list):
     """Return a datetime instance for a given list of dates/times.
     
     Arguments:
@@ -254,6 +255,7 @@ def _get_datetime(datetime_list):
 
     datetime_object_list = []
     for item in datetime_list:
+        print item
         datetime_object_list.append(parse(str(item)))
 
     return datetime_object_list
@@ -386,7 +388,7 @@ def scale_offset(data, scale=1.0, offset=0.0):
 def running_average(data, window):
     """Calculate running average with desired window."""
 
-    return genutil.filters.runningaverage(data,window) 
+    return genutil.filters.runningaverage(data, window) 
 
 
 def temporal_aggregation(data, output_timescale, climatology=False):
@@ -414,7 +416,7 @@ def temporal_aggregation(data, output_timescale, climatology=False):
     # Find input timescale #
     
     time_axis = data.getTime().asComponentTime()
-    input_timescale = _get_timescale(_get_datetime(time_axis[0:2]))
+    input_timescale = _get_timescale(get_datetimeget(time_axis[0:2]))
 
     # Set time bounds #
 
