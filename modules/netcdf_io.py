@@ -109,15 +109,21 @@ class InputData:
 	
         """
         
-        # Read the input data to set order & check missing value #
+        # Read the input data to set order & check critical attributes #
 
         infile = cdms2.open(fname)
         temp_data = infile(var_id)
 
         input_order = temp_data.getOrder()
         
+	assert hasattr(infile, 'history'), \
+        'Input file must have history global attribute'
         assert hasattr(temp_data, 'missing_value'), \
         'Input variable must have missing_value attribute'
+	assert hasattr(temp_data, 'long_name'), \
+        'Input variable must have long_name attribute'
+	assert hasattr(temp_data, 'units'), \
+        'Input variable must have units attribute'
 
         del temp_data
 

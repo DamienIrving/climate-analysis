@@ -422,7 +422,7 @@ def set_datetime_axis(all_files, time_freq, nrows=1, xmax=datetime.datetime.max,
 
     min_datetime = round_datetime(min_datetime, time_freq)
     max_datetime = round_datetime(max_datetime, time_freq)
-    xaxis = rrule(eval(time_freq), dtstart=min_datetime ,until=max_datetime)
+    xaxis = rrule(eval(time_freq), dtstart=min_datetime, until=max_datetime)
     
     # Adjust the xaxis so it's length is divisible by the number of rows
 
