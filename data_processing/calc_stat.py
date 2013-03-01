@@ -1,5 +1,14 @@
 #!/usr/bin/env cdat
 
+############
+# Need to figure out what biased and centred means.
+# I'm pretty sure genutil statistics can make decisions
+# on the shape of input data with me having to write all
+# the if statements.
+#############
+
+
+
 """
 SVN INFO: $Id$
 Filename:     calc_stat.py
@@ -65,27 +74,11 @@ def temporal_corr(data1, data2):
     if (data1_hasspat + data2_hasspat) >= 1:
         output_axes = (primary_data.getLatitude(),
                        primary_data.getLongitude(),)
-        nlats = len(primary_data.getLatitude())
-        nlons = len(primary_data.getLongitude())
-        tempcorr = numpy.zeros((nlats, nlons))
-    
-	for y in xrange(nlats):
-	    for x in xrange(nlons):	
-		input1 = primary_data[:, y, x].compressed()
-                input2 = secondary_data[:, y, x].compressed() if (data1_hasspat 
-                         + data2_hasspat) == 2 else secondary_data[:]
-                
-                if len(input1) == 0.0 or len(input2) == 0.0:
-	            tempcorr[y, x] = 1e20
-		else:
-	            tempcorr[y, x] = genutil.statistics.correlation(input1,
-                                     input2, centered=1, biased=1)
-
+	tempcorr = genutil.statistics.correlation(primary_data, secondary_data, centered=1, biased=1)
     else:       
         print genutil.statistics.correlation(primary_data, 
               secondary_data, centered=1, biased=1)
         sys.exit(0)
-
 
     attributes = {'id': 'tempcorr',
                   'long_name': 'temporal correlation',
@@ -94,7 +87,6 @@ def temporal_corr(data1, data2):
                   'history': 'genutil.statistics.correlation(centered=1, biased=1)'
                  }
                   
-
     return tempcorr, output_axes, attributes
     
 
@@ -130,23 +122,23 @@ def main(inargs):
 
 if __name__ == '__main__':
     
-    description = 'Calculate statistic'
+    description = 'Calculate statistic.'
     parser = argparse.ArgumentParser(description=description,
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("stat", type=str, choices=['tempcorr'], 
-                        help="Statistic to calculate")
-    parser.add_argument("infile1", type=str, help="Name of first input file")
-    parser.add_argument("variable1", type=str, help="Name of first input file variable")
-    parser.add_argument("infile2", type=str, help="Name of second input file")
-    parser.add_argument("variable2", type=str, help="Name of second input file variable")
-    parser.add_argument("outfile", type=str, help="Output file name")
+                        help="statistic to calculate")
+    parser.add_argument("infile1", type=str, help="name of first input file")
+    parser.add_argument("variable1", type=str, help="name of first input file variable")
+    parser.add_argument("infile2", type=str, help="name of second input file")
+    parser.add_argument("variable2", type=str, help="name of second input file variable")
+    parser.add_argument("outfile", type=str, help="output file name")
 
     parser.add_argument("--region", type=str, choices=nio.regions.keys(),
-                        help="Region over which to calculate EOF [default = entire]")
+                        help="region over which to calculate statistic [default = entire]")
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
-                        help="Time period over which to calculate the EOF [default = entire]")
+                        help="time period over which to calculate the statistic [default = entire]")
     parser.add_argument("--agg", type=str,
                         help="temporal aggregation selector")
 
