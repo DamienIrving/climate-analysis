@@ -12,35 +12,19 @@ Updates | By | Description
 
 """
 
-__version__= '$Revision$'     ## Change this for git (this is a svn relevant command)
-
-
-### Import required modules ###
-
-import optparse
-from optparse import OptionParser
 import sys
-from datetime import datetime
 import os
+
+import argparse
 
 import numpy
 
 import cdms2
 import cdutil
 
-## CDAT Version 5.2 File are now written with compression and shuffling ##
-#You can query different values of compression using the functions:
-#cdms2.getNetcdfShuffleFlag() returning 1 if shuffling is enabled, 0 otherwise
-#cdms2.getNetcdfDeflateFlag() returning 1 if deflate is used, 0 otherwise
-#cdms2.getNetcdfDeflateLevelFlag() returning the level of compression for the deflate method
-#If you want to turn that off or set different values of compression use the functions:
-#cdms2.setNetcdfShuffleFlag(value) ## where value is either 0 or 1
-#cdms2.setNetcdfDeflateFlag(value) ## where value is either 0 or 1
-#cdms2.setNetcdfDeflateLevelFlag(value) ## where value is a integer between 0 and 9 included
-
-cdms2.setNetcdfShuffleFlag(0)
-cdms2.setNetcdfDeflateFlag(0)
-cdms2.setNetcdfDeflateLevelFlag(0)
+module_dir = os.path.join(os.environ['HOME'], 'modules')
+sys.path.insert(0, module_dir)
+import netcdf_io as nio
 
 ## The current release of UV-CDAT doesn't have the windspharm.cdms module (the latest version does)
 #from windspharm.cdms import VectorWind
@@ -48,18 +32,15 @@ from windspharm.standard import VectorWind
 from windspharm.tools import prep_data, recover_data, order_latdim
 
 
-
-### Define globals ###
-
 var_atts = {}
 
 var_atts['magnitude'] = {'id': 'spd',
-    'name': 'wind speed',
+    'long_name': 'wind speed',
     'units': 'm s-1',
     'history': 'windspharm magnitude() function - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['vorticity'] = {'id': 'vrt',
-    'name': 'relative vorticity',
+    'long_name': 'relative vorticity',
     'units': 's-1',   
     'history': 'windspharm vorticity(), http://ajdawson.github.com/windspharm/index.html'}
 
@@ -106,51 +87,18 @@ var_atts['velocitypotential'] = {'id':'vp',
     'history': 'windspharm velocitypotential() - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['rossbywavesource'] = {'id': 'rws',
-    'name': 'Rossby wave source',
+    'long_name': 'Rossby wave source',
     'units': '1.e-11 s-1',  # I think it should be s-2
     'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
 
 
 
-### Define functions ###
-
-
-def time_axis_check(axis1, axis2):
-    """Checks whether the time axes of the input files are the same"""
-    
-    start_time1 = axis1.asComponentTime()[0]
-    start_time1 = str(start_time1)
-    start_year1 = start_time1.split('-')[0]
-    
-    end_time1 = axis1.asComponentTime()[-1]
-    end_time1 = str(end_time1)
-    end_year1 = end_time1.split('-')[0]
-    
-    start_time2 = axis2.asComponentTime()[0]
-    start_time2 = str(start_time2)
-    start_year2 = start_time2.split('-')[0]
-    
-    end_time2 = axis2.asComponentTime()[-1]
-    end_time2 = str(end_time2)
-    end_year2 = end_time2.split('-')[0]
-
-    if (start_year1 != start_year2 or len(axis1) != len(axis2)):
-        sys.exit('Input files do not all have the same time axis')
-
-
-def xy_axis_check(axis1, axis2):
-    """Checks whether the lat or lon axes of the input files are the same""" 
-   
-    if (len(axis1) != len(axis2)):
-        sys.exit('Input files do not all have the same %s axis' %(axis1.id))
-
-
-def calc_quantity(data_u, data_v, time_u, lat_u, lon_u, quantity, eddy):
+def calc_quantity(data_u, data_v, quantity):
     """Calculates a single wind quantity using windspharm (ajdawson.github.com/windspharm/index.html)"""
     
     # Do all the data preparation, because I'm using the windspharm.standard instead of
     # windspharm.cdms (when the latter is included in the UV-CDAT release, I should use it
-    # because it makes the code much simplier    
+    # because it makes the code much simplier)    
 
 #    if eddy:
 #        uwnd_zonal_ave = cdutil.averager(data_u, axis='x')
@@ -168,12 +116,14 @@ def calc_quantity(data_u, data_v, time_u, lat_u, lon_u, quantity, eddy):
 #	vwnd = eddy_uwnd[:]
 #    else:
     
+    assert isinstance(data_u, nio.InputData)
+    assert isinstance(data_v, nio.InputData)
     
-    uwnd = data_u[:]
-    vwnd = data_v[:]
+    uwnd = data_u.data[:]
+    vwnd = data_v.data[:]
     
-    lons = lon_u[:]
-    lats = lat_u[:]
+    lons = data_u.data.getLongitude()[:]
+    lats = data_u.data.getLatitude()[:]
     
     # The standard interface requires that latitude and longitude be the leading
     # dimensions of the input wind components, and that wind components must be
@@ -186,7 +136,7 @@ def calc_quantity(data_u, data_v, time_u, lat_u, lon_u, quantity, eddy):
     # It is also required that the latitude dimension is north-to-south. Again the
     # bundled tools make this easy.
     lats, uwnd, vwnd = order_latdim(lats, uwnd, vwnd)
-    flip = False if (lats[0] == lat_u[0]) else True   # Flag to see if lats was flipped 
+    flip = False if (lats[0] == data_u.data.getLatitude()[0]) else True   # Flag to see if lats was flipped 
 
     # Create a VectorWind instance to handle the computation of streamfunction and
     # velocity potential.
@@ -221,11 +171,11 @@ def calc_quantity(data_u, data_v, time_u, lat_u, lon_u, quantity, eddy):
     
     elif quantity == 'irrotationalcomponent':
         data_out = {}
-	data_out['u'],data_out['v'] = w.irrotationalcomponent()    
+	data_out['u'], data_out['v'] = w.irrotationalcomponent()    
     
     elif quantity == 'nondivergentcomponent':
         data_out = {}
-	data_out['u'],data_out['v'] = w.nondivergentcomponent() 
+	data_out['u'], data_out['v'] = w.nondivergentcomponent() 
     
     elif quantity == 'streamfunction':
         data_out = w.streamfunction()
@@ -241,212 +191,129 @@ def calc_quantity(data_u, data_v, time_u, lat_u, lon_u, quantity, eddy):
     # Put the data back together #
    
     if quantity == 'irrotationalcomponent' or quantity == 'nondivergentcomponent':
-        for comp in ['u','v']:
+        for comp in ['u', 'v']:
 	    data_out[comp] = recover_data(data_out[comp], uwnd_info)
 	    if flip:
-	        data_out[comp] = data_out[comp][:,::-1,:]    
+	        data_out[comp] = data_out[comp][:, ::-1, :]    
     else:
 	data_out = recover_data(data_out, uwnd_info)
 	if flip:
-	    data_out = data_out[:,::-1,:]
+	    data_out = data_out[:, ::-1, :]
 
-    if eddy:
-        data_out_zonal_ave = cdutil.averager(data_out, axis='2')
-	print numpy.shape(data_out_zonal_ave)
-	
-	data_out = numpy.subtract(data_out, numpy.resize(data_out_zonal_ave, numpy.shape(data_out)))
-
+#    if eddy:
+#        data_out_zonal_ave = cdutil.averager(data_out, axis='2')
+#	print numpy.shape(data_out_zonal_ave)
+#	
+#	data_out = numpy.subtract(data_out, numpy.resize(data_out_zonal_ave, numpy.shape(data_out)))
 
     return data_out
 
-
-
-def write_outfile(quantity, fname_u, fname_v, fname_out, infile_u, data_out, data_u, time_u, lat_u, lon_u):
-    """Writes output netCDF file"""
     
-    outfile = cdms2.open(fname_out,'w')
-    
-    # Global attributes #
-    
-    for att_name in infile_u.attributes.keys():
-        if att_name != "history":
-            setattr(outfile, att_name, infile_u.attributes[att_name])
-    
-    old_history = infile_u.attributes['history'] if ('history' in infile_u.attributes.keys()) else ''
-    
-    if quantity == 'irrotationalcomponent' or quantity == 'nondivergentcomponent':
-        qname = var_atts[quantity,'u']['name']+' and '+var_atts[quantity,'v']['name']
-    else:
-        qname = var_atts[quantity]['name']
-    
-    setattr(outfile, 'history', """%s: %s calculated from %s and %s using %s, format=NETCDF3_CLASSIC\n%s""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
-            qname,fname_u,fname_v,sys.argv[0],old_history))
-    
-    
-    # Variables #
-
-    axisInTime = outfile.copyAxis(time_u)
-    axisInLat = outfile.copyAxis(lat_u)  
-    axisInLon = outfile.copyAxis(lon_u)  
-    
-    if quantity == 'irrotationalcomponent' or quantity == 'nondivergentcomponent':  ## FIX THIS UGLY IF STATEMENT
-        for comp in ['u','v']:
-	    var = data_out[comp]
-	    var = cdms2.MV2.array(var)
-	    var = var.astype(numpy.float32)
-	    var.setAxisList([axisInTime,axisInLat,axisInLon])
-
-	    for key, value in var_atts[quantity,comp].iteritems():
-        	if key == 'history':
-		    old_history = data_u.attributes['history'] if ('history' in data_u.attributes.keys()) else ''
-		    new_history = value+'. '+old_history
-		    setattr(var, key, new_history)
-		else:
-		    setattr(var, key, value)
-	    outfile.write(var)  
-    else:
-	var = data_out
-	var = cdms2.MV2.array(var)
-	var = var.astype(numpy.float32)
-	var.setAxisList([axisInTime,axisInLat,axisInLon])
-
-	for key, value in var_atts[quantity].iteritems():
-            if key == 'history':
-		old_history = data_u.attributes['history'] if ('history' in data_u.attributes.keys()) else ''
-		new_history = value+'. '+old_history
-		setattr(var, key, new_history)
-	    else:
-		setattr(var, key, value)
-	
-	outfile.write(var)  
-
-    outfile.close()
-
-    
-def main(quantity, fname_u, vname_u, fname_v, vname_v, fname_out, eddy):
+def main(inargs):
     """Run the program"""
 
-    ## Read the input data ##
+    # Read the input data #
 
-    # U wind #
-    infile_u = cdms2.open(fname_u)
-    data_u = infile_u(vname_u,order='tyx')
+    data_u = nio.InputData(inargs.infileu, inargs.varu)
+    data_v = nio.InputData(inargs.infilev, inargs.varv)
 
-    # V wind #
-    infile_v = cdms2.open(fname_v)
-    data_v = infile_v(vname_v,order='tyx')
+    # Check that the input data are all on the same coordinate axes #
 
-
-    ## Check that the input data are all on the same coordinate axes ##
-
-    # Time #
-    time_u = data_u.getTime()
-    time_v = data_v.getTime()
+    nio.time_axis_check(data_u.data.getTime(), data_v.data.getTime())
+    nio.xy_axis_check(data_u.data.getLatitude(), data_v.data.getLatitude())
+    nio.xy_axis_check(data_u.data.getLongitude(), data_v.data.getLongitude())
     
-    time_axis_check(time_u, time_v)
+    # Calculate the desired quantity #
     
-    # Latitude #
-    lat_u = data_u.getLatitude()
-    lat_v = data_v.getLatitude()
+    data_out = calc_quantity(data_u, data_v, inargs.quantity)
 
-    xy_axis_check(lat_u, lat_v)
+    # Write output file #
 
-    # Longitude #
-    lon_u = data_u.getLongitude()
-    lon_v = data_v.getLongitude()
+    if type(data_out) == dict:
+        outdata_list = [data_out['u'], data_out['v'],]
+        outvar_atts_list = [var_atts[inargs.quantity, 'u'], var_atts[inargs.quantity, 'v'],]
+    else:
+        outdata_list = [data_out,]
+        outvar_atts_list = [var_atts[inargs.quantity],]
 
-    xy_axis_check(lon_u, lon_v)
+    indata_list = [data_u, data_v,]
+    outvar_axes_list = [(data_u.data.getTime(), 
+                        data_u.data.getLatitude(), 
+                        data_u.data.getLongitude()),]
+
+    nio.write_netcdf(inargs.outfile, inargs.quantity, 
+                     indata_list, 
+                     outdata_list,
+                     outvar_atts_list, 
+                     outvar_axes_list)
 
     
-    ## Calculate the desired quantity ##
-    
-    data_out = calc_quantity(data_u, data_v, time_u, lat_u, lon_u, quantity, eddy)
-
-    
-    ## Write the output file ##
-    
-    write_outfile(quantity, fname_u, fname_v, fname_out, infile_u, data_out, data_u, time_u, lat_u, lon_u)
-
-    ## Clean up ##
-        
-    infile_u.close()
-    infile_v.close()
-    
-
 if __name__ == '__main__':
 
-    ## Help and manual information ##
+    extra_info ="""	
+wind quantities: 
+  magnitude             ->  Wind speed    
+  vorticity             ->  Relative vorticity
+  divergence            ->  Horizontal divergence
+  absolutevorticity     ->  Absolute vorticity (sum of relative and planetary)
+  irrotationalcomponent ->  Irrotational (divergent) component of the vector wind (from Helmholtz decomposition)
+  nondivergentcomponent ->  Non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)
+  streamfunction        ->  Streamfunction (the rotational part of the wind blows along the streamfunction contours, 
+	                    with speed proportional to the gradient)
+  velocitypotential     ->  Velocity potential (the divergent part of the wind blows along the velocity potential contours,
+	                    with speed proportional to the gradient)
+  rossbywavesource      ->  Rossby wave source			      	    
+	    
+note:
+  The input data can have no missing values
 
-    usage = "usage: %prog [options] {wind_quantity} {input_U_file} {input_U_variable} {input_V_file} {input_V_variable} {output_file}"
-    parser = OptionParser(usage=usage)
+reference:
+  Uses the windspharm package: http://ajdawson.github.com/windspharm/intro.html
 
-    parser.add_option("-M", "--manual", action="store_true", dest="manual", default=False,
-                      help="output a detailed description of the program")
-    parser.add_option("-e", "--eddy", action="store_true", dest="eddy", default=False,
-                      help="return the eddy component of the wind quantity (i.e. remove the zonal mean")
+example (abyss.earthsci.unimelb.edu.au):
+  /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_wind_quantities.py streamfunction  
+  /work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc ua
+  /work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc va
+  /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly_native.nc
+
+  /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_wind_quantities.py streamfunction  
+  /work/dbirving/datasets/Merra/data/processed/ua_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc ua
+  /work/dbirving/datasets/Merra/data/processed/va_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc va
+  /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc
+
+author:
+  Damien Irving, 10 Dec 2012.
+
+bugs:
+  Rossby wave source output needs to be checked
+  Some of the if statements are fairly ugly - need to clean those up
     
-    (options, args) = parser.parse_args()            # Now that the options have been defined, instruct the program to parse the command line
+"""
 
-    if options.manual == True or len(sys.argv) == 1:
-        print """
-        Usage:
-            calc_eof.py [-M] [-h] [-e] {wind_quantity} {input_U_file} {input_U_variable} {input_V_file} {input_V_variable} {output_file}
+    description='Calculate wind derived quanitity.'
+    parser = argparse.ArgumentParser(description=description,
+                                     epilog=extra_info, 
+                                     argument_default=argparse.SUPPRESS,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
 
-        Options
-            -M -> Display this on-line manual page and exit
-            -h -> Display a help/usage message and exit
-	    -e -> Return the eddy component of the wind quantity
-	          (i.e. remove the zonal mean from U and V before calculation) 
-        
-	Wind quantities 
-	    magnitude             ->  Wind speed    
-	    vorticity             ->  Relative vorticity
-	    divergence            ->  Horizontal divergence
-	    absolutevorticity     ->  Absolute vorticity (sum of relative and planetary)
-	    irrotationalcomponent ->  Irrotational (divergent) component of the vector wind (from Helmholtz decomposition)
-	    nondivergentcomponent ->  Non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)
-	    streamfunction        ->  Streamfunction (the rotational part of the wind blows along the streamfunction contours, 
-	                              with speed proportional to the gradient)
-	    velocitypotential     ->  Velocity potential (the divergent part of the wind blows along the velocity potential contours,
-	                              with speed proportional to the gradient)
-	    rossbywavesource      ->  Rossby wave source			      	    
-	    
-	Note
-	    The input data can have no missing values
-	
-        Reference
-            Uses the windspharm package: http://ajdawson.github.com/windspharm/intro.html
+    parser.add_argument("quantity", type=str, help="Quantity to calculate",
+                        choices=['magnitude', 'vorticity', 'divergence', 'absolutevorticity',
+                                 'irrotationalcomponent', 'streamfunction', 'velocitypotential',
+                                 'rossbywavesource'])
+    parser.add_argument("infileu", type=str, help="Input U-wind file name")
+    parser.add_argument("varu", type=str, help="Input U-wind variable")
+    parser.add_argument("infilev", type=str, help="Input V-wind file name")
+    parser.add_argument("varv", type=str, help="Input V-wind variable")
+    parser.add_argument("outfile", type=str, help="Output file name")
 
-        Example (abyss.earthsci.unimelb.edu.au)
-	    /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_wind_quantities.py streamfunction  
-	    /work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc ua
-	    /work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc va
-	    /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly_native.nc
-	    
-	    /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_wind_quantities.py streamfunction  
-	    /work/dbirving/datasets/Merra/data/processed/ua_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc ua
-	    /work/dbirving/datasets/Merra/data/processed/va_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc va
-	    /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1981-2010_native.nc
-	    
-        Author
-            Damien Irving, 10 Dec 2012.
-
-        Bugs
-            Rossby wave source output needs to be checked
-	    Some of the if statements are fairly ugly - need to clean those up
-	    Please report any problems to: d.irving@student.unimelb.edu.au
-        """
-        sys.exit(0)
-
-    else:
-
-        # Repeat the command line arguments #
-
-        print 'Quantity:', args[0]
-	print 'Input U file: ', args[1]
-        print 'Input V file: ', args[3]
-	print 'Output file:', args[5]
-        
-        quantity, fname_u, vname_u, fname_v, vname_v, fname_out = args  
+#    parser.add_argument("--eddy", action="store_true", default=False,
+#                        help="return the eddy component of the wind quantity (i.e. remove the zonal mean before calculation)")
     
-        main(quantity, fname_u, vname_u, fname_v, vname_v, fname_out, options.eddy)
+    args = parser.parse_args()  
+    
+    print 'Quantity:', args.quantity
+    print 'Input U file: ', args.infileu
+    print 'Input V file: ', args.infilev
+    print 'Output file:', args.outfile
+
+    main(args)

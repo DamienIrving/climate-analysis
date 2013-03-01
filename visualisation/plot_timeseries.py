@@ -105,8 +105,8 @@ class DatetimeAxis:
             startint = 0
 	tick_points = range(startint, len(self.data_orig[:]), majorint)  
 
-	formats  = {'YEARLY': '%Y',
-                    'MONTHLY': '%b %Y',
+	formats  = {'YEARLY': '%y',
+                    'MONTHLY': '%b %y',
                     'WEEKLY': '%d/%m/%y',
                     'DAILY': '%d/%m/%y',
                     'HOURLY': '%m/%d %H:%M',

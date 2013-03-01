@@ -16,11 +16,7 @@ import sys
 
 import argparse
 
-import cdms2 
 import MV2
-
-import numpy
-import numpy.ma as ma
 
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
@@ -104,7 +100,7 @@ example (abyss.earthsci.unimelb.edu.au):
   /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc
 """    	
 
-    description = 'Takes a monthly timeseries and calculate the monthly anomaly timeseries'
+    description = 'Take a monthly timeseries and calculate the monthly anomaly timeseries.'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,

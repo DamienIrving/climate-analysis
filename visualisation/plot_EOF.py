@@ -118,7 +118,7 @@ def main(neofs,ifile,ofile,title,palette,ticks,segments,equator):
     for i in range(1,neofs+1):
         fin = cdms2.open(ifiles[i-1])
 	data = fin('eof'+str(i))
-	img_headings.append('EOF%s  (%3.1f%% variance explained)' %(str(i),float(data.variance_explained)*100.0) )
+	img_headings.append('EOF%s  (%3.1f%% variance explained)' %(str(i),float(data.var_exp)*100.0) )
         fin.close()
     img_headings_list = shuffle(img_headings,rows,cols)
 
@@ -132,7 +132,7 @@ def main(neofs,ifile,ofile,title,palette,ticks,segments,equator):
                        colourbar_colour=palette,
 		       img_headings=img_headings_list,
 		       draw_axis=True,
-		       delat=15,delon=15,
+		       delat=30,delon=30,
 		       equator=equator,
 		       contour=True,
 		       ticks=unpack_comma_list(ticks,data_type='float'),

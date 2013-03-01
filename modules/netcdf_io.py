@@ -16,7 +16,9 @@ running_average      -- Calculate running average
 scale_offset         -- Apply scaling and offset factors
 temproal_aggregation -- Create a temporal aggregate of 
                         the input data
+time_axis_check      -- Check whether 2 time axes are the same
 write_netcdf         -- Write an output netCDF file
+xy_axis_check        -- Check whether 2 lat or lon axes are the same
 
 Included classes:
 InputData            -- Extract and subset data
@@ -465,6 +467,29 @@ def temporal_aggregation(data, output_timescale, climatology=False):
     return outdata
 
 
+def time_axis_check(axis1, axis2):
+    """Checks whether the time axes of the input files are the same"""
+    
+    start_time1 = axis1.asComponentTime()[0]
+    start_time1 = str(start_time1)
+    start_year1 = start_time1.split('-')[0]
+    
+    end_time1 = axis1.asComponentTime()[-1]
+    end_time1 = str(end_time1)
+    end_year1 = end_time1.split('-')[0]
+    
+    start_time2 = axis2.asComponentTime()[0]
+    start_time2 = str(start_time2)
+    start_year2 = start_time2.split('-')[0]
+    
+    end_time2 = axis2.asComponentTime()[-1]
+    end_time2 = str(end_time2)
+    end_year2 = end_time2.split('-')[0]
+
+    if (start_year1 != start_year2 or len(axis1) != len(axis2)):
+        sys.exit('Input files do not all have the same time axis')
+
+
 def write_netcdf(outfile_name, out_quantity, indata, 
                  outdata, outvar_atts, outvar_axes, 
                  clear_history=False):
@@ -559,3 +584,10 @@ def write_netcdf(outfile_name, out_quantity, indata,
 	outfile.write(var)  
 
     outfile.close()
+
+
+def xy_axis_check(axis1, axis2):
+    """Checks whether the lat or lon axes of the input files are the same""" 
+   
+    if (len(axis1) != len(axis2)):
+        sys.exit('Input files do not all have the same %s axis' %(axis1.id))
