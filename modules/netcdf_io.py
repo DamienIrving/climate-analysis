@@ -43,6 +43,7 @@ import cdms2
 cdms2.setNetcdfShuffleFlag(0)
 cdms2.setNetcdfDeflateFlag(0)
 cdms2.setNetcdfDeflateLevelFlag(0)
+import MV2
 
 
 ## Define regions ##
@@ -242,6 +243,66 @@ class InputData:
 	        
         return years
 
+
+    def temporal_composite(self, index, method=None, limit=1.0, bound='upper', average=None):
+        """Extract composite from data, based on the time axis.
+	
+	Positional arguments:
+	  index   --  a cdms2.tvariable.TransientVariable instance
+	              respresenting a data timeseries 
+	  method  --  method for determining the composite threshold
+	  limit   --  value applied to that method (e.g. 1.0 standard
+	              deviations)
+          average --  collect up all the composite members in this category
+                      and calculate the mean 		     
+	
+	"""
+	
+	assert isinstance(index, cdms2.tvariable.TransientVariable)
+	assert method in [None, 'std']
+        assert type(limit) == float
+	assert average in [None, 'all', 'DJF', 'MAM', 'JJA', 'SON']
+        assert bound in ['upper', 'lower', 'between']
+
+        # Check that data have the same time axis #
+
+        time_axis_check(self.data.getTime(), index.getTime())
+
+        # Extract the relevant data #
+
+        if method == 'std':
+            threshold = genutil.statistics.std(index) * limit
+        else:
+            threshold = limit 
+
+        tests = {'upper': 'index > threshold',
+                 'lower': 'index < threshold',
+                 'between': '-threshold < index < threshold'}
+
+        indices = numpy.nonzero(numpy.where(eval(tests[bound]), 1, 0) == 1)
+        ### goes in extract() function
+        times = numpy.take(self.data.getTime().asComponentTime(), indices)
+        times_str = str(times).strip('[').strip(']').split()
+        
+        dt_list = []
+        for i in range(0, len(times_str), 2):            
+            dt_list.append(times_str[i]+' '+times_str[i+1])
+
+        pick = genutil.picker(time=dt_list)
+        complete_composite = self.data(pick)
+        ###
+        # Perform necessary averaging #
+
+        # use code similar to months() together with numpy.nonzero and numpy.take
+        # to extract DJF values. Should probably write an extract(data, indices) function to 
+        # avoid duplication
+
+        seasons = {'DJF': [12, 1, 2],
+                   'MAM': [3, 4, 5],
+                   'JJA': [6, 7, 8],
+                   'SON': [9, 10, 11]}
+        indices = numpy.nonzero(numpy.where(data.months() in seasons[average]), 1, 0) == 1)
+        new_composite = extract()
 
 #    def eddy
 #    def mask
