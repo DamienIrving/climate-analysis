@@ -244,7 +244,7 @@ class InputData:
         return years
 
 
-    def temporal_composite(self, index, method=None, limit=1.0, bound='upper', average=None):
+    def temporal_composite(self, index, method=None, limit=1.0, bound='upper', season=None, average=False):
         """Extract composite from data, based on the time axis.
 	
 	Positional arguments:
@@ -253,6 +253,7 @@ class InputData:
 	  method  --  method for determining the composite threshold
 	  limit   --  value applied to that method (e.g. 1.0 standard
 	              deviations)
+          bound   --  indicates what type of bound the limit is
           average --  collect up all the composite members in this category
                       and calculate the mean 		     
 	
@@ -261,14 +262,33 @@ class InputData:
 	assert isinstance(index, cdms2.tvariable.TransientVariable)
 	assert method in [None, 'std']
         assert type(limit) == float
-	assert average in [None, 'all', 'DJF', 'MAM', 'JJA', 'SON']
+	assert season in [None, 'ann', 'djf', 'mam', 'jja', 'son']
         assert bound in ['upper', 'lower', 'between']
 
         # Check that data have the same time axis #
 
         time_axis_check(self.data.getTime(), index.getTime())
 
-        # Extract the relevant data #
+        # Extract the season #
+
+        if season == 'ann':
+            season = None
+
+        if season:
+            seasons = {'djf': [12, 1, 2],
+                       'mam': [3, 4, 5],
+                       'jja': [6, 7, 8],
+                       'son': [9, 10, 11]}
+            indices0 = numpy.where(numpy.array(self.months()) == seasons[season][0], 1, 0)
+            indices1 = numpy.where(numpy.array(self.months()) == seasons[season][1], 1, 0)
+            indices2 = numpy.where(numpy.array(self.months()) == seasons[season][2], 1, 0)
+            indices = numpy.nonzero((indices0 + indices1 + indices2) == 1)
+            composite = temporal_extract(self.data, indices)
+	    index = temporal_extract(index, indices)
+	else:
+	    composite = self.data
+
+        # Extract the data that pass the threshold #
 
         if method == 'std':
             threshold = genutil.statistics.std(index) * limit
@@ -280,29 +300,17 @@ class InputData:
                  'between': '-threshold < index < threshold'}
 
         indices = numpy.nonzero(numpy.where(eval(tests[bound]), 1, 0) == 1)
-        ### goes in extract() function
-        times = numpy.take(self.data.getTime().asComponentTime(), indices)
-        times_str = str(times).strip('[').strip(']').split()
+        composite = temporal_extract(composite, indices)
         
-        dt_list = []
-        for i in range(0, len(times_str), 2):            
-            dt_list.append(times_str[i]+' '+times_str[i+1])
-
-        pick = genutil.picker(time=dt_list)
-        complete_composite = self.data(pick)
-        ###
         # Perform necessary averaging #
 
-        # use code similar to months() together with numpy.nonzero and numpy.take
-        # to extract DJF values. Should probably write an extract(data, indices) function to 
-        # avoid duplication
+        count = numpy.shape(composite)[0]
+        
+        final_composite = MV2.average(composite, axis=0) if average else composite
+        final_composite.count = count
 
-        seasons = {'DJF': [12, 1, 2],
-                   'MAM': [3, 4, 5],
-                   'JJA': [6, 7, 8],
-                   'SON': [9, 10, 11]}
-        indices = numpy.nonzero(numpy.where(data.months() in seasons[average]), 1, 0) == 1)
-        new_composite = extract()
+        return final_composite
+
 
 #    def eddy
 #    def mask
@@ -526,6 +534,24 @@ def temporal_aggregation(data, output_timescale, climatology=False):
         sys.exit(1)
 
     return outdata
+
+
+def temporal_extract(data, indices):
+    """Extract the data corresponding to a list of time
+    axis indices."""
+    
+    assert isinstance(data, cdms2.tvariable.TransientVariable)
+    
+    times = numpy.take(data.getTime().asComponentTime(), indices)
+    times_str = str(times).strip('[').strip(']').split()
+        
+    dt_list = []
+    for i in range(0, len(times_str), 2):            
+        dt_list.append(times_str[i]+' '+times_str[i+1])
+
+    pick = genutil.picker(time=dt_list)
+    
+    return data(pick)
 
 
 def time_axis_check(axis1, axis2):

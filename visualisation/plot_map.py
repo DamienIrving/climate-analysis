@@ -47,6 +47,7 @@ AUSTRALIA = cdms2.selectors.Selector(latitude=(-45,-10,'cc'),longitude=(110,160,
 AUS_NZ = cdms2.selectors.Selector(latitude=(-50,0,'cc'),longitude=(100,185,'cc'))
 WORLD_GREENWICH = cdms2.selectors.Selector(latitude=(-90,90,'cc'),longitude=(-180,180,'cc'))
 WORLD_DATELINE = cdms2.selectors.Selector(latitude=(-90,90,'cc'),longitude=(0,360,'cc'))
+TROPICAL_PACIFIC = cdms2.selectors.Selector(latitude=(-30, 30, 'cc'), longitude=(150,300,'cc'))
 
 #Colours
 blue1,blue2,blue3,blue4,blue5, = ['#EAF4FF','#DFEFFF','#BFDFFF','#95CAFF','#55AAFF']
@@ -80,6 +81,7 @@ grey = '#CCCCCC'
 white = '#FFFFFF'
 
 
+
 ### Define functions ###
 
 
@@ -99,7 +101,7 @@ def multiplot(ifiles,variables,
               #Output file name and title
               ofile=None,title=None,timmean=None,
               #can use a pre-defined region or override with min/max lat/lon, 
-              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-20,lonX=-125,projection='cyl',
+              region=WORLD_DATELINE,minlat=None,minlon=None,maxlat=None,maxlon=None,latX=-55,lonX=-125,projection='cyl',
               #colourbar settings
               colourbar_colour='jet',ticks=None,discrete_segments=None,units=None,convert=False,scale=None,extend="neither",
               #resolution of image
@@ -764,9 +766,13 @@ def get_min_max(files,variables,timmean,region,plot='primary'):
 
             ifile = files[row][col]
             var = variables[row][col]
+	    
+	    if ifile == '':
+	        continue
+		
             fin = cdms2.open(ifile,'r')
 
-            tVar = extract_data(files,variables,row,col,timmean=timmean,region=region)[0]
+            tVar = extract_data(files, variables, row, col, timmean=timmean,region=region)[0]
 	    tmax = tVar.max()
             tmin = tVar.min()
             if tmax > max_level:
@@ -817,20 +823,44 @@ def str2list(s):
     return s
 
 
-def unpack_comma_list(comma_list,data_type='str'):
-    """Converts a comma separated list into a python array"""
-    
-    if comma_list:  # because it might be 'None'
-	if data_type == 'int':
-	    python_array = [int(s) for s in comma_list.split(',')]
-	elif data_type == 'float':
-	    python_array = [float(s) for s in comma_list.split(',')]
-	else:
-	    python_array = [str(s) for s in comma_list.split(',')]
+def dimensions(nfiles):
+    """Determine the correct number of rows and columns for the number of input files"""
+    if nfiles <= 2:
+        cols=1.0
+    elif nfiles <= 6:
+        cols=2.0
+    elif nfiles <= 9:
+        cols=3.0
+    elif nfiles <= 16:
+        cols=4.0
     else:
-	python_array = None
+        cols=5.0
+    
+    rows=math.ceil(nfiles/cols)
+    
+    return int(rows),int(cols)
 
-    return python_array
+
+def shuffle(in_list, rows, cols):
+    """Put the input list into the correct order for mpltools.multiplot"""
+    rows=int(rows)
+    cols=int(cols)
+    nfiles = len(in_list)
+    nblanks = int((rows*cols) - nfiles)
+    start = int(1 + cols*(rows-1))
+    
+    new_list = []
+    for k in range(nfiles+nblanks):
+        new_list.append('')
+    
+    for i in range(nblanks):
+       in_list.insert(cols-nblanks,'')
+    
+    for c in range(cols):
+        for r in range(rows):
+            new_list[c+(r*cols)] = in_list[start+c-(r*cols)-1]
+            
+    return new_list
 
 
 if __name__ == '__main__':

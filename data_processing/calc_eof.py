@@ -1,6 +1,4 @@
-#!/usr/bin/env cdat
 """
-SVN INFO: $Id$
 Filename:     eof_anal.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
 Description:  Performs and Empiricial Orthogonal Function (EOF) analysis
@@ -145,7 +143,7 @@ def main(inargs):
             outvar_atts_list.append(pc_atts[adj_index])
             outvar_axes_list.append(pc_axes) 
         
-    indata_list = [indata,] * neofs
+    indata_list = [indata,]
     
     nio.write_netcdf(inargs.outfile, 'EOF', 
                      indata_list, 
@@ -176,9 +174,10 @@ example (abyss.earthsci.unimelb.edu.au):
   /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc ts 
   /work/dbirving/processed/indices/data/ts_Merra_surface_EOF_monthly-1981-2010_native-ocean-eqpacific.nc
 
-improvements:
-  this program should take raw data, not anomaly data, as it's input
-  (i.e. it would calculate the anomaly itself, or perhaps the EOF package can do that?)
+note:
+  using monthly anomaly data gives a different result to letting the program automatically 
+  remove the time mean at each grid point (because you haven't taken seasonality into account
+  if you simply remove the mean of the entire monthly timeseries)
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
