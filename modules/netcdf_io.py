@@ -81,7 +81,7 @@ regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
 class InputData:
     """Extract and subset data."""
 
-    def __init__(self, fname, var_id, **kwargs):
+    def __init__(self, fname, var_id, convert=False, **kwargs):
 	"""Extract desired data from an input file.
 	
 	Keyword arguments (with examples):
@@ -99,6 +99,7 @@ class InputData:
                       optional & indicates whether the 
                       climatology is desired)
         runave    -- window size for the running average 
+	convert   -- True or False (for converting units)
 	
         note that the temporal aggregation will happen 
         before the running average
@@ -189,6 +190,9 @@ class InputData:
         
         data = temporal_aggregation(data, agg, climatology=clim) if agg else data
         data = running_average(data, window) if window > 1 else data
+
+        if convert:
+	    data = convert_units(data)
 
         self.data = data
 	self.fname = fname
@@ -396,11 +400,11 @@ def convert_units(data):
     # Switch units #
     
     if data.units[0:10] == 'kg m-2 s-1':
-        newdata = numpy.ma.multiply(data, 86400.0)
+        newdata = MV2.multiply(data, 86400.0)
         newdata.units = 'mm d-1'
     
     elif data.units[0] == 'K':
-        newdata = numpy.ma.subtract(data, 273.16)
+        newdata = MV2.subtract(data, 273.16)
         newdata.units = 'Celsius'
     
     else:
@@ -422,25 +426,17 @@ def dict_filter(indict, key_list):
 def hi_lo(data_series, current_max, current_min):
     """Determines the new highest and lowest value"""
     
-    if isinstance(data_series, (numpy.ndarray)):
-        find_max = numpy.max
-        find_min = numpy.min
-    else:
-        find_max = max
-        find_min = min
-    
-    highest = find_max(data_series)
+    highest = MV2.max(data_series)
     if highest > current_max:
         new_max = highest
     else:
         new_max = current_max
         
-    lowest = find_min(data_series)
+    lowest = MV2.min(data_series)
     if lowest < current_min:
         new_min = lowest
     else:
         new_min = current_min
-    
     
     return new_max, new_min
 
