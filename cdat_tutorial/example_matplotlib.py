@@ -1,21 +1,13 @@
-## Simple plotting example ## 
+# Simple plotting example ## 
 
 import cdms2
 import numpy
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, shiftgrid
 
-# read in data #
-
-ufile = cdms2.open('/work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc')
-vfile = cdms2.open('/work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc')
-
-u = ufile('ua')
-v = vfile('va')
-
-# calculate wind speed #
-
-wsp = (u**2 + v**2)**0.5
+#read in data
+fin = cdms2.open('/work/dbirving/temp_data/wsp.nc')
+wsp = fin('wsp')
 
 # make cylindrical basemap 
 m = Basemap(llcrnrlon=-180, llcrnrlat=-90,  
@@ -23,8 +15,8 @@ m = Basemap(llcrnrlon=-180, llcrnrlat=-90,
 	    resolution='c', projection='cyl')
 
 # shift the longitude grid to be -180 to 180
-datout, lon_axis = shiftgrid(180., wsp[0, ::], u.getLongitude()[:], start=False)
-lat_axis = u.getLatitude()[:]
+datout, lon_axis = shiftgrid(180., wsp[0, ::], wsp.getLongitude()[:], start=False)
+lat_axis = wsp.getLatitude()[:]
 
 # create figure, add axes
 fig1 = plt.figure(figsize=(8,10))
@@ -36,18 +28,9 @@ lons, lats = numpy.meshgrid(lon_axis, lat_axis)
 x, y = m(lons, lats)
 
 # set desired contour levels.
-clevs = numpy.arange(0, 80, 10)
+clevs = numpy.arange(0, 78, 6)
 parallels = numpy.arange(-90., 90, 30.)
 meridians = numpy.arange(0., 360., 30.)
-
-# re-project the data onto the map
-#transfor_scalar fails if lon isn't -180 to 180
-#transform_scalar not needed for cyl plots
-#datout = m.transform_scalar(datout,   
-#                            lon_axis, 
-#                            lat_axis, 
-#                            200, 200) 
-#                            #order=0)
 
 # create the contour plot
 cs1 = m.contourf(x, y, datout, clevs)
