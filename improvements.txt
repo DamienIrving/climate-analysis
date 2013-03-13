@@ -2,7 +2,6 @@
 
 # Version control
   - Is bitbucket configured properly (sometimes it doesn't recognise who is submitting)
-  - Make use of branches
 
 # Look into provenance tracking. It requires:
   - Unique identifiers and version numbers for raw data (e.g. complete details of the reanalysis data in download README file)
@@ -15,18 +14,6 @@
     - Apparently equivalent to using the 'revision' command for svn, that David Kent used to put in all his codes
 
 # Improve general coding practices
-  - Use the IPython debugger
-  - Use assertions 
-  - Use try-except blocks
-  - Use xrange instead of range when speed is important in loops
-  - Use Classes
-    - Particularly for input data. The data could have a lat, lon, time attribute
-  - Create functions that take a variable number of arguments, using * and **  (p112 or Section 3.3.3 of Langtangen)
-    - e.g. def func(a, b, *args, **kwargs)
-    - args is a tuple of all the supplied position arguments
-    - kwargs is a dictionary of all the supplied keyword arguments
-  - Collect functions and classes that I use regularly and put them in a module. 
-    - Appendix B of Langtangen (2010) tells you how to go about it.
   - Check that the 'calc_monthly_climatology' function in calc_climate_index.py is up to date with the one in calc_monthly_anomaly.py
   - Python has a style guide (see Appendix B.2 of Langtangen). 
     - I could build on this and create my own, adding standard ways to name input files, variables etc
@@ -38,14 +25,16 @@
   - Look into documentation generators. Perhaps I can generate html to put on my bitbucket wiki?
     - Epydoc is the only one that does both HTML and PDF or LaTeX
   - Start a code review group at uni?
+  - Take the next step and learn about packaging code for sharing and 'release'
+    - Tgis includes specifying the license and installation instructions/files
+    - See https://ams.confex.com/ams/93Annual/webprogram/Paper223958.html
 
 # plot_map.py development
-  - Month / season selector
   - Figure spacing issues (moves further right depending on how long the row headings are)
   - Vertical colourbar
 
-# plot_index.py development
-  - Create an input data class, with has a smoothing method (and perhaps a linear detrending method too)
+# netcdf_io.py development
+  - Include a linear detrending method?
 
 # calc_waf.py development
   - Use f2py instead of the system calls (simple example, section 1.1.13 of Langtangen)
