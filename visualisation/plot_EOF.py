@@ -1,7 +1,4 @@
-#!/usr/bin/env cdat
-
 """
-GIT INFO: $Id$
 Filename:     plot_EOF.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
 Description:  Plots the spatial EOF
@@ -16,182 +13,83 @@ Updates | By | Description
 
 ### Import required modules ###
 
-import optparse
-from optparse import OptionParser
+import os
 import sys
+
+import argparse
 
 import cdms2 
 
-import numpy
-import math
+module_dir = os.path.join(os.environ['HOME'], 'modules')
+sys.path.insert(0, module_dir)
+import netcdf_io as nio
 
+module_dir = os.path.join(os.environ['HOME'], 'visualisation')
+sys.path.insert(0, module_dir)
 import plot_map
 
 
-def dimensions(nfiles):
-    """Determine the correct number of rows and columns for the number of input files"""
-    if nfiles <= 2:
-        cols=1.0
-    elif nfiles <= 6:
-        cols=2.0
-    elif nfiles <= 9:
-        cols=3.0
-    elif nfiles <= 16:
-        cols=4.0
-    else:
-        cols=5.0
-    
-    rows=math.ceil(nfiles/cols)
-    
-    return int(rows),int(cols)
-
-
-def shuffle(in_list,rows,cols):
-    """Put the input list into the correct order for mpltools.multiplot"""
-    rows=int(rows)
-    cols=int(cols)
-    nfiles = len(in_list)
-    nblanks = int((rows*cols) - nfiles)
-    start = int(1 + cols*(rows-1))
-    
-    new_list = []
-    for k in range(nfiles+nblanks):
-        new_list.append('')
-    
-    for i in range(nblanks):
-       in_list.insert(cols-nblanks,'')
-    
-    for c in range(cols):
-        for r in range(rows):
-            new_list[c+(r*cols)] = in_list[start+c-(r*cols)-1]
-            
-    return new_list
-
-
-def unpack_comma_list(comma_list,data_type='str'):
-    """Converts a comma separated list into a python array"""
-    
-    if comma_list:  # because it might be 'None'
-	if data_type == 'int':
-	    python_array = [int(s) for s in comma_list.split(',')]
-	elif data_type == 'float':
-	    python_array = [float(s) for s in comma_list.split(',')]
-	else:
-	    python_array = [str(s) for s in comma_list.split(',')]
-    else:
-	python_array = None
-
-    return python_array
-
-
-def main(neofs,ifile,ofile,title,palette,ticks,segments,equator):
+def main(inargs):
 
     # Dimensions
-    rows,cols = dimensions(neofs)
-    dims = [rows,cols]
+    rows, cols = plot_map.get_dimensions(inargs.neofs)
+    dims = [rows, cols]
     
-    # Input file list
-    ifiles = [ifile] * neofs 
-    ifile_list = shuffle(ifiles,rows,cols)
+    # Input data list
+    indata_list = []
+    var_exp_list = []
+    for i in range(1, inargs.neofs + 1):
+        var = 'eof'+str(i)
+	indata_list.append(nio.InputData(inargs.infile, var, region=inargs.region).data)
     
-    # Variable lists
-    variables = []
-    for i in range(1,neofs+1):
-        variables.append('eof'+str(i))
-    variable_list = shuffle(variables,rows,cols)
-    
-    # Map bounds
-    fin = cdms2.open(ifiles[0])
-    data = fin(variables[0])
-    in_lat = data.getLatitude()[:]
-    in_lon = data.getLongitude()[:]
-    
-    minlat = min(in_lat)
-    maxlat = max(in_lat)
-    minlon = min(in_lon)
-    maxlon = max(in_lon)
-    
-    fin.close()
-        
     # Image headings
     img_headings = []
-    for i in range(1,neofs+1):
-        fin = cdms2.open(ifiles[i-1])
-	data = fin('eof'+str(i))
-	img_headings.append('EOF%s  (%3.1f%% variance explained)' %(str(i),float(data.var_exp)*100.0) )
-        fin.close()
-    img_headings_list = shuffle(img_headings,rows,cols)
+    for i in range(1, inargs.neofs + 1):
+	img_headings.append('EOF%s  (%3.1f%% variance explained)' %(str(i), float(indata_list[i-1].var_exp) * 100.0))
 
-
-    plot_map.multiplot(ifile_list,
-                       variable_list,
+    plot_map.multiplot(indata_list,
 		       dimensions=dims,
-		       ofile=ofile,
-		       title=title,
-		       minlat=minlat,maxlat=maxlat,minlon=minlon,maxlon=maxlon,
-                       colourbar_colour=palette,
-		       img_headings=img_headings_list,
+		       img_headings=img_headings,
 		       draw_axis=True,
-		       delat=30,delon=30,
-		       equator=equator,
+		       delat=30, delon=30,
 		       contour=True,
-		       ticks=unpack_comma_list(ticks,data_type='float'),
-		       discrete_segments=unpack_comma_list(segments)
-		       )
+		       **nio.dict_filter(vars(inargs), nio.list_kwargs(plot_map.multiplot)))
 
 
 if __name__ == '__main__':
 
-    ### Help and manual information ###
+    extra_info = """
+example:
+  /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_EOF.py  
+  /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.nc 
+  --ofile /work/dbirving/processed/indices/figures/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.png
+  --title 250hPa_streamfunction_EOF_analysis,_1979-2012,_Merra
+  --ticks -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0
+"""
 
-    usage = "usage: %prog [options] {}"
-    parser = OptionParser(usage=usage)
-
-    parser.add_option("-M", "--manual",action="store_true",dest="manual",default=False,help="output a detailed description of the program")
-    parser.add_option("-e", "--equator",action="store_true",dest="equator",default=False,help="plot a distinct gridline for the equator [default = False]")
-    parser.add_option("--ofile",dest="ofile",type='string',default=None,help="name of output file [default = test.png]")
-    parser.add_option("--ticks", dest="ticks",type='string',default=None,help="List of comma seperataed tick marks to appear on the colour bar")
-    parser.add_option("--segments", dest="segments",type='string',default=None,help="List of comma seperated colours to appear on the colour bar")
-    parser.add_option("--title",dest="title",type='string',default=None,help="plot title [default = None]")
-    parser.add_option("--palette",dest="palette",type='string',default='RdBu_r',help="Colourbar name [default = RdBu_r]")
+    description='Plot EOF spatial maps.'
+    parser = argparse.ArgumentParser(description=description, 
+                                     epilog=extra_info,
+                                     argument_default=argparse.SUPPRESS,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     
-    (options, args) = parser.parse_args()
+    parser.add_argument("infile", type=str, help="input file name")
+    parser.add_argument("region", type=str, choices=nio.regions.keys(), 
+                        help="region name")
 
-    if options.manual == True or len(sys.argv) == 1:
-	print """
-	Usage:
-            cdat plot_EOF.py [-h] [options] {neofs} {input file}
-
-	Options
-            -M  ->  Display this on-line manual page and exit
-            -h  ->  Display a help/usage message and exit
-	    
-	    --ofile    ->  Name of output file [default = test.png]
-	    --equator  ->  Plot a distinct gridline for the equator [default = False]
-	    --title    ->  Plot title [default = None]
-	    --ticks    ->  List of comma seperataed tick marks to appear on the colour bar [default = automatic]
-	    --segments ->  List of comma seperated colours to appear on the colour bar [default = automatic]
-	    --palette  ->  Selector defining a matplotlib colourbar (e.g. 'RdBu', 'RdBu_r')
-	    
-	Example (abyss.earthsci.unimelb.edu.au)
-	    /opt/cdat/bin/cdat plot_EOF.py 4 
-	    /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.nc 
-	    --ofile /work/dbirving/processed/indices/figures/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.png
-	    --title 250hPa_streamfunction_EOF_analysis,_1979-2012,_Merra
-	    --ticks -2.5,-2.0,-1.5,-1.0,-0.5,0,0.5,1.0,1.5,2.0,2.5,3.0
-	    --segments 'blue7','blue6','blue5','blue4','blue3','red3','red4','red5','red6','red7','red8'
-	    
-	Author
-            Damien Irving, 22 Jun 2012
-	    
-	Upgrades needed
-	    Need to figure out what the units are for EOFs
-	    
-	Bugs
-	    Please report any problems to: d.irving@student.unimelb.edu.au
-	"""
-	sys.exit(0)
+    parser.add_argument("--neofs", type=str, default=4, 
+                        help="number of EOFs to plot")
+    parser.add_argument("--ofile", type=str,
+                        help="name of output file [default = test.png]")
+    parser.add_argument("--ticks", type=str, 
+                        help="List of tick marks to appear on the colour bar")
+    parser.add_argument("--discrete_segments", type=str, nargs='*',
+                        help="List of colours to appear on the colour bar")
+    parser.add_argument("--title", type=str, 
+                        help="plot title [default = None]")
+    parser.add_argument("--colourbar_colour", type=str, default='RdBu_r',
+                        help="Colourbar name [default = RdBu_r]")
     
-    else:
-
-        main(int(args[0]),args[1],options.ofile,options.title,options.palette,options.ticks,options.segments,options.equator)
+    args = parser.parse_args() 
+    
+    main(args)

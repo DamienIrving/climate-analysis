@@ -158,17 +158,11 @@ def _get_min_max(data_dict, plot='primary'):
     min_level = float("inf")
     max_level = float("-inf")
 
-    nrows, ncols = max(data_dict.keys())
-    nrows = nrows + 1
-    ncols = ncols + 1
-
-    for row in range(nrows):
-        for col in range(ncols):
-            data = data_dict[row, col]
-	    if not type(data) == cdms2.tvariable.TransientVariable:
-	        continue
-		
-            max_level, min_level = nio.hi_lo(data, max_level, min_level)
+    for data in data_dict.values():
+	if not type(data) == cdms2.tvariable.TransientVariable:
+	    print 'data not a cdms2.tvariable.TransientVariable, skipping...'
+	    continue
+        max_level, min_level = nio.hi_lo(data, max_level, min_level)
 
     print plot, 'plot'
     print 'Minimum value = ', min_level
@@ -211,7 +205,7 @@ def multiplot(indata,
     """Create a spatial plot.
 
     Positional arguments:
-      indata  --  List of netcdf_io.InputData instances to be plotted as a colourmap
+      indata  --  List of cdms2 transient variable arrays to be plotted as a colourmap
  
     Keyword arguments:
       dimensions           --  Dimensions of plot (nrows, ncols)
