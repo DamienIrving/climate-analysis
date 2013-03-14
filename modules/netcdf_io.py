@@ -45,6 +45,7 @@ cdms2.setNetcdfDeflateFlag(0)
 cdms2.setNetcdfDeflateLevelFlag(0)
 import MV2
 
+import pdb
 
 ## Define regions ##
 
@@ -76,7 +77,6 @@ regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
 
 
 ## Classes/functions ##
-
 
 class InputData:
     """Extract and subset data."""
@@ -203,7 +203,7 @@ class InputData:
     
 
     def datetime_axis(self):
-        """Return the time axis, expressed asa list of datetime objects."""
+        """Return the time axis, expressed as a list of datetime objects."""
      
         return get_datetime(self.data.getTime().asComponentTime())
         
@@ -248,20 +248,24 @@ class InputData:
         return years
 
 
-    def temporal_composite(self, index, method=None, limit=1.0, bound='upper', season=None, average=False):
+    def temporal_composite(self, index, 
+                           method=None, limit=1.0, bound='upper', season=None, average=False,
+			   normalise=False, remove_ave=False):
         """Extract composite from data, based on the time axis.
 	
 	Positional arguments:
-	  index   --  a cdms2.tvariable.TransientVariable instance
-	              respresenting a data timeseries 
-	  method  --  method for determining the composite threshold
-	  limit   --  value applied to that method (e.g. 1.0 standard
-	              deviations)
-          bound   --  indicates what type of bound the limit is
-          average --  collect up all the composite members in this category
-                      and calculate the mean 		     
+	  index      --  a cdms2.tvariable.TransientVariable instance
+	                 respresenting a data timeseries 
+	  method     --  method for determining the composite threshold
+	  limit      --  value applied to that method (e.g. 1.0 standard
+	                 deviations)
+          bound      --  indicates what type of bound the limit is
+          average    --  collect up all the composite members in this category
+                         and calculate the mean 
+          normalise  --	 normalise the data before calculating the composite	     
+	  remove_ave --  remove average in the normalisation procedure
 	
-	"""
+        """
 	
 	assert isinstance(index, cdms2.tvariable.TransientVariable)
 	assert method in [None, 'std']
@@ -269,9 +273,16 @@ class InputData:
 	assert season in [None, 'ann', 'djf', 'mam', 'jja', 'son']
         assert bound in ['upper', 'lower', 'between']
 
-        # Check that data have the same time axis #
+        # Check that the input data and index have the same time axis #
 
         time_axis_check(self.data.getTime(), index.getTime())
+	
+	# Normalise the input data #
+	
+	if normalise:
+	    data = normalise_data(self.data, sub_mean=remove_ave)
+	else:
+	    data = self.data
 
         # Extract the season #
 
@@ -287,10 +298,10 @@ class InputData:
             indices1 = numpy.where(numpy.array(self.months()) == seasons[season][1], 1, 0)
             indices2 = numpy.where(numpy.array(self.months()) == seasons[season][2], 1, 0)
             indices = numpy.nonzero((indices0 + indices1 + indices2) == 1)
-            composite = temporal_extract(self.data, indices)
+            composite = temporal_extract(data, indices)
 	    index = temporal_extract(index, indices)
 	else:
-	    composite = self.data
+	    composite = data
 
         # Extract the data that pass the threshold #
 
@@ -318,6 +329,48 @@ class InputData:
 
 #    def eddy
 #    def mask
+
+
+def convert_units(data):
+    """Convert units.
+        
+    kg m-2 s-1 or K will be converted to 
+    mm/day or Celsius.
+
+    Arguments:
+    data -- InputData instance or cdms2 transient variable
+            (i.e. must have a 'units' attribute)
+
+    """
+    #There would be scope to use the genutil udunits module
+    #here, however I couldn't figure out how to get it to
+    #do the rainfall conversion, plus then all file variables
+    #would need to have unidata udunits consistent units
+    
+    # Switch units #
+    
+    if data.units[0:10] == 'kg m-2 s-1':
+        newdata = MV2.multiply(data, 86400.0)
+        newdata.units = 'mm d-1'
+    
+    elif data.units[0] == 'K':
+        newdata = MV2.subtract(data, 273.16)
+        newdata.units = 'Celsius'
+    
+    else:
+        print 'Original units not recognised.'
+        print 'Units have not been converted.'
+
+        newdata = data
+
+
+    return newdata 
+
+
+def dict_filter(indict, key_list):
+    """Filter dictionary according to specified keys."""
+    
+    return dict((key, value) for key, value in indict.iteritems() if key in key_list)
 
 
 def get_datetime(datetime_list):
@@ -381,58 +434,24 @@ def _get_timescale(times):
     return timescale
 
 
-def convert_units(data):
-    """Convert units.
-        
-    kg m-2 s-1 or K will be converted to 
-    mm/day or Celsius.
-
-    Arguments:
-    data -- InputData instance or cdms2 transient variable
-            (i.e. must have a 'units' attribute)
-
-    """
-    #There would be scope to use the genutil udunits module
-    #here, however I couldn't figure out how to get it to
-    #do the rainfall conversion, plus then all file variables
-    #would need to have unidata udunits consistent units
-    
-    # Switch units #
-    
-    if data.units[0:10] == 'kg m-2 s-1':
-        newdata = MV2.multiply(data, 86400.0)
-        newdata.units = 'mm d-1'
-    
-    elif data.units[0] == 'K':
-        newdata = MV2.subtract(data, 273.16)
-        newdata.units = 'Celsius'
-    
-    else:
-        print 'Original units not recognised.'
-        print 'Units have not been converted.'
-
-        newdata = data
-
-
-    return newdata 
-
-
-def dict_filter(indict, key_list):
-    """Filter dictionary according to specified keys."""
-    
-    return dict((key, value) for key, value in indict.iteritems() if key in key_list)
-
-
 def hi_lo(data_series, current_max, current_min):
     """Determines the new highest and lowest value"""
     
-    highest = MV2.max(data_series)
+    try:
+       highest = MV2.max(data_series)
+    except:
+       highest = max(data_series)
+    
     if highest > current_max:
         new_max = highest
     else:
         new_max = current_max
-        
-    lowest = MV2.min(data_series)
+    
+    try:    
+        lowest = MV2.min(data_series)
+    except:
+        lowest = min(data_series)
+    
     if lowest < current_min:
         new_min = lowest
     else:
@@ -448,8 +467,35 @@ def list_kwargs(func):
     nopt = len(details.defaults)
     
     return details.args[-nopt:]
+
+
+def normalise_data(indata, sub_mean=False):
+    """Normalise data.
     
+    Method is (x - mean) / std,
+    where removing the mean is optional
     
+    """
+    
+    assert isinstance(indata, cdms2.tvariable.TransientVariable)
+    
+    if sub_mean:
+        mean = cdutil.averager(indata, axis='t')
+	data = indata - mean
+    else:
+        data = indata
+
+    std = genutil.statistics.std(indata, axis=0)
+    
+    return data - std 
+
+
+def running_average(data, window):
+    """Calculate running average with desired window."""
+
+    return genutil.filters.runningaverage(data, window) 
+    
+
 def scale_offset(data, scale=1.0, offset=0.0):
     """Apply scaling and offset factors.
     
@@ -459,12 +505,6 @@ def scale_offset(data, scale=1.0, offset=0.0):
     
     return numpy.ma.add(numpy.ma.multiply(data, float(scale)),
                         float(offset))
-
-
-def running_average(data, window):
-    """Calculate running average with desired window."""
-
-    return genutil.filters.runningaverage(data, window) 
 
 
 def temporal_aggregation(data, output_timescale, climatology=False):
@@ -575,7 +615,7 @@ def time_axis_check(axis1, axis2):
 
 def write_netcdf(outfile_name, out_quantity, indata, 
                  outdata, outvar_atts, outvar_axes, 
-                 clear_history=False):
+                 clear_history=False, extra_history=' '):
     """Write an output netCDF file.
     
     Intended for use with a calculated quantity.
@@ -584,21 +624,27 @@ def write_netcdf(outfile_name, out_quantity, indata,
     
     All output variables must have the axes.
     
-    Arguments (incl. type/description):
-    outfile_name -- string
-    out_quantity -- e.g. variable or statistic name
-    indata       -- List or tuple of InputData instances
-    outdata      -- List or tuple of numpy arrays, containing 
-                    the data for each output variable
-    outvar_atts  -- List or tuple of dictionaries, containing 
-                    the attriubtes for each output variable
-                    Suggested minumum attributes include: id, 
-                    long_name, missing_value, units, history
-    outvar_axes  -- List or tuple of axis lists or tuples for 
-                    each outdata element (must be in order tyx)
-		    Should be generated using the cdat getTime(),
-                    getLatitude() or getLongitude() methods
+    Positional arguments (incl. type/description):
+      outfile_name  -- string
+      out_quantity  -- e.g. variable or statistic name
+      indata        -- List or tuple of InputData instances
+      outdata       -- List or tuple of numpy arrays, containing 
+                       the data for each output variable
+      outvar_atts   -- List or tuple of dictionaries, containing 
+                       the attriubtes for each output variable
+                       Suggested minumum attributes include: id, 
+                       long_name, missing_value, units, history
+      outvar_axes   -- List or tuple of axis lists or tuples for 
+                       each outdata element (must be in order tyx)
+	  	       Should be generated using the cdat getTime(),
+                       getLatitude() or getLongitude() methods
                     
+    Keyword arguments:
+      clear_history -- True = do not append the global 'history' attribute 
+                       to the corresponding attribute in the output file
+      extra_history -- string of extra info to be added to the standard
+                       global 'history' attribute output     
+
     """
 
     assert isinstance(indata, (list, tuple)) and isinstance(indata[0], InputData), \
@@ -645,8 +691,8 @@ def write_netcdf(outfile_name, out_quantity, indata,
     infile_names_unique = str(set(infile_names)).strip('set([').strip('])')
         
     setattr(outfile, 'history', 
-    """%s: %s calculated from %s using %s, format=NETCDF3_CLASSIC\n%s""" %(datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
-    out_quantity, infile_names_unique, sys.argv[0], old_history))
+    """%s: %s calculated from %s using %s, format=NETCDF3_CLASSIC. %s\n%s""" %(datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
+    out_quantity, infile_names_unique, sys.argv[0], extra_history, old_history))
 
     # Variables #
 

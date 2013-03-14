@@ -35,7 +35,7 @@ def main(inargs):
 
     if inargs.bound == 'between':
         assert len(inargs.limit) == 2, \
-        'If the bound is between, two limits (LOWER, UPPER) must be supplied'
+        """If the bound is 'between', two limits (LOWER, UPPER) must be supplied"""
         limit = (inargs.limit[0], inargs.limit[1])
     else:
         limit = inargs.limit[0]
@@ -46,15 +46,16 @@ def main(inargs):
     outvar_atts_list = []
     for season in seasons:
         composite = indata.temporal_composite(index.data, average=True, season=season, limit=limit, 
-                                              bound=inargs.bound, method=inargs.method) 
+                                              bound=inargs.bound, method=inargs.method,
+					      normalise=inargs.normalise, remove_ave=inargs.remove_ave)
+					      
         outdata_list.append(composite)
             
         attributes = {'id': inargs.var+'_'+season,
                       'long_name': indata.data.long_name,
                       'units': indata.data.units,
                       'count': composite.count,
-                      'history': 'Composite mean field for %s (included %s fields). Threshold method = %s. Limit = %s. Bound = %s. Index = %s, %s'  %(season, 
-                      composite.count, inargs.method, inargs.limit, inargs.bound, inargs.index_file, inargs.index_var)}
+                      'history': 'Composite mean field for %s (included %s fields)'   %(season, composite.count)}
         outvar_atts_list.append(attributes)    
 
     
@@ -64,11 +65,14 @@ def main(inargs):
     outvar_axes_list = [(indata.data.getLatitude(),
                         indata.data.getLongitude(),),] * 5 
 
+    extras = 'Threshold method = %s. Limit = %s. Bound = %s. Index = %s, %s. Normalised = %s (mean removed = %s).'  %(inargs.method, 
+    inargs.limit, inargs.bound, inargs.index_file, inargs.index_var, str(inargs.normalise), str(inargs.remove_ave))
     nio.write_netcdf(inargs.outfile, 'composite', 
                      indata_list, 
                      outdata_list,
                      outvar_atts_list, 
-                     outvar_axes_list)
+                     outvar_axes_list,
+		     extra_history=extras)
 
 
 if __name__ == '__main__':
@@ -109,6 +113,11 @@ author:
                         help="Value applied to that method (e.g. 1.0 standard deviations)")
     parser.add_argument("--bound", type=str, choices=['upper', 'lower', 'between'], default = 'upper',
                         help="Indicates what type of bound the limit is [default: upper]")
+
+    parser.add_argument("--normalise", action='store_true', default=False,
+                        help="normalise the data before calculating the composite [default: False]")
+    parser.add_argument("--remove_ave", action='store_true', default=False,
+                        help="remove average in the normalisation procedure [default: False]")
 
     args = parser.parse_args()            
 
