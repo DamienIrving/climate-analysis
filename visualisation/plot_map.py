@@ -107,11 +107,16 @@ def extract_data(file_list, region, convert=False):
         fname = item[0]
         var = item[1]
         period = (item[2], item[3])
-        data = nio.InputData(fname, var, time=period, region=region, convert=convert).data
+	date_pattern = '([0-9]{4})-([0-9]{2})-([0-9]{2})'
+	if re.search(date_pattern, item[2]) and re.search(date_pattern, item[2]):
+            data = nio.InputData(fname, var, time=period, region=region, convert=convert).data
+	else:
+	    print 'Start and/or end date for %s either None or not in correct ([0-9]{4})-([0-9]{2})-([0-9]{2}) format. Entire time period used.' %(fname)
+	    data = nio.InputData(fname, var, region=region, convert=convert).data
        
         #Data must be two dimensional 
         if (re.match('^t', data.getOrder())):
-	    print "WARNING data has a time axis, results displayed will be the temporal average"
+	    print 'WARNING data for %s has a time axis, results displayed will be the temporal average'  %(fname)
             data = MV2.average(data, axis=0)
 
         new_list.append(data)
@@ -169,12 +174,12 @@ def _get_min_max(data_dict, plot='primary'):
     print 'Maximum value = ', max_level
     
     #for ranges that straddle zero, make magnitude of min and max equal
-    if max_level > 0 and min_level < 0:
+    if max_level > 0.0 and min_level < 0.0:
         if abs(max_level) > abs(min_level):
 	    min_level = -1 * max_level
 	else:
 	    max_level = abs(min_level)
-        
+    
     return min_level, max_level
 
 
@@ -863,10 +868,10 @@ improvements:
 
     parser.add_argument("infile", type=str, help="input file name")
     parser.add_argument("variable", type=str, help="input file variable")
-    parser.add_argument("start", type=str,
-                        help="input file time start date")
+    parser.add_argument("start", type=str, 
+                        help="input file time start date (can be None)")
     parser.add_argument("end", type=str,
-                        help="input file time end date - let START=END for single time step")
+                        help="input file time end date - let START=END for single time step (can be None)")
 
     parser.add_argument("--infiles", type=str, action='append', default=[], nargs=4,
                         metavar=('FILENAME', 'VAR', 'START', 'END'),  

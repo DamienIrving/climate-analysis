@@ -487,7 +487,7 @@ def normalise_data(indata, sub_mean=False):
 
     std = genutil.statistics.std(indata, axis=0)
     
-    return data - std 
+    return data / std 
 
 
 def running_average(data, window):
