@@ -1,9 +1,23 @@
 ## List of improvements I plan to make ##
 
-# Version control
+# Install latest UV-CDAT #
+
+  - The lastest version of UV-CDAT was released in Feb 2013 (http://uvcdat.llnl.gov/install/). It contains the following
+    new packages that I need:
+    - Scipy version 11: Has an equal_var keyowrd argument for scipy.stats.ttest_ind() which performs a Welch's t-test
+    - Latest windspharm: So I can update calc_wind_quantity so it makes use of cdms2 transient variables
+  - We can't install this new version on abyss because the operating system is too old
+    - Either I wait until they upgrade the operating system on abyss (which won't happen until winter 2013 at the earliest), or
+    - Brett suggested that he could update the operating system on the vislab machines and install it there
+
+
+# Version control #
+
   - Is bitbucket configured properly (sometimes it doesn't recognise who is submitting)
 
-# Look into provenance tracking. It requires:
+
+# Provenance tracking # 
+
   - Unique identifiers and version numbers for raw data (e.g. complete details of the reanalysis data in download README file)
   - Unique identifiers and version numbers for all programs and libraries (e.g. python modules and NCL version)
   - Values of parameters used to generate any given output
@@ -13,7 +27,9 @@
     - I commented on a Software Carpentry post (http://software-carpentry.org/2012/10/wanted-an-entry-level-provenance-library/)
     - Apparently equivalent to using the 'revision' command for svn, that David Kent used to put in all his codes
 
-# Improve general coding practices
+
+# General coding practices #
+
   - Check that the 'calc_monthly_climatology' function in calc_climate_index.py is up to date with the one in calc_monthly_anomaly.py
   - Python has a style guide (see Appendix B.2 of Langtangen). 
     - I could build on this and create my own, adding standard ways to name input files, variables etc
@@ -29,17 +45,25 @@
     - Tgis includes specifying the license and installation instructions/files
     - See https://ams.confex.com/ams/93Annual/webprogram/Paper223958.html
 
-# plot_map.py development
+
+# plot_map.py #
+
   - Figure spacing issues (moves further right depending on how long the row headings are)
   - Vertical colourbar
 
-# netcdf_io.py development
+
+# netcdf_io.py #
+
   - Include a linear detrending method?
 
-# calc_waf.py development
+
+# calc_waf.py #
+
   - Use f2py instead of the system calls (simple example, section 1.1.13 of Langtangen)
 
-# LaTeX
+
+# LaTeX #
+
   - Look into embedding vector graphics 
     - Using the latex command you can use .eps, but not .svg
     - Can't use any vector graphics with pdflatex, but really high resolution .png or .jpg might be sufficient
