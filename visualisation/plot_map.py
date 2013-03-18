@@ -83,15 +83,15 @@ def _decimal_places(diff):
     return int(dec)
 
 
-def extract_data(file_list, region, convert=False):
+def extract_data(file_list, region='dateline', convert=False):
     """Create list of nio.InputData.data instances.
 
     Positional arguments:
       file_list  -- List of tuples containing:
                     (file_name, var, start, end)
-      region     -- Name of a region key in netcdf_io.region
 
     Keyword arguments:
+      region     -- Name of a region key in netcdf_io.region
       convert    -- Flag for unit conversion
 
     """
@@ -107,8 +107,8 @@ def extract_data(file_list, region, convert=False):
         fname = item[0]
         var = item[1]
         period = (item[2], item[3])
-	date_pattern = '([0-9]{4})-([0-9]{2})-([0-9]{2})'
-	if re.search(date_pattern, item[2]) and re.search(date_pattern, item[2]):
+	date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
+	if re.search(date_pattern, item[2]) and re.search(date_pattern, item[3]):
             data = nio.InputData(fname, var, time=period, region=region, convert=convert).data
 	else:
 	    print 'Start and/or end date for %s either None or not in correct ([0-9]{4})-([0-9]{2})-([0-9]{2}) format. Entire time period used.' %(fname)
@@ -116,7 +116,8 @@ def extract_data(file_list, region, convert=False):
        
         #Data must be two dimensional 
         if (re.match('^t', data.getOrder())):
-	    print 'WARNING data for %s has a time axis, results displayed will be the temporal average'  %(fname)
+	    if len(data.getTime()[:]) > 1:
+	        print 'WARNING data for %s has a time axis (len = %s), results displayed will be the temporal average'  %(fname)
             data = MV2.average(data, axis=0)
 
         new_list.append(data)
@@ -472,8 +473,7 @@ def multiplot(indata,
 def _plot_contours(bmap, projection, cont_data, contour_ticks, contour_dec):
     """Add contours to a plot."""
 
-    if type(contour_data) == cdms2.tvariable.TransientVariable:
-	cont_data = contour_dict[row, col]
+    if type(cont_data) == cdms2.tvariable.TransientVariable:
 	cont_lon = cont_data.getLongitude()[:]
 	cont_lat = cont_data.getLatitude()[:] 
 
@@ -679,11 +679,11 @@ def _set_colourbar(data_dict, colourbar_colour, ticks, discrete_segments, extend
         min_level, max_level = _get_min_max(data_dict)
 	diff = max_level - min_level
 	if isinstance(discrete_segments, list):
-	    step = diff/float(len(discrete_segments))
+	    step = diff / float(len(discrete_segments))
 	elif discrete_segments:
-	    step = diff/float(discrete_segments)
+	    step = diff / float(discrete_segments)
 	else:
-	    step = diff/10.0
+	    step = diff / 10.0
 	    
 	ticks = list(numpy.arange(min_level, max_level+(step/2), step))
 
@@ -857,11 +857,11 @@ def _main(inargs):
 
     # Extract data #
 
-    infile_data = extract_data(inargs.infiles, inargs.region, convert=inargs.convert)
-    contour_data = extract_data(inargs.contour_file, inargs.region, convert=inargs.convert)
-    uwnd_data = extract_data(inargs.uwnd_file, inargs.region, convert=inargs.convert)
-    vwnd_data = extract_data(inargs.vwnd_file, inargs.region, convert=inargs.convert)
-    stipple_data = extract_data(inargs.stipple_file, inargs.region, convert=inargs.convert)
+    infile_data = extract_data(inargs.infiles, region=inargs.region, convert=inargs.convert)
+    contour_data = extract_data(inargs.contour_file, region=inargs.region, convert=inargs.convert)
+    uwnd_data = extract_data(inargs.uwnd_file, region=inargs.region, convert=inargs.convert)
+    vwnd_data = extract_data(inargs.vwnd_file, region=inargs.region, convert=inargs.convert)
+    stipple_data = extract_data(inargs.stipple_file, region=inargs.region, convert=inargs.convert)
       
     # Generate plot #
 
@@ -908,7 +908,7 @@ improvements:
     parser.add_argument("--contour", action="store_true",
                         help="switch for drawing contour plot [default: False]")
     #Map details
-    parser.add_argument("--region", type=str, default='dateline', choices=nio.regions.keys(),
+    parser.add_argument("--region", type=str, choices=nio.regions.keys(), default='dateline',
                         help="name of region to plot [default: dateline]")
     parser.add_argument("--centre", type=float, nargs=2, metavar=('LAT', 'LON'),
                         help="centre point of map projection")

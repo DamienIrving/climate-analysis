@@ -14,7 +14,7 @@ hi_lo                -- Update highest and lowest value
 list_kwargs          -- List keyword arguments of a function
 running_average      -- Calculate running average
 scale_offset         -- Apply scaling and offset factors
-temproal_aggregation -- Create a temporal aggregate of 
+temporal_aggregation -- Create a temporal aggregate of 
                         the input data
 time_axis_check      -- Check whether 2 time axes are the same
 write_netcdf         -- Write an output netCDF file
