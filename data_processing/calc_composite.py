@@ -1,13 +1,11 @@
 """
-Filename:     eof_anal.py
+Filename:     calc_composite.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Performs and Empiricial Orthogonal Function (EOF) analysis
-Reference:    Uses eof2 package: https://github.com/ajdawson/eof2
+Description:  Calculates a composite
 
 Updates | By | Description
 --------+----+------------
-23 October 2012 | Damien Irving | Initial version.
-10 December 2012 | Damien Irving | Switched over to eof2 package
+18 March 2013 | Damien Irving | Initial version.
 
 """
 
@@ -31,7 +29,7 @@ def main(inargs):
     index  = nio.InputData(inargs.index_file, inargs.index_var, 
                            **nio.dict_filter(vars(inargs), ['time', 'region']))
 
-    # Calculate the composites
+    # Calculate the composites #
 
     if inargs.bound == 'between':
         assert len(inargs.limit) == 2, \
@@ -40,30 +38,29 @@ def main(inargs):
     else:
         limit = inargs.limit[0]
 
-    seasons = ['ann', 'djf', 'mam', 'jja', 'son']
-    composites = {}
-    outdata_list = []
-    outvar_atts_list = []
-    for season in seasons:
-        composite = indata.temporal_composite(index.data, average=True, season=season, limit=limit, 
-                                              bound=inargs.bound, method=inargs.method,
-					      normalise=inargs.normalise, remove_ave=inargs.remove_ave)
-					      
-        outdata_list.append(composite)
-            
-        attributes = {'id': inargs.var+'_'+season,
+    
+    
+    composite, p_val = indata.temporal_composite(index.data, average=True, season=inargs.season, limit=limit, 
+                                                 bound=inargs.bound, method=inargs.method,
+					         normalise=inargs.normalise, remove_ave=inargs.remove_ave)
+
+    composite_atts = {'id': inargs.var,
                       'long_name': indata.data.long_name,
                       'units': indata.data.units,
-                      'count': composite.count,
-                      'history': 'Composite mean field for %s (included %s fields)'   %(season, composite.count)}
-        outvar_atts_list.append(attributes)    
+                      'history': '%s data that meet the composite criteria (see global atts)' %(inargs.season)}
 
-    
+    pval_atts = {'id': 'p',
+                 'long_name': 'Two-tailed p-value',
+                 'units': ' ',
+                 'history': """Standard independent two sample t-test comparing the data sample that meets the composite criteria to a sample containing the remaining data""",
+                 'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=True)'}
+   
     # Write output file #
 
     indata_list = [indata, index]
-    outvar_axes_list = [(indata.data.getLatitude(),
-                        indata.data.getLongitude(),),] * 5 
+    outdata_list = [composite, p_val]
+    outvar_atts_list = [composite_atts, pval_atts]
+    outvar_axes_list = [composite.getAxisList(), composite.getAxisList()[1:]] 
 
     extras = 'Threshold method = %s. Limit = %s. Bound = %s. Index = %s, %s. Normalised = %s (mean removed = %s).'  %(inargs.method, 
     inargs.limit, inargs.bound, inargs.index_file, inargs.index_var, str(inargs.normalise), str(inargs.remove_ave))
@@ -101,7 +98,9 @@ author:
     parser.add_argument("index_file", type=str, help="Input index file name")
     parser.add_argument("index_var", type=str, help="Input index file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
-			
+
+    parser.add_argument("--season", type=str, choices=['ann', 'djf', 'mam', 'jja', 'son'], default='ann',
+                        help="Season for which to calculate the composite [default: ann]")	
     parser.add_argument("--region", type=str, choices=nio.regions.keys(),
                         help="Region over which to calculate the composite [default: entire]")
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),

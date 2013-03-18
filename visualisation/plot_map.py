@@ -186,7 +186,7 @@ def _get_min_max(data_dict, plot='primary'):
 def multiplot(indata,
               dimensions=None, textsize=18,
               ofile=None, title=None, 
-              region='dateline', centre=(-55, -125), projection='cyl',
+              region='dateline', centre=(-45, -125), projection='cyl',
               #colourbar settings
               colourbar_colour='jet', ticks=None, discrete_segments=None, units=None, convert=False, extend="neither",
               #resolution of image
@@ -194,10 +194,10 @@ def multiplot(indata,
 	      #contours
 	      contour_data=None, contour_ticks=None,
 	      #wind vectors
-	      uwnd_data=None, vwnd_data=None, vector_type='wind', thin=1, key_value=1,
+	      uwnd_data=None, vwnd_data=None, quiver_type='wind', quiver_thin=1, key_value=1,
 	      quiver_scale=170, quiver_width=0.0015, quiver_headwidth=3.5, quiver_headlength=4.0,
 	      #stippling
-	      stipple_data=None,
+	      stipple_data=None, stipple_threshold=None, stipple_size=2.0, stipple_thin=1, 
               #headings
               row_headings=None, inline_row_headings=False, col_headings=None, img_headings=None,
               #axis options to draw lat/lon lines
@@ -228,17 +228,20 @@ def multiplot(indata,
       extend               --  Colourbar extensions (neither, both, max or min)
       res                  --  Resolution of image (c, l, m or h)
       area_threshold       --  Threshold (in km) for the smallest resolved feature
-      contour_data         --  List of netcdf_io.InputData instances to be plotted as contour lines
+      contour_data         --  List of cdms2 transient variable arrays to be plotted as contour lines
       contour_ticks        --  List of contour values to be plotted
-      uwnd_data, vwnd_data --  List of netcdf_io.InputData instances to be plotted as quivers
-      vector_type          --  The quivers can represent 'wind' or wave activity flux ('waf')
-      thin                 --  Thinning factor (e.g. thin = 2 means every 2nd quiver plotted)
+      uwnd_data, vwnd_data --  List of cdms2 transient variable arrays to be plotted as quivers
+      quiver_type          --  The quivers can represent 'wind' or wave activity flux ('waf')
+      quiver_thin          --  Thinning factor (e.g. thin = 2 means every 2nd quiver plotted)
       key_value            --  Size of the wind vector in the key (plot is not scaled to this
-      quiver_scale"        --  Data units per arrow length unit (smaller value means longer arrow)
+      quiver_scale         --  Data units per arrow length unit (smaller value means longer arrow)
       quiver_width         --  Shaft width in arrow units
       quiver_headwidth     --  Head width as multiple of shaft width
       quiver_headlength    --  Head length as multiple of shaft width
-      stipple_data         --  List of netcdf_io.InputData instances to be plotted as stipples
+      stipple_data         --  List of cdms2 transient variable arrays to be plotted as stipples
+      stipple_threshold    --  Value above which stipples will be plotted
+      stipple_size         --  Size of stipples
+      stipple_thin         --  Thinning factor (e.g. thin = 2 means every 2nd stipple plotted)
       row_headings         --  List of row headings
       inline_row_headings  --  List of inline row headings (i.e. for every rwo element, not just the leftmost)
       col_headings         --  List of column headings
@@ -258,7 +261,7 @@ def multiplot(indata,
     assert projection in ['cyl', 'nsper'], \
     'Map projection must be cylindrical (cyl) or near sided perspective (nsper)'
 
-    assert vector_type in ['wind', 'waf'], \
+    assert quiver_type in ['wind', 'waf'], \
     'Quiver type must me wind or wave activity flux (waf)' 
 
     for item in ['contour_data', 'uwnd_data', 'vwnd_data', 'stipple_data', 'img_headings']:
@@ -378,10 +381,12 @@ def multiplot(indata,
                 _plot_quivers(bmap, projection, 
                               uwnd_dict[row, col], vwnd_dict[row, col],
                               quiver_scale, quiver_width, quiver_headwidth, quiver_headlength,
-                              vector_type, thin, key_value)
+                              quiver_type, quiver_thin, key_value)
 	    
 	    if stipple_dict:
-                _plot_stippling(bmap, projection, stipple_dict[row, col])	        
+                _plot_stippling(bmap, projection, 
+		                stipple_dict[row, col], stipple_threshold,
+				stipple_size, stipple_thin)	        
 	   
 	    # Print the headings #
 	    
@@ -494,7 +499,7 @@ def _plot_contours(bmap, projection, cont_data, contour_ticks, contour_dec):
 def _plot_quivers(bmap, projection,
                   u_data, v_data,
                   quiver_scale, quiver_width, quiver_headwidth, quiver_headlength,
-                  vector_type, thin, key_value):
+                  quiver_type, thin, key_value):
     """Add quivers to a plot."""
 
     if type(u_data) == type(v_data) == cdms2.tvariable.TransientVariable:
@@ -521,12 +526,12 @@ def _plot_quivers(bmap, projection,
 			width=quiver_width, headwidth=quiver_headwidth,
                 	headlength=quiver_headlength)
 
-	if vector_type == 'wind':
+	if quiver_type == 'wind':
 	    key_units = 'm\, s^{-1}'
-	elif vector_type == 'waf':   # wave activity flux
+	elif quiver_type == 'waf':   # wave activity flux
 	    key_units = 'm^{2}\, s^{-2}'
 	else:
-	    print 'Vector type not recognised'
+	    print 'Quiver type not recognised'
 	    sys.exit(0)
 
 	qk = pylab.quiverkey(Q, 0.9, 0.95, key_value, 
@@ -537,33 +542,50 @@ def _plot_quivers(bmap, projection,
         pass
 
 
-def _plot_stippling(bmap, projection, stip_data):                
-    """Add stippling to a plot."""
+def _plot_stippling(bmap, projection, 
+                    stip_data, threshold,
+		    size, thin):                
+    """Add stippling to a plot.
+    
+    Stippling can either be based on a threshold (values above
+    threshold value get stippling) or the following numeric system:
+      1 = black dot, 2 = red dot, 10 = black caret, 20 = red caret
+      
+    """
 
     if type(stip_data) == cdms2.tvariable.TransientVariable:
         stip_lon = stip_data.getLongitude()
         stip_lat = stip_data.getLatitude()
 
 	if projection == 'nsper':
-	    stip_data, stip_lon = shiftgrid(180., stip_data, stip_lon, start=False)
+	    stip_data, stip_lon = shiftgrid(180., stip_data[:], stip_lon[:], start=False)
 
-	for iy, lat in enumerate(stip_lat[:]):
-            for ix, lon in enumerate(stip_lon[:]):
-                agreement = stip_data[iy, ix]
+        t = int(thin)
+        thin_lat = stip_lat[::t]
+	thin_lon = stip_lon[::t]
+	thin_data = stip_data[::t, ::t]
+	for iy, lat in enumerate(thin_lat):
+            for ix, lon in enumerate(thin_lon):
+                value = thin_data[iy, ix]
                 lons, lats = numpy.meshgrid(numpy.array([lon]), numpy.array([lat]))
                 x, y = bmap(lons, lats)
-		if agreement == 1:
-	            bmap.plot(x, y, marker='o', markersize=2.0, markerfacecolor='black', 
-                              markeredgecolor='black', markeredgewidth=0.2) 
-	        elif agreement == 2:
-	            bmap.plot(x, y, marker='o', markersize=2.0, markerfacecolor='red',
-                              markeredgecolor='red', markeredgewidth=0.2)  
-		elif agreement == 10:
-	            bmap.plot(x, y, marker=7, markersize=3.0, markeredgewidth=0.6,
-                              markerfacecolor='black', markeredgecolor='black') 
-		elif agreement == 20:
-	            bmap.plot(x, y, marker=7, markersize=3.0, markeredgewidth=0.6,
-                              markerfacecolor='red', markeredgecolor='red')
+		if threshold:
+		    if value <= threshold:
+		        bmap.plot(x, y, marker='o', markersize=size, markerfacecolor='black', 
+                                  markeredgecolor='black', markeredgewidth=0.2) 
+		else:
+		    if value == 1:
+	        	bmap.plot(x, y, marker='o', markersize=size, markerfacecolor='black', 
+                        	  markeredgecolor='black', markeredgewidth=0.2) 
+	            elif value == 2:
+	        	bmap.plot(x, y, marker='o', markersize=size, markerfacecolor='red',
+                        	  markeredgecolor='red', markeredgewidth=0.2)  
+		    elif value == 10:
+	        	bmap.plot(x, y, marker=7, markersize=size, markeredgewidth=0.6,
+                        	  markerfacecolor='black', markeredgecolor='black') 
+		    elif value == 20:
+	        	bmap.plot(x, y, marker=7, markersize=size, markeredgewidth=0.6,
+                        	  markerfacecolor='red', markeredgecolor='red')
     else:
         pass
 
@@ -948,12 +970,12 @@ improvements:
                         metavar=('FILENAME', 'VAR', 'START', 'END'),  
                         help="zonal wind file name, variable, start date and end date [default: None]")
     
-    parser.add_argument("--vector_type", type=str, choices=('wind', 'waf'),
-                        help="type of vector being plotted [defualt: wind]")
-    parser.add_argument("--thin", type=int, 
-                        help="thinning factor for plotting wind vectors [defualt: 1]")
+    parser.add_argument("--quiver_type", type=str, choices=('wind', 'waf'),
+                        help="type of quiver being plotted [defualt: wind]")
+    parser.add_argument("--quiver_thin", type=int, 
+                        help="thinning factor for plotting quivers [defualt: 1]")
     parser.add_argument("--key_value", type=float, 
-                        help="size of the wind vector in the key (plot is not scaled to this) [defualt: 1]")
+                        help="size of the wind quiver in the key (plot is not scaled to this) [defualt: 1]")
     parser.add_argument("--quiver_scale", type=float, 
                         help="data units per arrow length unit (smaller value means longer arrow) [defualt: 170]")
     parser.add_argument("--quiver_width", type=float,
@@ -966,6 +988,13 @@ improvements:
     parser.add_argument("--stipple_file", type=str, nargs=4, action='append', default=None,
                         metavar=('FILENAME', 'VAR', 'START', 'END'),  
                         help="stipple file name, variable, start date and end date [default: None]") 
+    parser.add_argument("--stipple_threshold", type=float,  
+                        help="threshold above which stipples will be plotted [default: None]") 
+    parser.add_argument("--stipple_size", type=float,  
+                        help="size of stipples [default: 2.0]")
+    parser.add_argument("--stipple_thin", type=int,  
+                        help="thinning factor for plotting stipples [defualt: 1]")  
+
 
     args = parser.parse_args()              
 

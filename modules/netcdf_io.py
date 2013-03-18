@@ -35,6 +35,7 @@ import datetime
 from dateutil.parser import *
 
 import numpy
+from scipy import stats
 
 import cdutil
 import genutil
@@ -280,9 +281,9 @@ class InputData:
 	# Normalise the input data #
 	
 	if normalise:
-	    data = normalise_data(self.data, sub_mean=remove_ave)
+	    data_complete = normalise_data(self.data, sub_mean=remove_ave)
 	else:
-	    data = self.data
+	    data_complete = self.data
 
         # Extract the season #
 
@@ -298,10 +299,10 @@ class InputData:
             indices1 = numpy.where(numpy.array(self.months()) == seasons[season][1], 1, 0)
             indices2 = numpy.where(numpy.array(self.months()) == seasons[season][2], 1, 0)
             indices = numpy.nonzero((indices0 + indices1 + indices2) == 1)
-            composite = temporal_extract(data, indices)
+            data_season = temporal_extract(data_complete, indices)
 	    index = temporal_extract(index, indices)
 	else:
-	    composite = data
+	    data_season = data_complete
 
         # Extract the data that pass the threshold #
 
@@ -314,17 +315,25 @@ class InputData:
                  'lower': 'index < threshold',
                  'between': '-threshold < index < threshold'}
 
-        indices = numpy.nonzero(numpy.where(eval(tests[bound]), 1, 0) == 1)
-        composite = temporal_extract(composite, indices)
+        indices_include = numpy.nonzero(numpy.where(eval(tests[bound]), 1, 0) == 1)
+        indices_exclude = numpy.nonzero(numpy.where(eval(tests[bound]), 1, 0) == 0)
+        data_in_composite = temporal_extract(data_season, indices_include)
+        data_out_composite = temporal_extract(data_season, indices_exclude)
         
+        # Perform the t-test 
+	# To perform a Welch's t-test (two independent samples, unequal variances), need the 
+        # latest version of scipy in order to use the equal_var keyword argument
+	
+	t, p_vals = stats.ttest_ind(data_in_composite, data_out_composite, axis=0) #equal_var=False) 
+
         # Perform necessary averaging #
 
-        count = numpy.shape(composite)[0]
-        
-        final_composite = MV2.average(composite, axis=0) if average else composite
-        final_composite.count = count
+#        count = numpy.shape(composite)[0]
+#        
+#        final_composite = MV2.average(composite, axis=0) if average else composite
+#        final_composite.count = count
 
-        return final_composite
+        return data_in_composite, p_vals
 
 
 #    def eddy
