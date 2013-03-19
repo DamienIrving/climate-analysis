@@ -1,7 +1,4 @@
-#!/usr/bin/env cdat
-
 """
-GIT INFO: $Id$
 Filename:     plot_timeseries.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
 Description:  Plots timeseries
@@ -139,7 +136,7 @@ def generate_plot(xaxis, yaxis_data, yaxis_error, file_order,
                   plabel='', slabel='',
                   outfile=None,
 		  ploc=None, sloc=None, legsize='medium',
-                  phguide=None, shguide=None, vguide=None,
+                  grid=False, phguide=None, shguide=None, vguide=None,
 		  colors=['red', 'blue', 'green', 'yellow', 
                           'orange', 'purple', 'brown','aqua'],
 		  pline='-', sline='--',
@@ -150,10 +147,10 @@ def generate_plot(xaxis, yaxis_data, yaxis_error, file_order,
     Positional arguments (description [type]):
       xaxis        -- DatetimeAxis instance
       yaxis_data   -- y axis data to be plotted
-                      [dict (keys: (filename, var)) of YaxisElement instances]
+                      [dict (keys: (filename, var, window)) of YaxisElement instances]
       yaxis_error  -- error of y data
-                      [dict (keys: (filename, var)) of YaxisElement instances]
-      file_order   -- List of tuples (filename, var) indicating order for plotting
+                      [dict (keys: (filename, var, window)) of YaxisElement instances]
+      file_order   -- List of tuples (filename, var, window) indicating order for plotting
       
     Keyword arguments (description [type]):
       secplot      -- Secondary plot flag [None or anything else]
@@ -170,6 +167,7 @@ def generate_plot(xaxis, yaxis_data, yaxis_error, file_order,
       ploc         -- Position of primary legend [int]
       sloc         -- Position of secondary legend [int]
       legsize      -- Size of text in legend
+      grid         -- Flag for plotting automatic gridlines
       phguide      -- List of primary axis y-values for horizontal guidelines
       shguide      -- List of secondary axis y-values for horizontal guidelines
       vguide       -- List of datetimes for vertical guidelines 
@@ -244,11 +242,12 @@ def generate_plot(xaxis, yaxis_data, yaxis_error, file_order,
                 ax.axvline(x=dates.date2num(xval), linestyle='--', color='0.5')         
 
         #gridlines 
-	if not secplot:
-	    ax.grid(True, 'major', color='0.2')
-	    ax.grid(True, 'minor', color='0.6')
-	else:
-	    ax.axhline(y=0, linestyle='-', color='0.5')
+        if grid:
+	    if not secplot and grid == 'full':
+		ax.grid(True, 'major', color='0.2')
+		ax.grid(True, 'minor', color='0.6')
+	    else:
+		ax.axhline(y=0, linestyle='-', color='0.5')
 
 	#axis labels
 	ax.set_ylabel(plabel, fontsize='medium')
@@ -447,7 +446,7 @@ def sort_files(file_list, set_name, time_freq):
 
     output:
       out_dict  -- dict of nio.InputData instances
-                   (key: (filename, var)
+                   (key: (filename, var))
       order     -- key order for plotting
 
     """
@@ -457,10 +456,10 @@ def sort_files(file_list, set_name, time_freq):
     
     if file_list:
 	for item in file_list:
-            key = tuple(item[0:2])
-            window = int(item[3])
+            key = tuple(item[0:3])
+            window = int(item[2])
             out_dict[key] = nio.InputData(item[0], item[1], runave=window)
-            out_dict[key].tag = item[2]
+            out_dict[key].tag = item[3]
             out_dict[key].window = window
             out_dict[key].set = set_name
             out_dict[key].datetimes =  runave_time_correction(out_dict[key].datetime_axis()[:], time_freq)
@@ -506,7 +505,7 @@ def main(inargs):
     if inargs.error:
         edata_dict = {}
 	for item in inargs.error:
-            key = item[2:4]
+            key = item[2:5]
             edata_dict[key] = nio.InputData(item[0], item[1], runave=psdata_dict[key].window)
             edata_dict[key].tag = None
             edata_dict[key].set = 'error'
@@ -547,7 +546,7 @@ legend options:
 	      7 center right, 8 lower center, 9 upper center, 10 center, None no legend 
 
 examples (abyss.earthsci.unimelb.edu.au):
-  /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_climate_index.py MONTHLY
+  /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_timeseries.py MONTHLY
   /work/dbirving/processed/indices/data/ts_Merra_surface_NINO34_monthly_native-ocean.nc nino34 Nino34 1
 
 note:
@@ -573,17 +572,17 @@ improvements:
                         help="Time frequency of the plot")	
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
-    parser.add_argument("tag", type=str, help="Input file tag (or label)")
     parser.add_argument("window", type=str, help="Input file running average window - can be 1 for no smoothing")
+    parser.add_argument("tag", type=str, help="Input file tag (or label)")
 				     
     parser.add_argument("--primary", type=str, action='append', default=[], nargs=4,
-                        metavar=('FILENAME', 'VAR', 'TAG', 'WINDOW'),  
-                        help="Additional primary file name, variable, tag and running average window [default: None]")
+                        metavar=('FILENAME', 'VAR', 'WINDOW', 'TAG'),  
+                        help="Additional primary file name, variable, running average window and tag [default: None]")
     parser.add_argument("--secondary", type=str, action='append', default=None, nargs=4, 
-                        metavar=('FILENAME', 'VAR', 'TAG', 'WINDOW'),
-                        help="Secondary file name, variable, tag and running average window [default: None]")
-    parser.add_argument("--error", type=str, action='append', default=None, nargs=4,
-                        metavar=('FILENAME', 'VAR', 'PARENT_FILE_NAME', 'PARENT_VAR'),
+                        metavar=('FILENAME', 'VAR', 'WINDOW', 'TAG'),
+                        help="Secondary file name, variable, running average window and tag [default: None]")
+    parser.add_argument("--error", type=str, action='append', default=None, nargs=5,
+                        metavar=('FILENAME', 'VAR', 'PARENT_FILE_NAME', 'PARENT_VAR', 'WINDOW'),
                         help="Error file name, variable, parent file name, parent variable [default: None]")
     parser.add_argument("--outfile", type=str,
                         help="Name of output file [default: None]")
@@ -627,6 +626,8 @@ improvements:
     parser.add_argument("--sline", type=str, choices=['-', '--', '-.', ':'],
                         help="Line style for the secondary plot [default: dashed]")
 
+    parser.add_argument("--grid", type=str, choices=['full', 'zero'], 
+                        help="Type of automatic gridlines [default: None]")
     parser.add_argument("--phguide", type=str, nargs='*',
                         help="Primary axis values for horizontal guidelines [default: None]")
     parser.add_argument("--shguide", type=str, nargs='*',
@@ -637,7 +638,7 @@ improvements:
 
     args = parser.parse_args()  
 
-    args.primary.insert(0, [args.infile, args.variable, args.tag, args.window])
+    args.primary.insert(0, [args.infile, args.variable, args.window, args.tag])
 
     main(args)
     

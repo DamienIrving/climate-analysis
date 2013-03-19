@@ -65,12 +65,14 @@ def main(inargs):
 		     ticks=ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
                      projection=inargs.projection, 
                      extend='both',
+		     units='Temperature anomaly (deg C)',
                      image_size=image_size
 		     )
     else:
 
         infile = indir+'ts-composite-sf_Merra_surface-250hPa_monthly-'+inargs.type+'-anom-wrt-1979-2011-pc2-lower-1std_native-sh.nc'
         cfile = '/work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc'
+        pfile = '/work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF_monthly-1979-2011_native-sh.nc'
 
         fin = cdms2.open(infile)
         ts_data = fin('ts')
@@ -82,22 +84,27 @@ def main(inargs):
         pick = genutil.picker(time=datetimes)
 
         fin = cdms2.open(cfile)
-        sf_data = fin('sf')(pick)
-        print sf_data.shape        
+        sf_data = fin('sf')(pick) 
         sf_ave = MV2.average(sf_data, axis=0)
         fin.close()
        
+        # Get the PC values
+	
+	fin = cdms2.open(pfile)
+        pc_data = fin('pc2')(pick)        
+        fin.close()
+	
         # Get data for the individual fields
         ifile_list = []
 	contour_list = []
-        img_headings_list = [inargs.type+' average',]
-        for dt in datetimes:
+        img_headings_list = [inargs.type.upper()+' average',]
+        for index, dt in enumerate(datetimes):
             date = str(dt).split(' ')[0]
             year = date.split('-')[0]
             month = months[int(date.split('-')[1])]
             ifile_list.append((infile, 'ts', date, date))
             contour_list.append((cfile, 'sf', date, date))
-            img_headings_list.append(month+' '+year)
+            img_headings_list.append('%s %s (%1.1f)' %(month, year, pc_data[index]))
 
         indata = pm.extract_data(ifile_list)
         contdata = pm.extract_data(contour_list)
@@ -108,12 +115,14 @@ def main(inargs):
         rows, cols = pm.get_dimensions(len(datetimes)+1)
         dims = [rows, cols]
         image_size = 6
-        title = 'Composite members - %s' %(inargs.type) 
+        title = 'Composite members - %s' %(inargs.type.upper()) 
         
         if not inargs.ticks:
             ticks = [-5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
         else:
             ticks = inargs.ticks
+ 
+        cticks = range(-35, 40, 5)
 
         pm.multiplot(indata,
 		     dimensions=dims,
@@ -124,9 +133,10 @@ def main(inargs):
 		     delat=30, delon=30,
 		     contour=True,
 		     ticks=ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
-                     contour_data=contdata,
+                     contour_data=contdata, contour_ticks=cticks,
                      projection=inargs.projection, 
                      extend='both',
+		     units='Temperature anomaly (deg C)',
                      image_size=image_size
 		     )
 
