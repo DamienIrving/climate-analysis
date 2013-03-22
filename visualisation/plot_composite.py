@@ -73,6 +73,8 @@ def main(inargs):
         infile = indir+'ts-composite-sf_Merra_surface-250hPa_monthly-'+inargs.type+'-anom-wrt-1979-2011-pc2-lower-1std_native-sh.nc'
         cfile = '/work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc'
         pfile = '/work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF_monthly-1979-2011_native-sh.nc'
+	wafxfile = '/work/dbirving/datasets/Merra/data/processed/wafx_Merra_250hPa_monthly_native.nc'
+	wafyfile = '/work/dbirving/datasets/Merra/data/processed/wafy_Merra_250hPa_monthly_native.nc'
 
         fin = cdms2.open(infile)
         ts_data = fin('ts')
@@ -80,16 +82,27 @@ def main(inargs):
         datetimes = ts_data.getTime().asComponentTime()
         fin.close()
 
-        # Calculate the sf mean field
         pick = genutil.picker(time=datetimes)
-
+        
+        # Get the sf data
         fin = cdms2.open(cfile)
         sf_data = fin('sf')(pick) 
         sf_ave = MV2.average(sf_data, axis=0)
         fin.close()
+
+        # Get wafx data
+        fin = cdms2.open(wafxfile)
+        wafx_data = fin('wafx')(pick) 
+        wafx_ave = MV2.average(wafx_data, axis=0)
+        fin.close()        
+
+        # Get wafy data
+        fin = cdms2.open(wafyfile)
+        wafy_data = fin('wafy')(pick) 
+        wafy_ave = MV2.average(wafy_data, axis=0)
+        fin.close() 
        
         # Get the PC values
-	
 	fin = cdms2.open(pfile)
         pc_data = fin('pc2')(pick)        
         fin.close()
@@ -97,6 +110,8 @@ def main(inargs):
         # Get data for the individual fields
         ifile_list = []
 	contour_list = []
+        wafx_list = []
+        wafy_list = []
         img_headings_list = [inargs.type.upper()+' average',]
         for index, dt in enumerate(datetimes):
             date = str(dt).split(' ')[0]
@@ -104,13 +119,19 @@ def main(inargs):
             month = months[int(date.split('-')[1])]
             ifile_list.append((infile, 'ts', date, date))
             contour_list.append((cfile, 'sf', date, date))
+            wafx_list.append((wafxfile, 'wafx', date, date))
+            wafy_list.append((wafyfile, 'wafy', date, date))
             img_headings_list.append('%s %s (%1.1f)' %(month, year, pc_data[index]))
 
         indata = pm.extract_data(ifile_list)
         contdata = pm.extract_data(contour_list)
+        wafxdata = pm.extract_data(wafx_list)
+        wafydata = pm.extract_data(wafy_list)
 
         indata.insert(0, ts_ave)
         contdata.insert(0, sf_ave)
+	wafxdata.insert(0, wafx_ave)
+        wafydata.insert(0, wafy_ave)
 
         rows, cols = pm.get_dimensions(len(datetimes)+1)
         dims = [rows, cols]
@@ -134,6 +155,8 @@ def main(inargs):
 		     contour=True,
 		     ticks=ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
                      contour_data=contdata, contour_ticks=cticks,
+		     uwnd_data=wafxdata, vwnd_data=wafydata, quiver_type='waf', quiver_thin=2,
+		     quiver_scale=220, quiver_width=0.002,
                      projection=inargs.projection, 
                      extend='both',
 		     units='Temperature anomaly (deg C)',
