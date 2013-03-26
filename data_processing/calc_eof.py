@@ -202,7 +202,7 @@ author:
                         help="Time period over which to calculate the EOF [default = entire]")
     parser.add_argument("--agg", type=str,
                         help="temporal aggregation selector")
-    parser.add_argument("--eof_scaling", type=int, choices=[0, 1, 2],
+    parser.add_argument("--eof_scaling", type=int, choices=[0, 1, 2, 3],
                         help="Scaling method applied to EOF post calculation [default = None]")
     parser.add_argument("--pc_scaling", type=int, choices=[0, 1, 2],
                         help="Scaling method applied to EOF post calculation [default = None]")

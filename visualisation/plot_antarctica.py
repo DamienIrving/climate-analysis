@@ -14,7 +14,7 @@ area_threshold = 1.0
 
 # Zoom out for PSA
 h = 12000  #height of satellite, 
-lon_central = 265
+lon_central = 235
 lat_central = -60
 
 
@@ -59,4 +59,4 @@ map.fillcontinents(color='#cc9966',lake_color='#99ffff')
 
 
 #plt.show()
-plt.savefig('Antarctica_zoomed_out.eps')
+plt.savefig('/work/dbirving/processed/spatial_maps/Antarctica_zoomed_out.eps')

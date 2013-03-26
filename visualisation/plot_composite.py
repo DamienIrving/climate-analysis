@@ -46,7 +46,8 @@ def main(inargs):
         dims = [3, 2]
 	img_headings_list = ['Annual (63)', 'DJF (16)', 'MAM (13)', 'JJA (17)', 'SON (16)']	
 	image_size = 8
-        title = 'Surface temperature composite - Merra'
+        title = ''#'Surface temperature composite - Merra'
+	units = 'Temperature anomaly (Celsius)'
         
         if not inargs.ticks:
             ticks = [-3.5, -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
@@ -56,6 +57,7 @@ def main(inargs):
 	pm.multiplot(indata,
 		     dimensions=dims,
 		     ofile=inargs.ofile,
+		     units=units,
 		     title=title,
 		     img_headings=img_headings_list,
 		     draw_axis=True,
@@ -65,7 +67,6 @@ def main(inargs):
 		     ticks=ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
                      projection=inargs.projection, 
                      extend='both',
-		     units='Temperature anomaly (deg C)',
                      image_size=image_size
 		     )
     else:
@@ -137,6 +138,7 @@ def main(inargs):
         dims = [rows, cols]
         image_size = 6
         title = 'Composite members - %s' %(inargs.type.upper()) 
+	units = 'Temperature anomaly (Celsius)'
         
         if not inargs.ticks:
             ticks = [-5.0, -4.5, -4.0, -3.5, -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]
@@ -149,6 +151,7 @@ def main(inargs):
 		     dimensions=dims,
 		     ofile=inargs.ofile,
 		     title=title,
+		     units=units,
 		     img_headings=img_headings_list,
 		     draw_axis=True,
 		     delat=30, delon=30,
@@ -159,7 +162,6 @@ def main(inargs):
 		     quiver_scale=220, quiver_width=0.002,
                      projection=inargs.projection, 
                      extend='both',
-		     units='Temperature anomaly (deg C)',
                      image_size=image_size
 		     )
 

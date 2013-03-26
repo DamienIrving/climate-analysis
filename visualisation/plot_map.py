@@ -117,7 +117,7 @@ def extract_data(file_list, region='dateline', convert=False):
         #Data must be two dimensional 
         if (re.match('^t', data.getOrder())):
 	    if len(data.getTime()[:]) > 1:
-	        print 'WARNING data for %s has a time axis (len = %s), results displayed will be the temporal average'  %(fname)
+	        print 'WARNING data for %s has a time axis (len = %s), results displayed will be the temporal average'  %(fname, len(data.getTime()))
             data = MV2.average(data, axis=0)
 
         new_list.append(data)

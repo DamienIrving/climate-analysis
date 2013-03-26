@@ -45,7 +45,7 @@ def main(inargs):
     # Image headings
     img_headings = []
     for i in range(1, inargs.neofs + 1):
-	img_headings.append('EOF%s  (%3.1f%% variance explained)' %(str(i), float(indata_list[i-1].var_exp) * 100.0))
+	img_headings.append('EOF%s  (%3.1f%%)' %(str(i), float(indata_list[i-1].var_exp) * 100.0))
 
     plot_map.multiplot(indata_list,
 		       dimensions=dims,
@@ -77,11 +77,13 @@ example:
     parser.add_argument("region", type=str, choices=nio.regions.keys(), 
                         help="region name")
 
-    parser.add_argument("--neofs", type=str, default=4, 
+    parser.add_argument("--neofs", type=int, default=4, 
                         help="number of EOFs to plot")
+    parser.add_argument("--units", type=str, 
+                        help="units label for the colourbar")
     parser.add_argument("--ofile", type=str,
                         help="name of output file [default = test.png]")
-    parser.add_argument("--ticks", type=str, 
+    parser.add_argument("--ticks", type=float, nargs='*',
                         help="List of tick marks to appear on the colour bar")
     parser.add_argument("--discrete_segments", type=str, nargs='*',
                         help="List of colours to appear on the colour bar")
