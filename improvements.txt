@@ -10,6 +10,9 @@
     - Either I wait until they upgrade the operating system on abyss (which won't happen until winter 2013 at the earliest), or
     - Brett suggested that he could update the operating system on the vislab machines and install it there
 
+  - In April 2013 a new version of eof2 was released (called eofs; http://ajdawson.github.com/eofs/)
+    - It will soon be included in UV-CDAT releases, so look out for it
+    
 
 # Version control #
 
