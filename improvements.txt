@@ -20,15 +20,22 @@
 
 
 # Provenance tracking # 
+ 
+  - What does this look like?  
+    - Unique identifiers and version numbers for raw data (e.g. complete details of the reanalysis data in download README file)
+    - Unique identifiers and version numbers for all programs and libraries (e.g. python modules and NCL version)
+    - Values of parameters used to generate any given output
+    - Names and version numbers of programs (however small) used to generate those outputs (e.g. version numbers for my Python codes). 
+    - Where possible this information should be included in the netCDF attributes
 
-  - Unique identifiers and version numbers for raw data (e.g. complete details of the reanalysis data in download README file)
-  - Unique identifiers and version numbers for all programs and libraries (e.g. python modules and NCL version)
-  - Values of parameters used to generate any given output
-  - Names and version numbers of programs (however small) used to generate those outputs (e.g. version numbers for my Python codes). 
-  - Where possible this information should be included in the netCDF attributes
-  - Use Sumatra (http://packages.python.org/Sumatra/)
-    - I commented on a Software Carpentry post (http://software-carpentry.org/2012/10/wanted-an-entry-level-provenance-library/)
-    - Apparently equivalent to using the 'revision' command for svn, that David Kent used to put in all his codes
+  - What package should I use?
+    - It seems the GitPython would be most useful (http://pythonhosted.org/GitPython/0.3.1/index.html)
+      - In April 2013 I requested that it be installed on abyss
+      - There's a great blog post on how to use it here: http://penandpants.com/2013/04/25/data-provenance-with-gitpython/
+      - It would require me to track my code directly (i.e. I shouldn't have a separate 'git_repo' directory
+    - A possible alternative is Sumatra (http://packages.python.org/Sumatra/)
+      - I commented on a Software Carpentry post (http://software-carpentry.org/2012/10/wanted-an-entry-level-provenance-library/)
+      - Apparently equivalent to using the 'revision' command for svn, that David Kent used to put in all his codes
 
 
 # General coding practices #
