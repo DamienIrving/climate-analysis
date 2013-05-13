@@ -1,18 +1,34 @@
 ## List of improvements I plan to make ##
 
+# Data storage requirements #
+
+- 33 years (1979-2012) of Merra (288 by 144 global grid) 3 hourly (i.e. 8 timesteps per day) data for a single pressure level = 15 GB 
+
+
 # Install latest UV-CDAT #
 
-  - The lastest version of UV-CDAT was released in Feb 2013 (http://uvcdat.llnl.gov/install/). It contains the following
-    new packages that I need:
+  - The lastest version (1.3.1) of UV-CDAT was released in April 2013 (http://uvcdat.llnl.gov/install/):
+    - It leads you to http://sourceforge.net/projects/cdat/files/Releases/UV-CDAT/1.3/, which has a very useful README 
+    - I downloaded and unpacked it on my machine, but go error messages when I tried to run UV-CDAT
+    - This may be due to the fact that my installation of Ubuntu is old. I tried to upgrade using the upgrade manager, but
+      got an error message part way through the process
+  
+  - It contains the following new packages that I need:
     - Scipy version 11: Has an equal_var keyowrd argument for scipy.stats.ttest_ind() which performs a Welch's t-test
     - Latest windspharm: So I can update calc_wind_quantity so it makes use of cdms2 transient variables
+    - eofs: Is a new replacement for eof2 (http://ajdawson.github.com/eofs/) 
+    
   - We can't install this new version on abyss because the operating system is too old
     - Either I wait until they upgrade the operating system on abyss (which won't happen until winter 2013 at the earliest), or
-    - Brett suggested that he could update the operating system on the vislab machines and install it there
+    - Brett suggested that he could update the operating system on the vislab machines and install it there, or
+    - I could have it installed on my own machine
+      - My \scratch directory has 170 MB free space
+      - Required installs: uvcdat, GitPython, cdo, nco (everything else like matplotlib, basemap, ipython, is in with uvcdat)
+      - Would need assistance with this from Brett and Doug
+        - Where do I install it? (/usr/bin/ ??)
+	- Where do I put my data? (/scratch ??)
+	- Do I need have  
 
-  - In April 2013 a new version of eof2 was released (called eofs; http://ajdawson.github.com/eofs/)
-    - It will soon be included in UV-CDAT releases, so look out for it
-    
 
 # Version control #
 
@@ -30,12 +46,11 @@
 
   - What package should I use?
     - It seems the GitPython would be most useful (http://pythonhosted.org/GitPython/0.3.1/index.html)
-      - In April 2013 I requested that it be installed on abyss
-      - There's a great blog post on how to use it here: http://penandpants.com/2013/04/25/data-provenance-with-gitpython/
-      - It would require me to track my code directly (i.e. I shouldn't have a separate 'git_repo' directory
+      - I've implemented it as shown here: http://penandpants.com/2013/04/25/data-provenance-with-gitpython/
+      - Perhaps I shouldn't have a separate 'git_repo' directory?
     - A possible alternative is Sumatra (http://packages.python.org/Sumatra/)
       - I commented on a Software Carpentry post (http://software-carpentry.org/2012/10/wanted-an-entry-level-provenance-library/)
-      - Apparently equivalent to using the 'revision' command for svn, that David Kent used to put in all his codes
+      - Apparently it's equivalent to using the 'revision' command for svn, that David Kent used to put in all his codes
 
 
 # General coding practices #
