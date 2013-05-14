@@ -185,8 +185,8 @@ def _get_min_max(data_dict, plot='primary'):
 
 
 def multiplot(indata,
-              dimensions=None, textsize=18,
-              ofile=None, title=None, 
+              dimensions=None, textsize=16,
+              ofile=None, dpi=None, transparent=False, title=None, 
               region='dateline', centre=(-45, -125), projection='cyl',
               #colourbar settings
               colourbar_colour='jet', ticks=None, discrete_segments=None, units=None, convert=False, extend="neither",
@@ -200,7 +200,7 @@ def multiplot(indata,
 	      #stippling
 	      stipple_data=None, stipple_threshold=None, stipple_size=2.0, stipple_thin=1, 
               #headings
-              row_headings=None, inline_row_headings=False, col_headings=None, img_headings=None,
+              row_headings=None, inline_row_headings=None, col_headings=None, img_headings=None,
               #axis options to draw lat/lon lines
               draw_axis=False, delat=30, delon=30, equator=False, enso=None,
 	      #contour plot
@@ -217,6 +217,8 @@ def multiplot(indata,
       dimensions           --  Dimensions of plot (nrows, ncols)
       textsize             --  Text size for row and column headings
       ofile                --  Name of output file
+      dpi                  --  Resolution of output image
+      transparent          --  Flag for having a transparent (as opposed to white) background
       title                --  Plot title
       region               --  Name of region key in netcdf_io.regions
       centre               --  Centre of nsper plot (lat, lon)
@@ -265,7 +267,7 @@ def multiplot(indata,
     assert quiver_type in ['wind', 'waf'], \
     'Quiver type must me wind or wave activity flux (waf)' 
 
-    for item in ['contour_data', 'uwnd_data', 'vwnd_data', 'stipple_data', 'img_headings']:
+    for item in ['contour_data', 'uwnd_data', 'vwnd_data', 'stipple_data', 'img_headings', 'inline_row_headings']:
         if eval(item):
             if not (len(indata) == len(eval(item))):
                 print "ERROR input data and %s are different sizes"  %(item)
@@ -283,6 +285,7 @@ def multiplot(indata,
     vwnd_dict = _shuffle(vwnd_data, nrows, ncols)
     stipple_dict = _shuffle(stipple_data, nrows, ncols)
     img_headings_dict = _shuffle(img_headings, nrows, ncols)
+    inline_row_headings_dict = _shuffle(inline_row_headings, nrows, ncols)
 
     if row_headings:
         if not (len(row_headings) == nrows):
@@ -317,17 +320,37 @@ def multiplot(indata,
     sizes = _set_image_size(image_size, textsize,
                             nrows, ncols, 
                             minlat, maxlat, minlon, maxlon, 
-			    row_headings, inline_row_headings, img_headings)
+			    title, row_headings, inline_row_headings, col_headings, img_headings)
 
 
     # Create the plot, one thumbnail at a time #
 
     fig = plt.figure(figsize=(sizes['width'], sizes['height']))
     if title:
-        fig.suptitle(title.replace('_',' '), y=(1 - sizes['titlepos']), size=16)
+        fig.suptitle(title.replace('_',' '), y=(1 - sizes['titlepos']), size=textsize*1.2)
 
     for row in range(nrows):
         for col in range(ncols):
+	
+	    # Print the row and column headers #
+	    	    
+	    if(col == 0 and row_headings):
+                fig.text(sizes['hpadding'], 
+		         sizes['colourbar'] + sizes['cbarbuffer'] + (row * (sizes['totpheight'] + sizes['vpadding'])) + sizes['pheight']/2.,
+		         row_headings[row],
+			 size=sizes['rowcolfsize'],
+			 rotation='vertical',
+			 horizontalalignment='left',
+			 verticalalignment="center")
+
+            if(row == nrows-1 and col_headings):
+                fig.text(sizes['hpadding'] + sizes['row_heading'] + sizes['inline_heading'] + sizes['tpadding'] + \
+                         (col * (sizes['totpwidth'] + sizes['hpadding'])) + sizes['pwidth']/2.,
+                         sizes['colourbar'] + sizes['cbarbuffer'] + ((row+1) * (sizes['totpheight'] + sizes['vpadding'])),
+                         col_headings[col],
+                         size=sizes['rowcolfsize'],
+                         rotation='horizontal',
+                         horizontalalignment='center')
 	
             # Open file and extract data #
 
@@ -356,8 +379,9 @@ def multiplot(indata,
 		
             # Setup axis and draw figure #
 
-            ax = fig.add_axes([sizes['row_heading'] + (col * (sizes['pwidth'] + sizes['hpadding'])),
-	                       sizes['colourbar'] + sizes['cbarbuffer'] + (row * (sizes['pheight'] + sizes['vpadding'])),
+            ax = fig.add_axes([sizes['hpadding'] + sizes['row_heading'] + sizes['inline_heading'] + sizes['tpadding'] + \
+                               (col * (sizes['totpwidth'] + sizes['hpadding'])),
+	                       sizes['colourbar'] + sizes['cbarbuffer'] + (row * (sizes['totpheight'] + sizes['vpadding'])),
 			       sizes['pwidth'], 
 			       sizes['pheight']]) 
             		  
@@ -389,39 +413,14 @@ def multiplot(indata,
 		                stipple_dict[row, col], stipple_threshold,
 				stipple_size, stipple_thin)	        
 	   
-	    # Print the headings #
-	    
-	    if img_headings_dict is not None:
-	    
-		if(col == 0 and row_headings):
-                    fig.text(sizes['hpadding'], 
-		             sizes['colourbar'] + sizes['cbarbuffer'] + (row * (sizes['pheight'] + sizes['vpadding'])) + sizes['pheight']/2.,
-		             row_headings[row],
-			     size=sizes['rowcolfsize'],
-			     rotation='vertical',
-			     horizontalalignment='left',
-			     verticalalignment="center")
+            # Print the inline row and column headers #
 
-        	if(row == nrows-1 and col_headings):
-                    fig.text(sizes['row_heading'] + (col * (sizes['pwidth'] + sizes['hpadding'])) + sizes['pwidth']/2.,
-                             sizes['colourbar'] + sizes['cbarbuffer'] + sizes['vpadding'] + (row * (sizes['pheight'] + sizes['vpadding'])) + sizes['pheight'],
-                             col_headings[col],
-                             size=sizes['rowcolfsize'],
-                             rotation='horizontal',
-                             horizontalalignment='center')
-
-                plt.title(img_headings_dict[row, col], size=14)
+            if img_headings_dict:
+                plt.title(img_headings_dict[row, col], size=sizes['inlinerowcolfsize'])
             
-	    else:
-		
-		if(row == nrows-1 and col_headings):
-        	    plt.title(col_headings[col], size=18)
+	    if inline_row_headings_dict:
+	        plt.ylabel(inline_row_headings_dict[row, col], size=sizes['inlinerowcolfsize'])
 
-        	if(col == 0 and row_headings):
-                    if inline_row_headings:
-                        plt.title(row_headings[row], size=14)
-                    else:
-                        plt.ylabel(row_headings[row], size=18)
 	    
             # Draw the gridlines #
 	    
@@ -465,9 +464,9 @@ def multiplot(indata,
         cb.set_label(units)
     
     if ofile:
-        plt.savefig(ofile)#,dpi=300)
+        plt.savefig(ofile, dpi=dpi, transparent=transparent)
     else:
-	plt.savefig('test.png')
+	plt.savefig('test.png', dpi=dpi, transparent=transparent)
 
 
 def _plot_contours(bmap, projection, cont_data, contour_ticks, contour_dec):
@@ -760,59 +759,57 @@ def _set_contour_ticks(contour_dict, contour_ticks):
 def _set_image_size(image_size, textsize,
                     nrows, ncols,
                     minlat, maxlat, minlon, maxlon, 
-                    row_headings, inline_row_headings, img_headings_dict):
+                    title, row_headings, inline_row_headings, col_headings, img_headings):
     """Set all parameters related to image size and padding."""
     
     sizes = {}
     
     #image size in inches
     iwidth = float(image_size)
-    iheight =  ((maxlat - minlat)/((maxlon - minlon)*1.0))*float(image_size)
+    iheight =  ((maxlat - minlat) / ((maxlon - minlon) * 1.0)) * float(image_size)
 
     #item sizes in inches
-    title_size        = 0.3
-    col_heading_size  = 0.25
-    img_heading_size  = 0.2
-    if row_headings and not inline_row_headings:
-        row_heading_size  = max(0.16 * max(len(rt) for rt in row_headings), 0.4)
-    else:
-        row_heading_size  = 0.1
+    col_heading_size = 0.25 if col_headings else 0.0
+    row_heading_size = 0.25 if row_headings else 0.0
+    img_heading_size = 0.20 if img_headings else 0.0
+    inline_heading_size = 0.20 if inline_row_headings else 0.0
 
-    colourbar_size    = 0.25  
-    hpadding_size     = 0.2
-    
-    if img_headings_dict is not None:
-        vpadding_size = 0.4
-    else:
-        vpadding_size = hpadding_size
-	
     text_padding_size = 0.05
+    hpadding_size = vpadding_size = 0.2
+    
+    colourbar_size = 0.25
+    colourbar_buffer_size = vpadding_size * 5.0
+    title_size = 0.3 if title else 0.0
+    title_buffer_size = (vpadding_size * 2.0) if title else vpadding_size 
 
     #image headings
-    img_heading_size = 0.2
     sizes['rowcolfsize'] = textsize
+    sizes['inlinerowcolfsize'] = textsize * 0.7
     
     #total page dimensions
-    sizes['height'] = title_size + vpadding_size*2 + col_heading_size + (img_heading_size+text_padding_size)*nrows + nrows*iheight + (nrows+2)*vpadding_size + colourbar_size
-    sizes['width'] = hpadding_size + row_heading_size + ncols*iwidth + (ncols+1)*hpadding_size
+    sizes['height'] = title_size + title_buffer_size + col_heading_size + (img_heading_size+text_padding_size)*nrows + \
+                      nrows*iheight + (nrows+1)*vpadding_size + colourbar_size + colourbar_buffer_size
+    sizes['width'] = hpadding_size + row_heading_size + (inline_heading_size+text_padding_size)*ncols + ncols*iwidth + \
+                     (ncols+1)*hpadding_size + row_heading_size
  
-    #dimensions in percentages
+    #dimensions in percentages of total width or height
     sizes['pwidth'] = iwidth / sizes['width']
     sizes['pheight'] = iheight / sizes['height']
+
+    sizes['totpwidth'] = (iwidth + inline_heading_size + text_padding_size) / sizes['width']
+    sizes['totpheight'] = (iheight + img_heading_size + text_padding_size) / sizes['height']
+
     sizes['titlepos'] = title_size / sizes['height']
     sizes['hpadding'] = hpadding_size / sizes['width']
     sizes['vpadding'] = vpadding_size / sizes['height']
     sizes['tpadding'] = text_padding_size / sizes['height']
     sizes['row_heading'] = row_heading_size / sizes['width']
+    sizes['inline_heading'] = inline_heading_size / sizes['width']
     sizes['col_heading'] = col_heading_size / sizes['height']
     sizes['img_heading'] = img_heading_size / sizes['height']
     sizes['colourbar'] = colourbar_size / sizes['height']
-
-    if img_headings_dict is not None:
-        sizes['cbarbuffer'] = 3 * sizes['vpadding']
-    else:
-        sizes['cbarbuffer'] = 4 * sizes['vpadding']
-
+    sizes['cbarbuffer'] = colourbar_buffer_size / sizes['height']
+ 
     return sizes
 
 
@@ -905,6 +902,10 @@ improvements:
                         help="plot title [default: None]")
     parser.add_argument("--ofile", type=str, 
                         help="name of output file [default: test.png]")
+    parser.add_argument("--dpi", type=int, 
+                        help="resolution of output image [default: Auto]")		
+    parser.add_argument("--transparent", action="store_true",
+                        help="switch for having a transparent (as opposed to white) background [default: False]")
     parser.add_argument("--contour", action="store_true",
                         help="switch for drawing contour plot [default: False]")
     #Map details
@@ -940,7 +941,7 @@ improvements:
                         help="list of column headings")
     parser.add_argument("--img_headings", type=str, nargs='*', default=None,
                         help="list of image headings")
-    parser.add_argument("--textsize", type=float, default=18., 
+    parser.add_argument("--textsize", type=float, default=16., 
                         help="size of the column and row headings")
     #Colourbar
     parser.add_argument("--colourbar_colour", type=str, 
