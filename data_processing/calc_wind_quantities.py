@@ -44,6 +44,11 @@ var_atts['vorticity'] = {'id': 'vrt',
     'units': 's-1',   
     'history': 'windspharm vorticity(), http://ajdawson.github.com/windspharm/index.html'}
 
+var_atts['divergence'] = {'id': 'div',
+    'long_name': 'divergence',
+    'units': 's-1',   
+    'history': 'windspharm divergence(), http://ajdawson.github.com/windspharm/index.html'}
+
 var_atts['absolutevorticity'] = {'id': 'avrt',
     'name': 'absolute vorticity',
     'long_name': 'absolute vorticity (sum of relative and planetary)',
@@ -130,8 +135,8 @@ def calc_quantity(data_u, data_v, quantity):
     # either 2D or 3D arrays. The data read in is 4D and has latitude and
     # longitude as the last dimensions. The bundled tools can make the process of
     # re-shaping the data a lot easier to manage.
-    uwnd, uwnd_info = prep_data(uwnd, 'tyx')#'tzyx')
-    vwnd, vwnd_info = prep_data(vwnd, 'tyx')#'tzyx')
+    uwnd, uwnd_info = prep_data(uwnd, uwnd.getOrder())  
+    vwnd, vwnd_info = prep_data(vwnd, vwnd.getOrder()) 
 
     # It is also required that the latitude dimension is north-to-south. Again the
     # bundled tools make this easy.
@@ -194,11 +199,11 @@ def calc_quantity(data_u, data_v, quantity):
         for comp in ['u', 'v']:
 	    data_out[comp] = recover_data(data_out[comp], uwnd_info)
 	    if flip:
-	        data_out[comp] = data_out[comp][:, ::-1, :]    
+	        data_out[comp] = numpy.fliplr(data_out[comp])   #data_out[comp][:, ::-1, :]    
     else:
 	data_out = recover_data(data_out, uwnd_info)
 	if flip:
-	    data_out = data_out[:, ::-1, :]
+	    data_out = numpy.fliplr(data_out)  #data_out[:, ::-1, :]
 
 #    if eddy:
 #        data_out_zonal_ave = cdutil.averager(data_out, axis='2')
@@ -219,9 +224,10 @@ def main(inargs):
 
     # Check that the input data are all on the same coordinate axes #
 
-    nio.time_axis_check(data_u.data.getTime(), data_v.data.getTime())
     nio.xy_axis_check(data_u.data.getLatitude(), data_v.data.getLatitude())
     nio.xy_axis_check(data_u.data.getLongitude(), data_v.data.getLongitude())
+    if 't' in data_u.data.getOrder():
+        nio.time_axis_check(data_u.data.getTime(), data_v.data.getTime())
     
     # Calculate the desired quantity #
     
@@ -229,17 +235,15 @@ def main(inargs):
 
     # Write output file #
 
+    indata_list = [data_u, data_v,]
     if type(data_out) == dict:
         outdata_list = [data_out['u'], data_out['v'],]
         outvar_atts_list = [var_atts[inargs.quantity, 'u'], var_atts[inargs.quantity, 'v'],]
+	outvar_axes_list = [data_u.data.getAxisList(),data_u.data.getAxisList(),]
     else:
         outdata_list = [data_out,]
         outvar_atts_list = [var_atts[inargs.quantity],]
-
-    indata_list = [data_u, data_v,]
-    outvar_axes_list = [(data_u.data.getTime(), 
-                        data_u.data.getLatitude(), 
-                        data_u.data.getLongitude()),]
+        outvar_axes_list = [data_u.data.getAxisList(),]
 
     nio.write_netcdf(inargs.outfile, inargs.quantity, 
                      indata_list, 
@@ -298,8 +302,8 @@ bugs:
 
     parser.add_argument("quantity", type=str, help="Quantity to calculate",
                         choices=['magnitude', 'vorticity', 'divergence', 'absolutevorticity',
-                                 'irrotationalcomponent', 'streamfunction', 'velocitypotential',
-                                 'rossbywavesource'])
+                                 'irrotationalcomponent', 'nondivergentcomponent', 'streamfunction', 
+				 'velocitypotential', 'rossbywavesource'])
     parser.add_argument("infileu", type=str, help="Input U-wind file name")
     parser.add_argument("varu", type=str, help="Input U-wind variable")
     parser.add_argument("infilev", type=str, help="Input V-wind file name")

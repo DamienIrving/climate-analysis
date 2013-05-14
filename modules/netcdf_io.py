@@ -709,7 +709,7 @@ def write_netcdf(outfile_name, out_quantity, indata,
     infile_names_unique = str(set(infile_names)).strip('set([').strip('])')
         
     setattr(outfile, 'history', 
-    """%s: %s calculated from %s using %s (%s), format=NETCDF3_CLASSIC. %s\n%s""" %(datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
+    """%s: %s calculated from %s using %s (Git hash: %s), format=NETCDF3_CLASSIC. %s\n%s""" %(datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
     out_quantity, infile_names_unique, sys.argv[0], MODULE_HASH, extra_history, old_history))
 
     # Variables #
