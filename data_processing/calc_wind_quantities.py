@@ -143,8 +143,9 @@ def calc_quantity(data_u, data_v, quantity):
     lats, uwnd, vwnd = order_latdim(lats, uwnd, vwnd)
     flip = False if (lats[0] == data_u.data.getLatitude()[0]) else True   # Flag to see if lats was flipped 
 
-    # Create a VectorWind instance to handle the computation of streamfunction and
-    # velocity potential.
+    # Create a VectorWind instance (squeeze works around a bug in the code).
+    uwnd = uwnd.squeeze()
+    vwnd = vwnd.squeeze()
     w = VectorWind(uwnd, vwnd)
 
     # Compute the desired quantity. Also use the bundled tools to re-shape the 
