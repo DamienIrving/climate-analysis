@@ -45,7 +45,7 @@ class EofAnalysis:
 
         self.neofs = neofs
         self.data = data
-        self.solver = eof2.Eof(data.data, weights='area')
+        self.solver = eof2.Eof(data.data, weights='coslat')
 	self.var_exp = self.solver.varianceFraction(neigs=neofs)
 
 
@@ -175,7 +175,9 @@ example (abyss.earthsci.unimelb.edu.au):
   /work/dbirving/processed/indices/data/ts_Merra_surface_EOF_monthly-1981-2010_native-ocean-eqpacific.nc
 
 note:
-  using monthly anomaly data gives a different result to letting the program automatically 
+  The data are area weighting according the the sqrt of the cosine of the latitude, as recommended by
+  Wilks2011
+  Using monthly anomaly data gives a different result to letting the program automatically 
   remove the time mean at each grid point (because you haven't taken seasonality into account
   if you simply remove the mean of the entire monthly timeseries)
 
