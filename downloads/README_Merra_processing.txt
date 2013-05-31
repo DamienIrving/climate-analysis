@@ -13,15 +13,14 @@ wget --content-disposition -i wget_2CUzuIUq
 
 ## Documentation ##
 
-
-## Variables - Monthly IAU 2d atmospheric single-level diagnostics (tavgM_2d_slv_Nx) ## 
-
+Daily data = IAU 2d atmospheric single-level diagnostics (tavg1_2d_slv_Nx)
+Monthly data = Monthly IAU 2d atmospheric single-level diagnostics (tavgM_2d_slv_Nx)
+ 
 Sea level pressure (originally slp, now psl)
 Geopotential height, 250hPa (originally H, now gz)
 Eastward wind component, 250 hPa (originally U, now ua)
 Northward wind velocity, 250 hPa (originally V, now va)
 Omega (=dp/dt; or vertical pressure velocity), 500 hPa (originally omega500, now wap)
-
 
 
 ## Post processing ##
@@ -45,7 +44,6 @@ ncatted -O -a units,sf,m,c,"1.e+6 m2 s-1"
 # Variables #
 
 Streamfunction (sf)
-
 
 # Notes #
 
