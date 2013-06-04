@@ -101,7 +101,8 @@ class InputData:
         longitude -- (120, 165)
         region    -- aus
         time      -- ('1979-01-01', '2000-12-31'), or 
-                     slice(index1,index2,step)
+                     slice(index1,index2,step), or
+		     list of months: ('JAN', 'FEB', ..., 'DEC')
 	agg       -- ('DJF', False)
 	             (i.e. aggregates the data into 
                       a timeseries of DJF values)
@@ -123,26 +124,36 @@ class InputData:
 	
         """
         
-        # Read the input data to set order & check critical attributes #
+        # Read the input data #
 
-        infile = cdms2.open(fname)
-        temp_data = infile(var_id)
-
-        input_order = temp_data.getOrder()
-        
+        infile = cdms2.open(fname)       
+	
+	# Check for critical attributes #
+	
+	#global file attributes
 	assert hasattr(infile, 'history'), \
         'Input file must have history global attribute'
-        assert hasattr(temp_data, 'missing_value'), \
+        
+	#file dimension attributes
+	for dimension in infile.listdimension():
+	    assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
+	    'Input dimensions must have an axis attribute that is X, Y, Z or T'
+	
+	#variable attributes
+	var_atts = infile.listattribute(vname=var_id)
+	assert 'missing_value' in var_atts, \
         'Input variable must have missing_value attribute'
-	assert hasattr(temp_data, 'long_name'), \
+	assert 'long_name' in var_atts, \
         'Input variable must have long_name attribute'
-	assert hasattr(temp_data, 'units'), \
+	assert 'units' in var_atts, \
         'Input variable must have units attribute'
 
-        del temp_data
-
         # Sort out the order #
-
+        
+	input_order = ''
+	for dimension in infile.listdimension(vname=var_id):
+	    input_order = input_order + infile.getAxis(dimension).axis.lower()
+	
         order = 'tyxz'
         for item in 'tyxz':
             if not item in input_order:
@@ -194,15 +205,45 @@ class InputData:
         else:
             window = None
 
-	# Set object attributes #
+	# Extract data from input file and manipulate as required #
 	
-        data = infile(var_id, **kwargs)
+	month_dict = {'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 
+	              'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG': 8, 
+                      'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12}
+	if kwargs.has_key('time'):
+	    assert isinstance(kwargs['time'], (list, tuple)), \
+	    'time selector must be a list or tuple'
+
+            if kwargs['time'][0] in month_dict.keys():
+                months = kwargs['time']
+                del kwargs['time']
+                datetimes = infile.getAxis('time').asComponentTime()
+                years_all = []
+	        for datetime in datetimes:
+                    years_all.append(int(str(datetime).split('-')[0]))
+                years_unique = list(set(years_all))
+
+                extracts = []
+                for year in years_unique:
+                    for month in months: 
+                        start_date = str(year)+'-'+str(month_dict[month])+'-1'
+                        end_date = str(year)+'-'+str(month_dict[month])+'-1'
+                        kwargs['time'] = (start_date, end_date)
+                        extracts.append(infile(var_id, **kwargs))
+                
+                data = MV2.concatenate(extracts, axis=0)        
+            else:
+                data = infile(var_id, **kwargs)
+        else:            	         
+	    data = infile(var_id, **kwargs)
         
         data = temporal_aggregation(data, agg, climatology=clim) if agg else data
         data = running_average(data, window) if window > 1 else data
 
         if convert:
 	    data = convert_units(data)
+
+        # Set object attributes #
 
         self.data = data
 	self.fname = fname

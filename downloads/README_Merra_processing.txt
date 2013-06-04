@@ -32,6 +32,7 @@ cdo chname
 cdo iften mask.nc infile.nc outfile.nc
 cdo sellonlatbox,0,359.9,-90,90       # For having longitude values 0 to 360, instead of -180 to 180
 ncatted -O -a units,psl,c,c,Pa        # Adding a units attribute (for psl in this case)
+ncatted -O -a axis,time,c,c,T         # Adding an axis attribute (to the time axis in this case)
 ncatted -O -a comments,psl,d,,        # Removing pointless attributes (comments in psl in this case)
 
 cdo timmean -seldate,1981-01-01,2010-12-31               # For calculating the climatology
