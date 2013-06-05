@@ -220,8 +220,8 @@ def main(inargs):
 
     # Read the input data #
 
-    data_u = nio.InputData(inargs.infileu, inargs.varu)
-    data_v = nio.InputData(inargs.infilev, inargs.varv)
+    data_u = nio.InputData(inargs.infileu, inargs.varu, **nio.dict_filter(vars(inargs), ['time', 'region']))
+    data_v = nio.InputData(inargs.infilev, inargs.varv, **nio.dict_filter(vars(inargs), ['time', 'region']))
 
     # Check that the input data are all on the same coordinate axes #
 
@@ -310,7 +310,11 @@ bugs:
     parser.add_argument("infilev", type=str, help="Input V-wind file name")
     parser.add_argument("varv", type=str, help="Input V-wind variable")
     parser.add_argument("outfile", type=str, help="Output file name")
-
+    
+    parser.add_argument("--region", type=str, choices=nio.regions.keys(),
+                        help="Region over which to calculate EOF [default = entire]")
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
+                        help="Time period over which to calculate the EOF [default = entire]")
 #    parser.add_argument("--eddy", action="store_true", default=False,
 #                        help="return the eddy component of the wind quantity (i.e. remove the zonal mean before calculation)")
     

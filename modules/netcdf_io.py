@@ -95,7 +95,8 @@ class InputData:
 	"""Extract desired data from an input file.
 	
 	Keyword arguments (with examples):
-	grid      -- 
+	grid      -- (startLat,nlat,deltaLat,
+	              startLon,nlon,deltaLon)
         latitude  -- (-30, 30)
         level     -- (1000.)
         longitude -- (120, 165)
@@ -136,8 +137,9 @@ class InputData:
         
 	#file dimension attributes
 	for dimension in infile.listdimension():
-	    assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
-	    'Input dimensions must have an axis attribute that is X, Y, Z or T'
+	    if not dimension == 'bound':
+	        assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
+	        'Input dimensions must have an axis attribute that is X, Y, Z or T'
 	
 	#variable attributes
 	var_atts = infile.listattribute(vname=var_id)
@@ -152,7 +154,8 @@ class InputData:
         
 	input_order = ''
 	for dimension in infile.listdimension(vname=var_id):
-	    input_order = input_order + infile.getAxis(dimension).axis.lower()
+	    if not dimension == 'bound':
+	        input_order = input_order + infile.getAxis(dimension).axis.lower()
 	
         order = 'tyxz'
         for item in 'tyxz':
@@ -174,14 +177,15 @@ class InputData:
 	    
 	    del kwargs['region']
 
-        # Remove None values #
+        # Deal with kwargs that are either none or not directly relevant # 
+	# to the cdms2 input subsetter #
 
+        #remove None values
         for key in kwargs:
             if not kwargs[key]:
 	        del kwargs[key]
         
-        # Determine aggregation method #
-
+        #determine aggregation method
 	if kwargs.has_key('agg'):
 	    if isinstance(kwargs['agg'], (list, tuple)):
                 assert len(kwargs['agg']) == 2 
@@ -195,8 +199,7 @@ class InputData:
 	else:
             agg = False
 
-        # Determine the running average #
-
+        #determine the running average
         if kwargs.has_key('runave'):
             assert type(kwargs['runave']) == int, \
             'Window for running average must be an integer'
@@ -204,6 +207,17 @@ class InputData:
             del kwargs['runave']
         else:
             window = None
+
+        #determine the regridding
+        if kwargs.has_key('grid'):
+            assert isinstance(kwargs['grid'], (list, tuple)), \
+	    'The grid must be a list'
+	    assert len(kwargs['grid']) == 6
+            startLat, nlat, deltaLat, startLon, nlon, deltaLon = kwargs['grid']
+	    new_grid = cdms2.createUniformGrid(startLat, nlat, deltaLat, startLon, nlon, deltaLon)
+	    del kwargs['grid']
+        else:
+            new_grid = False
 
 	# Extract data from input file and manipulate as required #
 	
@@ -239,6 +253,7 @@ class InputData:
         
         data = temporal_aggregation(data, agg, climatology=clim) if agg else data
         data = running_average(data, window) if window > 1 else data
+	data = data.regrid(new_grid) if new_grid else data
 
         if convert:
 	    data = convert_units(data)
