@@ -104,9 +104,9 @@ class InputData:
         level     -- (1000.)
         longitude -- (120, 165)
         region    -- aus
-        time      -- ('1979-01-01', '2000-12-31'), or 
-                     slice(index1,index2,step), or
-		     list of months: ('JAN', 'FEB', ..., 'DEC')
+        time      -- ('1979-01-01', '2000-12-31', 'MONTH/SEASON), 
+		     options: 'JAN', 'FEB', ..., 'DEC'
+		              'DJF', ... 'SON'
 	agg       -- ('DJF', False)
 	             (i.e. aggregates the data into 
                       a timeseries of DJF values)
@@ -222,7 +222,7 @@ class InputData:
         else:
             new_grid = False
 
-	# Extract data from input file and manipulate as required #
+	# Extract data from input file accroding to the time selection #
 	
 	month_dict = {'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 
 	              'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG': 8, 
@@ -236,18 +236,21 @@ class InputData:
 	    assert isinstance(kwargs['time'], (list, tuple)), \
 	    'time selector must be a list or tuple'
 
-            month_selector = kwargs['time'][0] in month_dict.keys()
-            season_selector = kwargs['time'][0] in season_dict.keys() and len(kwargs['time']) == 1      
-            datetime_selector = re.search(date_pattern, kwargs['time'][0]) and re.search(date_pattern, kwargs['time'][1]) and len(kwargs['time']) == 2
-
-            assert month_selector or season_selector or datetime_selector, \
-            'time selector must be a list of months, a list of seasons (length 1) or a list containing a start and end date'
-
-            if datetime_selector:
-                data = infile(var_id, **kwargs)
-            else:
-                months = kwargs['time'] if month_selector else season_dict[kwargs['time'][0]]
-                del kwargs['time']
+            assert len(kwargs['time']) == 2 or len(kwargs['time']) == 3, \
+	    'time selector must be length two or three'
+	    
+	    assert re.search(date_pattern, kwargs['time'][0]) or kwargs['time'][0].lower() == 'none'
+	    assert re.search(date_pattern, kwargs['time'][1]) or kwargs['time'][1].lower() == 'none'
+            
+            if len(kwargs['time']) == 3:
+	        assert (kwargs['time'][2] in month_dict.keys()) or (kwargs['time'][2] in season_dict.keys())
+		
+		month_selector = kwargs['time'][2]
+		date_selector = kwargs['time'][0:2]
+		del kwargs['time']
+            
+	        #make the month/season selection
+                months = (month_selector,) if month_selector in month_dict.keys() else season_dict[month_selector]
                 datetimes = infile.getAxis('time').asComponentTime()
                 years_all = []
 	        for datetime in datetimes:
@@ -258,7 +261,7 @@ class InputData:
                 for year in years_unique:
                     for month in months: 
                         start_date = str(year)+'-'+str(month_dict[month])+'-1 00:00:0.0'
-                        end_date = str(year)+'-'+str(month_dict[month])+'-'+str(calendar.monthrange(year, month_dict[month])[-1])+' 23:59:59.9'
+                        end_date = str(year)+'-'+str(month_dict[month])+'-'+str(calendar.monthrange(year, month_dict[month])[-1])+' 23:59:0.0'
                         kwargs['time'] = (start_date, end_date)
                         try:
                             extracts.append(infile(var_id, **kwargs))
@@ -267,10 +270,16 @@ class InputData:
                                            
                 data = MV2.concatenate(extracts, axis=0) if len(extracts) > 1 else extracts[0]      
                 
+		#make the date range selection
+		data = data(time=date_selector)
+		
+	    else:
+		data = infile(var_id, **kwargs)
         else:            	         
-	    
             data = infile(var_id, **kwargs)
         
+	# Manipulate data as required (running ave, regridding etc) #
+	
         data = temporal_aggregation(data, agg, climatology=clim) if agg else data
         data = running_average(data, window) if window > 1 else data
 	data = data.regrid(new_grid) if new_grid else data
