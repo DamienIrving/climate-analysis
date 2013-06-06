@@ -220,8 +220,8 @@ def main(inargs):
 
     # Read the input data #
 
-    data_u = nio.InputData(inargs.infileu, inargs.varu, **nio.dict_filter(vars(inargs), ['time', 'region']))
-    data_v = nio.InputData(inargs.infilev, inargs.varv, **nio.dict_filter(vars(inargs), ['time', 'region']))
+    data_u = nio.InputData(inargs.infileu, inargs.varu, **nio.dict_filter(vars(inargs), ['grid', 'time', 'region']))
+    data_v = nio.InputData(inargs.infilev, inargs.varv, **nio.dict_filter(vars(inargs), ['grid', 'time', 'region']))
 
     # Check that the input data are all on the same coordinate axes #
 
@@ -311,6 +311,8 @@ bugs:
     parser.add_argument("varv", type=str, help="Input V-wind variable")
     parser.add_argument("outfile", type=str, help="Output file name")
     
+    parser.add_argument("--grid", type=float, nargs=6, metavar=('START_LAT', 'NLAT', 'DELTALAT', 'START_LON', 'NLON', 'DELTALON'),
+                        help="Uniform regular grid to regrid data to [default = None]")
     parser.add_argument("--region", type=str, choices=nio.regions.keys(),
                         help="Region over which to calculate EOF [default = entire]")
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),

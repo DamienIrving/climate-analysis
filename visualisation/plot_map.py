@@ -107,11 +107,16 @@ def extract_data(file_list, region='dateline', convert=False):
         fname = item[0]
         var = item[1]
         period = (item[2], item[3])
+	
 	date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
+	month_list = ['DJF', 'JAN', 'FEB', 'DEC', 'MAM', 'MAR', 'APR', 'MAY',
+                      'JJA', 'JUN', 'JUL', 'AUG', 'SON', 'SEP', 'OCT', 'NOV']
 	if re.search(date_pattern, item[2]) and re.search(date_pattern, item[3]):
-            data = nio.InputData(fname, var, time=period, region=region, convert=convert).data
+            data = nio.InputData(fname, var, time=(item[2], item[3]), region=region, convert=convert).data
+	elif item[2] in month_list:
+	    data = nio.InputData(fname, var, time=(item[2],), region=region, convert=convert).data
 	else:
-	    print 'Start and/or end date for %s either None or not in correct ([0-9]{4})-([0-9]{2})-([0-9]{2}) format. Entire time period used.' %(fname)
+	    print 'Start and/or end date for %s either None or not in correct ([0-9]{4})-([0-9]{2})-([0-9]{2}) or month/season name format. Entire time period used.' %(fname)
 	    data = nio.InputData(fname, var, region=region, convert=convert).data
        
         #Data must be two dimensional 

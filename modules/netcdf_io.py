@@ -29,8 +29,10 @@ __author__ = 'Damien Irving'
 
 import os
 import sys
+import re
 
 import inspect
+import calendar
 import datetime
 from dateutil.parser import *
 
@@ -82,7 +84,8 @@ regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
            'shextropics': [(-90, -30, 'cc'), (0, 360, 'cc')],
            'tropics': [(-30, 30, 'cc'), (0, 360, 'cc')],
            'greenwich': [(-90, 90, 'cc'), (-180, 180, 'cc')],
-           'dateline': [(-90, 90, 'cc'), (0, 360, 'cc')]
+           'dateline': [(-90, 90, 'cc'), (0, 360, 'cc')],
+           'nonpolar': [(-70, 70, 'cc'), (0, 360, 'cc')]
            }
 
 
@@ -137,7 +140,7 @@ class InputData:
         
 	#file dimension attributes
 	for dimension in infile.listdimension():
-	    if not dimension == 'bound':
+	    if not dimension in ['bound', 'nv']:
 	        assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
 	        'Input dimensions must have an axis attribute that is X, Y, Z or T'
 	
@@ -154,7 +157,7 @@ class InputData:
         
 	input_order = ''
 	for dimension in infile.listdimension(vname=var_id):
-	    if not dimension == 'bound':
+	    if not dimension in ['bound', 'nv']:
 	        input_order = input_order + infile.getAxis(dimension).axis.lower()
 	
         order = 'tyxz'
@@ -224,12 +227,26 @@ class InputData:
 	month_dict = {'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 
 	              'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG': 8, 
                       'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12}
+	season_dict = {'DJF': ('JAN', 'FEB', 'DEC'),
+	               'MAM': ('MAR', 'APR', 'MAY'),
+                       'JJA': ('JUN', 'JUL', 'AUG'),
+                       'SON': ('SEP', 'OCT', 'NOV')}
+        date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'	
 	if kwargs.has_key('time'):
 	    assert isinstance(kwargs['time'], (list, tuple)), \
 	    'time selector must be a list or tuple'
 
-            if kwargs['time'][0] in month_dict.keys():
-                months = kwargs['time']
+            month_selector = kwargs['time'][0] in month_dict.keys()
+            season_selector = kwargs['time'][0] in season_dict.keys() and len(kwargs['time']) == 1      
+            datetime_selector = re.search(date_pattern, kwargs['time'][0]) and re.search(date_pattern, kwargs['time'][1]) and len(kwargs['time']) == 2
+
+            assert month_selector or season_selector or datetime_selector, \
+            'time selector must be a list of months, a list of seasons (length 1) or a list containing a start and end date'
+
+            if datetime_selector:
+                data = infile(var_id, **kwargs)
+            else:
+                months = kwargs['time'] if month_selector else season_dict[kwargs['time'][0]]
                 del kwargs['time']
                 datetimes = infile.getAxis('time').asComponentTime()
                 years_all = []
@@ -240,16 +257,19 @@ class InputData:
                 extracts = []
                 for year in years_unique:
                     for month in months: 
-                        start_date = str(year)+'-'+str(month_dict[month])+'-1'
-                        end_date = str(year)+'-'+str(month_dict[month])+'-1'
+                        start_date = str(year)+'-'+str(month_dict[month])+'-1 00:00:0.0'
+                        end_date = str(year)+'-'+str(month_dict[month])+'-'+str(calendar.monthrange(year, month_dict[month])[-1])+' 23:59:59.9'
                         kwargs['time'] = (start_date, end_date)
-                        extracts.append(infile(var_id, **kwargs))
+                        try:
+                            extracts.append(infile(var_id, **kwargs))
+                        except cdms2.error.CDMSError:
+                            continue
+                                           
+                data = MV2.concatenate(extracts, axis=0) if len(extracts) > 1 else extracts[0]      
                 
-                data = MV2.concatenate(extracts, axis=0)        
-            else:
-                data = infile(var_id, **kwargs)
         else:            	         
-	    data = infile(var_id, **kwargs)
+	    
+            data = infile(var_id, **kwargs)
         
         data = temporal_aggregation(data, agg, climatology=clim) if agg else data
         data = running_average(data, window) if window > 1 else data
