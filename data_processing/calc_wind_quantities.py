@@ -46,14 +46,20 @@ var_atts['vorticity'] = {'id': 'vrt',
 
 var_atts['divergence'] = {'id': 'div',
     'long_name': 'divergence',
-    'units': 's-1',   
+    'units': '1.e-6 s-1',   
     'history': 'windspharm divergence(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['absolutevorticity'] = {'id': 'avrt',
     'name': 'absolute vorticity',
     'long_name': 'absolute vorticity (sum of relative and planetary)',
-    'units': 's-1',
+    'units': '1.e-5 s-1',
     'history': 'windspharm absolutevorticity(), http://ajdawson.github.com/windspharm/index.html'}
+
+var_atts['planetaryvorticity'] = {'id': 'pvrt',
+    'name': 'planetary vorticity',
+    'long_name': 'planetary vorticity (Coriolis parameter)',
+    'units': 's-1',
+    'history': 'windspharm planetaryvorticity(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['irrotationalcomponent','u'] = {'id': 'uchi',
     'name': 'irrotational zonal wind',
@@ -82,18 +88,18 @@ var_atts['nondivergentcomponent','v'] = {'id': 'vpsi',
 var_atts['streamfunction'] = {'id': 'sf',
     'name': 'streamfunction',
     'long_name': 'streamfunction (rotational wind blows along streamfunction contours, speed proportional to gradient)',
-    'units': '1.e+6 m2 s-1',  #m2 s-1
+    'units': '1.e+6 m2 s-1',  
     'history': 'windspharm streamfunction() - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['velocitypotential'] = {'id':'vp',
     'name': 'velocity potential',
     'long_name': 'velocity potential (divergent wind blows along velocity potential contours, speed proportional to gradient)',
-    'units': '1.e+6 m2 s-1',  #m2 s-1,
+    'units': '1.e+6 m2 s-1',  
     'history': 'windspharm velocitypotential() - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['rossbywavesource'] = {'id': 'rws',
     'long_name': 'Rossby wave source',
-    'units': '1.e-11 s-1',  # I think it should be s-2
+    'units': '1.e-11 s-2',  
     'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
 
 
@@ -140,7 +146,9 @@ def calc_quantity(data_u, data_v, quantity):
 
     # It is also required that the latitude dimension is north-to-south. Again the
     # bundled tools make this easy.
+    print lats
     lats, uwnd, vwnd = order_latdim(lats, uwnd, vwnd)
+    print lats
     flip = False if (lats[0] == data_u.data.getLatitude()[0]) else True   # Flag to see if lats was flipped 
 
     # Create a VectorWind instance (squeeze works around a bug in the code).
@@ -151,7 +159,7 @@ def calc_quantity(data_u, data_v, quantity):
     # Compute the desired quantity. Also use the bundled tools to re-shape the 
     # outputs to the 4D shape of the wind components as they were read off files.
     
-    if quantity == 'rossbywavesource':   ## FIX THIS HUGE IF STATEMENT - A CLASS MIGHT BE THE ANSWER!!!
+    if quantity == 'rossbywavesource':
 	# Compute components of rossby wave source: absolute vorticity, divergence,
 	# irrotational (divergent) wind components, gradients of absolute vorticity.
 	eta = w.absolutevorticity()
@@ -171,9 +179,14 @@ def calc_quantity(data_u, data_v, quantity):
     
     elif quantity == 'divergence':
         data_out = w.divergence()
+	data_out = data_out / (1.e-6)
     
     elif quantity == 'absolutevorticity':
         data_out = w.absolutevorticity()
+	data_out = data_out / (1.e-5)
+    
+    elif quantity == 'planetaryvorticity':
+        data_out = w.planetaryvorticity()
     
     elif quantity == 'irrotationalcomponent':
         data_out = {}
@@ -302,7 +315,7 @@ bugs:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("quantity", type=str, help="Quantity to calculate",
-                        choices=['magnitude', 'vorticity', 'divergence', 'absolutevorticity',
+                        choices=['magnitude', 'vorticity', 'divergence', 'absolutevorticity', 'planetaryvorticity',
                                  'irrotationalcomponent', 'nondivergentcomponent', 'streamfunction', 
 				 'velocitypotential', 'rossbywavesource'])
     parser.add_argument("infileu", type=str, help="Input U-wind file name")

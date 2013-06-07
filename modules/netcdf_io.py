@@ -104,7 +104,7 @@ class InputData:
         level     -- (1000.)
         longitude -- (120, 165)
         region    -- aus
-        time      -- ('1979-01-01', '2000-12-31', 'MONTH/SEASON), 
+        time      -- ('1979-01-01', '2000-12-31', 'MONTH/SEASON'), 
 		     options: 'JAN', 'FEB', ..., 'DEC'
 		              'DJF', ... 'SON'
 	agg       -- ('DJF', False)
@@ -241,8 +241,9 @@ class InputData:
 	    
 	    assert re.search(date_pattern, kwargs['time'][0]) or kwargs['time'][0].lower() == 'none'
 	    assert re.search(date_pattern, kwargs['time'][1]) or kwargs['time'][1].lower() == 'none'
-            
-            if len(kwargs['time']) == 3:
+	    valid_trange = re.search(date_pattern, kwargs['time'][0]) and re.search(date_pattern, kwargs['time'][1])
+	    
+            if len(kwargs['time']) == 3 and kwargs['time'][2].lower() != 'none':
 	        assert (kwargs['time'][2] in month_dict.keys()) or (kwargs['time'][2] in season_dict.keys())
 		
 		month_selector = kwargs['time'][2]
@@ -271,9 +272,15 @@ class InputData:
                 data = MV2.concatenate(extracts, axis=0) if len(extracts) > 1 else extracts[0]      
                 
 		#make the date range selection
-		data = data(time=date_selector)
-		
+		if valid_trange:
+		    data = data(time=date_selector)
+	    
+	    elif valid_trange:
+	        kwargs['time'] = kwargs['time'][0:2]
+		data = infile(var_id, **kwargs)
+	    	
 	    else:
+		del kwargs['time']
 		data = infile(var_id, **kwargs)
         else:            	         
             data = infile(var_id, **kwargs)

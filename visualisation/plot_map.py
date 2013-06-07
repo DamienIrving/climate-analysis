@@ -88,7 +88,7 @@ def extract_data(file_list, region='dateline', convert=False):
 
     Positional arguments:
       file_list  -- List of tuples containing:
-                    (file_name, var, start, end)
+                    (file_name, var, start, end, months)
 
     Keyword arguments:
       region     -- Name of a region key in netcdf_io.region
@@ -99,25 +99,16 @@ def extract_data(file_list, region='dateline', convert=False):
     if not file_list:
         return None
 
-    assert len(file_list[0]) == 4
+    assert len(file_list[0]) == 5
     assert region in nio.regions.keys()
 
     new_list = []
     for item in file_list:
         fname = item[0]
         var = item[1]
-        period = (item[2], item[3])
-	
-	date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
-	month_list = ['DJF', 'JAN', 'FEB', 'DEC', 'MAM', 'MAR', 'APR', 'MAY',
-                      'JJA', 'JUN', 'JUL', 'AUG', 'SON', 'SEP', 'OCT', 'NOV']
-	if re.search(date_pattern, item[2]) and re.search(date_pattern, item[3]):
-            data = nio.InputData(fname, var, time=(item[2], item[3]), region=region, convert=convert).data
-	elif item[2] in month_list:
-	    data = nio.InputData(fname, var, time=(item[2],), region=region, convert=convert).data
-	else:
-	    print 'Start and/or end date for %s either None or not in correct ([0-9]{4})-([0-9]{2})-([0-9]{2}) or month/season name format. Entire time period used.' %(fname)
-	    data = nio.InputData(fname, var, region=region, convert=convert).data
+        tselect = (item[2:5])
+
+        data = nio.InputData(fname, var, time=tselect, region=region, convert=convert).data
        
         #Data must be two dimensional 
         if (re.match('^t', data.getOrder())):
@@ -896,10 +887,12 @@ improvements:
                         help="input file time start date (can be None)")
     parser.add_argument("end", type=str,
                         help="input file time end date - let START=END for single time step (can be None)")
+    parser.add_argument("months", type=str, 
+                        help="input file time month/season selector (can be None - will take all months)")
 
-    parser.add_argument("--infiles", type=str, action='append', default=[], nargs=4,
-                        metavar=('FILENAME', 'VAR', 'START', 'END'),  
-                        help="additional input file name, variable, start date and end date [default: None]")
+    parser.add_argument("--infiles", type=str, action='append', default=[], nargs=5,
+                        metavar=('FILENAME', 'VAR', 'START', 'END', 'MONTHS'),  
+                        help="additional input file name, variable, start date, end date and month selector [default: None]")
 
     parser.add_argument("--dimensions", type=int, nargs=2, default=None, metavar=('ROWS', 'COLUMNS'), 
                         help="matrix dimensions [default: 1 row]")
@@ -963,18 +956,18 @@ improvements:
     parser.add_argument("--extend", type=str, choices=('both', 'neither', 'min', 'max'),
                         help="selector for arrow points at either end of colourbar [default: 'neither']")
     #Contours
-    parser.add_argument("--contour_file", type=str, nargs=4, action='append', default=None,
-                        metavar=('FILENAME', 'VAR', 'START', 'END'),  
+    parser.add_argument("--contour_file", type=str, nargs=5, action='append', default=None,
+                        metavar=('FILENAME', 'VAR', 'START', 'END', 'MONTHS'),  
                         help="contour file name, variable, start date and end date [default: None]")
     parser.add_argument("--contour_ticks", type=float, nargs='*', 
                         help="list of tick marks, or just the number of contour lines")
     #Wind
-    parser.add_argument("--uwnd_file", type=str, nargs=4, action='append', default=None,
-                        metavar=('FILENAME', 'VAR', 'START', 'END'),  
-                        help="zonal wind file name, variable, start date and end date [default: None]")
-    parser.add_argument("--vwnd_file", type=str, nargs=4, action='append', default=None,
-                        metavar=('FILENAME', 'VAR', 'START', 'END'),  
-                        help="zonal wind file name, variable, start date and end date [default: None]")
+    parser.add_argument("--uwnd_file", type=str, nargs=5, action='append', default=None,
+                        metavar=('FILENAME', 'VAR', 'START', 'END', 'MONTHS'),  
+                        help="zonal wind file name, variable, start date, end date and month selector [default: None]")
+    parser.add_argument("--vwnd_file", type=str, nargs=5, action='append', default=None,
+                        metavar=('FILENAME', 'VAR', 'START', 'END', 'MONTHS'),  
+                        help="zonal wind file name, variable, start date, end date and month selector [default: None]")
     
     parser.add_argument("--quiver_type", type=str, choices=('wind', 'waf'),
                         help="type of quiver being plotted [defualt: wind]")
@@ -991,8 +984,8 @@ improvements:
     parser.add_argument("--quiver_headlength", type=float, 
                         help="head length as multiple of shaft width [default: 4.0]")
     #Stippling
-    parser.add_argument("--stipple_file", type=str, nargs=4, action='append', default=None,
-                        metavar=('FILENAME', 'VAR', 'START', 'END'),  
+    parser.add_argument("--stipple_file", type=str, nargs=5, action='append', default=None,
+                        metavar=('FILENAME', 'VAR', 'START', 'END', 'MONTHS'),  
                         help="stipple file name, variable, start date and end date [default: None]") 
     parser.add_argument("--stipple_threshold", type=float,  
                         help="threshold above which stipples will be plotted [default: None]") 
@@ -1004,6 +997,6 @@ improvements:
 
     args = parser.parse_args()              
 
-    args.infiles.insert(0, [args.infile, args.variable, args.start, args.end])
+    args.infiles.insert(0, [args.infile, args.variable, args.start, args.end, args.months])
 
     _main(args)
