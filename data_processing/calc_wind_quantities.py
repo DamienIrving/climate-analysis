@@ -102,6 +102,15 @@ var_atts['rossbywavesource'] = {'id': 'rws',
     'units': '1.e-11 s-2',  
     'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
 
+var_atts['rossbywavesource1'] = {'id': 'rws1',
+    'long_name': 'Rossby wave source, vortex stretching term',
+    'units': '1.e-11 s-2',  
+    'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
+
+var_atts['rossbywavesource2'] = {'id': 'rws2',
+    'long_name': 'Rossby wave source, advection of absolute vorticity by divergent flow term',
+    'units': '1.e-11 s-2',  
+    'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
 
 
 def calc_quantity(data_u, data_v, quantity):
@@ -143,12 +152,10 @@ def calc_quantity(data_u, data_v, quantity):
     # re-shaping the data a lot easier to manage.
     uwnd, uwnd_info = prep_data(uwnd, uwnd.getOrder())  
     vwnd, vwnd_info = prep_data(vwnd, vwnd.getOrder()) 
-
+    
     # It is also required that the latitude dimension is north-to-south. Again the
     # bundled tools make this easy.
-    print lats
     lats, uwnd, vwnd = order_latdim(lats, uwnd, vwnd)
-    print lats
     flip = False if (lats[0] == data_u.data.getLatitude()[0]) else True   # Flag to see if lats was flipped 
 
     # Create a VectorWind instance (squeeze works around a bug in the code).
@@ -159,17 +166,24 @@ def calc_quantity(data_u, data_v, quantity):
     # Compute the desired quantity. Also use the bundled tools to re-shape the 
     # outputs to the 4D shape of the wind components as they were read off files.
     
-    if quantity == 'rossbywavesource':
+    if quantity[0:16] == 'rossbywavesource':
 	# Compute components of rossby wave source: absolute vorticity, divergence,
 	# irrotational (divergent) wind components, gradients of absolute vorticity.
-	eta = w.absolutevorticity()
+	eta = w.vorticity() - w.planetaryvorticity()
+	#eta = w.absolutevorticity()
 	div = w.divergence()
 	uchi, vchi = w.irrotationalcomponent()
 	etax, etay = w.gradient(eta)
 
-	# Combine the components to form the Rossby wave source term.
-	data_out = -eta * div - uchi * etax + vchi * etay	
-	data_out = data_out / (1.e-11)
+	# Combine the components to form the Rossby wave source term
+	if len(quantity) == 16:
+            data_out = -eta * div - uchi * etax + vchi * etay	
+	elif quantity[-1] == '1':
+            data_out = -eta * div
+        else:
+            data_out = -uchi * etax + vchi * etay
+
+        data_out = data_out / (1.e-11)
 
     elif quantity == 'magnitude':
         data_out = w.magnitude()
@@ -182,7 +196,8 @@ def calc_quantity(data_u, data_v, quantity):
 	data_out = data_out / (1.e-6)
     
     elif quantity == 'absolutevorticity':
-        data_out = w.absolutevorticity()
+        #data_out = w.absolutevorticity()
+	data_out = w.vorticity() - w.planetaryvorticity()
 	data_out = data_out / (1.e-5)
     
     elif quantity == 'planetaryvorticity':
@@ -317,7 +332,7 @@ bugs:
     parser.add_argument("quantity", type=str, help="Quantity to calculate",
                         choices=['magnitude', 'vorticity', 'divergence', 'absolutevorticity', 'planetaryvorticity',
                                  'irrotationalcomponent', 'nondivergentcomponent', 'streamfunction', 
-				 'velocitypotential', 'rossbywavesource'])
+				 'velocitypotential', 'rossbywavesource', 'rossbywavesource1', 'rossbywavesource2'])
     parser.add_argument("infileu", type=str, help="Input U-wind file name")
     parser.add_argument("varu", type=str, help="Input U-wind variable")
     parser.add_argument("infilev", type=str, help="Input V-wind file name")
