@@ -20,13 +20,20 @@ module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
+def constants(inwave):
+    """Define the constants required to perform the Fourier & Hilbert transforms"""
+
+    N = len(inwave)
+    l = numpy.arange(1, N+1)
+    k = numpy.arange(-N/2.0 + 1.0, N/2.0 + 1.0) 
+
+    return N, l, k
+
 
 def fourier_transform(inwave):
     """Produce Fourier transform of input wave as per Zimin et al (2003, eq. 3)"""
 
-    N = len(inwave)
-    ll = numpy.arange(1, N+1)
-    kk = numpy.arange(-N/2.0 + 1.0, N/2.0 + 1.0) 
+    N, ll, kk = constants(inwave)
 
     inwave_hat = numpy.zeros(N)
     for index in xrange(0,N):
@@ -40,9 +47,7 @@ def hilbert_transform(inwave_hat, kmin, kmax):
     """Apply the inverse Fourier transform to a selected band
        of the positive wavenumber half of the Fourier spectrum"""
 
-    N =  len(inwave_hat)
-    ll = numpy.arange(1, N+1)
-    kk = numpy.arange(-N/2.0 + 1.0, N/2.0 + 1.0)
+    N, ll, kk = constants(inwave)
     
     selection = (kk < kmin) + (kk > kmax)
     ffilter = numpy.where(selection == True, 0, 1)
@@ -64,7 +69,6 @@ def main(inargs):
                            **nio.dict_filter(vars(inargs), ['time', 'region']))
     
     # Extract the wave envelope
-
 
 
 if __name__ == '__main__':
