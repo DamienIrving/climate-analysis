@@ -20,6 +20,7 @@ module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
+
 def constants(inwave):
     """Define the constants required to perform the Fourier & Hilbert transforms"""
 
@@ -34,8 +35,7 @@ def fourier_transform(inwave):
     """Produce Fourier transform of input wave as per Zimin et al (2003, eq. 3)"""
 
     N, ll, kk = constants(inwave)
-
-    inwave_hat = numpy.zeros(N)
+    inwave_hat = numpy.zeros(N, dtype=numpy.cfloat)
     for index in xrange(0,N):
         exptmp = numpy.exp(-2.0 * numpy.pi * complex(0,1) * kk[index] * ll / N)
         inwave_hat[index] = (1.0 / N) * numpy.sum(inwave * exptmp)
@@ -47,17 +47,25 @@ def hilbert_transform(inwave_hat, kmin, kmax):
     """Apply the inverse Fourier transform to a selected band
        of the positive wavenumber half of the Fourier spectrum"""
 
-    N, ll, kk = constants(inwave)
-    
+    N, ll, kk = constants(inwave_hat)    
     selection = (kk < kmin) + (kk > kmax)
     ffilter = numpy.where(selection == True, 0, 1)
 
-    envelope = numpy.zeros(N)
+    envelope = numpy.zeros(N, dtype=numpy.cfloat)
     for index in xrange(0,N):
-        exptmp = numpy.exp(2.0 * numpy.pi * complex(0,1) * kk * ll[index] / N)
+        exptmp_hat = numpy.exp(2.0 * numpy.pi * complex(0,1) * kk * ll[index] / N)
         envelope[index] = 2.0 * numpy.sum(inwave_hat * ffilter * exptmp_hat)
 
-    return numpy.abs(envelope)
+    return envelope
+    
+
+def envelope(inwave, kmin, kmax):
+    """Extract the wave envelope"""
+    
+    inwave_hat = fourier_transform(inwave)
+    envelope = hilbert_transform(inwave_hat, kmin, kmax)
+    
+    return numpy.abs(envelope) 
 
 
 def main(inargs):
@@ -66,9 +74,36 @@ def main(inargs):
     # Prepate input data #
 
     indata = nio.InputData(inargs.infile, inargs.variable, 
-                           **nio.dict_filter(vars(inargs), ['time', 'region']))
+                           **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude']))
     
-    # Extract the wave envelope
+    # Extract the wave envelope #
+
+    outdata = numpy.zeros(list(indata.data.shape))
+    ntime, nlat, nlon = indata.data.shape
+    kmin, kmax = inargs.wavenumbers
+    
+    for time in xrange(0, ntime):
+        for lat in xrange(0, nlat):
+            outdata[time, lat, :] = envelope(indata.data[time, lat, :], kmin, kmax)
+    
+    # Write output file #
+
+    var_atts = {'id': 'env',
+                'name': 'Amplitude of wave envelope',
+                'long_name': 'Extracted envelope of atmospheric wave packet, obtained using Hiltbert transform',
+                'units': 'm s-1',
+                'history': 'Ref: Zimin et al. 2003. Mon. Wea. Rev. 131, 1011-1017. Wavenumber range: %s to %s' %(kmin, kmax)}
+
+    indata_list = [indata,]
+    outdata_list = [outdata,]
+    outvar_atts_list = [var_atts,]
+    outvar_axes_list = [indata.data.getAxisList(),]
+
+    nio.write_netcdf(inargs.outfile, 'Amplitude of wave envelope', 
+                     indata_list, 
+                     outdata_list,
+                     outvar_atts_list, 
+                     outvar_axes_list)
 
 
 if __name__ == '__main__':
@@ -98,12 +133,14 @@ author:
     parser.add_argument("infile", type=str, help="Input file name, containing the meridional wind")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
-			
+
+    parser.add_argument("--wavenumbers", type=int, nargs=2, default=[4,11],
+                        help="Wavenumber range [default = (4, 11)]")			
     parser.add_argument("--region", type=str, choices=nio.regions.keys(),
                         help="Region [default = entire]")
-    parser.add_argument("--latitude", type=str, nargs=2,
+    parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
                         help="Latitude range [default = entire]")
-    parser.add_argument("--longitude", type=str, nargs=2,
+    parser.add_argument("--longitude", type=float, nargs=2, metavar=('START', 'END'),
                         help="Longitude range [default = entire]")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
