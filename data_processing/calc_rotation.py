@@ -1,5 +1,9 @@
 """Implementation of the rotation theory outlined at
-http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html"""
+http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
+
+To select psir, you are supposed to 
+
+"""
 
 
 ### Import required modules ###
@@ -18,7 +22,7 @@ def spherical_to_cartesian(lat, lon):
     x = numpy.cos(lon) * numpy.cos(lat)
     y = numpy.sin(lon) * numpy.cos(lat)
     z = numpy.sin(lat)
-    
+ 
     return x, y, z
 
 
@@ -34,29 +38,44 @@ def cartesian_to_spherical(x, y, z):
 
 ## Coordinate system rotations ##
 
-def get_matrix(phir, thetar, psir, inverse=False):
-    """Get the rotation matrix or its inverse."""
+def rotation_matrix(phir, thetar, psir, inverse=False, nump=False):
+    """Get the rotation matrix or its inverse.
     
-    A = numpy.zeros([3, 3])
+    It appears that the inverse matrix is inverse in the sense 
+    that it repeats the rotations backwards, but it does not
+    always (particularly when the rotated poles have a new longitude)
+    represent the matrix inverse (i.e. A*A-1 = I). The latter can be 
+    calculated using numpy.linalg.inv(A).
+    """
     
-    A[0,0] = (numpy.cos(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.sin(psir))
-    A[0,1] = (numpy.cos(psir) * numpy.sin(phir)) - (numpy.cos(thetar) * numpy.cos(phir) * numpy.sin(psir))
-    A[0,2] = numpy.sin(psir) * numpy.sin(thetar)
-    
-    A[1,0] = -(numpy.sin(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.cos(psir))
-    A[1,1] = -(numpy.sin(psir) * numpy.sin(phir)) - (numpy.cos(thetar) * numpy.cos(phir) * numpy.cos(psir))
-    A[1,2] = numpy.cos(psir) * numpy.sin(thetar)
-    
-    A[2,0] = numpy.sin(thetar) * numpy.sin(phir)
-    A[2,1] = -numpy.sin(thetar) * numpy.cos(phir)
-    A[2,2] = numpy.cos(thetar)
+    matrix = numpy.zeros([3, 3])
+    if not inverse:
+	matrix[0,0] = (numpy.cos(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.sin(psir))
+	matrix[0,1] = (numpy.cos(psir) * numpy.sin(phir)) - (numpy.cos(thetar) * numpy.cos(phir) * numpy.sin(psir))
+	matrix[0,2] = numpy.sin(psir) * numpy.sin(thetar)
 
-    if inverse:
-        output = numpy.linalg.inv(A)
+	matrix[1,0] = -(numpy.sin(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.cos(psir))
+	matrix[1,1] = -(numpy.sin(psir) * numpy.sin(phir)) - (numpy.cos(thetar) * numpy.cos(phir) * numpy.cos(psir))
+	matrix[1,2] = numpy.cos(psir) * numpy.sin(thetar)
+
+	matrix[2,0] = numpy.sin(thetar) * numpy.sin(phir)
+	matrix[2,1] = -numpy.sin(thetar) * numpy.cos(phir)
+	matrix[2,2] = numpy.cos(thetar)
+
     else:
-        output = A
-	
-    return output
+	matrix[0,0] = (numpy.cos(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.sin(psir))
+	matrix[0,1] = -(numpy.sin(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.cos(psir))
+	matrix[0,2] = numpy.sin(thetar) * numpy.sin(phir) 
+
+	matrix[1,0] = (numpy.cos(psir) * numpy.sin(phir)) - (numpy.cos(thetar) * numpy.cos(phir) * numpy.sin(psir))
+	matrix[1,1] = -(numpy.sin(psir) * numpy.sin(phir)) - (numpy.cos(thetar) * numpy.cos(phir) * numpy.cos(psir))
+	matrix[1,2] = -numpy.sin(thetar) * numpy.cos(phir)
+
+	matrix[2,0] = numpy.sin(thetar) * numpy.sin(psir)
+	matrix[2,1] = numpy.sin(thetar) * numpy.cos(psir)
+	matrix[2,2] = numpy.cos(thetar)
+
+    return matrix
 
 
 def geographic_to_rotated_cartesian(x, y, z, phir, thetar, psir):
@@ -65,24 +84,10 @@ def geographic_to_rotated_cartesian(x, y, z, phir, thetar, psir):
     about the origial z axis (phir), new z axis after the first rotation (thetar),
     and about the final z axis (psir)."""
 
-    unrot_matrix = numpy.array([x, y, z])
-    A = get_matrix(phir, thetar, psir)
-    
-#    A = numpy.zeros([3, 3])
-#    
-#    A[0,0] = (numpy.cos(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.sin(psir))
-#    A[0,1] = (numpy.cos(psir) * numpy.sin(phir)) - (numpy.cos(thetar) * numpy.cos(phir) * numpy.sin(psir))
-#    A[0,2] = numpy.sin(psir) * numpy.sin(thetar)
-#    
-#    A[1,0] = -(numpy.sin(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.cos(psir))
-#    A[1,1] = -(numpy.sin(psir) * numpy.sin(phir)) - (numpy.cos(thetar) * numpy.cos(phir) * numpy.cos(psir))
-#    A[1,2] = numpy.cos(psir) * numpy.sin(thetar)
-#    
-#    A[2,0] = numpy.sin(thetar) * numpy.sin(phir)
-#    A[2,1] = -numpy.sin(thetar) * numpy.cos(phir)
-#    A[2,2] = numpy.cos(thetar)
-    
-    dot_product = numpy.dot(A, unrot_matrix)
+    input_matrix = numpy.array([x, y, z])
+    A = rotation_matrix(phir, thetar, psir)
+        
+    dot_product = numpy.dot(A, input_matrix)
     xrot = dot_product[0, :]
     yrot = dot_product[1, :]
     zrot = dot_product[2, :]
@@ -109,24 +114,10 @@ def rotated_to_geographic_cartesian(xrot, yrot, zrot, phir, thetar, psir):
     about the origial z axis (phir), new z axis after the first rotation (thetar),
     and about the final z axis (psir)."""
     
-    rot_matrix = numpy.array([xrot, yrot, zrot])
-    A_inverse_numpy = get_matrix(phir, thetar, psir, inverse=True)
-    
-    A_inverse = numpy.zeros([3, 3])
-    
-    A_inverse[0,0] = (numpy.cos(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.sin(psir))
-    A_inverse[0,1] = -(numpy.sin(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.cos(psir))
-    A_inverse[0,2] = numpy.sin(thetar) * numpy.sin(phir)
-    
-    A_inverse[1,0] = (numpy.cos(psir) * numpy.sin(phir)) - (numpy.cos(thetar) * numpy.cos(phir) * numpy.sin(psir))
-    A_inverse[1,1] = -(numpy.sin(psir) * numpy.sin(phir)) - (numpy.cos(thetar) * numpy.cos(phir) * numpy.cos(psir))
-    A_inverse[1,2] = -numpy.sin(thetar) * numpy.cos(phir)
-    
-    A_inverse[2,0] = numpy.sin(thetar) * numpy.sin(psir)
-    A_inverse[2,1] = numpy.sin(thetar) * numpy.cos(psir)
-    A_inverse[2,2] = numpy.cos(thetar)
-    
-    dot_product = numpy.dot(A_inverse, rot_matrix)
+    input_matrix = numpy.array([xrot, yrot, zrot])
+    A_inverse = rotation_matrix(phir, thetar, psir, inverse=True, nump=True)
+        
+    dot_product = numpy.dot(A_inverse, input_matrix)
     x = dot_product[0, :]
     y = dot_product[1, :]
     z = dot_product[2, :]
@@ -134,7 +125,7 @@ def rotated_to_geographic_cartesian(xrot, yrot, zrot, phir, thetar, psir):
     return x, y, z
 
 
-def rotated_to_geographic_spherical(latrot, lonrot, phir, thetar, psir=0):
+def rotated_to_geographic_spherical(latrot, lonrot, phir, thetar, psir):
     """Convert from rotated spherical coordinates (latrot, lonrot) to
     geographic spherical coordinates (lat, lon), according to the rotation 
     about the origial z axis (phir), new z axis after the first rotation (thetar),
@@ -150,21 +141,41 @@ def rotated_to_geographic_spherical(latrot, lonrot, phir, thetar, psir=0):
 ## Miscellaneous ##
 
 def north_pole_to_rotation_angles(latnp, lonnp):
-    """Convert position of rotated north pole to rotation about the
+    """Convert position of rotated north pole to a rotation about the
     original z axis (phir) and new z axis after the first rotation (thetar)"""
 
-    phir = 90 - lonnp
-    thetar = 90 - latnp
+    phir = numpy.deg2rad(90 - lonnp)
+    thetar = numpy.deg2rad(90 - latnp)
 
     return phir, thetar    
-    
+
+
+
+
+#
+#
+### Testing ##
+
+phir, thetar = north_pole_to_rotation_angles(30.0, -100.0) 
+psir = numpy.deg2rad(-100.0)
+
+#A = get_matrix(phir, thetar, psir)
+#A_inv = get_matrix(phir, thetar, psir, inverse=True)
+# 
+#print A_inv
+# 
+#print numpy.dot(A, A_inv)
+#print numpy.dot(A, A_inv_numpy)
+
+
+# Plot #
+
 #lonrot = numpy.array([0.0, 0.0])
 #latrot = numpy.array([90.0, -90.0])
 lonrot = numpy.arange(0, 360, 1) 
 latrot = numpy.zeros(len(lonrot))
-phir, thetar = north_pole_to_rotation_angles(10,20)   #30.0, -100.0)
 
-latgeo, longeo = rotated_to_geographic_spherical(numpy.deg2rad(latrot), numpy.deg2rad(lonrot), numpy.deg2rad(phir), numpy.deg2rad(thetar), psir=numpy.deg2rad(45.0))
+latgeo, longeo = rotated_to_geographic_spherical(numpy.deg2rad(latrot), numpy.deg2rad(lonrot), phir, thetar, psir)
 
 for i in range(0, len(latgeo)):
     print '(%s, %s) rotated becomes (%s, %s) geographic'  %(latrot[i], lonrot[i], numpy.rad2deg(latgeo[i]), numpy.rad2deg(longeo[i]))
@@ -199,7 +210,7 @@ map.drawmeridians(numpy.arange(0,360,30),labels=[0,0,0,1],color='grey',dashes=[1
 
 # fill continents 'coral' (with zorder=0), color wet areas 'aqua'
 map.drawmapboundary(fill_color='#99ffff')
-map.fillcontinents(color='#cc9966',lake_color='#99ffff')
+#map.fillcontinents(color='#cc9966',lake_color='#99ffff')
 
 lats = numpy.rad2deg(latgeo)
 lons = numpy.rad2deg(longeo)
