@@ -50,8 +50,13 @@ def cartesian_to_spherical(x, y, z):
     Output is in radians.
     """
     
+    y = numpy.where(numpy.absolute(y) < 0.000001, 0.0, y)
+    x = numpy.where(numpy.absolute(x) < 0.000001, 0.0, x)
+    
     lat_spherical = numpy.arccos(z)
     lon = numpy.arctan2(y, x)
+    #S = numpy.sqrt(numpy.square(x) + numpy.square(y))
+    #lon = numpy.where(x < 0, numpy.pi - numpy.arcsin(y/S), numpy.arcsin(y/S))
     
     lat_geographic = lat_adjust(lat_spherical)
     
@@ -98,8 +103,6 @@ def rotation_matrix(phir, thetar, psir, inverse=False, nump=False):
 	matrix[2,0] = numpy.sin(thetar) * numpy.sin(psir)
 	matrix[2,1] = numpy.sin(thetar) * numpy.cos(psir)
 	matrix[2,2] = numpy.cos(thetar)
-
-    print matrix
 
     return matrix
 
@@ -170,7 +173,7 @@ def rotated_to_geographic_spherical(latrot, lonrot, phir, thetar, psir):
     """
     
     xrot, yrot, zrot = spherical_to_cartesian(latrot, lonrot)
-    x, y, z = rotated_to_geographic_cartesian(xrot, yrot, zrot, phir, thetar, psir)
+    x, y, z = rotated_to_geographic_cartesian(xrot, yrot, zrot, phir, thetar, psir)    
     lat, lon = cartesian_to_spherical(x, y, z)
     
     return lat, lon 
@@ -206,23 +209,45 @@ def print_pairs(data1, data2):
 #
 ### Testing ##
 
-phir, thetar = north_pole_to_rotation_angles(0.0, 90.0)  #30.0, -100.0) 
-psir = numpy.deg2rad(90.0)    #-100.0)
+phir, thetar = north_pole_to_rotation_angles(30, 0)      #30.0, 0.0 gives a nice PSA line
+psir = numpy.deg2rad(0.0)  
 
 print phir, thetar, psir
 
-start_lats = numpy.arange(-90, 105, 15)
-start_lons = numpy.arange(-180, 201, 30)
+start_lats = numpy.arange(-90, 120, 30)
+start_lons = numpy.arange(0, 420, 60)
+#start_lons = numpy.array([-180]*len(start_lats))
+
 
 print 'start'
 print_pairs(start_lats, start_lons)
 
-#x, y, z = spherical_to_cartesian(numpy.deg2rad(start_lats), numpy.deg2rad(start_lons))
+
+#x = numpy.array([0])#1.66533454e-16]) 
+#y = numpy.array([-8.32667268e-17])  # 0
+#z=  numpy.array([-1.]) #-1.
+#
+#x2 = numpy.array([1.66533454e-16])    #[1.22464680e-16]) 
+#y2 = numpy.array([0])  # 0
+#z2 = numpy.array([-1.]) #-1.
+#
+#x3 = numpy.array([0])    #[1.22464680e-16]) 
+#y3 = numpy.array([0])  # 0
+#z3 = numpy.array([-1.]) #-1.
+#
+#x4 = numpy.array([1.66533454e-16])    #[1.22464680e-16]) 
+#y4 = numpy.array([-8.32667268e-17])  # 0
+#z4 = numpy.array([-1.]) #-1.
+#
 #end_lats, end_lons = cartesian_to_spherical(x, y, z)
-
-#print 'end'
+#end_lats2, end_lons2 = cartesian_to_spherical(x2, y2, z2)
+#end_lats3, end_lons3 = cartesian_to_spherical(x3, y3, z3)
+#end_lats4, end_lons4 = cartesian_to_spherical(x4, y4, z4)
+#
 #print_pairs(numpy.rad2deg(end_lats), numpy.rad2deg(end_lons))
-
+#print_pairs(numpy.rad2deg(end_lats2), numpy.rad2deg(end_lons2))
+#print_pairs(numpy.rad2deg(end_lats3), numpy.rad2deg(end_lons3))
+#print_pairs(numpy.rad2deg(end_lats4), numpy.rad2deg(end_lons4))
 
 rotated_lats, rotated_lons = geographic_to_rotated_spherical(numpy.deg2rad(start_lats), numpy.deg2rad(start_lons), phir, thetar, psir)
 print 'rotated'
@@ -245,53 +270,53 @@ print_pairs(numpy.rad2deg(restored_lats), numpy.rad2deg(restored_lons))
 
 
 ## Plot #
-#
-##lonrot = numpy.array([0.0, 0.0])
-##latrot = numpy.array([90.0, -90.0])
-#lonrot = numpy.arange(0, 360, 1) 
-#latrot = numpy.zeros(len(lonrot))
-#
-#latgeo, longeo = rotated_to_geographic_spherical(numpy.deg2rad(latrot), numpy.deg2rad(lonrot), phir, thetar, psir)
-#
-#for i in range(0, len(latgeo)):
-#    print '(%s, %s) rotated becomes (%s, %s) geographic'  %(latrot[i], lonrot[i], numpy.rad2deg(latgeo[i]), numpy.rad2deg(longeo[i]))
-#
-#
-#### Define globals ###
-#
-#res='c'
-#area_threshold = 1.0
-#
-## Zoom out for PSA
-#h = 12000  #height of satellite, 
-#lon_central = 235
-#lat_central = -60
-#
-#
-#### Plot the map ###
-#
-##map = Basemap(projection='spaeqd',boundinglat=-40,lon_0=180,resolution='l')  # Polar Azimuthal Equidistant Projection
-##map = Basemap(projection='splaea',boundinglat=-10,lon_0=90,resolution='l')  # Polar Lambert Azimuthal Projection
-##map = Basemap(projection='mill',lon_0=180)
-##map = Basemap(projection='nsper',lon_0=lon_central,lat_0=lat_central,satellite_height=h*1000.,resolution=res,area_thresh=area_threshold)
+
+#lonrot = numpy.array([0.0, 0.0])
+#latrot = numpy.array([90.0, -90.0])
+lonrot = numpy.arange(0, 360, 1) 
+latrot = numpy.zeros(len(lonrot))
+
+latgeo, longeo = rotated_to_geographic_spherical(numpy.deg2rad(latrot), numpy.deg2rad(lonrot), phir, thetar, psir)
+
+for i in range(0, len(latgeo)):
+    print '(%s, %s) rotated becomes (%s, %s) geographic'  %(latrot[i], lonrot[i], numpy.rad2deg(latgeo[i]), numpy.rad2deg(longeo[i]))
+
+
+### Define globals ###
+
+res='c'
+area_threshold = 1.0
+
+# Zoom out for PSA
+h = 12000  #height of satellite, 
+lon_central = 235
+lat_central = -60
+
+
+### Plot the map ###
+
+#map = Basemap(projection='spaeqd',boundinglat=-40,lon_0=180,resolution='l')  # Polar Azimuthal Equidistant Projection
+#map = Basemap(projection='splaea',boundinglat=-10,lon_0=90,resolution='l')  # Polar Lambert Azimuthal Projection
+#map = Basemap(projection='mill',lon_0=180)
+map = Basemap(projection='nsper',lon_0=lon_central,lat_0=lat_central,satellite_height=h*1000.,resolution=res,area_thresh=area_threshold)
 #map = Basemap(llcrnrlon=-180, llcrnrlat=-90, urcrnrlon=180, urcrnrlat=90, projection='cyl')
-#
-##plot coastlines, draw label meridians and parallels.
-#map.drawcoastlines()
-#map.drawparallels(numpy.arange(-90,90,30),labels=[1,0,0,0],color='grey',dashes=[1,3])
-#map.drawmeridians(numpy.arange(0,360,30),labels=[0,0,0,1],color='grey',dashes=[1,3])
-#
-#
-### Simple plot (no data) ##
-#
-## fill continents 'coral' (with zorder=0), color wet areas 'aqua'
-#map.drawmapboundary(fill_color='#99ffff')
-##map.fillcontinents(color='#cc9966',lake_color='#99ffff')
-#
-#lats = numpy.rad2deg(latgeo)
-#lons = numpy.rad2deg(longeo)
-#x, y = map(lons, lats)
-#map.scatter(x, y, linewidth=1.5, color='r')
-#
-#
-#plt.show()
+
+#plot coastlines, draw label meridians and parallels.
+map.drawcoastlines()
+map.drawparallels(numpy.arange(-90,90,30),labels=[1,0,0,0],color='grey',dashes=[1,3])
+map.drawmeridians(numpy.arange(0,360,30),labels=[0,0,0,1],color='grey',dashes=[1,3])
+
+
+## Simple plot (no data) ##
+
+# fill continents 'coral' (with zorder=0), color wet areas 'aqua'
+map.drawmapboundary(fill_color='#99ffff')
+#map.fillcontinents(color='#cc9966',lake_color='#99ffff')
+
+lats = numpy.rad2deg(latgeo)
+lons = numpy.rad2deg(longeo)
+x, y = map(lons, lats)
+map.scatter(x, y, linewidth=1.5, color='r')
+
+
+plt.show()
