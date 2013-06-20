@@ -15,6 +15,18 @@ import matplotlib.pyplot as plt
 
 # Coordinate system transforms ##
 
+def filter_tiny(data, threshold=0.000001):
+    """Convert values of magnitude < threshold to zero"""
+
+    return numpy.where(numpy.absolute(data) < threshold, 0.0, data)
+ 
+
+def adjust_lon_range(lons):
+    """Express longitude values in the range [0, 360]"""
+    
+    return numpy.where(lons < 0.0, lons + 2.0*numpy.pi, lons)
+
+
 def lat_adjust(inlat):
    """Switch latitude between a typical spherical system and
    one where the latitude is 90 (pi/2) at the north pole
@@ -50,17 +62,16 @@ def cartesian_to_spherical(x, y, z):
     Output is in radians.
     """
     
-    y = numpy.where(numpy.absolute(y) < 0.000001, 0.0, y)
-    x = numpy.where(numpy.absolute(x) < 0.000001, 0.0, x)
+    y = filter_tiny(y)
+    x = filter_tiny(x)
     
-    lat_spherical = numpy.arccos(z)
-    lon = numpy.arctan2(y, x)
-    #S = numpy.sqrt(numpy.square(x) + numpy.square(y))
-    #lon = numpy.where(x < 0, numpy.pi - numpy.arcsin(y/S), numpy.arcsin(y/S))
-    
+    lat_spherical = numpy.arccos(z)    
     lat_geographic = lat_adjust(lat_spherical)
     
-    return lat_geographic, lon
+    lon = numpy.arctan2(y, x)
+    lon_correct_range = adjust_lon_range(lon)
+
+    return lat_geographic, lon_correct_range
 
 
 ## Coordinate system rotations ##
@@ -173,7 +184,7 @@ def rotated_to_geographic_spherical(latrot, lonrot, phir, thetar, psir):
     """
     
     xrot, yrot, zrot = spherical_to_cartesian(latrot, lonrot)
-    x, y, z = rotated_to_geographic_cartesian(xrot, yrot, zrot, phir, thetar, psir)    
+    x, y, z = rotated_to_geographic_cartesian(xrot, yrot, zrot, phir, thetar, psir)
     lat, lon = cartesian_to_spherical(x, y, z)
     
     return lat, lon 
@@ -194,6 +205,34 @@ def north_pole_to_rotation_angles(latnp, lonnp):
     return phir, thetar    
 
 
+def lat_lon_rotation_angle(phi, theta, psi):
+    """Determine the angle through which the zonal/meridional
+    axes have been rotated, given that the intersection point
+    between the geographic and rotated equators must be at 
+    (0, phir) in geographic coordinates.
+    
+    Input and output in radians.
+    """
+    phir, thetar, psir = numpy.deg2rad(phi), numpy.deg2rad(theta), numpy.deg2rad(psi)
+    step = numpy.deg2rad(10.0)
+    intersect_lat_geocoords, intersect_lon_geocoords = [numpy.array([0.0]), numpy.array([phir])]
+    intersect_lat_rotcoords, intersect_lon_rotcoords = geographic_to_rotated_spherical(intersect_lat_geocoords,
+                                                                                       intersect_lon_geocoords, 
+                                                                                       phir, thetar, psir)
+    ref_lat_geocoords, ref_lon_geocoords = rotated_to_geographic_spherical(intersect_lat_rotcoords + step, 
+                                                                           intersect_lon_rotcoords, 
+								           phir, thetar, psir)
+    xdiff = ref_lat_geocoords - intersect_lat_geocoords
+    ydiff = ref_lon_geocoords - intersect_lon_geocoords
+
+    #print numpy.rad2deg(ref_lon_geocoords), numpy.rad2deg(intersect_lon_geocoords)
+    #print numpy.rad2deg(xdiff), numpy.rad2deg(ydiff)
+    
+    angle = numpy.arctan2(ydiff, xdiff)
+
+    return filter_tiny(numpy.rad2deg(angle))
+								       
+    
 ## Testing ##
 
 def print_pairs(data1, data2):
