@@ -68,6 +68,8 @@ IPCCrain7, IPCCrain8, IPCCrain9, IPCCrain10, IPCCrain11, IPCCrain12 = ['#600080'
 grey = '#CCCCCC'
 white = '#FFFFFF'
 
+units_dict = {'ms-1': '$m s^{-1}$'}
+
 
 def _decimal_places(diff):
     """Determine the decimal place rounding for a 
@@ -457,7 +459,10 @@ def multiplot(indata,
 		      format='%.'+str(dec)+'f') # draw colorbar
 
     if units:
-        cb.set_label(units)
+        if units in units_dict.keys():
+            cb.set_label(units_dict[units])
+	else:
+	    cb.set_label(units)
     
     if ofile:
         plt.savefig(ofile, dpi=dpi, transparent=transparent)
@@ -766,12 +771,12 @@ def _set_image_size(image_size, textsize,
 
     #item sizes in inches
     col_heading_size = 0.25 if col_headings else 0.0
-    row_heading_size = 0.25 if row_headings else 0.0
+    row_heading_size = 0.25 if row_headings else 0.15  #0.0
     img_heading_size = 0.20 if img_headings else 0.0
     inline_heading_size = 0.20 if inline_row_headings else 0.0
 
     text_padding_size = 0.05
-    hpadding_size = vpadding_size = 0.2
+    hpadding_size = vpadding_size = 0.25#0.2
     
     colourbar_size = 0.25
     colourbar_buffer_size = vpadding_size * 5.0
@@ -946,11 +951,11 @@ improvements:
                         choices=('jet', 'jet_r', 'hot', 'hot_r', 'Blues', 'RdBu', 'RdBu_r'),
                         help="Colourbar name [defualt: jet]")
     parser.add_argument("--units", type=str, 
-                        help="Units")
+                        help="Units (recognised units: ms-1)")
     parser.add_argument("--ticks", type=float, nargs='*',
                         help="list of tick marks to appear on the colour bar")
     parser.add_argument("--discrete_segments", type=str, nargs='*',
-                        help="list of comma colours to appear on the colour bar")
+                        help="list of colours to appear on the colour bar")
     parser.add_argument("--convert", action="store_true", default=False,
                         help="unit converstion [default: False]")
     parser.add_argument("--extend", type=str, choices=('both', 'neither', 'min', 'max'),
