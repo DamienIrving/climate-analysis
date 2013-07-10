@@ -1,4 +1,4 @@
-"""Collection of functions for changing sppherical
+"""Collection of functions for changing spherical
 coordinate system.
 
 To import:
@@ -6,49 +6,46 @@ module_dir = os.path.join(os.environ['HOME'], 'data_processing')
 sys.path.insert(0, module_dir)
 
 Included functions:
+cartesian_to_spherical  
+  -- Convert cartesian (x, y, z) to spherical (lat, lon)
+spherical_to_cartesian  
+  -- Convert spherical (lat, lon) to cartesian (x, y, z)
 
+rotation_matrix  
+  -- Get the rotation matrix or its inverse
+geographic_to_rotated_cartesian  
+  --  Convert from unrotated geographic cartestian coordinates (x, y, z) to
+      rotated cartesian coordinates (xrot, yrot, zrot)  
+geographic_to_rotated_spherical
+  --  Convert from geographic spherical coordinates (lat, lon) to
+      rotated spherical coordinates (latrot, lonrot)
+rotated_to_geographic_cartesian
+  --  Covert from rotated cartestian coordinates (xrot, yrot, zrot) to
+      geographic cartesian coordinates (x, y, z)
+rotated_to_geographic_spherical
+  --  Convert from rotated spherical coordinates (latrot, lonrot) to
+      geographic spherical coordinates (lat, lon)
 
+plot_equator
+  --  Plot the rotated equator
 
-Implementation of the rotation theory outlined at
-http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
-
-To select psir, you are supposed to 
-
-"""
-"""
-Collection of commonly used classes, functions and global variables
-for reading/writing variables to a netCDF file
-
-
-
-Included functions:
-convert_units        -- Convert units
-dict_filter          -- Filter dictionary 
-get_datetime         -- Return datetime instances for list of dates/times
-hi_lo                -- Update highest and lowest value
-list_kwargs          -- List keyword arguments of a function
-running_average      -- Calculate running average
-scale_offset         -- Apply scaling and offset factors
-temporal_aggregation -- Create a temporal aggregate of 
-                        the input data
-time_axis_check      -- Check whether 2 time axes are the same
-write_netcdf         -- Write an output netCDF file
-xy_axis_check        -- Check whether 2 lat or lon axes are the same
-
-Included classes:
-InputData            -- Extract and subset data
+Reference:
+Rotation theory: http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
 
 """
 
-
-### Import required modules ###
+#############################
+## Import required modules ##
+#############################
 
 import numpy
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 
 
-## Coordinate system transforms ##
+##########################################
+## Switching between coordinate systems ##
+##########################################
 
 def _filter_tiny(data, threshold=0.000001):
     """Convert values of magnitude < threshold to zero"""
@@ -78,7 +75,7 @@ def _lat_adjust(inlat):
 
 def spherical_to_cartesian(lat_geographic, lon):
     """Take the latitude and longitude from a geographic spherical 
-    coordinate system and convert to x, y, z of cartesian system.
+    coordinate system and convert to x, y, z of a cartesian system.
     
     Radians expected.
     """
@@ -94,7 +91,7 @@ def spherical_to_cartesian(lat_geographic, lon):
 
 def cartesian_to_spherical(x, y, z):
     """Take the x, y ,z values from the cartesian coordinate system 
-    and convert to a latitude and longitude of geographic spherical 
+    and convert to latitude and longitude of a geographic spherical 
     system.
     
     Output is in radians.
@@ -112,7 +109,9 @@ def cartesian_to_spherical(x, y, z):
     return lat_geographic, lon_correct_range
 
 
+#################################
 ## Coordinate system rotations ##
+#################################
 
 def rotation_matrix(phir, thetar, psir, inverse=False):
     """Get the rotation matrix or its inverse.
@@ -219,10 +218,32 @@ def rotated_to_geographic_spherical(latrot, lonrot, phir, thetar, psir):
     x, y, z = rotated_to_geographic_cartesian(xrot, yrot, zrot, phir, thetar, psir)
     lat, lon = cartesian_to_spherical(x, y, z)
     
-    return lat, lon 
+    return lat, lon
 
 
+############################
+## Spherical trigonometry ##
+############################
+
+def angular_distance(lat1, lon1, lat2, lon2):
+    """Find the angular distance between two points on
+    the sphere."""
+    
+
+def get_angles(latA, lonA, latB, lonB, latC, lonC):
+    """Find the angles of a spherical triangle, given the
+    coordinates of the 3 vertices."""
+
+    a = angular_distance(latB, lonB, latC, lonC)
+    b = angular_distance(latA, lonA, latC, lonC)
+    c = angular_distance(latA, lonA, latB, lonB)
+
+    angleA = numpy.arccos((numpy.cos(a) - numpy.cos(b)*numpy.cos(c)) / (numpy.sin(b)*numpy.sin(c)))
+    
+
+###################
 ## Miscellaneous ##
+###################
 
 def north_pole_to_rotation_angles(latnp, lonnp):
     """Convert position of rotated north pole to a rotation about the
@@ -263,9 +284,11 @@ def lat_lon_rotation_angle(phi, theta, psi):
     angle = numpy.arctan2(ydiff, xdiff)
 
     return filter_tiny(numpy.rad2deg(angle))
-								       
-    
+			
+            
+#############    
 ## Testing ##
+#############
 
 def print_pairs(data1, data2):
     """Print pairs of data values"""
@@ -340,7 +363,3 @@ def plot_equator(npole_lat, npole_lon, psir_deg, projection='cyl', ofile=False):
         plt.savefig(ofile)
     else:
         plt.show()
-
-
-
-
