@@ -1,7 +1,42 @@
-"""Implementation of the rotation theory outlined at
+"""Collection of functions for changing sppherical
+coordinate system.
+
+To import:
+module_dir = os.path.join(os.environ['HOME'], 'data_processing')
+sys.path.insert(0, module_dir)
+
+Included functions:
+
+
+
+Implementation of the rotation theory outlined at
 http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
 
 To select psir, you are supposed to 
+
+"""
+"""
+Collection of commonly used classes, functions and global variables
+for reading/writing variables to a netCDF file
+
+
+
+Included functions:
+convert_units        -- Convert units
+dict_filter          -- Filter dictionary 
+get_datetime         -- Return datetime instances for list of dates/times
+hi_lo                -- Update highest and lowest value
+list_kwargs          -- List keyword arguments of a function
+running_average      -- Calculate running average
+scale_offset         -- Apply scaling and offset factors
+temporal_aggregation -- Create a temporal aggregate of 
+                        the input data
+time_axis_check      -- Check whether 2 time axes are the same
+write_netcdf         -- Write an output netCDF file
+xy_axis_check        -- Check whether 2 lat or lon axes are the same
+
+Included classes:
+InputData            -- Extract and subset data
 
 """
 
@@ -13,26 +48,29 @@ from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 
 
-# Coordinate system transforms ##
+## Coordinate system transforms ##
 
-def filter_tiny(data, threshold=0.000001):
+def _filter_tiny(data, threshold=0.000001):
     """Convert values of magnitude < threshold to zero"""
 
     return numpy.where(numpy.absolute(data) < threshold, 0.0, data)
  
 
-def adjust_lon_range(lons):
-    """Express longitude values in the range [0, 360]"""
+def _adjust_lon_range(lons):
+    """Express longitude values in the range [0, 2pi]
+    
+    Input and output in radians.
+    """
     
     return numpy.where(lons < 0.0, lons + 2.0*numpy.pi, lons)
 
 
-def lat_adjust(inlat):
+def _lat_adjust(inlat):
    """Switch latitude between a typical spherical system and
    one where the latitude is 90 (pi/2) at the north pole
    and -90 (-pi/2) at the south pole (i.e. a geographic system).
    
-   Radians expected.
+   Input and outpuit in radians.
    """
    
    return numpy.deg2rad(90) - inlat 
@@ -45,7 +83,7 @@ def spherical_to_cartesian(lat_geographic, lon):
     Radians expected.
     """
     
-    lat_spherical = lat_adjust(lat_geographic)
+    lat_spherical = _lat_adjust(lat_geographic)
     
     x = numpy.cos(lon) * numpy.sin(lat_spherical)
     y = numpy.sin(lon) * numpy.sin(lat_spherical)
@@ -62,14 +100,14 @@ def cartesian_to_spherical(x, y, z):
     Output is in radians.
     """
     
-    y = filter_tiny(y)
-    x = filter_tiny(x)
+    y = _filter_tiny(y)
+    x = _filter_tiny(x)
     
     lat_spherical = numpy.arccos(z)    
-    lat_geographic = lat_adjust(lat_spherical)
+    lat_geographic = _lat_adjust(lat_spherical)
     
     lon = numpy.arctan2(y, x)
-    lon_correct_range = adjust_lon_range(lon)
+    lon_correct_range = _adjust_lon_range(lon)
 
     return lat_geographic, lon_correct_range
 
@@ -78,14 +116,8 @@ def cartesian_to_spherical(x, y, z):
 
 def rotation_matrix(phir, thetar, psir, inverse=False):
     """Get the rotation matrix or its inverse.
-    
-    It appears that the inverse matrix is inverse in the sense 
-    that it repeats the rotations backwards, but it does not
-    always (particularly when the rotated poles have a new longitude)
-    represent the matrix inverse (i.e. A*A-1 = I). The latter can be 
-    calculated using numpy.linalg.inv(A).
-    
     Inputs angles are expected in radians.
+    Reference: http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
     """
     
     matrix = numpy.zeros([3, 3])
