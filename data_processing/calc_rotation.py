@@ -26,12 +26,16 @@ rotated_to_geographic_spherical
   --  Convert from rotated spherical coordinates (latrot, lonrot) to
       geographic spherical coordinates (lat, lon)
 
+angular_distance
+  --  Calculate angular distance between two points on a sphere
+rotation_angle
+  --  Find angle of rotation between the old and new north pole.
+
 plot_equator
   --  Plot the rotated equator
 
 Reference:
 Rotation theory: http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
-
 """
 
 #############################
@@ -225,21 +229,55 @@ def rotated_to_geographic_spherical(latrot, lonrot, phir, thetar, psir):
 ## Spherical trigonometry ##
 ############################
 
-def angular_distance(lat1, lon1, lat2, lon2):
+def angular_distance(lat1deg, lon1deg, lat2deg, lon2deg):
     """Find the angular distance between two points on
-    the sphere."""
+    the sphere.
+    
+    Assumes a sphere of unit radius.
+    
+    Input in degrees. Output in radians.
+    """
+
+    lat1 = numpy.deg2rad(lat1deg)
+    lon1 = numpy.deg2rad(lon1deg)
+    lat2 = numpy.deg2rad(lat2deg)
+    lon2 = numpy.deg2rad(lon2deg)
+
+    angular_dist = numpy.arccos(numpy.sin(lat1)*numpy.sin(lat2) + numpy.cos(lat1)*numpy.cos(lat2)*numpy.cos(lon2 - lon1))
+    #calc taken from http://www.movable-type.co.uk/scripts/latlong.html
+    #says it is based on the spherical law of cosines, but I need to verfiy this
+    
+    return angular_dist
     
 
-def get_angles(latA, lonA, latB, lonB, latC, lonC):
-    """Find the angles of a spherical triangle, given the
-    coordinates of the 3 vertices."""
+def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
+    """For a given point on the sphere, find the angle of rotation 
+    between the old and new north pole.
+    
+    Formulae make use of spherical triangles and are based 
+    on the spherical law of cosines. 
+    
+    Inputs:
+      Point A = Location of original north pole
+      Point B = Location of new north pole
+      Point C = Point of interest
+      Input in degrees (converted to radians for calcs)
+    
+    Output:
+      Angle C = Rotation angle between old and new north pole
+      Output in radians
+    """
 
     a = angular_distance(latB, lonB, latC, lonC)
     b = angular_distance(latA, lonA, latC, lonC)
     c = angular_distance(latA, lonA, latB, lonB)
 
-    angleA = numpy.arccos((numpy.cos(a) - numpy.cos(b)*numpy.cos(c)) / (numpy.sin(b)*numpy.sin(c)))
+    #angleA = numpy.arccos((numpy.cos(a) - numpy.cos(b)*numpy.cos(c)) / (numpy.sin(b)*numpy.sin(c)))
+    #angleB = numpy.arccos((numpy.cos(b) - numpy.cos(c)*numpy.cos(a)) / (numpy.sin(c)*numpy.sin(a)))
+    angleC = numpy.arccos((numpy.cos(c) - numpy.cos(a)*numpy.cos(b)) / (numpy.sin(a)*numpy.sin(b)))
     
+    return angleC
+
 
 ###################
 ## Miscellaneous ##
