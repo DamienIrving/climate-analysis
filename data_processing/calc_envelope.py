@@ -20,6 +20,10 @@ module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
+module_dir = os.path.join(os.environ['HOME'], 'data_processing')
+sys.path.insert(0, module_dir)
+import calc_rotation as rot
+
 
 def constants(inwave):
     """Define the constants required to perform the Fourier & Hilbert transforms"""
@@ -68,25 +72,82 @@ def envelope(inwave, kmin, kmax):
     return numpy.abs(envelope) 
 
 
+def rotate_meridional_wind(dataU, dataV, new_north_pole):
+    """Define the new meridional wind field, according to the 
+    position of the new north pole."""
+
+    if new_north_pole == [90.0, 0.0]:
+        new_vwind = dataV
+    else:
+        
+        # Reset axes of input data (i.e. get dataU_rot, dataV_rot) #
+        psi = 0.0
+        phi, theta = rot.north_pole_to_rotation_angles(new_north_pole[0], new_north_pole[1])   
+        
+        lats = dataU.getLatitude()[:]
+        lons = dataU.getLongitude()[:]
+        lats_rot, lons_rot = rot.geographic_to_rotated_spherical(lats, lons, phi, theta, psi)
+
+        lat_axis_rot = cdms2.createAxis(lats_rot).designateLatitude()
+        lon_axis_rot = cdms2.createAxis(lons_rot).designateLongitude()
+
+        dataU_rot = cdms2.createVariable(dataU[:], axes=[dataU.getTime(), lat_axis_rot, lon_axis_rot])
+        dataV_rot = cdms2.createVariable(dataV[:], axes=[dataV.getTime(), lat_axis_rot, lon_axis_rot])
+     
+        # Interpolate to a regular grid (SCRIP regridder)#
+
+       
+        # Determine new meridional wind #
+        
+
+
+    return new_vwind    
+        
+
+def reset_axes(data_rot, lats_orig, lons_orig, new_north_pole):
+    """Take data on a rotated spherical grid and return it
+    to a regular grid with the north pole at 90N, 0E."""
+
+    if new_north_pole == [90.0, 0.0]:
+        data = data_rot
+    else:
+
+	# Reset axes #
+	lats_rot = data.getLatitude()[:]
+	lons_rot = data.getLongitude()[:]
+	lats_reset, lons_reset = rotated_to_geographic_spherical(lats_rot, lons_rot, phir, thetar, psir)
+
+	# Interpolate back to original grid (SCRIP regridder) #
+
+
+    return data
+
+
 def main(inargs):
     """Run the program."""
     
     # Prepate input data #
 
-    indata = nio.InputData(inargs.infile, inargs.variable, 
+    indataU = nio.InputData(inargs.infileU, inargs.variableU, 
+                           **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude']))
+    indataV = nio.InputData(inargs.infileV, inargs.variableV, 
                            **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude']))
     
+    meridional_wind = rotate_meridional_wind(indataU, indataV, inargs.north_pole)
+
     # Extract the wave envelope #
 
-    outdata = numpy.zeros(list(indata.data.shape))
+    outdata_rot = numpy.zeros(list(indata.data.shape))
     ntime, nlat, nlon = indata.data.shape
     kmin, kmax = inargs.wavenumbers
     
     for time in xrange(0, ntime):
         for lat in xrange(0, nlat):
-            outdata[time, lat, :] = envelope(indata.data[time, lat, :], kmin, kmax)
+            outdata_rot[time, lat, :] = envelope(meridional_wind[time, lat, :], kmin, kmax)
     
     # Write output file #
+
+    outdata = reset_axes(outdata_rot, indataV.getLatitude(), indataV.getLongitude(), inargs.north_pole)
 
     var_atts = {'id': 'env',
                 'name': 'Amplitude of wave envelope',
@@ -130,12 +191,14 @@ author:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infile", type=str, help="Input file name, containing the meridional wind")
-    parser.add_argument("variable", type=str, help="Input file variable")
+    parser.add_argument("infileU", type=str, help="Input file name, containing the zonal wind")
+    parser.add_argument("variableU", type=str, help="Input file variable, for the zonal wind")
+    parser.add_argument("infileV", type=str, help="Input file name, containing the meridional wind")
+    parser.add_argument("variableV", type=str, help="Input file variable, for the meridional wind")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    parser.add_argument("--wavenumbers", type=int, nargs=2, default=[4,11],
-                        help="Wavenumber range [default = (4, 11)]")			
+    parser.add_argument("--wavenumbers", type=int, nargs=2, metvar=('LOWER', 'UPPER'), default=[2, 4],
+                        help="Wavenumber range [default = (2, 4)]")			
     parser.add_argument("--region", type=str, choices=nio.regions.keys(),
                         help="Region [default = entire]")
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
@@ -144,11 +207,13 @@ author:
                         help="Longitude range [default = entire]")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
+    parser.add_argument("--north_pole", type=float, nargs=2, metavar=('LAT', 'LON'), default=[90.0, 0.0],
+                        help="Location of north pole [default = (90, 0)]")		
     
     args = parser.parse_args()            
 
 
-    print 'Input file: ', args.infile
+    print 'Input files: ', args.infileU, args.infileV
     print 'Output file: ', args.outfile  
 
     main(args)

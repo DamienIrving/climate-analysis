@@ -247,7 +247,7 @@ def angular_distance(lat1deg, lon1deg, lat2deg, lon2deg):
     #calc taken from http://www.movable-type.co.uk/scripts/latlong.html
     #says it is based on the spherical law of cosines, but I need to verfiy this
     
-    return angular_dist
+    return _filter_tiny(angular_dist)
     
 
 def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
@@ -294,34 +294,6 @@ def north_pole_to_rotation_angles(latnp, lonnp):
     thetar = numpy.deg2rad(90.0 - latnp)
 
     return phir, thetar    
-
-
-def lat_lon_rotation_angle(phi, theta, psi):
-    """Determine the angle through which the zonal/meridional
-    axes have been rotated, given that the intersection point
-    between the geographic and rotated equators must be at 
-    (0, phir) in geographic coordinates.
-    
-    Input and output in radians.
-    """
-    phir, thetar, psir = numpy.deg2rad(phi), numpy.deg2rad(theta), numpy.deg2rad(psi)
-    step = numpy.deg2rad(10.0)
-    intersect_lat_geocoords, intersect_lon_geocoords = [numpy.array([0.0]), numpy.array([phir])]
-    intersect_lat_rotcoords, intersect_lon_rotcoords = geographic_to_rotated_spherical(intersect_lat_geocoords,
-                                                                                       intersect_lon_geocoords, 
-                                                                                       phir, thetar, psir)
-    ref_lat_geocoords, ref_lon_geocoords = rotated_to_geographic_spherical(intersect_lat_rotcoords + step, 
-                                                                           intersect_lon_rotcoords, 
-								           phir, thetar, psir)
-    xdiff = ref_lat_geocoords - intersect_lat_geocoords
-    ydiff = ref_lon_geocoords - intersect_lon_geocoords
-
-    #print numpy.rad2deg(ref_lon_geocoords), numpy.rad2deg(intersect_lon_geocoords)
-    #print numpy.rad2deg(xdiff), numpy.rad2deg(ydiff)
-    
-    angle = numpy.arctan2(ydiff, xdiff)
-
-    return filter_tiny(numpy.rad2deg(angle))
 			
             
 #############    
