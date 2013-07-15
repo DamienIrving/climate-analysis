@@ -80,32 +80,53 @@ def envelope(inwave, kmin, kmax):
 ## Wind data preparation ##
 ###########################
 
-def switch_axes(data, new_np, inverse=False,
-                startLat=-90.0, nlat=73, deltaLat=2.5, 
-                startLon=0.0, nlon=144, deltaLon=2.5):
+def rotate_vwind(dataU, dataV, new_np):
+    """Define the new meridional wind field, according to the 
+    position of the new north pole."""
+
+    if new_np == [90.0, 0.0]:
+        new_vwind = dataV
+    else:
+        dataU_rot_uniform = switch_axes(dataU, new_np)
+        dataV_rot_uniform = switch_axes(dataV, new_np)	
+        new_vwind = calc_vwind(dataU_rot_uniform, dataV_rot_uniform, new_np) 
+
+    return new_vwind    
+        
+
+def reset_axes(data_rot, grid, new_north_pole):
+    """Take data on a rotated spherical grid and return it
+    to a regular grid with the north pole at 90N, 0E."""
+
+    if new_north_pole == [90.0, 0.0]:
+        data = data_rot
+    else:
+        data = switch_axes(data_rot, grid)
+	
+    return data
+
+
+def switch_axes(data, new_np, invert=False):
     """Take some data, rotate the axes (according to the position
     of the new north pole), and regrid to uniform grid """
 
-    if new_np == [90.0, 0.0]:
-        new_data = data
-    else:
-        psi = 0.0
-        phi, theta = rot.north_pole_to_rotation_angles(new_np[0], new_np[1])   
-        
-        lats = data.getLatitude()[:]
-        lons = data.getLongitude()[:]
-        
-        if not inverse:
-            lats_rot, lons_rot = rot.geographic_to_rotated_spherical(lats, lons, phi, theta, psi)
-        else:
-            lats_rot, lons_rot = rot.rotated_to_geographic_spherical(lats, lons, phi, theta, psi)
-        
-        lat_axis_rot = cdms2.createAxis(lats_rot).designateLatitude()
-        lon_axis_rot = cdms2.createAxis(lons_rot).designateLongitude()
+    psi = 0.0
+    phi, theta = rot.north_pole_to_rotation_angles(new_np[0], new_np[1])   
 
-        data_rot = cdms2.createVariable(dataU[:], axes=[dataU.getTime(), lat_axis_rot, lon_axis_rot])
-	
-        data_rot_uniform = netcdf_io.regrid_uniform(dataU_rot, startLat, nlat, deltaLat, startLon, nlon, deltaLon)
+    lats = data.getLatitude()[:]
+    lons = data.getLongitude()[:]
+
+    if not invert:
+        lats_rot, lons_rot = rot.geographic_to_rotated_spherical(lats, lons, phi, theta, psi)
+    else:
+        lats_rot, lons_rot = rot.rotated_to_geographic_spherical(lats, lons, phi, theta, psi)
+
+    lat_axis_rot = cdms2.createAxis(lats_rot).designateLatitude()
+    lon_axis_rot = cdms2.createAxis(lons_rot).designateLongitude()
+
+    data_rot = cdms2.createVariable(data[:], axes=[data.getTime(), lat_axis_rot, lon_axis_rot])
+
+    data_rot_uniform = netcdf_io.regrid_uniform(data_rot, data.getGrid())
     
     return new_data
 
@@ -128,34 +149,6 @@ def calc_vwind(dataU, dataV, new_np, old_np=(90.0, 0.0)):
     return dataV_rot  
 
 
-def rotate_meridional_wind(dataU, dataV, new_np,
-                           startLat=-90.0, nlat=73, deltaLat=2.5, 
-			   startLon=0.0, nlon=144, deltaLon=2.5):
-    """Define the new meridional wind field, according to the 
-    position of the new north pole."""
-
-    if new_np == [90.0, 0.0]:
-        new_vwind = dataV
-    else:
-        dataU_rot_uniform = switch_axes(dataU, new_np)
-        dataV_rot_uniform = switch_axes(dataV, new_np)	
-        new_vwind = calc_vwind(dataU_rot_uniform, dataV_rot_uniform, new_np) 
-
-    return new_vwind    
-        
-
-def reset_axes(data_rot, lats_orig, lons_orig, new_north_pole):
-    """Take data on a rotated spherical grid and return it
-    to a regular grid with the north pole at 90N, 0E."""
-
-    if new_north_pole == [90.0, 0.0]:
-        data = data_rot
-    else:
-        data = switch_axes(data_rot, ### grid info)
-	
-    return data
-
-
 ##########
 ## Main ##
 ##########
@@ -166,11 +159,11 @@ def main(inargs):
     # Prepate input data #
 
     indataU = nio.InputData(inargs.infileU, inargs.variableU, 
-                           **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude']))
+                           **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude', 'grid']))
     indataV = nio.InputData(inargs.infileV, inargs.variableV, 
-                           **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude']))
+                           **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude', 'grid']))
     
-    meridional_wind = rotate_meridional_wind(indataU, indataV, inargs.north_pole)
+    vwind = rotate_vwind(indataU, indataV, inargs.north_pole)
 
     # Extract the wave envelope #
 
@@ -180,11 +173,11 @@ def main(inargs):
     
     for time in xrange(0, ntime):
         for lat in xrange(0, nlat):
-            outdata_rot[time, lat, :] = envelope(meridional_wind[time, lat, :], kmin, kmax)
+            outdata_rot[time, lat, :] = envelope(vwind[time, lat, :], kmin, kmax)
     
     # Write output file #
 
-    outdata = reset_axes(outdata_rot, indataV.getLatitude(), indataV.getLongitude(), inargs.north_pole)
+    outdata = reset_axes(outdata_rot, indataV.getGrid(), inargs.north_pole)
 
     var_atts = {'id': 'env',
                 'name': 'Amplitude of wave envelope',
@@ -192,10 +185,10 @@ def main(inargs):
                 'units': 'm s-1',
                 'history': 'Ref: Zimin et al. 2003. Mon. Wea. Rev. 131, 1011-1017. Wavenumber range: %s to %s' %(kmin, kmax)}
 
-    indata_list = [indata,]
+    indata_list = [indataU, indataV,]
     outdata_list = [outdata,]
     outvar_atts_list = [var_atts,]
-    outvar_axes_list = [indata.data.getAxisList(),]
+    outvar_axes_list = [indataU.data.getAxisList(),]
 
     nio.write_netcdf(inargs.outfile, 'Amplitude of wave envelope', 
                      indata_list, 
@@ -244,8 +237,11 @@ author:
                         help="Longitude range [default = entire]")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
+    parser.add_argument("--grid", type=float, nargs=6, metavar=('START_LAT', 'NLAT', 'DELTALAT', 'START_LON', 'NLON', 'DELTALON'),
+                        default=(-90.0, 73, 2.5, 0.0, 144, 2.5),
+                        help="Uniform regular grid to regrid data to [default = None]")
     parser.add_argument("--north_pole", type=float, nargs=2, metavar=('LAT', 'LON'), default=[90.0, 0.0],
-                        help="Location of north pole [default = (90, 0)]")		
+                        help="Location of north pole [default = (90, 0)]")0000		
     
     args = parser.parse_args()            
 

@@ -604,11 +604,19 @@ def normalise_data(indata, sub_mean=False):
     return data / std 
 
 
-def regrid_uniform(data, startLat, nlat, deltaLat, startLon, nlon, deltaLon):
+def regrid_uniform(data, target_grid):
     """Regrid data to a uniform output grid"""
 
     ingrid = data.getGrid()
-    outgrid = cdms2.createUniformGrid(startLat, nlat, deltaLat, startLon, nlon, deltaLon)
+    
+    if isinstance(target_grid, cdms2.grid.TransientRectGrid):
+        outgrid = target_grid
+    else:
+        assert isinstance(target_grid, (list, tuple)) and len(target_grid) == 6, \
+	'Target grid must be a cdms2.grid.TransientRectGrid or list specifying: startLat, nlat, deltaLat, startLon, nlon, deltaLon'
+	
+	startLat, nlat, deltaLat, startLon, nlon, deltaLon = target_grid
+        outgrid = cdms2.createUniformGrid(startLat, nlat, deltaLat, startLon, nlon, deltaLon)
     
     regridFunc = regrid2.Horizontal(ingrid, outgrid)
     
