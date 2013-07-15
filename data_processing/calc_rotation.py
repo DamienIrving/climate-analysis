@@ -46,6 +46,8 @@ import numpy
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 
+import MV2
+
 
 ##########################################
 ## Switching between coordinate systems ##
@@ -275,13 +277,18 @@ def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
     #angleA = numpy.arccos((numpy.cos(a) - numpy.cos(b)*numpy.cos(c)) / (numpy.sin(b)*numpy.sin(c)))
     #angleB = numpy.arccos((numpy.cos(b) - numpy.cos(c)*numpy.cos(a)) / (numpy.sin(c)*numpy.sin(a)))
     angleC = numpy.arccos((numpy.cos(c) - numpy.cos(a)*numpy.cos(b)) / (numpy.sin(a)*numpy.sin(b)))
+
+    if latA > latC:
+        rot_angle = -angleC if (lonB > lonA) else angleC
+    else:
+        rot_angle = angleC if (lonB > lonA) else -angleC
     
-    return angleC
+    return rot_angle
 
 
-###################
-## Miscellaneous ##
-###################
+#############################
+## North pole manipulation ##
+#############################
 
 def north_pole_to_rotation_angles(latnp, lonnp):
     """Convert position of rotated north pole to a rotation about the
@@ -294,6 +301,24 @@ def north_pole_to_rotation_angles(latnp, lonnp):
     thetar = numpy.deg2rad(90.0 - latnp)
 
     return phir, thetar    
+			
+			
+def rotate_vwind(dataU, dataV, new_np, old_np=(90.0, 0.0)):
+    """Calculate the new meridional wind field, according to the
+    new position of the north pole"""
+    
+    lats = dataU.getLatitude()[:]
+    lons = dataU.getLongitude()[:]
+    theta = numpy.zeros([len(lats), len(lons)])
+    for iy, lat in enumerate(lats):
+        for ix, lon in enumerate(lons):
+	    theta[iy, ix] = rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], lat, lon)
+    
+    wsp = numpy.sqrt(numpy.square(dataU) + numpy.square(dataV))
+    alpha = numpy.arctan2(dataV / dataU) - theta
+    dataV_rot = wsp * numpy.sin(alpha)
+
+    return dataV_rot     
 			
             
 #############    

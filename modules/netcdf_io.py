@@ -12,6 +12,7 @@ dict_filter          -- Filter dictionary
 get_datetime         -- Return datetime instances for list of dates/times
 hi_lo                -- Update highest and lowest value
 list_kwargs          -- List keyword arguments of a function
+regrid_uniform       -- Regrid data to a uniform output grid
 running_average      -- Calculate running average
 scale_offset         -- Apply scaling and offset factors
 temporal_aggregation -- Create a temporal aggregate of 
@@ -47,6 +48,7 @@ cdms2.setNetcdfShuffleFlag(0)
 cdms2.setNetcdfDeflateFlag(0)
 cdms2.setNetcdfDeflateLevelFlag(0)
 import MV2
+import regrid2
 
 from git import Repo
 REPO_DIR = os.path.join(os.environ['HOME'], 'git_repo', 'phd')
@@ -219,7 +221,7 @@ class InputData:
 	    'The grid must be a list'
 	    assert len(kwargs['grid']) == 6
             startLat, nlat, deltaLat, startLon, nlon, deltaLon = kwargs['grid']
-	    new_grid = cdms2.createUniformGrid(startLat, nlat, deltaLat, startLon, nlon, deltaLon)
+	    new_grid = True
 	    del kwargs['grid']
         else:
             new_grid = False
@@ -291,7 +293,7 @@ class InputData:
 	
         data = temporal_aggregation(data, agg, climatology=clim) if agg else data
         data = running_average(data, window) if window > 1 else data
-	data = data.regrid(new_grid) if new_grid else data
+	data = regrid_uniform(data, startLat, nlat, deltaLat, startLon, nlon, deltaLon) if new_grid else data
 
         if convert:
 	    data = convert_units(data)
@@ -601,6 +603,17 @@ def normalise_data(indata, sub_mean=False):
     
     return data / std 
 
+
+def regrid_uniform(data, startLat, nlat, deltaLat, startLon, nlon, deltaLon):
+    """Regrid data to a uniform output grid"""
+
+    ingrid = data.getGrid()
+    outgrid = cdms2.createUniformGrid(startLat, nlat, deltaLat, startLon, nlon, deltaLon)
+    
+    regridFunc = regrid2.Horizontal(ingrid, outgrid)
+    
+    return regridFunc(data)
+     
 
 def running_average(data, window):
     """Calculate running average with desired window."""

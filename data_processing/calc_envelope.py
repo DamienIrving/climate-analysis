@@ -25,6 +25,10 @@ sys.path.insert(0, module_dir)
 import calc_rotation as rot
 
 
+#########################
+## Envelope extraction ##
+#########################
+
 def constants(inwave):
     """Define the constants required to perform the Fourier & Hilbert transforms"""
 
@@ -72,34 +76,70 @@ def envelope(inwave, kmin, kmax):
     return numpy.abs(envelope) 
 
 
-def rotate_meridional_wind(dataU, dataV, new_north_pole):
-    """Define the new meridional wind field, according to the 
-    position of the new north pole."""
+###########################
+## Wind data preparation ##
+###########################
 
-    if new_north_pole == [90.0, 0.0]:
-        new_vwind = dataV
+def switch_axes(data, new_np, inverse=False,
+                startLat=-90.0, nlat=73, deltaLat=2.5, 
+                startLon=0.0, nlon=144, deltaLon=2.5):
+    """Take some data, rotate the axes (according to the position
+    of the new north pole), and regrid to uniform grid """
+
+    if new_np == [90.0, 0.0]:
+        new_data = data
     else:
-        
-        # Reset axes of input data (i.e. get dataU_rot, dataV_rot) #
         psi = 0.0
-        phi, theta = rot.north_pole_to_rotation_angles(new_north_pole[0], new_north_pole[1])   
+        phi, theta = rot.north_pole_to_rotation_angles(new_np[0], new_np[1])   
         
-        lats = dataU.getLatitude()[:]
-        lons = dataU.getLongitude()[:]
-        lats_rot, lons_rot = rot.geographic_to_rotated_spherical(lats, lons, phi, theta, psi)
-
+        lats = data.getLatitude()[:]
+        lons = data.getLongitude()[:]
+        
+        if not inverse:
+            lats_rot, lons_rot = rot.geographic_to_rotated_spherical(lats, lons, phi, theta, psi)
+        else:
+            lats_rot, lons_rot = rot.rotated_to_geographic_spherical(lats, lons, phi, theta, psi)
+        
         lat_axis_rot = cdms2.createAxis(lats_rot).designateLatitude()
         lon_axis_rot = cdms2.createAxis(lons_rot).designateLongitude()
 
-        dataU_rot = cdms2.createVariable(dataU[:], axes=[dataU.getTime(), lat_axis_rot, lon_axis_rot])
-        dataV_rot = cdms2.createVariable(dataV[:], axes=[dataV.getTime(), lat_axis_rot, lon_axis_rot])
-     
-        # Interpolate to a regular grid (SCRIP regridder)#
+        data_rot = cdms2.createVariable(dataU[:], axes=[dataU.getTime(), lat_axis_rot, lon_axis_rot])
+	
+        data_rot_uniform = netcdf_io.regrid_uniform(dataU_rot, startLat, nlat, deltaLat, startLon, nlon, deltaLon)
+    
+    return new_data
 
-       
-        # Determine new meridional wind #
-        
 
+def calc_vwind(dataU, dataV, new_np, old_np=(90.0, 0.0)):
+    """Calculate the new meridional wind field, according to the
+    new position of the north pole"""
+    
+    lats = dataU.getLatitude()[:]
+    lons = dataU.getLongitude()[:]
+    theta = numpy.zeros([len(lats), len(lons)])
+    for iy, lat in enumerate(lats):
+        for ix, lon in enumerate(lons):
+	    theta[iy, ix] = rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], lat, lon)
+    
+    wsp = numpy.sqrt(numpy.square(dataU) + numpy.square(dataV))
+    alpha = numpy.arctan2(dataV / dataU) - theta
+    dataV_rot = wsp * numpy.sin(alpha)
+
+    return dataV_rot  
+
+
+def rotate_meridional_wind(dataU, dataV, new_np,
+                           startLat=-90.0, nlat=73, deltaLat=2.5, 
+			   startLon=0.0, nlon=144, deltaLon=2.5):
+    """Define the new meridional wind field, according to the 
+    position of the new north pole."""
+
+    if new_np == [90.0, 0.0]:
+        new_vwind = dataV
+    else:
+        dataU_rot_uniform = switch_axes(dataU, new_np)
+        dataV_rot_uniform = switch_axes(dataV, new_np)	
+        new_vwind = calc_vwind(dataU_rot_uniform, dataV_rot_uniform, new_np) 
 
     return new_vwind    
         
@@ -111,17 +151,14 @@ def reset_axes(data_rot, lats_orig, lons_orig, new_north_pole):
     if new_north_pole == [90.0, 0.0]:
         data = data_rot
     else:
-
-	# Reset axes #
-	lats_rot = data.getLatitude()[:]
-	lons_rot = data.getLongitude()[:]
-	lats_reset, lons_reset = rotated_to_geographic_spherical(lats_rot, lons_rot, phir, thetar, psir)
-
-	# Interpolate back to original grid (SCRIP regridder) #
-
-
+        data = switch_axes(data_rot, ### grid info)
+	
     return data
 
+
+##########
+## Main ##
+##########
 
 def main(inargs):
     """Run the program."""
