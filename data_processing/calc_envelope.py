@@ -15,6 +15,9 @@ import os
 
 import argparse
 import numpy
+import re
+
+import cdms2
 
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
@@ -101,7 +104,7 @@ def reset_axes(data_rot, grid, new_north_pole):
     if new_north_pole == [90.0, 0.0]:
         data = data_rot
     else:
-        data = switch_axes(data_rot, grid)
+        data = switch_axes(data_rot, grid, invert=True)
 	
     return data
 
@@ -116,19 +119,28 @@ def switch_axes(data, new_np, invert=False):
     lats = data.getLatitude()[:]
     lons = data.getLongitude()[:]
 
-    if not invert:
-        lats_rot, lons_rot = rot.geographic_to_rotated_spherical(lats, lons, phi, theta, psi)
-    else:
-        lats_rot, lons_rot = rot.rotated_to_geographic_spherical(lats, lons, phi, theta, psi)
-
-    lat_axis_rot = cdms2.createAxis(lats_rot).designateLatitude()
-    lon_axis_rot = cdms2.createAxis(lons_rot).designateLongitude()
-
-    data_rot = cdms2.createVariable(data[:], axes=[data.getTime(), lat_axis_rot, lon_axis_rot])
-
-    data_rot_uniform = netcdf_io.regrid_uniform(data_rot, data.getGrid())
+    lats_rot, lons_rot = rot.rotate_spherical(lats, lons, phi, theta, psi, invert=invert)
     
-    return new_data
+    lat_axis_rot = cdms2.createAxis(lats_rot)
+    lat_axis_rot.designateLatitude()
+    lon_axis_rot = cdms2.createAxis(lons_rot)
+    lon_axis_rot.designateLongitude()
+
+    #grid_rot = cdms2.createGenericGrid(lats_rot, lons_rot)
+
+    if (re.match('^t', data.getOrder())):
+        axis_list = [data.getTime(), lat_axis_rot, lon_axis_rot]
+        order = 'tyx'
+    else: 
+        axis_list = [lat_axis_rot, lon_axis_rot]
+	order = 'yx'    
+    data_rot = cdms2.createVariable(data[:], axes=axis_list, order=order)  #grid=grid_rot
+
+    data_rot_uniform = nio.regrid_uniform(data_rot, data.getGrid())
+    
+    hello
+    
+    return data_rot_uniform
 
 
 def calc_vwind(dataU, dataV, new_np, old_np=(90.0, 0.0)):
@@ -241,7 +253,7 @@ author:
                         default=(-90.0, 73, 2.5, 0.0, 144, 2.5),
                         help="Uniform regular grid to regrid data to [default = None]")
     parser.add_argument("--north_pole", type=float, nargs=2, metavar=('LAT', 'LON'), default=[90.0, 0.0],
-                        help="Location of north pole [default = (90, 0)]")0000		
+                        help="Location of north pole [default = (90, 0)]")	
     
     args = parser.parse_args()            
 

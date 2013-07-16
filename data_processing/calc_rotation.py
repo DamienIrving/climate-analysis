@@ -73,7 +73,7 @@ def _lat_adjust(inlat):
    one where the latitude is 90 (pi/2) at the north pole
    and -90 (-pi/2) at the south pole (i.e. a geographic system).
    
-   Input and outpuit in radians.
+   Input and output in radians.
    """
    
    return numpy.deg2rad(90) - inlat 
@@ -83,14 +83,20 @@ def spherical_to_cartesian(lat_geographic, lon):
     """Take the latitude and longitude from a geographic spherical 
     coordinate system and convert to x, y, z of a cartesian system.
     
-    Radians expected.
+    Input in degrees.
     """
     
-    lat_spherical = _lat_adjust(lat_geographic)
+    assert numpy.shape(lat_geographic) == numpy.shape(lon), \
+    'Lat & lon data must be the same shape (i.e. on a mesh grid)'
     
-    x = numpy.cos(lon) * numpy.sin(lat_spherical)
-    y = numpy.sin(lon) * numpy.sin(lat_spherical)
-    z = numpy.cos(lat_spherical)
+    lat_geographic_rad = numpy.deg2rad(lat_geographic)
+    lon_rad = numpy.deg2rad(lon)
+    
+    lat_spherical_rad = _lat_adjust(lat_geographic_rad)
+    
+    x = numpy.cos(lon_rad) * numpy.sin(lat_spherical_rad)
+    y = numpy.sin(lon_rad) * numpy.sin(lat_spherical_rad)
+    z = numpy.cos(lat_spherical_rad)
  
     return x, y, z
 
@@ -100,19 +106,19 @@ def cartesian_to_spherical(x, y, z):
     and convert to latitude and longitude of a geographic spherical 
     system.
     
-    Output is in radians.
+    Output is in degrees.
     """
     
-    y = _filter_tiny(y)
-    x = _filter_tiny(x)
+#    y = _filter_tiny(y)
+#    x = _filter_tiny(x)
     
-    lat_spherical = numpy.arccos(z)    
-    lat_geographic = _lat_adjust(lat_spherical)
+    lat_spherical_rad = numpy.arccos(z)    
+    lat_geographic_rad = _lat_adjust(lat_spherical_rad)
     
-    lon = numpy.arctan2(y, x)
-    lon_correct_range = _adjust_lon_range(lon)
+    lon_rad = numpy.arctan2(y, x)
+    lon_correct_range_rad = _adjust_lon_range(lon_rad)
 
-    return lat_geographic, lon_correct_range
+    return numpy.rad2deg(lat_geographic_rad), numpy.rad2deg(lon_correct_range_rad)
 
 
 #################################
@@ -155,17 +161,21 @@ def rotation_matrix(phir, thetar, psir, inverse=False):
     return matrix
 
 
-def geographic_to_rotated_cartesian(x, y, z, phir, thetar, psir):
-    """Covert from unrotated geographic cartestian coordinates (x, y, z) to
-    rotated cartesian coordinates (xrot, yrot, zrot), according to the rotation 
+def rotate_cartesian(x, y, z, phir, thetar, psir, invert=False):
+    """Rotate cartestian coordinate system (x, y, z) according to a rotation 
     about the origial z axis (phir), new z axis after the first rotation (thetar),
     and about the final z axis (psir).
     
-    Input angles are expected in radians.
+    Invert can be true or false.
+    Input angles are expected in degrees.
     """
 
-    input_matrix = numpy.array([x, y, z])
-    A = rotation_matrix(phir, thetar, psir)
+    phir_rad = numpy.deg2rad(phir)
+    thetar_rad = numpy.deg2rad(thetar)
+    psir_rad = numpy.deg2rad(psir)
+
+    input_matrix = numpy.array([x.flatten(), y.flatten(), z.flatten()])
+    A = rotation_matrix(phir_rad, thetar_rad, psir_rad, inverse=invert)
         
     dot_product = numpy.dot(A, input_matrix)
     xrot = dot_product[0, :]
@@ -175,56 +185,24 @@ def geographic_to_rotated_cartesian(x, y, z, phir, thetar, psir):
     return xrot, yrot, zrot
     
 
-def geographic_to_rotated_spherical(lat, lon, phir, thetar, psir):
-    """Convert from geographic spherical coordinates (lat, lon) to
-    rotated spherical coordinates (latrot, lonrot), according to the rotation 
+def rotate_spherical(lat, lon, phir, thetar, psir, invert=False):
+    """Rotate spherical coordinate system (lat, lon) according to the rotation 
     about the origial z axis (phir), new x axis after the first rotation (thetar),
     and about the final z axis (psir).
     
-    Inputs and outputs are all in radians.
+    Inputs and outputs are all in degrees.
     """
     
-    x, y, z = spherical_to_cartesian(lat, lon)
-    xrot, yrot, zrot = geographic_to_rotated_cartesian(x, y, z, phir, thetar, psir)
-    latrot, lonrot = cartesian_to_spherical(xrot, yrot, zrot)
+    lon_mesh, lat_mesh = numpy.meshgrid(lon, lat)
+    
+    x, y, z = spherical_to_cartesian(lat_mesh, lon_mesh)
+    xrot, yrot, zrot = rotate_cartesian(x, y, z, phir, thetar, psir, invert=invert)
+    latrot_flat, lonrot_flat = cartesian_to_spherical(xrot, yrot, zrot)
+
+    latrot = numpy.reshape(latrot_flat, lat_mesh.shape)[:, 0]
+    lonrot = numpy.reshape(lonrot_flat, lon_mesh.shape)[0, :]
     
     return latrot, lonrot 
-
-
-def rotated_to_geographic_cartesian(xrot, yrot, zrot, phir, thetar, psir):
-    """Covert from rotated cartestian coordinates (xrot, yrot, zrot) to
-    geographic cartesian coordinates (x, y, z), according to the rotation 
-    about the origial z axis (phir), new z axis after the first rotation (thetar),
-    and about the final z axis (psir).
-    
-    Input angles expected in radians.
-    """
-    
-    input_matrix = numpy.array([xrot, yrot, zrot])
-    A_inverse = rotation_matrix(phir, thetar, psir, inverse=True)
-        
-    dot_product = numpy.dot(A_inverse, input_matrix)
-    x = dot_product[0, :]
-    y = dot_product[1, :]
-    z = dot_product[2, :]
-    
-    return x, y, z
-
-
-def rotated_to_geographic_spherical(latrot, lonrot, phir, thetar, psir):
-    """Convert from rotated spherical coordinates (latrot, lonrot) to
-    geographic spherical coordinates (lat, lon), according to the rotation 
-    about the origial z axis (phir), new z axis after the first rotation (thetar),
-    and about the final z axis (psir).
-    
-    Input and output angles are in radians.
-    """
-    
-    xrot, yrot, zrot = spherical_to_cartesian(latrot, lonrot)
-    x, y, z = rotated_to_geographic_cartesian(xrot, yrot, zrot, phir, thetar, psir)
-    lat, lon = cartesian_to_spherical(x, y, z)
-    
-    return lat, lon
 
 
 ############################
@@ -294,11 +272,11 @@ def north_pole_to_rotation_angles(latnp, lonnp):
     """Convert position of rotated north pole to a rotation about the
     original z axis (phir) and new z axis after the first rotation (thetar).
     
-    Inputs expected in degrees. Output in radians.
+    Input and output in degrees.
     """
 
-    phir = numpy.deg2rad(lonnp)
-    thetar = numpy.deg2rad(90.0 - latnp)
+    phir = lonnp
+    thetar = 90.0 - latnp
 
     return phir, thetar    
 			
@@ -335,12 +313,11 @@ def print_pairs(data1, data2):
         print data1[i], data2[i]
 	
 
-def test_inversion(npole_lat, npole_lon, psir_deg):
+def test_inversion(npole_lat, npole_lon, psir):
     """Rotate and restore data to check if you get
     back what you put in"""
     
-    phir, thetar = north_pole_to_rotation_angles(npole_lat, npole_lon)   #30.0, 0.0 gives a nice PSA line
-    psir = numpy.deg2rad(psir_deg)  
+    phir, thetar = north_pole_to_rotation_angles(npole_lat, npole_lon)   #30.0, 0.0 gives a nice PSA line  
 
     print phir, thetar, psir
     
@@ -350,7 +327,7 @@ def test_inversion(npole_lat, npole_lon, psir_deg):
     print 'start'
     print_pairs(start_lats, start_lons)
 
-    rotated_lats, rotated_lons = geographic_to_rotated_spherical(numpy.deg2rad(start_lats), numpy.deg2rad(start_lons), phir, thetar, psir)
+    rotated_lats, rotated_lons = rotate_spherical(start_lats, start_lons, phir, thetar, psir)
     print 'rotated'
     print_pairs(numpy.rad2deg(rotated_lats), numpy.rad2deg(rotated_lons))
 
