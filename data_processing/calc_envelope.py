@@ -90,65 +90,70 @@ def rotate_vwind(dataU, dataV, new_np):
     if new_np == [90.0, 0.0]:
         new_vwind = dataV
     else:
-        dataU_rot_uniform = switch_axes(dataU, new_np)
-        dataV_rot_uniform = switch_axes(dataV, new_np)	
-        new_vwind = calc_vwind(dataU_rot_uniform, dataV_rot_uniform, new_np) 
+        lats = dataU.getLatitude()[:]
+	lons = dataU.getLongitude()[:]
+	dataU_rot = switch_axes(dataU, lats, lons, new_np)
+        dataV_rot = switch_axes(dataV, lats, lons, new_np)	
+        new_vwind = calc_vwind(dataU_rot, dataV_rot, lats, lons, new_np) 
 
     return new_vwind    
         
 
-def reset_axes(data_rot, grid, new_north_pole):
+def reset_axes(data_rot, lats, lons, new_north_pole):
     """Take data on a rotated spherical grid and return it
     to a regular grid with the north pole at 90N, 0E."""
 
     if new_north_pole == [90.0, 0.0]:
         data = data_rot
     else:
-        data = switch_axes(data_rot, grid, invert=True)
+        data = switch_axes(data_rot, lats, lons, invert=True)
 	
     return data
 
 
-def switch_axes(data, new_np, invert=False):
-    """Take some data, rotate the axes (according to the position
-    of the new north pole), and regrid to uniform grid """
+def switch_axes(data, lats, lons, new_np, invert=False):
+    """Take some data on a regular grid (lat, lon), rotate the axes 
+    (according to the position of the new north pole) and regrid to 
+    a regular grid with the same resolution as the original
+    
+    Note inputs for css.Cssgrid:
+    - lats_rot and lons_rot are a flattened meshgrid
+    - lats and lons are not (i.e. they are just axis values)
+    
+    Not input for rgrd:
+    - the input data array must be flattened 
+    
+    """
 
     psi = 0.0
     phi, theta = rot.north_pole_to_rotation_angles(new_np[0], new_np[1])   
 
-    lats = data.getLatitude()[:]
-    lons = data.getLongitude()[:]
-
     lats_rot, lons_rot = rot.rotate_spherical(lats, lons, phi, theta, psi, invert=invert)
-    
-    lat_axis_rot = cdms2.createAxis(lats_rot)
-    lat_axis_rot.designateLatitude()
-    lon_axis_rot = cdms2.createAxis(lons_rot)
-    lon_axis_rot.designateLongitude()
 
-    #grid_rot = cdms2.createGenericGrid(lats_rot, lons_rot)
-
-    if (re.match('^t', data.getOrder())):
-        axis_list = [data.getTime(), lat_axis_rot, lon_axis_rot]
-        order = 'tyx'
+    grid_instance = css.Cssgrid(lats_rot, lons_rot, lats, lons)
+    if numpy.rank(data) == 3:
+        data_rot = numpy.zeros(numpy.shape(data))
+        for tstep in range(0, len(numpy.shape(data)[0])):
+	    regrid = grid_instance.rgrd(data[tstep, :, :])
+	    data_rot[tstep, :, :] = numpy.transpose(regrid)
     else: 
-        axis_list = [lat_axis_rot, lon_axis_rot]
-	order = 'yx'    
-    data_rot = cdms2.createVariable(data[:], axes=axis_list, order=order)  #grid=grid_rot
-
-    data_rot_uniform = nio.regrid_uniform(data_rot, data.getGrid())
+        data_rot = grid_instance.rgrd(data)
     
-    hello
+    #### rgrd will produce an output array that has the shape (lon, lat), not (lat, lon).
+    #### numpy.transpose seems to fix this.
     
-    return data_rot_uniform
+    #### NOTE: the regridding of rgrd seems to be fairly accurate (i.e. when you give it 
+    #### the same input and output grid) except at the poles (ie when the lat = 90 or -90)
+    #### This may relate to the problems at the poles the css2c and csc2s have - I'm not
+    #### sure if rgrd uses these functions.
+    
+    return data_rot
 
 
-def calc_vwind(dataU, dataV, new_np, old_np=(90.0, 0.0)):
+def calc_vwind(dataU, dataV, lats, lons, new_np, old_np=(90.0, 0.0)):
     """Calculate the new meridional wind field, according to the
     new position of the north pole"""
     
-    lats = dataU.getLatitude()[:]
-    lons = dataU.getLongitude()[:]
     theta = numpy.zeros([len(lats), len(lons)])
     for iy, lat in enumerate(lats):
         for ix, lon in enumerate(lons):
@@ -189,7 +194,7 @@ def main(inargs):
     
     # Write output file #
 
-    outdata = reset_axes(outdata_rot, indataV.getGrid(), inargs.north_pole)
+    outdata = reset_axes(outdata_rot, indataV.getLatitiude()[:], indataV.getLongitude()[:], inargs.north_pole)
 
     var_atts = {'id': 'env',
                 'name': 'Amplitude of wave envelope',

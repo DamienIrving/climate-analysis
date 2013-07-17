@@ -47,6 +47,7 @@ from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 
 import MV2
+import css
 
 
 ##########################################
@@ -68,57 +69,57 @@ def _adjust_lon_range(lons):
     return numpy.where(lons < 0.0, lons + 2.0*numpy.pi, lons)
 
 
-def _lat_adjust(inlat):
-   """Switch latitude between a typical spherical system and
-   one where the latitude is 90 (pi/2) at the north pole
-   and -90 (-pi/2) at the south pole (i.e. a geographic system).
-   
-   Input and output in radians.
-   """
-   
-   return numpy.deg2rad(90) - inlat 
-   
-
-def spherical_to_cartesian(lat_geographic, lon):
-    """Take the latitude and longitude from a geographic spherical 
-    coordinate system and convert to x, y, z of a cartesian system.
-    
-    Input in degrees.
-    """
-    
-    assert numpy.shape(lat_geographic) == numpy.shape(lon), \
-    'Lat & lon data must be the same shape (i.e. on a mesh grid)'
-    
-    lat_geographic_rad = numpy.deg2rad(lat_geographic)
-    lon_rad = numpy.deg2rad(lon)
-    
-    lat_spherical_rad = _lat_adjust(lat_geographic_rad)
-    
-    x = numpy.cos(lon_rad) * numpy.sin(lat_spherical_rad)
-    y = numpy.sin(lon_rad) * numpy.sin(lat_spherical_rad)
-    z = numpy.cos(lat_spherical_rad)
- 
-    return x, y, z
-
-
-def cartesian_to_spherical(x, y, z):
-    """Take the x, y ,z values from the cartesian coordinate system 
-    and convert to latitude and longitude of a geographic spherical 
-    system.
-    
-    Output is in degrees.
-    """
-    
-#    y = _filter_tiny(y)
-#    x = _filter_tiny(x)
-    
-    lat_spherical_rad = numpy.arccos(z)    
-    lat_geographic_rad = _lat_adjust(lat_spherical_rad)
-    
-    lon_rad = numpy.arctan2(y, x)
-    lon_correct_range_rad = _adjust_lon_range(lon_rad)
-
-    return numpy.rad2deg(lat_geographic_rad), numpy.rad2deg(lon_correct_range_rad)
+#def _lat_adjust(inlat):
+#   """Switch latitude between a typical spherical system and
+#   one where the latitude is 90 (pi/2) at the north pole
+#   and -90 (-pi/2) at the south pole (i.e. a geographic system).
+#   
+#   Input and output in radians.
+#   """
+#   
+#   return numpy.deg2rad(90) - inlat 
+#   
+#
+#def spherical_to_cartesian(lat_geographic, lon):
+#    """Take the latitude and longitude from a geographic spherical 
+#    coordinate system and convert to x, y, z of a cartesian system.
+#    
+#    Input in degrees.
+#    """
+#    
+#    assert numpy.shape(lat_geographic) == numpy.shape(lon), \
+#    'Lat & lon data must be the same shape (i.e. on a mesh grid)'
+#    
+#    lat_geographic_rad = numpy.deg2rad(lat_geographic)
+#    lon_rad = numpy.deg2rad(lon)
+#    
+#    lat_spherical_rad = _lat_adjust(lat_geographic_rad)
+#    
+#    x = numpy.cos(lon_rad) * numpy.sin(lat_spherical_rad)
+#    y = numpy.sin(lon_rad) * numpy.sin(lat_spherical_rad)
+#    z = numpy.cos(lat_spherical_rad)
+# 
+#    return x, y, z
+#
+#
+#def cartesian_to_spherical(x, y, z):
+#    """Take the x, y ,z values from the cartesian coordinate system 
+#    and convert to latitude and longitude of a geographic spherical 
+#    system.
+#    
+#    Output is in degrees.
+#    """
+#    
+##    y = _filter_tiny(y)
+##    x = _filter_tiny(x)
+#    
+#    lat_spherical_rad = numpy.arccos(z)    
+#    lat_geographic_rad = _lat_adjust(lat_spherical_rad)
+#    
+#    lon_rad = numpy.arctan2(y, x)
+#    lon_correct_range_rad = _adjust_lon_range(lon_rad)
+#
+#    return numpy.rad2deg(lat_geographic_rad), numpy.rad2deg(lon_correct_range_rad)
 
 
 #################################
@@ -191,16 +192,20 @@ def rotate_spherical(lat, lon, phir, thetar, psir, invert=False):
     and about the final z axis (psir).
     
     Inputs and outputs are all in degrees.
+    Output is a flattened lat and lon array, with element-wise pairs corresponding 
+    to every grid point.
     """
     
-    lon_mesh, lat_mesh = numpy.meshgrid(lon, lat)
+    lon_mesh, lat_mesh = numpy.meshgrid(lon, lat)  # This is the correct order
     
-    x, y, z = spherical_to_cartesian(lat_mesh, lon_mesh)
+    x, y, z = css.cssgridmodule.css2c(lat_mesh.flatten(), lon_mesh.flatten())
     xrot, yrot, zrot = rotate_cartesian(x, y, z, phir, thetar, psir, invert=invert)
-    latrot_flat, lonrot_flat = cartesian_to_spherical(xrot, yrot, zrot)
+    latrot, lonrot = css.cssgridmodule.csc2s(xrot, yrot, zrot)
+    
+    #### At the poles, csc2s produces longitude values that are 180 degrees out of
+    #### phase with the original data.
+    #### It also outputs lons that are (-180, 180), but this is not really a problem.
 
-    latrot = numpy.reshape(latrot_flat, lat_mesh.shape)[:, 0]
-    lonrot = numpy.reshape(lonrot_flat, lon_mesh.shape)[0, :]
     
     return latrot, lonrot 
 
