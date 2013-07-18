@@ -191,7 +191,7 @@ def rotate_spherical(lat, lon, phir, thetar, psir, invert=False):
     about the origial z axis (phir), new x axis after the first rotation (thetar),
     and about the final z axis (psir).
     
-    Inputs and outputs are all in degrees.
+    Inputs and outputs are all in degrees. Longitudes are output [0, 360]
     Output is a flattened lat and lon array, with element-wise pairs corresponding 
     to every grid point.
     """
@@ -207,7 +207,7 @@ def rotate_spherical(lat, lon, phir, thetar, psir, invert=False):
     #### It also outputs lons that are (-180, 180), but this is not really a problem.
 
     
-    return latrot, lonrot 
+    return latrot, _adjust_lon_range(lonrot) 
 
 
 ############################
@@ -273,37 +273,33 @@ def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
 ## North pole manipulation ##
 #############################
 
-def north_pole_to_rotation_angles(latnp, lonnp):
+def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=None):
     """Convert position of rotated north pole to a rotation about the
     original z axis (phir) and new z axis after the first rotation (thetar).
     
     Input and output in degrees.
+    
+    The prime meridian point should be a list of length 2 (lat, lon), representing a
+    point through which the prime meridian should travel.
+    
     """
 
-    phir = lonnp
-    thetar = 90.0 - latnp
+    psir = 90.0 - lonnp
+    thetar = 90.0 - latnp 
 
-    return phir, thetar    
-			
-			
-def rotate_vwind(dataU, dataV, new_np, old_np=(90.0, 0.0)):
-    """Calculate the new meridional wind field, according to the
-    new position of the north pole"""
+    if prime_meridian_point:
+        ## I don't fully understand the setting of phir
+        assert len(prime_meridian_point) == 2, \
+	'The prime point must be a list of length 2'
+	pm_lat = prime_meridian_point[0] 
+	pm_lon = prime_meridian_point[1] 
+        lat_temp, phir = rotate_spherical(numpy.array([pm_lat,]), numpy.array([pm_lon,]), 0.0, thetar, psir)
+    else:
+        phir = 0.0
     
-    lats = dataU.getLatitude()[:]
-    lons = dataU.getLongitude()[:]
-    theta = numpy.zeros([len(lats), len(lons)])
-    for iy, lat in enumerate(lats):
-        for ix, lon in enumerate(lons):
-	    theta[iy, ix] = rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], lat, lon)
-    
-    wsp = numpy.sqrt(numpy.square(dataU) + numpy.square(dataV))
-    alpha = numpy.arctan2(dataV / dataU) - theta
-    dataV_rot = wsp * numpy.sin(alpha)
-
-    return dataV_rot     
+    return phir, thetar, psir    
 			
-            
+              
 #############    
 ## Testing ##
 #############

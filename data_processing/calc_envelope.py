@@ -18,6 +18,7 @@ import numpy
 import re
 
 import cdms2
+import css
 
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
@@ -88,12 +89,12 @@ def rotate_vwind(dataU, dataV, new_np):
     position of the new north pole."""
 
     if new_np == [90.0, 0.0]:
-        new_vwind = dataV
+        new_vwind = dataV.data
     else:
-        lats = dataU.getLatitude()[:]
-	lons = dataU.getLongitude()[:]
-	dataU_rot = switch_axes(dataU, lats, lons, new_np)
-        dataV_rot = switch_axes(dataV, lats, lons, new_np)	
+        lats = dataU.data.getLatitude()[:]
+	lons = dataU.data.getLongitude()[:]
+	dataU_rot = switch_axes(dataU.data[:], lats, lons, new_np)
+        dataV_rot = switch_axes(dataV.data[:], lats, lons, new_np)	
         new_vwind = calc_vwind(dataU_rot, dataV_rot, lats, lons, new_np) 
 
     return new_vwind    
@@ -106,12 +107,12 @@ def reset_axes(data_rot, lats, lons, new_north_pole):
     if new_north_pole == [90.0, 0.0]:
         data = data_rot
     else:
-        data = switch_axes(data_rot, lats, lons, invert=True)
+        data = switch_axes(data_rot, lats, lons, new_north_pole, invert=True)
 	
     return data
 
 
-def switch_axes(data, lats, lons, new_np, invert=False):
+def switch_axes(data, lats, lons, new_np, pm_point=None, invert=False):
     """Take some data on a regular grid (lat, lon), rotate the axes 
     (according to the position of the new north pole) and regrid to 
     a regular grid with the same resolution as the original
@@ -125,19 +126,19 @@ def switch_axes(data, lats, lons, new_np, invert=False):
     
     """
 
-    psi = 0.0
-    phi, theta = rot.north_pole_to_rotation_angles(new_np[0], new_np[1])   
+    phi, theta, psi = rot.north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)   
 
     lats_rot, lons_rot = rot.rotate_spherical(lats, lons, phi, theta, psi, invert=invert)
 
     grid_instance = css.Cssgrid(lats_rot, lons_rot, lats, lons)
     if numpy.rank(data) == 3:
         data_rot = numpy.zeros(numpy.shape(data))
-        for tstep in range(0, len(numpy.shape(data)[0])):
-	    regrid = grid_instance.rgrd(data[tstep, :, :])
+        for tstep in range(0, numpy.shape(data)[0]):
+	    regrid = grid_instance.rgrd(data[tstep, :, :].flatten())
 	    data_rot[tstep, :, :] = numpy.transpose(regrid)
     else: 
-        data_rot = grid_instance.rgrd(data)
+        regrid = grid_instance.rgrd(data.flatten())
+	data_rot = numpy.transpose(regrid)
     
     #### rgrd will produce an output array that has the shape (lon, lat), not (lat, lon).
     #### numpy.transpose seems to fix this.
@@ -157,10 +158,10 @@ def calc_vwind(dataU, dataV, lats, lons, new_np, old_np=(90.0, 0.0)):
     theta = numpy.zeros([len(lats), len(lons)])
     for iy, lat in enumerate(lats):
         for ix, lon in enumerate(lons):
-	    theta[iy, ix] = rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], lat, lon)
+	    theta[iy, ix] = rot.rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], lat, lon)
     
     wsp = numpy.sqrt(numpy.square(dataU) + numpy.square(dataV))
-    alpha = numpy.arctan2(dataV / dataU) - theta
+    alpha = numpy.arctan2(dataV, dataU) - theta
     dataV_rot = wsp * numpy.sin(alpha)
 
     return dataV_rot  
@@ -184,8 +185,8 @@ def main(inargs):
 
     # Extract the wave envelope #
 
-    outdata_rot = numpy.zeros(list(indata.data.shape))
-    ntime, nlat, nlon = indata.data.shape
+    outdata_rot = numpy.zeros(list(indataU.data.shape))
+    ntime, nlat, nlon = indataU.data.shape
     kmin, kmax = inargs.wavenumbers
     
     for time in xrange(0, ntime):
@@ -194,7 +195,7 @@ def main(inargs):
     
     # Write output file #
 
-    outdata = reset_axes(outdata_rot, indataV.getLatitiude()[:], indataV.getLongitude()[:], inargs.north_pole)
+    outdata = reset_axes(outdata_rot, indataV.data.getLatitude()[:], indataV.data.getLongitude()[:], inargs.north_pole)
 
     var_atts = {'id': 'env',
                 'name': 'Amplitude of wave envelope',
@@ -222,8 +223,10 @@ reference:
 
 example (abyss.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_envelope.py 
-  /work/dbirving/datasets/Merra/data/va_Merra_250hPa_daily_native.nc va 
-  /work/dbirving/processed/indices/data/env_Merra_250hPa_daily_native.nc
+  /work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc ua
+  /work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc va 
+  /work/dbirving/processed/indices/data/env_Merra_250hPa_monthly_y73x144_np30-270.nc
+  --north_pole 30 270
 
 note:
 
@@ -244,7 +247,7 @@ author:
     parser.add_argument("variableV", type=str, help="Input file variable, for the meridional wind")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    parser.add_argument("--wavenumbers", type=int, nargs=2, metvar=('LOWER', 'UPPER'), default=[2, 4],
+    parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[2, 4],
                         help="Wavenumber range [default = (2, 4)]")			
     parser.add_argument("--region", type=str, choices=nio.regions.keys(),
                         help="Region [default = entire]")
@@ -258,7 +261,7 @@ author:
                         default=(-90.0, 73, 2.5, 0.0, 144, 2.5),
                         help="Uniform regular grid to regrid data to [default = None]")
     parser.add_argument("--north_pole", type=float, nargs=2, metavar=('LAT', 'LON'), default=[90.0, 0.0],
-                        help="Location of north pole [default = (90, 0)]")	
+                        help="Location of north pole [default = (90, 0)] - (30, 270) for PSA pattern")	
     
     args = parser.parse_args()            
 

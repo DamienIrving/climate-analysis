@@ -293,7 +293,7 @@ class InputData:
 	
         data = temporal_aggregation(data, agg, climatology=clim) if agg else data
         data = running_average(data, window) if window > 1 else data
-	data = regrid_uniform(data, startLat, nlat, deltaLat, startLon, nlon, deltaLon) if new_grid else data
+	data = regrid_uniform(data, [startLat, nlat, deltaLat, startLon, nlon, deltaLon]) if new_grid else data
 
         if convert:
 	    data = convert_units(data)
