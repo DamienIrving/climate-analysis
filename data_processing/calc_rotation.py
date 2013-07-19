@@ -6,25 +6,15 @@ module_dir = os.path.join(os.environ['HOME'], 'data_processing')
 sys.path.insert(0, module_dir)
 
 Included functions:
-cartesian_to_spherical  
-  -- Convert cartesian (x, y, z) to spherical (lat, lon)
-spherical_to_cartesian  
-  -- Convert spherical (lat, lon) to cartesian (x, y, z)
 
 rotation_matrix  
   -- Get the rotation matrix or its inverse
-geographic_to_rotated_cartesian  
-  --  Convert from unrotated geographic cartestian coordinates (x, y, z) to
+rotate_cartesian  
+  --  Convert from geographic cartestian coordinates (x, y, z) to
       rotated cartesian coordinates (xrot, yrot, zrot)  
-geographic_to_rotated_spherical
+rotate_spherical
   --  Convert from geographic spherical coordinates (lat, lon) to
       rotated spherical coordinates (latrot, lonrot)
-rotated_to_geographic_cartesian
-  --  Covert from rotated cartestian coordinates (xrot, yrot, zrot) to
-      geographic cartesian coordinates (x, y, z)
-rotated_to_geographic_spherical
-  --  Convert from rotated spherical coordinates (latrot, lonrot) to
-      geographic spherical coordinates (lat, lon)
 
 angular_distance
   --  Calculate angular distance between two points on a sphere
@@ -67,59 +57,6 @@ def _adjust_lon_range(lons):
     """
     
     return numpy.where(lons < 0.0, lons + 2.0*numpy.pi, lons)
-
-
-#def _lat_adjust(inlat):
-#   """Switch latitude between a typical spherical system and
-#   one where the latitude is 90 (pi/2) at the north pole
-#   and -90 (-pi/2) at the south pole (i.e. a geographic system).
-#   
-#   Input and output in radians.
-#   """
-#   
-#   return numpy.deg2rad(90) - inlat 
-#   
-#
-#def spherical_to_cartesian(lat_geographic, lon):
-#    """Take the latitude and longitude from a geographic spherical 
-#    coordinate system and convert to x, y, z of a cartesian system.
-#    
-#    Input in degrees.
-#    """
-#    
-#    assert numpy.shape(lat_geographic) == numpy.shape(lon), \
-#    'Lat & lon data must be the same shape (i.e. on a mesh grid)'
-#    
-#    lat_geographic_rad = numpy.deg2rad(lat_geographic)
-#    lon_rad = numpy.deg2rad(lon)
-#    
-#    lat_spherical_rad = _lat_adjust(lat_geographic_rad)
-#    
-#    x = numpy.cos(lon_rad) * numpy.sin(lat_spherical_rad)
-#    y = numpy.sin(lon_rad) * numpy.sin(lat_spherical_rad)
-#    z = numpy.cos(lat_spherical_rad)
-# 
-#    return x, y, z
-#
-#
-#def cartesian_to_spherical(x, y, z):
-#    """Take the x, y ,z values from the cartesian coordinate system 
-#    and convert to latitude and longitude of a geographic spherical 
-#    system.
-#    
-#    Output is in degrees.
-#    """
-#    
-##    y = _filter_tiny(y)
-##    x = _filter_tiny(x)
-#    
-#    lat_spherical_rad = numpy.arccos(z)    
-#    lat_geographic_rad = _lat_adjust(lat_spherical_rad)
-#    
-#    lon_rad = numpy.arctan2(y, x)
-#    lon_correct_range_rad = _adjust_lon_range(lon_rad)
-#
-#    return numpy.rad2deg(lat_geographic_rad), numpy.rad2deg(lon_correct_range_rad)
 
 
 #################################
@@ -214,9 +151,26 @@ def rotate_spherical(lat, lon, phir, thetar, psir, invert=False):
 ## Spherical trigonometry ##
 ############################
 
+def _arccos_check(data):
+    """Adjust for precision errors when usinmg numpy.arccos
+    
+    numpy.arccos is only defined [-1, 1]. Sometimes due to precision
+    you can get values that are very slightly > 1 or < -1, which causes
+    numpy.arccos to be undefinded. This function adjusts for this. 
+    
+    """
+    
+    data = numpy.where(data < -1.0, -1.0, data)
+    data = numpy.where(data > 1.0, 1.0, data)
+    
+    return data
+
+
 def angular_distance(lat1deg, lon1deg, lat2deg, lon2deg):
     """Find the angular distance between two points on
     the sphere.
+    
+    Calculation taken from http://www.movable-type.co.uk/scripts/latlong.html
     
     Assumes a sphere of unit radius.
     
@@ -246,7 +200,7 @@ def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
       Point A = Location of original north pole
       Point B = Location of new north pole
       Point C = Point of interest
-      Input in degrees (converted to radians for calcs)
+      Input in degrees
     
     Output:
       Angle C = Rotation angle between old and new north pole
@@ -259,15 +213,36 @@ def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
 
     #angleA = numpy.arccos((numpy.cos(a) - numpy.cos(b)*numpy.cos(c)) / (numpy.sin(b)*numpy.sin(c)))
     #angleB = numpy.arccos((numpy.cos(b) - numpy.cos(c)*numpy.cos(a)) / (numpy.sin(c)*numpy.sin(a)))
-    angleC = numpy.arccos((numpy.cos(c) - numpy.cos(a)*numpy.cos(b)) / (numpy.sin(a)*numpy.sin(b)))
+    angleC = numpy.arccos(_arccos_check((numpy.cos(c) - numpy.cos(a)*numpy.cos(b)) / (numpy.sin(a)*numpy.sin(b))))
 
-    if latA > latC:
-        rot_angle = -angleC if (lonB > lonA) else angleC
-    else:
-        rot_angle = angleC if (lonB > lonA) else -angleC
+    rot_angle = _rotation_sign(angleC, latA, latC, lonA, lonB)
     
     return rot_angle
 
+
+def _rotation_sign(angleC, latA, latC, lonA, lonB):
+   """Determine the sign of the rotation angle.
+   
+   The basic premise that that if the lon of the new pole (lonB) 
+   is greater than the lon of the original pole (lonA), then the 
+   sign of the angle is negative.
+   
+   However, if the latitude of the original north pole (latA) is less
+   than the latitude of the new north pole (latC) (which can't happen if
+   the original pole was at 90N) then the reverse is true. 
+   
+   if latA > latC:
+       rot_angle = -angleC if (lonB > lonA) else angleC
+   else:
+       rot_angle = angleC if (lonB > lonA) else -angleC      
+   
+   """
+   
+   angleC_lon_adjust = numpy.where(lonB > lonA, -angleC, angleC)
+   angleC_lat_adjust = numpy.where(latA < latC, -angleC_lon_adjust, angleC_lon_adjust)
+   
+   return angleC_lat_adjust
+   
 
 #############################
 ## North pole manipulation ##
