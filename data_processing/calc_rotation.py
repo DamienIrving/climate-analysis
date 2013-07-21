@@ -156,8 +156,8 @@ def _arccos_check(data):
     
     numpy.arccos is only defined [-1, 1]. Sometimes due to precision
     you can get values that are very slightly > 1 or < -1, which causes
-    numpy.arccos to be undefinded. This function adjusts for this. 
-    
+    numpy.arccos to be undefinded. This function adjusts for this.
+        
     """
     
     data = numpy.where(data < -1.0, -1.0, data)
@@ -185,7 +185,7 @@ def angular_distance(lat1deg, lon1deg, lat2deg, lon2deg):
     angular_dist = numpy.arccos(numpy.sin(lat1)*numpy.sin(lat2) + numpy.cos(lat1)*numpy.cos(lat2)*numpy.cos(lon2 - lon1))
     #calc taken from http://www.movable-type.co.uk/scripts/latlong.html
     #says it is based on the spherical law of cosines, but I need to verfiy this
-    
+      
     return _filter_tiny(angular_dist)
     
 
@@ -201,49 +201,64 @@ def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
       Point B = Location of new north pole
       Point C = Point of interest
       Input in degrees
+      
+      There can be only one specified original and new north pole, 
+      but multiple points of interest.
     
     Output:
       Angle C = Rotation angle between old and new north pole
       Output in radians
     """
+    
+    ##Some assertions (e.g. latA, lonA, latB, lonB must be len=1, while latC and lonC do not 
+    ##Perhaps change names of latA etc to something more meaningful (e.g. new_np_lat)?
 
-    a = angular_distance(latB, lonB, latC, lonC)
-    b = angular_distance(latA, lonA, latC, lonC)
-    c = angular_distance(latA, lonA, latB, lonB)
+    lonC_mesh, latC_mesh = numpy.meshgrid(lonC, latC)  # This is the correct order
+    latC_flat = latC_mesh.flatten()
+    lonC_flat = lonC_mesh.flatten()
+    latA_flat = numpy.repeat(latA, len(lonC_flat))
+    lonA_flat = numpy.repeat(lonA, len(lonC_flat))
+    latB_flat = numpy.repeat(latB, len(lonC_flat))
+    lonB_flat = numpy.repeat(lonB, len(lonC_flat))
+
+    a_vals = angular_distance(latB_flat, lonB_flat, latC_flat, lonC_flat)
+    b_vals = angular_distance(latA_flat, lonA_flat, latC_flat, lonC_flat)
+    c_vals = angular_distance(latA_flat, lonA_flat, latB_flat, lonB_flat)
+
+    #### QUICK FIX - MUST BE REPLACED BY A FIX FOR WHEN locationC = locationA or locationB, which makes a or b zero
+    a_vals = numpy.where(a_vals == 0.0, 1.0, a_vals)
+    b_vals = numpy.where(b_vals == 0.0, 1.0, b_vals)
+    ####
 
     #angleA = numpy.arccos((numpy.cos(a) - numpy.cos(b)*numpy.cos(c)) / (numpy.sin(b)*numpy.sin(c)))
     #angleB = numpy.arccos((numpy.cos(b) - numpy.cos(c)*numpy.cos(a)) / (numpy.sin(c)*numpy.sin(a)))
-    angleC = numpy.arccos(_arccos_check((numpy.cos(c) - numpy.cos(a)*numpy.cos(b)) / (numpy.sin(a)*numpy.sin(b))))
+    angleC = numpy.arccos(_arccos_check((numpy.cos(c_vals) - numpy.cos(a_vals)*numpy.cos(b_vals)) / (numpy.sin(a_vals)*numpy.sin(b_vals))))
 
-    rot_angle = _rotation_sign(angleC, latA, latC, lonA, lonB)
+    rot_angle = _rotation_sign(angleC, latB_flat, latC_flat, lonB_flat, lonC_flat)
     
-    return rot_angle
+    return numpy.reshape(angleC, [len(latC), len(lonC)])
 
 
-def _rotation_sign(angleC, latA, latC, lonA, lonB):
+def _rotation_sign(angleC, latB, latC, lonB, lonC):
    """Determine the sign of the rotation angle.
    
-   The basic premise that that if the lon of the new pole (lonB) 
-   is greater than the lon of the original pole (lonA), then the 
+   The basic premise that if the lon of the point of interest (lonC) 
+   is less than the lon of the new pole (lonB), then the 
    sign of the angle is negative.
    
-   However, if the latitude of the original north pole (latA) is less
-   than the latitude of the new north pole (latC) (which can't happen if
-   the original pole was at 90N) then the reverse is true. 
-   
-   if latA > latC:
-       rot_angle = -angleC if (lonB > lonA) else angleC
-   else:
-       rot_angle = angleC if (lonB > lonA) else -angleC      
+   However, if the latitude of the point of interest (latC) is greater
+   than the latitude of the new north pole (latB) then the reverse is true. 
    
    """
    
-   angleC_lon_adjust = numpy.where(lonB > lonA, -angleC, angleC)
-   angleC_lat_adjust = numpy.where(latA < latC, -angleC_lon_adjust, angleC_lon_adjust)
+   #### FIX - NEED TO FIGURE OUT CORRECT METHOD OF DETERMINING THE SIGN ####
+   
+   angleC_lon_adjust = numpy.where(lonC < lonB, -angleC, angleC)
+   angleC_lat_adjust = numpy.where(latC > latB, -angleC_lon_adjust, angleC_lon_adjust)
    
    return angleC_lat_adjust
    
-
+    
 #############################
 ## North pole manipulation ##
 #############################

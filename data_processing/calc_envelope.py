@@ -155,13 +155,7 @@ def calc_vwind(dataU, dataV, lats, lons, new_np, old_np=(90.0, 0.0)):
     """Calculate the new meridional wind field, according to the
     new position of the north pole"""
     
-    dims = [len(lats), len(lons)]
-    old_np_lat = numpy.tile(old_np[0], dims)
-    old_np_lon = numpy.tile(old_np[1], dims)
-    new_np_lat = numpy.tile(new_np[0], dims)
-    new_np_lon = numpy.tile(new_np[1], dims)
-
-    theta = rot.rotation_angle(old_np_lat, old_np_lon, new_np_lat, new_np_lon, lat, lon)
+    theta = rot.rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], lats, lons)
     theta = numpy.resize(theta, numpy.shape(dataU))
     
     wsp = numpy.sqrt(numpy.square(dataU) + numpy.square(dataV))
