@@ -26,14 +26,13 @@ import calc_rotation as rot
 def quick_plot(data, outfile_name, projection='cyl', contour=False, ticks=None):
     """Quickly plot data"""
     
-    
-
     plot_map.multiplot(data,
                        ofile=outfile_name, 
 		       projection=projection,
                        ticks=ticks,
                        draw_axis=True, delat=15, delon=30, equator=True,
                        contour=contour)
+
 
 def test_dataset(lat=True, plot=False):
     """Create the data for testing. It is a spatial field with 
@@ -111,14 +110,64 @@ def test_rotation_angles(new_np, old_np=[90.0, 0.0]):
 
     test_data = cdms2.createVariable(theta[:], grid=grid)
     
-    outfile = 'rotation_angle_magnitude_for_pole_lat%s_lon%s.png' %(str(new_np[0]), str(new_np[1]))
+    outfile = 'rotation_angle_for_pole_lat%s_lon%s.png' %(str(new_np[0]), str(new_np[1]))
     quick_plot([test_data,], outfile)
 
+
+############################
+## Test the final product ##
+############################
+
+def test_final_env():
+    """Plot the final wave envelope, together with anomalous wind
+    and streamfunction anomaly"""
+    
+    env_file = '/work/dbirving/test_data/env_Merra_250hPa_monthly-anom_y73x144_np30-270.nc'
+    uwnd_file = '/work/dbirving/datasets/Merra/data/processed/ua_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc'
+    vwnd_file = '/work/dbirving/datasets/Merra/data/processed/va_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc'
+    contour_file = '/work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc'
+    
+
+    for year in range(1979, 2012):
+        for month in ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']:
+            
+            date = '%s-%s-01' %(str(year), str(month))	    
+            out_file = '/work/dbirving/test_data/plots/test_env_'+date+'.png'
+
+	    env_info = [env_file, 'env', date, date, 'None']
+	    uwnd_info = [uwnd_file, 'ua', date, date, 'None']
+	    vwnd_info = [vwnd_file, 'va', date, date, 'None']
+	    contour_info = [contour_file, 'sf', date, date, 'None']
+
+	    env_data = plot_map.extract_data([env_info,])
+	    uwnd_data = plot_map.extract_data([uwnd_info,])
+	    vwnd_data = plot_map.extract_data([vwnd_info,])
+	    contour_data = plot_map.extract_data([contour_info,])
+
+	    title = 'Wave envelope, 250hPa wind & sf anomaly, %s' %(date)
+
+	    plot_map.multiplot(env_data,
+        		       ofile=out_file,
+        		       title=title,
+        		       projection='cyl',
+                               colourbar_colour='OrRd',
+                               ticks=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+                               extend='both',
+        		       units='$m s^{-1}$',
+        		       contour_data=contour_data, 
+        		       uwnd_data=uwnd_data,
+        		       vwnd_data=vwnd_data,
+                	       quiver_thin=7,
+                	       key_value=5,
+                               contour=True,
+                	       #quiver_scale=220, quiver_width=0.002,
+        		       image_size=10)
 
 
 if __name__ == '__main__':
     
-    test_rotation_angles([30, 270])
+    #test_rotation_angles([30, 270])
+    test_final_env()
     
 
    

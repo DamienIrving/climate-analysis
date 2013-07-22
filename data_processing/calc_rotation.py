@@ -6,7 +6,6 @@ module_dir = os.path.join(os.environ['HOME'], 'data_processing')
 sys.path.insert(0, module_dir)
 
 Included functions:
-
 rotation_matrix  
   -- Get the rotation matrix or its inverse
 rotate_cartesian  
@@ -26,6 +25,21 @@ plot_equator
 
 Reference:
 Rotation theory: http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
+
+Required improvements:
+1. In rotation_angle(), what do I do when side a or b of the spherical
+   triangle is equal to zero (and hence no triangle exists)? This occurs 
+   when the point of interest (C) is at the same point as the old (A) or 
+   new (B) north pole. 
+2. I've come across a number of issues related to numerical precision.
+   These have been covered over with makeshfit functions like _filter_tiny()
+   and _arccos_check(), however I would prefer if these functions weren't 
+   required.
+3. Many of the functions lack assertions (e.g. assert that the input is a 
+   numpy array).
+4. Look for opportunities to process data as multidimensional arrays, instead
+   of using mesh/flatten or looping.
+   
 """
 
 #############################
@@ -50,13 +64,15 @@ def _filter_tiny(data, threshold=0.000001):
     return numpy.where(numpy.absolute(data) < threshold, 0.0, data)
  
 
-def _adjust_lon_range(lons):
+def _adjust_lon_range(lons, radians=True, start=0.0):
     """Express longitude values in the range [0, 2pi]
     
-    Input and output in radians.
+    Input and output can be in radians or degrees.
     """
     
-    return numpy.where(lons < 0.0, lons + 2.0*numpy.pi, lons)
+    add = 2.0*numpy.pi if radians else 360.0
+    
+    return numpy.where(lons < start, lons + add, lons)
 
 
 #################################
@@ -230,33 +246,37 @@ def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
     b_vals = numpy.where(b_vals == 0.0, 1.0, b_vals)
     ####
 
-    #angleA = numpy.arccos((numpy.cos(a) - numpy.cos(b)*numpy.cos(c)) / (numpy.sin(b)*numpy.sin(c)))
-    #angleB = numpy.arccos((numpy.cos(b) - numpy.cos(c)*numpy.cos(a)) / (numpy.sin(c)*numpy.sin(a)))
-    angleC = numpy.arccos(_arccos_check((numpy.cos(c_vals) - numpy.cos(a_vals)*numpy.cos(b_vals)) / (numpy.sin(a_vals)*numpy.sin(b_vals))))
+    #angleA_magnitude = numpy.arccos((numpy.cos(a) - numpy.cos(b)*numpy.cos(c)) / (numpy.sin(b)*numpy.sin(c)))
+    #angleB_magnitude = numpy.arccos((numpy.cos(b) - numpy.cos(c)*numpy.cos(a)) / (numpy.sin(c)*numpy.sin(a)))
+    angleC_magnitude = numpy.arccos(_arccos_check((numpy.cos(c_vals) - numpy.cos(a_vals)*numpy.cos(b_vals)) / (numpy.sin(a_vals)*numpy.sin(b_vals))))
 
-    rot_angle = _rotation_sign(angleC, latB_flat, latC_flat, lonB_flat, lonC_flat)
+    angleC = _rotation_sign(angleC_magnitude, lonB_flat, lonC_flat)
     
     return numpy.reshape(angleC, [len(latC), len(lonC)])
 
 
-def _rotation_sign(angleC, latB, latC, lonB, lonC):
+def _rotation_sign(angleC, lonB, lonC):
    """Determine the sign of the rotation angle.
    
-   The basic premise that if the lon of the point of interest (lonC) 
-   is less than the lon of the new pole (lonB), then the 
-   sign of the angle is negative.
+   The basic premise is that grid points with a longitude in the range of
+   180 degrees less than the longitude of the new pole have a negative angle.
    
-   However, if the latitude of the point of interest (latC) is greater
-   than the latitude of the new north pole (latB) then the reverse is true. 
+   Not sure if this is a universal rule (i.e. this works for when the original
+   north pole was at 90N, 0E. 
    
    """
    
-   #### FIX - NEED TO FIGURE OUT CORRECT METHOD OF DETERMINING THE SIGN ####
+   lonB_360 = _adjust_lon_range(lonB, radians=False, start=0.0)
+   lonC_360 = _adjust_lon_range(lonC, radians=False, start=0.0)
    
-   angleC_lon_adjust = numpy.where(lonC < lonB, -angleC, angleC)
-   angleC_lat_adjust = numpy.where(latC > latB, -angleC_lon_adjust, angleC_lon_adjust)
+   new_start = lonB_360[0] - 180.0
    
-   return angleC_lat_adjust
+   lonB_360 = _adjust_lon_range(lonB_360, radians=False, start=new_start)
+   lonC_360 = _adjust_lon_range(lonC_360, radians=False, start=new_start)
+   
+   angleC_adjusted = numpy.where(lonC_360 < lonB_360, -angleC, angleC)
+   
+   return angleC_adjusted
    
     
 #############################
@@ -290,42 +310,9 @@ def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=None):
     return phir, thetar, psir    
 			
               
-#############    
-## Testing ##
-#############
-
-def print_pairs(data1, data2):
-    """Print pairs of data values"""
-    
-    assert len(data1) == len(data2), \
-    "Input vectors must be same length"
-    
-    for i in range(0, len(data1)):
-        print data1[i], data2[i]
-	
-
-def test_inversion(npole_lat, npole_lon, psir):
-    """Rotate and restore data to check if you get
-    back what you put in"""
-    
-    phir, thetar = north_pole_to_rotation_angles(npole_lat, npole_lon)   #30.0, 0.0 gives a nice PSA line  
-
-    print phir, thetar, psir
-    
-    start_lats = numpy.arange(-90, 105, 15)
-    start_lons = numpy.arange(0, 390, 30)
-
-    print 'start'
-    print_pairs(start_lats, start_lons)
-
-    rotated_lats, rotated_lons = rotate_spherical(start_lats, start_lons, phir, thetar, psir)
-    print 'rotated'
-    print_pairs(numpy.rad2deg(rotated_lats), numpy.rad2deg(rotated_lons))
-
-    restored_lats, restored_lons = rotated_to_geographic_spherical(rotated_lats, rotated_lons, phir, thetar, psir)
-    print 'restored'
-    print_pairs(numpy.rad2deg(restored_lats), numpy.rad2deg(restored_lons))
-
+################### 
+## Visualisation ##
+###################
 
 def plot_equator(npole_lat, npole_lon, psir_deg, projection='cyl', ofile=False):
     """Plot the rotated equator"""

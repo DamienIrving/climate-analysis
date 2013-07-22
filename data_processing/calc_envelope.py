@@ -139,10 +139,7 @@ def switch_axes(data, lats, lons, new_np, pm_point=None, invert=False):
     else: 
         regrid = grid_instance.rgrd(data.flatten())
 	data_rot = numpy.transpose(regrid)
-    
-    #### rgrd will produce an output array that has the shape (lon, lat), not (lat, lon).
-    #### numpy.transpose seems to fix this.
-    
+        
     #### NOTE: the regridding of rgrd seems to be fairly accurate (i.e. when you give it 
     #### the same input and output grid) except at the poles (ie when the lat = 90 or -90)
     #### This may relate to the problems at the poles the css2c and csc2s have - I'm not
@@ -225,8 +222,16 @@ example (abyss.earthsci.unimelb.edu.au):
   /work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc va 
   /work/dbirving/processed/indices/data/env_Merra_250hPa_monthly_y73x144_np30-270.nc
   --north_pole 30 270
+  --time 1995-06-01 1995-08-01 None
+  --time 1994-08-01 1994-10-01 None
+  --time 1982-09-01 1982-11-01 None
 
-note:
+required improvements:
+  1. Testing indicates that the regridding is accurate everywhere except at 
+     the poles. This may relate to the problems with csc2s and css2c, which
+     I logged as an issue on the UVCDAT Github page.
+  2. Look for opportunities to process data as multidimensional arrays, instead
+     of using mesh/flatten or looping.
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -246,7 +251,7 @@ author:
     parser.add_argument("outfile", type=str, help="Output file name")
 
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[2, 4],
-                        help="Wavenumber range [default = (2, 4)]")			
+                        help="Wavenumber range [default = (2, 4)]. The upper and lower values are included (i.e. default selection is 2, 3, 4).")			
     parser.add_argument("--region", type=str, choices=nio.regions.keys(),
                         help="Region [default = entire]")
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
@@ -257,7 +262,7 @@ author:
                         help="Time period [default = entire]")
     parser.add_argument("--grid", type=float, nargs=6, metavar=('START_LAT', 'NLAT', 'DELTALAT', 'START_LON', 'NLON', 'DELTALON'),
                         default=(-90.0, 73, 2.5, 0.0, 144, 2.5),
-                        help="Uniform regular grid to regrid data to [default = None]")
+                        help="Uniform regular grid to regrid data to [default = 2.5 by 2.5 deg]")
     parser.add_argument("--north_pole", type=float, nargs=2, metavar=('LAT', 'LON'), default=[90.0, 0.0],
                         help="Location of north pole [default = (90, 0)] - (30, 270) for PSA pattern")	
     
