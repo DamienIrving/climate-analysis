@@ -1,3 +1,8 @@
+## Login notes ##
+
+ssh -Y STUDENT\\dbirving@abyss.earthsci.unimelb.edu.au
+
+
 ## List of improvements I plan to make ##
 
 # Data storage requirements #
@@ -66,6 +71,9 @@
   - Look into documentation generators. Perhaps I can generate html to put on my bitbucket wiki?
     - Epydoc is the only one that does both HTML and PDF or LaTeX
   - Start a code review group at uni?
+  - Unitesting
+    - Use DocTest for quick tests in the docstring for very simple functions
+    - Write separate testing code using unittest for more comprehensive testing
   - Take the next step and learn about packaging code for sharing and 'release'
     - Tgis includes specifying the license and installation instructions/files
     - See https://ams.confex.com/ams/93Annual/webprogram/Paper223958.html
