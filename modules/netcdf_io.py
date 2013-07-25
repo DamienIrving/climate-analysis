@@ -655,12 +655,26 @@ def temporal_aggregation(data, output_timescale, climatology=False):
 
     Reference:
     http://www2-pcmdi.llnl.gov/cdat/source/api-reference/cdutil.times.html
+    
+    Required improvements:
+    1. Needs to include the ability to calculate the anomaly timeseries. The 
+       code would look something like this (note that I think ANNUALCYCLE has a
+       bug, which I have submitted to UV-CDAT support
+       
+       cdutil.setTimeBoundsMonthly(x)
+       monthly_clim = cdutil.ANNUALCYCLE.climatology(x(time=('1981-01-01', '2000-12-31')))
+       monthly_anom = cdutil.ANNUALCYCLE.departures(x, ref=monthly_clim)
+       
+       In the end, the user should be able to choose the output to be 'raw', 
+       'climatology' or 'anomaly'
 
     """
 
     ######
     #does it need to be cdutil.times?????
     #####
+
+    assert isinstance(data, cdms2.tvariable.TransientVariable)
 
     # Find input timescale #
     

@@ -84,9 +84,16 @@ def envelope(inwave, kmin, kmax):
 ## Wind data preparation ##
 ###########################
 
-def rotate_vwind(dataU, dataV, new_np):
+def rotate_vwind(dataU, dataV, new_np, anomaly=False):
     """Define the new meridional wind field, according to the 
     position of the new north pole."""
+
+    ## The anomaly option is not yet implemented. It needs to make
+    ## use of the nio.temproal_aggregation function, once this is 
+    ## updated to calculate anomalies
+
+    assert isinstance(dataU, nio.InputData)
+    assert isinstance(dataV, nio.InputData)
 
     if new_np == [90.0, 0.0]:
         new_vwind = dataV.data
@@ -227,10 +234,12 @@ example (abyss.earthsci.unimelb.edu.au):
   --time 1982-09-01 1982-11-01 None
 
 required improvements:
-  1. Testing indicates that the regridding is accurate everywhere except at 
+  1. The rotate_vwind function needs to be able to calculate the vwind anomaly
+  2. Testing indicates that the regridding is accurate everywhere except at 
      the poles. This may relate to the problems with csc2s and css2c, which
-     I logged as an issue on the UVCDAT Github page.
-  2. Look for opportunities to process data as multidimensional arrays, instead
+     I logged as an issue on the UVCDAT Github page. They responded that it's not
+     their package, so I might need to contact someone else.
+  3. Look for opportunities to process data as multidimensional arrays, instead
      of using mesh/flatten or looping.
 
 author:

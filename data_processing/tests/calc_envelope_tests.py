@@ -1,3 +1,17 @@
+"""Tests for the calc_envelope.py and associated calc_rotation.py
+scripts.
+
+Required improvements:
+1. Incorporate the unittest module
+2. test_axis_switch() needs to get a little more detailed. There
+   is a 'dip' in the switched latitude field that needs to be looked
+   at. It might be useful to plot the difference in the before and
+   after fields.
+
+"""
+
+
+
 import os, sys
 import pdb
 
