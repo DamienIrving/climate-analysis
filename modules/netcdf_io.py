@@ -31,6 +31,7 @@ __author__ = 'Damien Irving'
 import os
 import sys
 import re
+import copy
 
 import inspect
 import calendar
@@ -102,27 +103,32 @@ class InputData:
 	"""Extract desired data from an input file.
 	
 	Keyword arguments (with examples):
-	grid      -- (startLat,nlat,deltaLat,
-	              startLon,nlon,deltaLon)
+	
+	SUBSETTORS
         latitude  -- (-30, 30)
         level     -- (1000.)
         longitude -- (120, 165)
         region    -- aus
         time      -- ('1979-01-01', '2000-12-31', 'MONTH/SEASON'), 
-		     options: 'JAN', 'FEB', ..., 'DEC'
-		              'DJF', ... 'SON'
-	agg       -- ('DJF', False)
-	             (i.e. aggregates the data into 
-                      a timeseries of DJF values)
-	             (2nd element of the tuple is 
-                      optional & indicates whether the 
-                      climatology is desired)
-        runave    -- window size for the running average 
-	convert   -- True or False (for converting units)
-	
-        note that the temporal aggregation will happen 
-        before the running average
+		     MONTH/SEASON (optional 3rd argument): 
+                     'JAN', 'FEB', ..., 'DEC'
+		     'DJF', ... 'SON'	
 
+	MANIPULATORS
+	agg       -- (quantity, season, lower_time_bound, upper_time_bound)
+                     quantity: 'raw', 'climatology' or 'anomaly'
+                     season: ANNUALCYCLE, SEASONALCYCLE, DJF, MJJASO etc
+                     time_bounds (optional):
+                     e.g. '1979-01-01', '1980-12-31'
+        convert   -- True or False (for converting units)
+        grid      -- (startLat,nlat,deltaLat,
+	              startLon,nlon,deltaLon)
+        runave    -- window size for the running average 
+
+        The order of operations is as follows: subset data,
+        temporal aggregation (agg), running average (runave),
+        regrid (grid), convert units 
+       		
         self.data has all the attributes and methods
 	of a typical cdms2 variable. For instance:
         - self.data.getLatitude()
@@ -131,47 +137,12 @@ class InputData:
 	- self.data.attributes (dictionary incl. _FillValue, units etc)       
 	
         """
-        
-        # Read the input data #
 
-        infile = cdms2.open(fname)       
-	
-	# Check for critical attributes #
-	
-	#global file attributes
-	assert hasattr(infile, 'history'), \
-        'Input file must have history global attribute'
-        
-	#file dimension attributes
-	for dimension in infile.listdimension():
-	    if not dimension in ['bound', 'nv']:
-	        assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
-	        'Input dimensions must have an axis attribute that is X, Y, Z or T'
-	
-	#variable attributes
-	var_atts = infile.listattribute(vname=var_id)
-	assert 'missing_value' in var_atts, \
-        'Input variable must have missing_value attribute'
-	assert 'long_name' in var_atts, \
-        'Input variable must have long_name attribute'
-	assert 'units' in var_atts, \
-        'Input variable must have units attribute'
+        infile = cdms2.open(fname)       	
+        _infile_attribute_check(infile, var_id)
+        kwargs['order'] = _define_order(infile, var_id)
 
-        # Sort out the order #
-        
-	input_order = ''
-	for dimension in infile.listdimension(vname=var_id):
-	    if not dimension in ['bound', 'nv']:
-	        input_order = input_order + infile.getAxis(dimension).axis.lower()
-	
-        order = 'tyxz'
-        for item in 'tyxz':
-            if not item in input_order:
-                order = order.replace(item, '')
-        
-        kwargs['order'] = order
-
-        # Convert region to lat/lon #
+        # Subset input data #
 
         if kwargs.has_key('region'):   
             try:
@@ -180,120 +151,35 @@ class InputData:
                 self.minlon, self.maxlon = kwargs['longitude'][0:2]
                 self.region = kwargs['region']
 	    except KeyError:
-                print 'region not defined - using all spatial data...'
-	    
+                print 'region not defined - using all spatial data...'    
 	    del kwargs['region']
-
-        # Deal with kwargs that are either none or not directly relevant # 
-	# to the cdms2 input subsetter #
 
         #remove None values
         for key in kwargs:
             if not kwargs[key]:
 	        del kwargs[key]
-        
-        #determine aggregation method
+
+        subsettors = ['latitude', 'level', 'longitude', 'time']
+        subset_kwargs = []
+        for key in kwargs.keys():
+            if key in subsettors:
+                subset_kwargs[key] = kwargs[key]
+
+        data = _subset_data(infile, var_id, subset_kwargs)        
+       
+        # Manipulate the subsetted data #  
+
 	if kwargs.has_key('agg'):
-	    if isinstance(kwargs['agg'], (list, tuple)):
-                assert len(kwargs['agg']) == 2 
-                assert type(kwargs['agg'][0]) == str
-                assert type(kwargs['agg'][1]) == bool
-                agg, clim = kwargs['agg']    
-	    else:
-	        agg = str(kwargs['agg'])
-                clim = False
-            del kwargs['agg']
-	else:
-            agg = False
+	    timescale = kwargs['agg'][0]
+            quantity = kwargs['agg'][1]
+            times = [kwargs['agg'][2], kwargs['agg'][3]] if len(kwargs['agg']) > 2 else None
+            data = temporal_aggregation(data, timescale, quantity, time_period=times)
 
-        #determine the running average
         if kwargs.has_key('runave'):
-            assert type(kwargs['runave']) == int, \
-            'Window for running average must be an integer'
-            window = kwargs['runave']
-            del kwargs['runave']
-        else:
-            window = None
+            data = running_average(data, window) if window > 1 else data
 
-        #determine the regridding
         if kwargs.has_key('grid'):
-            assert isinstance(kwargs['grid'], (list, tuple)), \
-	    'The grid must be a list'
-	    assert len(kwargs['grid']) == 6
-            startLat, nlat, deltaLat, startLon, nlon, deltaLon = kwargs['grid']
-	    new_grid = True
-	    del kwargs['grid']
-        else:
-            new_grid = False
-
-	# Extract data from input file accroding to the time selection #
-	
-	month_dict = {'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 
-	              'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG': 8, 
-                      'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12}
-	season_dict = {'DJF': ('JAN', 'FEB', 'DEC'),
-	               'MAM': ('MAR', 'APR', 'MAY'),
-                       'JJA': ('JUN', 'JUL', 'AUG'),
-                       'SON': ('SEP', 'OCT', 'NOV')}
-        date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'	
-	if kwargs.has_key('time'):
-	    assert isinstance(kwargs['time'], (list, tuple)), \
-	    'time selector must be a list or tuple'
-
-            assert len(kwargs['time']) == 2 or len(kwargs['time']) == 3, \
-	    'time selector must be length two or three'
-	    
-	    assert re.search(date_pattern, kwargs['time'][0]) or kwargs['time'][0].lower() == 'none'
-	    assert re.search(date_pattern, kwargs['time'][1]) or kwargs['time'][1].lower() == 'none'
-	    valid_trange = re.search(date_pattern, kwargs['time'][0]) and re.search(date_pattern, kwargs['time'][1])
-	    
-            if len(kwargs['time']) == 3 and kwargs['time'][2].lower() != 'none':
-	        assert (kwargs['time'][2] in month_dict.keys()) or (kwargs['time'][2] in season_dict.keys())
-		
-		month_selector = kwargs['time'][2]
-		date_selector = kwargs['time'][0:2]
-		del kwargs['time']
-            
-	        #make the month/season selection
-                months = (month_selector,) if month_selector in month_dict.keys() else season_dict[month_selector]
-                datetimes = infile.getAxis('time').asComponentTime()
-                years_all = []
-	        for datetime in datetimes:
-                    years_all.append(int(str(datetime).split('-')[0]))
-                years_unique = list(set(years_all))
-
-                extracts = []
-                for year in years_unique:
-                    for month in months: 
-                        start_date = str(year)+'-'+str(month_dict[month])+'-1 00:00:0.0'
-                        end_date = str(year)+'-'+str(month_dict[month])+'-'+str(calendar.monthrange(year, month_dict[month])[-1])+' 23:59:0.0'
-                        kwargs['time'] = (start_date, end_date)
-                        try:
-                            extracts.append(infile(var_id, **kwargs))
-                        except cdms2.error.CDMSError:
-                            continue
-                                           
-                data = MV2.concatenate(extracts, axis=0) if len(extracts) > 1 else extracts[0]      
-                
-		#make the date range selection
-		if valid_trange:
-		    data = data(time=date_selector)
-	    
-	    elif valid_trange:
-	        kwargs['time'] = kwargs['time'][0:2]
-		data = infile(var_id, **kwargs)
-	    	
-	    else:
-		del kwargs['time']
-		data = infile(var_id, **kwargs)
-        else:            	         
-            data = infile(var_id, **kwargs)
-        
-	# Manipulate data as required (running ave, regridding etc) #
-	
-        data = temporal_aggregation(data, agg, climatology=clim) if agg else data
-        data = running_average(data, window) if window > 1 else data
-	data = regrid_uniform(data, [startLat, nlat, deltaLat, startLon, nlon, deltaLon]) if new_grid else data
+            data = regrid_uniform(data, kwargs['grid'])            
 
         if convert:
 	    data = convert_units(data)
@@ -481,6 +367,29 @@ def convert_units(data):
     return newdata 
 
 
+def _define_order(infile, var_id, template='tyxz'):
+    """Take an input file and output the desired order,
+    according to the template.
+
+    e.g. for (lat, lon) input data, output = 'yx'
+         for (time, lon) input data, output = 'tx'
+    """
+
+    assert type(infile) == cdms2.dataset.CdmsFile
+     
+    input_order = ''
+    for dimension in infile.listdimension(vname=var_id):
+	if not dimension in ['bound', 'nv']:
+	    input_order = input_order + infile.getAxis(dimension).axis.lower()
+
+    order = copy.deepcopy(template)
+    for item in template:
+        if not item in input_order:
+            order = order.replace(item, '')
+
+    return order
+
+
 def dict_filter(indict, key_list):
     """Filter dictionary according to specified keys."""
     
@@ -574,6 +483,34 @@ def hi_lo(data_series, current_max, current_min):
     return new_max, new_min
 
 
+def _infile_attribute_check(infile, var_id):
+    """Check for criticial attriutes in the input file"""
+
+    assert type(infile) == cdms2.dataset.CdmsFile
+
+    # Global file attributes #
+    
+    assert hasattr(infile, 'history'), \
+    'Input file must have history global attribute'
+
+    # File dimension attributes #
+    
+    for dimension in infile.listdimension():
+	if not dimension in ['bound', 'nv']:
+	    assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
+	    'Input dimensions must have an axis attribute that is X, Y, Z or T'
+
+    # Variable attributes #
+
+    var_atts = infile.listattribute(vname=var_id)
+    assert 'missing_value' in var_atts, \
+    'Input variable must have missing_value attribute'
+    assert 'long_name' in var_atts, \
+    'Input variable must have long_name attribute'
+    assert 'units' in var_atts, \
+    'Input variable must have units attribute'
+
+
 def list_kwargs(func):
     """List keyword arguments of a function."""
     
@@ -626,7 +563,12 @@ def regrid_uniform(data, target_grid):
 def running_average(data, window):
     """Calculate running average with desired window."""
 
-    return genutil.filters.runningaverage(data, window) 
+    assert type(window) == int, \
+    'Window for running average must be an integer'
+
+    run_ave = genutil.filters.runningaverage(data, window) if window > 1 else data
+
+    return run_ave 
     
 
 def scale_offset(data, scale=1.0, offset=0.0):
@@ -640,12 +582,92 @@ def scale_offset(data, scale=1.0, offset=0.0):
                         float(offset))
 
 
-def temporal_aggregation(data, output_timescale, climatology=False):
-    """Create a temporal aggregate of the input data.
-    (e.g. turn a monthly timeseries into a seasonal timeseries)
+def _subset_data(infile, var_id, **kwargs):
+    """Take a subset of the infile data
+    
+    Valid kwargs (with examples)
+    
+    latitude  -- (-30, 30)
+    level     -- (1000.)
+    longitude -- (120, 165)
+    region    -- aus
+    time      -- ('1979-01-01', '2000-12-31', 'MONTH/SEASON'), 
+	          options: 'JAN', 'FEB', ..., 'DEC'
+	                   'DJF', ... 'SON'
+    """     
+
+    assert type(infile) == cdms2.dataset.CdmsFile      
+    	
+    if kwargs.has_key('time'):
+	assert isinstance(kwargs['time'], (list, tuple)), \
+	'time selector must be a list or tuple'
+
+	assert len(kwargs['time']) == 2 or len(kwargs['time']) == 3, \
+	'time selector must be length two or three'
+
+        date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
+	assert re.search(date_pattern, kwargs['time'][0]) or kwargs['time'][0].lower() == 'none'
+	assert re.search(date_pattern, kwargs['time'][1]) or kwargs['time'][1].lower() == 'none'
+	valid_trange = re.search(date_pattern, kwargs['time'][0]) and re.search(date_pattern, kwargs['time'][1])
+
+        month_dict = {'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 
+		      'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG': 8, 
+        	      'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12}
+        season_dict = {'DJF': ('JAN', 'FEB', 'DEC'),
+		       'MAM': ('MAR', 'APR', 'MAY'),
+        	       'JJA': ('JUN', 'JUL', 'AUG'),
+        	       'SON': ('SEP', 'OCT', 'NOV')}
+	if len(kwargs['time']) == 3 and kwargs['time'][2].lower() != 'none':
+	    assert (kwargs['time'][2] in month_dict.keys()) or (kwargs['time'][2] in season_dict.keys())
+
+	    month_selector = kwargs['time'][2]
+	    date_selector = kwargs['time'][0:2]
+	    del kwargs['time']
+
+	    #make the month/season selection
+            months = (month_selector,) if month_selector in month_dict.keys() else season_dict[month_selector]
+            datetimes = infile.getAxis('time').asComponentTime()
+            years_all = []
+	    for datetime in datetimes:
+        	years_all.append(int(str(datetime).split('-')[0]))
+            years_unique = list(set(years_all))
+
+            extracts = []
+            for year in years_unique:
+        	for month in months: 
+                    start_date = str(year)+'-'+str(month_dict[month])+'-1 00:00:0.0'
+                    end_date = str(year)+'-'+str(month_dict[month])+'-'+str(calendar.monthrange(year, month_dict[month])[-1])+' 23:59:0.0'
+                    kwargs['time'] = (start_date, end_date)
+                    try:
+                	extracts.append(infile(var_id, **kwargs))
+                    except cdms2.error.CDMSError:
+                	continue
+
+            data = MV2.concatenate(extracts, axis=0) if len(extracts) > 1 else extracts[0]      
+
+	    #make the date range selection
+	    if valid_trange:
+		data = data(time=date_selector)
+
+	elif valid_trange:
+	    kwargs['time'] = kwargs['time'][0:2]
+	    data = infile(var_id, **kwargs)
+
+	else:
+	    del kwargs['time']
+	    data = infile(var_id, **kwargs)
+    else:            	         
+	data = infile(var_id, **kwargs)
+
+    return data
+
+
+def temporal_aggregation(data, output_timescale, output_quantity, time_period=None):
+    """Create a temporal aggregate of the input data, or further process it
+    to produce a climatology or anomaly timeseries.
 
     Arguments:
-    output_timescale can be: 
+    output_timescale options: 
     - SEASONALCYCLE (i.e. DJF/MAM/JJA/SON)
     - ANNUALCYCLE (i.e. JAN/FEB/MAR/.../DEC)
     - YEAR
@@ -653,33 +675,36 @@ def temporal_aggregation(data, output_timescale, climatology=False):
     - JAN,FEB,MAR,...,DEC
     - Any custom season (e.g. MJJASO, DJFM)
 
+    output_product options: 
+    - 'raw', 'climatology' or 'anomaly'
+    
+    time_period (only applies to anomaly)
+    - ['lower_bound', 'upper_bound']
+    e.g. ['1979-01-01', '1980-12-31']
+
     Reference:
     http://www2-pcmdi.llnl.gov/cdat/source/api-reference/cdutil.times.html
-    
-    Required improvements:
-    1. Needs to include the ability to calculate the anomaly timeseries. The 
-       code would look something like this (note that I think ANNUALCYCLE has a
-       bug, which I have submitted to UV-CDAT support
-       
-       cdutil.setTimeBoundsMonthly(x)
-       monthly_clim = cdutil.ANNUALCYCLE.climatology(x(time=('1981-01-01', '2000-12-31')))
-       monthly_anom = cdutil.ANNUALCYCLE.departures(x, ref=monthly_clim)
-       
-       In the end, the user should be able to choose the output to be 'raw', 
-       'climatology' or 'anomaly'
-
     """
-
-    ######
-    #does it need to be cdutil.times?????
-    #####
+    #does it need to be cdutil.times in places?????
 
     assert isinstance(data, cdms2.tvariable.TransientVariable)
+    assert output_quantity in ['raw', 'climatology', 'anomaly']
+
+    accepted_timescales = ['SEASONALCYCLE', 'ANNUALCYCLE', 'YEAR',
+	                   'DJF', 'MAM', 'JJA', 'SON',
+			   'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                           'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+    double_alphabet = 'JFMAMJJASONDJFMAMJJASOND'
+    assert (output_timescale in accepted_timescales) or (output_timescale in double_alphabet) 
+   
+    if time_period:
+        assert len(time_period) == 2, \
+        """time_period should be a list or tuple of length 2. e.g. ('1979-01-01', '1980-12-31')"""
 
     # Find input timescale #
     
     time_axis = data.getTime().asComponentTime()
-    input_timescale = _get_timescale(get_datetimeget(time_axis[0:2]))
+    input_timescale = _get_timescale(get_datetime(time_axis[0:2]))
 
     # Set time bounds #
 
@@ -698,23 +723,18 @@ def temporal_aggregation(data, output_timescale, climatology=False):
 
     # Extract subset of interest #
 
-    accepted_timescales = ['SEASONALCYCLE', 'ANNUALCYCLE', 'YEAR',
-	                   'DJF', 'MAM', 'JJA', 'SON',
-			   'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-                           'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-
-    end = '.climatology(data)' if climatology else '(data)'
     if output_timescale in accepted_timescales:
-	function = 'cdutil.' + output_timescale + end
-        outdata = eval(function)
+        season = eval('cdutil.' + output_timescale)
+    elif output_timescale in double_alphabet:
+        season = cdutil.times.Seasons(output_timescale)
 
-    elif output_timescale in 'JFMAMJJASONDJFMAMJJASOND':
-        custom = cdutil.Seasons(output_timescale)
-        outdata = custom(data)
-
-    else:
-        print 'Unrecognised temporal subset.'
-        sys.exit(1)
+    if output_quantity == 'raw':
+        outdata = season(data)
+    elif output_quantity == 'climatology':
+        outdata = season.climatology(data)
+    elif output_quantity == 'anomaly':
+        clim = season.climatology(data(time=time_period)) if time_period else season.climatology(data)
+        outdata = season.departures(data, ref=clim)
 
     return outdata
 
