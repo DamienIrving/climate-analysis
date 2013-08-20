@@ -5,25 +5,17 @@ ssh -Y STUDENT\\dbirving@abyss.earthsci.unimelb.edu.au
 
 ## List of improvements I plan to make ##
 
-# Data storage requirements #
-
-- 33 years (1979-2012) of Merra (288 by 144 global grid) 3 hourly (i.e. 8 timesteps per day) data for a single pressure level = 15 GB 
-
-
 # Install latest UV-CDAT #
 
   - The lastest version (1.3.1) of UV-CDAT was released in April 2013 (http://uvcdat.llnl.gov/install/):
     - It leads you to http://sourceforge.net/projects/cdat/files/Releases/UV-CDAT/1.3/, which has a very useful README 
-    - I downloaded and unpacked it on my machine, but go error messages when I tried to run UV-CDAT
-    - This may be due to the fact that my installation of Ubuntu is old. I tried to upgrade using the upgrade manager, but
-      got an error message part way through the process
   
   - It contains the following new packages that I need:
     - Scipy version 11: Has an equal_var keyowrd argument for scipy.stats.ttest_ind() which performs a Welch's t-test
     - Latest windspharm: So I can update calc_wind_quantity so it makes use of cdms2 transient variables
     - eofs: Is a new replacement for eof2 (http://ajdawson.github.com/eofs/) 
     
-  - We can't install this new version on abyss because the operating system is too old
+  - We can't install this new version on abyss because the operating system is too old (need Ubuntu 12.04)
     - Either I wait until they upgrade the operating system on abyss (which won't happen until winter 2013 at the earliest), or
     - Brett suggested that he could update the operating system on the vislab machines and install it there, or
     - I could have it installed on my own machine
@@ -32,13 +24,11 @@ ssh -Y STUDENT\\dbirving@abyss.earthsci.unimelb.edu.au
       - Would need assistance with this from Brett and Doug
         - Where do I install it? (/usr/bin/ ??)
 	- Where do I put my data? (/scratch ??)
-	- Do I need have  
-
 
 # Version control #
 
-  - Is bitbucket configured properly (sometimes it doesn't recognise who is submitting)
-
+  - Perhaps I shouldn't have a separate 'git_repo' directory?
+  - Is bitbucket configured properly (sometimes it doesn't recognise who is submitting)?
 
 # Provenance tracking # 
  
@@ -52,11 +42,9 @@ ssh -Y STUDENT\\dbirving@abyss.earthsci.unimelb.edu.au
   - What package should I use?
     - It seems the GitPython would be most useful (http://pythonhosted.org/GitPython/0.3.1/index.html)
       - I've implemented it as shown here: http://penandpants.com/2013/04/25/data-provenance-with-gitpython/
-      - Perhaps I shouldn't have a separate 'git_repo' directory?
     - A possible alternative is Sumatra (http://packages.python.org/Sumatra/)
       - I commented on a Software Carpentry post (http://software-carpentry.org/2012/10/wanted-an-entry-level-provenance-library/)
       - Apparently it's equivalent to using the 'revision' command for svn, that David Kent used to put in all his codes
-
 
 # General coding practices #
 
@@ -74,26 +62,22 @@ ssh -Y STUDENT\\dbirving@abyss.earthsci.unimelb.edu.au
   - Unitesting
     - Use DocTest for quick tests in the docstring for very simple functions
     - Write separate testing code using unittest for more comprehensive testing
+  - Use numpy.empty instead of numpy.ones to initialise arrays
   - Take the next step and learn about packaging code for sharing and 'release'
     - Tgis includes specifying the license and installation instructions/files
     - See https://ams.confex.com/ams/93Annual/webprogram/Paper223958.html
 
-
 # plot_map.py #
 
-  - Figure spacing issues (moves further right depending on how long the row headings are)
   - Vertical colourbar
-
 
 # netcdf_io.py #
 
   - Include a linear detrending method?
 
-
 # calc_waf.py #
 
   - Use f2py instead of the system calls (simple example, section 1.1.13 of Langtangen)
-
 
 # LaTeX #
 
