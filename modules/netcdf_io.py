@@ -16,7 +16,7 @@ regrid_uniform       -- Regrid data to a uniform output grid
 running_average      -- Calculate running average
 scale_offset         -- Apply scaling and offset factors
 temporal_aggregation -- Create a temporal aggregate of 
-                        the input data
+                        the input data (i.e. raw, climatology or anomaly)
 time_axis_check      -- Check whether 2 time axes are the same
 write_netcdf         -- Write an output netCDF file
 xy_axis_check        -- Check whether 2 lat or lon axes are the same
@@ -160,18 +160,18 @@ class InputData:
 	        del kwargs[key]
 
         subsettors = ['latitude', 'level', 'longitude', 'time']
-        subset_kwargs = []
+        subset_kwargs = {}
         for key in kwargs.keys():
             if key in subsettors:
                 subset_kwargs[key] = kwargs[key]
 
-        data = _subset_data(infile, var_id, subset_kwargs)        
+        data = _subset_data(infile, var_id, **subset_kwargs)        
        
         # Manipulate the subsetted data #  
 
 	if kwargs.has_key('agg'):
-	    timescale = kwargs['agg'][0]
-            quantity = kwargs['agg'][1]
+            quantity = kwargs['agg'][0]
+	    timescale = kwargs['agg'][1]
             times = [kwargs['agg'][2], kwargs['agg'][3]] if len(kwargs['agg']) > 2 else None
             data = temporal_aggregation(data, timescale, quantity, time_period=times)
 
