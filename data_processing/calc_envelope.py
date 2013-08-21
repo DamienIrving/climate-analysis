@@ -88,10 +88,6 @@ def rotate_vwind(dataU, dataV, new_np, anomaly=False):
     """Define the new meridional wind field, according to the 
     position of the new north pole."""
 
-    ## The anomaly option is not yet implemented. It needs to make
-    ## use of the nio.temproal_aggregation function, once this is 
-    ## updated to calculate anomalies
-
     assert isinstance(dataU, nio.InputData)
     assert isinstance(dataV, nio.InputData)
 
@@ -103,6 +99,10 @@ def rotate_vwind(dataU, dataV, new_np, anomaly=False):
 	dataU_rot = switch_axes(dataU.data[:], lats, lons, new_np)
         dataV_rot = switch_axes(dataV.data[:], lats, lons, new_np)	
         new_vwind = calc_vwind(dataU_rot, dataV_rot, lats, lons, new_np) 
+
+    new_vwind = cdms2.createVariable(new_vwind, grid=dataU.data.getGrid(), axes=dataU.data.getAxisList())
+    if anomaly:
+        new_vwind = nio.temporal_aggregation(new_vwind, 'ANNUALCYCLE', 'anomaly', time_period=None) #### hard wiring need to be removed!
 
     return new_vwind    
         
@@ -122,7 +122,7 @@ def reset_axes(data_rot, lats, lons, new_north_pole):
 def switch_axes(data, lats, lons, new_np, pm_point=None, invert=False):
     """Take some data on a regular grid (lat, lon), rotate the axes 
     (according to the position of the new north pole) and regrid to 
-    a regular grid with the same resolution as the original
+    a regular grid with the same resolution as the original)
     
     Note inputs for css.Cssgrid:
     - lats_rot and lons_rot are a flattened meshgrid
@@ -187,8 +187,8 @@ def main(inargs):
 
     # Extract the wave envelope #
 
-    outdata_rot = numpy.zeros(list(indataU.data.shape))
-    ntime, nlat, nlon = indataU.data.shape
+    outdata_rot = numpy.zeros(list(vwind.shape)) 
+    ntime, nlat, nlon = vwind.shape 
     kmin, kmax = inargs.wavenumbers
     
     for time in xrange(0, ntime):
@@ -234,12 +234,15 @@ example (abyss.earthsci.unimelb.edu.au):
   --time 1982-09-01 1982-11-01 None
 
 required improvements:
-  1. The rotate_vwind function needs to be able to calculate the vwind anomaly
-  2. Testing indicates that the regridding is accurate everywhere except at 
+  1. The anomaly option in rotate_vwind is not working (produces an output field of all 
+     zeros). Also, there is some hard wiring in the anomaly options that needs to be addressed.
+  2. There might be some funny point in the grid switch that need to be looked at. This
+     might be able to be fixed by using a higher resolution grid
+  3. Testing indicates that the regridding is accurate everywhere except at 
      the poles. This may relate to the problems with csc2s and css2c, which
      I logged as an issue on the UVCDAT Github page. They responded that it's not
      their package, so I might need to contact someone else.
-  3. Look for opportunities to process data as multidimensional arrays, instead
+  4. Look for opportunities to process data as multidimensional arrays, instead
      of using mesh/flatten or looping.
 
 author:
