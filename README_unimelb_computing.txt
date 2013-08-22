@@ -46,7 +46,7 @@ ssh -X dbi599@dcc.nci.org.au
 
 ## irvingnix.earthsci.unimelb.edu.au ##
 
-Operating system = Ubuntu Lucid
+Operating system = Ubuntu 12.04 LTS, 64-bit (it's Debian based)
 I have sudo admin access, so I need to type 'sudo' at the command line before any admin commands. e.g. sudo apt-get install git-core
 
 
