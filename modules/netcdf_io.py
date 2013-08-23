@@ -685,7 +685,6 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
     Reference:
     http://www2-pcmdi.llnl.gov/cdat/source/api-reference/cdutil.times.html
     """
-    #does it need to be cdutil.times in places?????
 
     assert isinstance(data, cdms2.tvariable.TransientVariable)
     assert output_quantity in ['raw', 'climatology', 'anomaly']
@@ -734,7 +733,12 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
         outdata = season.climatology(data)
     elif output_quantity == 'anomaly':
         clim = season.climatology(data(time=time_period)) if time_period else season.climatology(data)
+	assert type(clim) != type(None), \
+	'Input data are of insufficient temporal extent to calculate climatology'	
         outdata = season.departures(data, ref=clim)
+
+    assert type(outdata) != type(None), \
+    'Input data are of insufficient temporal extent to calculate the requested temporal aggregation (%s)' %(output_quantity)
 
     return outdata
 

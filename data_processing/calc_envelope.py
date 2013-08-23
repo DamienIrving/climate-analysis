@@ -28,6 +28,8 @@ module_dir = os.path.join(os.environ['HOME'], 'data_processing')
 sys.path.insert(0, module_dir)
 import calc_rotation as rot
 
+import pdb
+
 
 #########################
 ## Envelope extraction ##
@@ -84,7 +86,7 @@ def envelope(inwave, kmin, kmax):
 ## Wind data preparation ##
 ###########################
 
-def rotate_vwind(dataU, dataV, new_np, anomaly=False):
+def rotate_vwind(dataU, dataV, new_np, anomaly=None):
     """Define the new meridional wind field, according to the 
     position of the new north pole."""
 
@@ -92,7 +94,7 @@ def rotate_vwind(dataU, dataV, new_np, anomaly=False):
     assert isinstance(dataV, nio.InputData)
 
     if new_np == [90.0, 0.0]:
-        new_vwind = dataV.data
+        new_vwind_data = dataV.data
     else:
         lats = dataU.data.getLatitude()[:]
 	lons = dataU.data.getLongitude()[:]
@@ -102,7 +104,13 @@ def rotate_vwind(dataU, dataV, new_np, anomaly=False):
 
     new_vwind = cdms2.createVariable(new_vwind, grid=dataU.data.getGrid(), axes=dataU.data.getAxisList())
     if anomaly:
-        new_vwind = nio.temporal_aggregation(new_vwind, 'ANNUALCYCLE', 'anomaly', time_period=None) #### hard wiring need to be removed!
+        date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
+        if re.search(date_pattern, anomaly[0]) and re.search(date_pattern, anomaly[1]):
+            period = anomaly
+        else:
+            print """Input anomaly base period either invalid format or 'all' - base climatology is entire period"""
+            period = None
+	new_vwind = nio.temporal_aggregation(new_vwind, 'ANNUALCYCLE', 'anomaly', time_period=period)  #hard wired to annual cycle
 
     return new_vwind    
         
@@ -183,7 +191,7 @@ def main(inargs):
     indataV = nio.InputData(inargs.infileV, inargs.variableV, 
                            **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude', 'grid']))
     
-    vwind = rotate_vwind(indataU, indataV, inargs.north_pole)
+    vwind = rotate_vwind(indataU, indataV, inargs.north_pole, anomaly=inargs.anomaly)
 
     # Extract the wave envelope #
 
@@ -276,7 +284,9 @@ author:
                         default=(-90.0, 73, 2.5, 0.0, 144, 2.5),
                         help="Uniform regular grid to regrid data to [default = 2.5 by 2.5 deg]")
     parser.add_argument("--north_pole", type=float, nargs=2, metavar=('LAT', 'LON'), default=[90.0, 0.0],
-                        help="Location of north pole [default = (90, 0)] - (30, 270) for PSA pattern")	
+                        help="Location of north pole [default = (90, 0)] - (30, 270) for PSA pattern")
+    parser.add_argument("--anomaly", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=None,
+                        help="""Extract envelope from anomaly timeseries (calculated from annual cycle monthly climatology). Each date can be 'all' or 'YYYY-MM-DD' [default=False]""") 	
     
     args = parser.parse_args()            
 
