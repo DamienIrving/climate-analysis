@@ -189,7 +189,7 @@ def multiplot(indata,
               #colourbar settings
               colourbar_colour='jet', ticks=None, discrete_segments=None, units=None, convert=False, extend="neither",
               #resolution of image
-              res='l', area_threshold=1.,
+              nocoast=False, res='l', area_threshold=1., 
 	      #contours
 	      contour_data=None, contour_ticks=None,
 	      #wind vectors
@@ -227,6 +227,7 @@ def multiplot(indata,
       units                --  Units label for colourbar
       convert              --  Flag for converting units
       extend               --  Colourbar extensions (neither, both, max or min)
+      nocoast              --  Supress the draw of coastlines on map 
       res                  --  Resolution of image (c, l, m or h)
       area_threshold       --  Threshold (in km) for the smallest resolved feature
       contour_data         --  List of cdms2 transient variable arrays to be plotted as contour lines
@@ -234,7 +235,7 @@ def multiplot(indata,
       uwnd_data, vwnd_data --  List of cdms2 transient variable arrays to be plotted as quivers
       quiver_type          --  The quivers can represent 'wind' or wave activity flux ('waf')
       quiver_thin          --  Thinning factor (e.g. thin = 2 means every 2nd quiver plotted)
-      key_value            --  Size of the wind vector in the key (plot is not scaled to this
+      key_value            --  Size of the wind vector in the key (plot is not scaled to this)
       quiver_scale         --  Data units per arrow length unit (smaller value means longer arrow)
       quiver_width         --  Shaft width in arrow units
       quiver_headwidth     --  Head width as multiple of shaft width
@@ -392,7 +393,8 @@ def multiplot(indata,
 	    else:	
                 im = bmap.pcolor(x, y, data, cmap=colourmap)
             
-            bmap.drawcoastlines()
+	    if not nocoast:
+                bmap.drawcoastlines()
 
             # Plot the secondary data #
     
@@ -916,6 +918,8 @@ improvements:
                         help="name of region to plot [default: dateline]")
     parser.add_argument("--centre", type=float, nargs=2, metavar=('LAT', 'LON'),
                         help="centre point of map projection")
+    parser.add_argument("--nocoast", action="store_true", 
+                        help="switch for omitting the coastlines [default: False]")
     parser.add_argument("--resolution", type=str, choices=('h', 'm', 'l', 'c'),
                         help="resolution of the background map [default: l = low]")
     parser.add_argument("--area_threshold", type=float, 

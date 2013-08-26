@@ -13,13 +13,11 @@ import numpy
 import re
 
 import cdms2
-import css
 
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 import coordinate_rotation as rot
-
 
 
 def rotate_vwind(dataU, dataV, new_np, anomaly=None):
@@ -84,7 +82,7 @@ def main(inargs):
     var_atts = {'id': 'vrot',
                 'name': 'Rotated meridional wind',
                 'long_name': 'Meridional wind on a rotated coordinate grid (i.e. the poles are shifted)',
-                'units': 'm s-1',
+                'units': indataU.data.units,
                 'history': 'Location of north pole: %s N, %s E' %(str(inargs.north_pole[0]), str(inargs.north_pole[1]))}
 
     indata_list = [indataU, indataV,]
@@ -106,7 +104,7 @@ example (abyss.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_vwind_rotation.py 
   /work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc ua
   /work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc va 
-  /work/dbirving/datasets/Merra/data/processed/vrot_Merra_250hPa_monthly_y73x144_np30-270.nc
+  /work/dbirving/datasets/Merra/data/processed/vrot_Merra_250hPa_monthly_native-np30-270.nc
   --north_pole 30 270
 
 required improvements:
@@ -145,12 +143,12 @@ author:
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
     parser.add_argument("--grid", type=float, nargs=6, metavar=('START_LAT', 'NLAT', 'DELTALAT', 'START_LON', 'NLON', 'DELTALON'),
-                        default=(-90.0, 73, 2.5, 0.0, 144, 2.5),
-                        help="Uniform regular grid to regrid data to [default = 2.5 by 2.5 deg]")
+                        #default=(-90.0, 73, 2.5, 0.0, 144, 2.5),
+                        help="Uniform regular grid to regrid data to [default = None]")
     parser.add_argument("--north_pole", type=float, nargs=2, metavar=('LAT', 'LON'), default=[90.0, 0.0],
                         help="Location of north pole [default = (90, 0)] - (30, 270) for PSA pattern")
     parser.add_argument("--anomaly", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=None,
-                        help="""Extract envelope from anomaly timeseries (calculated from annual cycle monthly climatology). Each date can be 'all' or 'YYYY-MM-DD' [default=False]""") 	
+                        help="""Output the anomaly timeseries (calculated from annual cycle monthly climatology). Each date can be 'all' or 'YYYY-MM-DD' [default=False]""") 	
     
     args = parser.parse_args()            
 
