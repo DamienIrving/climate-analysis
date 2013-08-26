@@ -4,10 +4,6 @@ Author:       Damien Irving, d.irving@student.unimelb.edu.au
 Description:  Extracts the envelope of atmospheric wave packets
 Reference:    Zimin et al. 2003. Mon. Wea. Rev. 131, 1011-1017
 
-Updates | By | Description
---------+----+------------
-12 June 2013 | Damien Irving | Initial version.
-
 """
 
 import sys
@@ -18,22 +14,11 @@ import numpy
 import re
 
 import cdms2
-import css
 
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
-module_dir = os.path.join(os.environ['HOME'], 'data_processing')
-sys.path.insert(0, module_dir)
-import calc_rotation as rot
-
-import pdb
-
-
-#########################
-## Envelope extraction ##
-#########################
 
 def constants(inwave):
     """Define the constants required to perform the Fourier & Hilbert transforms"""
@@ -82,130 +67,25 @@ def envelope(inwave, kmin, kmax):
     return numpy.abs(envelope) 
 
 
-###########################
-## Wind data preparation ##
-###########################
-
-def rotate_vwind(dataU, dataV, new_np, anomaly=None):
-    """Define the new meridional wind field, according to the 
-    position of the new north pole."""
-
-    assert isinstance(dataU, nio.InputData)
-    assert isinstance(dataV, nio.InputData)
-
-    if new_np == [90.0, 0.0]:
-        new_vwind_data = dataV.data
-    else:
-        lats = dataU.data.getLatitude()[:]
-	lons = dataU.data.getLongitude()[:]
-	dataU_rot = switch_axes(dataU.data[:], lats, lons, new_np)
-        dataV_rot = switch_axes(dataV.data[:], lats, lons, new_np)	
-        new_vwind = calc_vwind(dataU_rot, dataV_rot, lats, lons, new_np) 
-
-    new_vwind = cdms2.createVariable(new_vwind, grid=dataU.data.getGrid(), axes=dataU.data.getAxisList())
-    if anomaly:
-        date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
-        if re.search(date_pattern, anomaly[0]) and re.search(date_pattern, anomaly[1]):
-            period = anomaly
-        else:
-            print """Input anomaly base period either invalid format or 'all' - base climatology is entire period"""
-            period = None
-	new_vwind = nio.temporal_aggregation(new_vwind, 'ANNUALCYCLE', 'anomaly', time_period=period)  #hard wired to annual cycle
-
-    return new_vwind    
-        
-
-def reset_axes(data_rot, lats, lons, new_north_pole):
-    """Take data on a rotated spherical grid and return it
-    to a regular grid with the north pole at 90N, 0E."""
-
-    if new_north_pole == [90.0, 0.0]:
-        data = data_rot
-    else:
-        data = switch_axes(data_rot, lats, lons, new_north_pole, invert=True)
-	
-    return data
-
-
-def switch_axes(data, lats, lons, new_np, pm_point=None, invert=False):
-    """Take some data on a regular grid (lat, lon), rotate the axes 
-    (according to the position of the new north pole) and regrid to 
-    a regular grid with the same resolution as the original)
-    
-    Note inputs for css.Cssgrid:
-    - lats_rot and lons_rot are a flattened meshgrid
-    - lats and lons are not (i.e. they are just axis values)
-    
-    Not input for rgrd:
-    - the input data array must be flattened 
-    
-    """
-
-    phi, theta, psi = rot.north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)   
-
-    lats_rot, lons_rot = rot.rotate_spherical(lats, lons, phi, theta, psi, invert=invert)
-
-    grid_instance = css.Cssgrid(lats_rot, lons_rot, lats, lons)
-    if numpy.rank(data) == 3:
-        data_rot = numpy.zeros(numpy.shape(data))
-        for tstep in range(0, numpy.shape(data)[0]):
-	    regrid = grid_instance.rgrd(data[tstep, :, :].flatten())
-	    data_rot[tstep, :, :] = numpy.transpose(regrid)
-    else: 
-        regrid = grid_instance.rgrd(data.flatten())
-	data_rot = numpy.transpose(regrid)
-        
-    #### NOTE: the regridding of rgrd seems to be fairly accurate (i.e. when you give it 
-    #### the same input and output grid) except at the poles (ie when the lat = 90 or -90)
-    #### This may relate to the problems at the poles the css2c and csc2s have - I'm not
-    #### sure if rgrd uses these functions.
-    
-    return data_rot
-
-
-def calc_vwind(dataU, dataV, lats, lons, new_np, old_np=(90.0, 0.0)):
-    """Calculate the new meridional wind field, according to the
-    new position of the north pole"""
-    
-    theta = rot.rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], lats, lons)
-    theta = numpy.resize(theta, numpy.shape(dataU))
-    
-    wsp = numpy.sqrt(numpy.square(dataU) + numpy.square(dataV))
-    alpha = numpy.arctan2(dataV, dataU) - theta
-    dataV_rot = wsp * numpy.sin(alpha)
-
-    return dataV_rot  
-
-
-##########
-## Main ##
-##########
-
 def main(inargs):
     """Run the program."""
     
     # Prepate input data #
 
-    indataU = nio.InputData(inargs.infileU, inargs.variableU, 
-                           **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude', 'grid']))
-    indataV = nio.InputData(inargs.infileV, inargs.variableV, 
+    indata = nio.InputData(inargs.infile, inargs.variable, 
                            **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude', 'grid']))
     
-    vwind = rotate_vwind(indataU, indataV, inargs.north_pole, anomaly=inargs.anomaly)
-
     # Extract the wave envelope #
 
-    outdata_rot = numpy.zeros(list(vwind.shape)) 
-    ntime, nlat, nlon = vwind.shape 
+    outdata = numpy.empty(list(vwind.shape)) 
+    ntime, nlat, nlon = indata.data.shape 
     kmin, kmax = inargs.wavenumbers
     
     for time in xrange(0, ntime):
         for lat in xrange(0, nlat):
-            outdata_rot[time, lat, :] = envelope(vwind[time, lat, :], kmin, kmax)
+            outdata[time, lat, :] = envelope(indata.data[time, lat, :], kmin, kmax)
     
     # Write output file #
-
-    outdata = reset_axes(outdata_rot, indataV.data.getLatitude()[:], indataV.data.getLongitude()[:], inargs.north_pole)
 
     var_atts = {'id': 'env',
                 'name': 'Amplitude of wave envelope',
@@ -213,10 +93,10 @@ def main(inargs):
                 'units': 'm s-1',
                 'history': 'Ref: Zimin et al. 2003. Mon. Wea. Rev. 131, 1011-1017. Wavenumber range: %s to %s' %(kmin, kmax)}
 
-    indata_list = [indataU, indataV,]
+    indata_list = [indata,]
     outdata_list = [outdata,]
     outvar_atts_list = [var_atts,]
-    outvar_axes_list = [indataU.data.getAxisList(),]
+    outvar_axes_list = [indata.data.getAxisList(),]
 
     nio.write_netcdf(inargs.outfile, 'Amplitude of wave envelope', 
                      indata_list, 
@@ -233,25 +113,9 @@ reference:
 
 example (abyss.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_envelope.py 
-  /work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc ua
-  /work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc va 
-  /work/dbirving/processed/indices/data/env_Merra_250hPa_monthly_y73x144_np30-270.nc
-  --north_pole 30 270
+  /work/dbirving/datasets/processed/data/vrot_Merra_250hPa_monthly_y73x144_np30-270.nc vrot
+  /work/dbirving/processed/indices/data/vrot-env_Merra_250hPa_monthly_y73x144_np30-270.nc
   --time 1995-06-01 1995-08-01 None
-  --time 1994-08-01 1994-10-01 None
-  --time 1982-09-01 1982-11-01 None
-
-required improvements:
-  1. The anomaly option in rotate_vwind is not working (produces an output field of all 
-     zeros). Also, there is some hard wiring in the anomaly options that needs to be addressed.
-  2. There might be some funny point in the grid switch that need to be looked at. This
-     might be able to be fixed by using a higher resolution grid
-  3. Testing indicates that the regridding is accurate everywhere except at 
-     the poles. This may relate to the problems with csc2s and css2c, which
-     I logged as an issue on the UVCDAT Github page. They responded that it's not
-     their package, so I might need to contact someone else.
-  4. Look for opportunities to process data as multidimensional arrays, instead
-     of using mesh/flatten or looping.
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -264,10 +128,8 @@ author:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infileU", type=str, help="Input file name, containing the zonal wind")
-    parser.add_argument("variableU", type=str, help="Input file variable, for the zonal wind")
-    parser.add_argument("infileV", type=str, help="Input file name, containing the meridional wind")
-    parser.add_argument("variableV", type=str, help="Input file variable, for the meridional wind")
+    parser.add_argument("infile", type=str, help="Input file name, containing the meridional wind")
+    parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
 
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[2, 4],
@@ -283,15 +145,10 @@ author:
     parser.add_argument("--grid", type=float, nargs=6, metavar=('START_LAT', 'NLAT', 'DELTALAT', 'START_LON', 'NLON', 'DELTALON'),
                         default=(-90.0, 73, 2.5, 0.0, 144, 2.5),
                         help="Uniform regular grid to regrid data to [default = 2.5 by 2.5 deg]")
-    parser.add_argument("--north_pole", type=float, nargs=2, metavar=('LAT', 'LON'), default=[90.0, 0.0],
-                        help="Location of north pole [default = (90, 0)] - (30, 270) for PSA pattern")
-    parser.add_argument("--anomaly", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=None,
-                        help="""Extract envelope from anomaly timeseries (calculated from annual cycle monthly climatology). Each date can be 'all' or 'YYYY-MM-DD' [default=False]""") 	
     
     args = parser.parse_args()            
 
-
-    print 'Input files: ', args.infileU, args.infileV
+    print 'Input files: ', args.infile
     print 'Output file: ', args.outfile  
 
     main(args)

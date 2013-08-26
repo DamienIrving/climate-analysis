@@ -58,6 +58,48 @@ import css
 ## Switching between coordinate systems ##
 ##########################################
 
+def switch_axes(data, lats, lons, new_np, pm_point=None, invert=False):
+    """Take some data on a regular grid (lat, lon), rotate the axes 
+    (according to the position of the new north pole) and regrid to 
+    a regular grid with the same resolution as the original
+    
+    Note inputs for css.Cssgrid:
+    - lats_rot and lons_rot are a flattened meshgrid
+    - lats and lons are not (i.e. they are just axis values)
+    
+    Not input for rgrd:
+    - the input data array must be flattened 
+    
+    pm = prime meridian
+    
+    """
+
+    phi, theta, psi = north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)   
+
+    lats_rot, lons_rot = rotate_spherical(lats, lons, phi, theta, psi, invert=invert)
+
+    grid_instance = css.Cssgrid(lats_rot, lons_rot, lats, lons)
+    if numpy.rank(data) == 3:
+        data_rot = numpy.zeros(numpy.shape(data))
+        for tstep in range(0, numpy.shape(data)[0]):
+	    regrid = grid_instance.rgrd(data[tstep, :, :].flatten())
+	    data_rot[tstep, :, :] = numpy.transpose(regrid)
+    else: 
+        regrid = grid_instance.rgrd(data.flatten())
+	data_rot = numpy.transpose(regrid)
+        
+    #### NOTE: the regridding of rgrd seems to be fairly accurate (i.e. when you give it 
+    #### the same input and output grid) except at the poles (ie when the lat = 90 or -90)
+    #### This may relate to the problems at the poles the css2c and csc2s have - I'm not
+    #### sure if rgrd uses these functions.
+    
+    return data_rot
+
+
+###########################
+## Numerical adjustments ##
+###########################
+
 def _filter_tiny(data, threshold=0.000001):
     """Convert values of magnitude < threshold to zero"""
 
