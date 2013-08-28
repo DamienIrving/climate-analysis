@@ -46,6 +46,7 @@ Required improvements:
 ## Import required modules ##
 #############################
 
+import math
 import numpy
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
@@ -126,6 +127,10 @@ def rotation_matrix(phir, thetar, psir, inverse=False):
     Inputs angles are expected in radians.
     Reference: http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
     """
+    
+    for angle in [phir, thetar, psir]:
+        assert 0.0 <= math.fabs(angle) <= 2*math.pi, \
+	"Input angles must be in radians [0, 2*pi]" 
     
     matrix = numpy.zeros([3, 3])
     if not inverse:
