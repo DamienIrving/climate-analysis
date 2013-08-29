@@ -24,19 +24,19 @@ def rotate_vwind(dataU, dataV, new_np, anomaly=None):
     """Define the new meridional wind field, according to the 
     position of the new north pole."""
 
-    assert isinstance(dataU, nio.InputData)
-    assert isinstance(dataV, nio.InputData)
+    assert isinstance(dataU, cdms2.tvariable.TransientVariable)
+    assert isinstance(dataV, cdms2.tvariable.TransientVariable)
 
     if new_np == [90.0, 0.0]:
         new_vwind_data = dataV.data
     else:
-        lats = dataU.data.getLatitude()[:]
-	lons = dataU.data.getLongitude()[:]
-	dataU_rot = rot.switch_axes(dataU.data[:], lats, lons, new_np)
-        dataV_rot = rot.switch_axes(dataV.data[:], lats, lons, new_np)	
-        new_vwind = calc_vwind(dataU_rot, dataV_rot, lats, lons, new_np) 
+        lat_axis = dataU.getLatitude()[:]
+	lon_axis = dataU.getLongitude()[:]
+	dataU_rot = rot.switch_axes(dataU[:], lat_axis, lon_axis, new_np)
+        dataV_rot = rot.switch_axes(dataV[:], lat_axis, lon_axis, new_np)	
+        new_vwind = calc_vwind(dataU_rot, dataV_rot, lat_axis, lon_axis, new_np) 
 
-    new_vwind = cdms2.createVariable(new_vwind, grid=dataU.data.getGrid(), axes=dataU.data.getAxisList())
+    new_vwind = cdms2.createVariable(new_vwind, grid=dataU.getGrid(), axes=dataU.getAxisList())
     if anomaly:
         date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
         if re.search(date_pattern, anomaly[0]) and re.search(date_pattern, anomaly[1]):
@@ -49,11 +49,13 @@ def rotate_vwind(dataU, dataV, new_np, anomaly=None):
     return new_vwind    
         
 
-def calc_vwind(dataU, dataV, lats, lons, new_np, old_np=(90.0, 0.0)):
+def calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np, old_np=(90.0, 0.0)):
     """Calculate the new meridional wind field, according to the
     new position of the north pole"""
     
-    theta = rot.rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], lats, lons)
+    lons, lats = nio.coordinate_pairs(lon_axis, lat_axis) 
+    theta = rot.rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], 
+                               lats, lons, reshape=[len(lat_axis), len(lon_axis)])
     theta = numpy.resize(theta, numpy.shape(dataU))
     
     wsp = numpy.sqrt(numpy.square(dataU) + numpy.square(dataV))
@@ -75,7 +77,7 @@ def main(inargs):
     
     # Calulate the new vwind #
 
-    vwind = rotate_vwind(indataU, indataV, inargs.north_pole, anomaly=inargs.anomaly)
+    vwind = rotate_vwind(indataU.data, indataV.data, inargs.north_pole, anomaly=inargs.anomaly)
 
     # Write the output file #
 

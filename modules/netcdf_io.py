@@ -8,6 +8,7 @@ sys.path.insert(0, module_dir)
 
 Included functions:
 convert_units        -- Convert units
+coordinate_pairs     -- Produce all lat/lon pairs for a given grid
 dict_filter          -- Filter dictionary 
 get_datetime         -- Return datetime instances for list of dates/times
 hi_lo                -- Update highest and lowest value
@@ -366,6 +367,18 @@ def convert_units(data):
 
     return newdata 
 
+
+def coordinate_pairs(lat_axis, lon_axis):
+    """Take the latitude and longitude values from given grid axes
+    and produce a flattened lat and lon array, with element-wise pairs 
+    corresponding to every grid point.
+    
+    """
+    
+    lon_mesh, lat_mesh = numpy.meshgrid(lon_axis, lat_axis)  # This is the correct order
+    
+    return lat_mesh.flatten(), lon_mesh.flatten()
+    
 
 def _define_order(infile, var_id, template='tyxz'):
     """Take an input file and output the desired order,

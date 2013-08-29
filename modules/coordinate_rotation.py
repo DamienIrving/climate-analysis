@@ -54,6 +54,8 @@ import matplotlib.pyplot as plt
 import MV2
 import css
 
+import pdb
+
 
 ##########################################
 ## Switching between coordinate systems ##
@@ -126,13 +128,15 @@ def rotation_matrix(phir, thetar, psir, inverse=False):
     """Get the rotation matrix or its inverse.
     Inputs angles are expected in radians.
     Reference: http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
+    Note that the transformation matrix (and its inverse) given in
+    the reference is exactly correct - I checked the derivation by hand.
     """
     
     for angle in [phir, thetar, psir]:
         assert 0.0 <= math.fabs(angle) <= 2*math.pi, \
 	"Input angles must be in radians [0, 2*pi]" 
     
-    matrix = numpy.zeros([3, 3])
+    matrix = numpy.empty([3, 3])
     if not inverse:
 	matrix[0,0] = (numpy.cos(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.sin(psir))
 	matrix[0,1] = (numpy.cos(psir) * numpy.sin(phir)) + (numpy.cos(thetar) * numpy.cos(phir) * numpy.sin(psir))
@@ -186,7 +190,7 @@ def rotate_cartesian(x, y, z, phir, thetar, psir, invert=False):
     return xrot, yrot, zrot
     
 
-def rotate_spherical(lat, lon, phir, thetar, psir, invert=False):
+def rotate_spherical(lat_axis, lon_axis, phir, thetar, psir, invert=False):
     """Rotate spherical coordinate system (lat, lon) according to the rotation 
     about the origial z axis (phir), new x axis after the first rotation (thetar),
     and about the final z axis (psir).
@@ -196,9 +200,9 @@ def rotate_spherical(lat, lon, phir, thetar, psir, invert=False):
     to every grid point.
     """
     
-    lon_mesh, lat_mesh = numpy.meshgrid(lon, lat)  # This is the correct order
+    lons, lats = nio.coordinate_pairs(lon_axis, lat_axis) 
     
-    x, y, z = css.cssgridmodule.css2c(lat_mesh.flatten(), lon_mesh.flatten())
+    x, y, z = css.cssgridmodule.css2c(lats, lons)
     xrot, yrot, zrot = rotate_cartesian(x, y, z, phir, thetar, psir, invert=invert)
     latrot, lonrot = css.cssgridmodule.csc2s(xrot, yrot, zrot)
     
@@ -215,7 +219,7 @@ def rotate_spherical(lat, lon, phir, thetar, psir, invert=False):
 ############################
 
 def _arccos_check(data):
-    """Adjust for precision errors when usinmg numpy.arccos
+    """Adjust for precision errors when using numpy.arccos
     
     numpy.arccos is only defined [-1, 1]. Sometimes due to precision
     you can get values that are very slightly > 1 or < -1, which causes
@@ -223,8 +227,7 @@ def _arccos_check(data):
         
     """
     
-    data = numpy.where(data < -1.0, -1.0, data)
-    data = numpy.where(data > 1.0, 1.0, data)
+    data = numpy.clip(data, -1.0, 1.0)
     
     return data
 
@@ -252,7 +255,7 @@ def angular_distance(lat1deg, lon1deg, lat2deg, lon2deg):
     return _filter_tiny(angular_dist)
     
 
-def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
+def rotation_angle(latA, lonA, latB, lonB, latsC, lonsC, reshape=None):
     """For a given point on the sphere, find the angle of rotation 
     between the old and new north pole.
     
@@ -263,6 +266,8 @@ def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
       Point A = Location of original north pole
       Point B = Location of new north pole
       Point C = Point of interest
+      reshape = Reshaped dimensions of output array
+      
       Input in degrees
       
       There can be only one specified original and new north pole, 
@@ -271,21 +276,22 @@ def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
     Output:
       Angle C = Rotation angle between old and new north pole
       Output in radians
+      
+    ERROR TO FIX:
+      When both the old and new pole are the same and the latitude=90,
+      the rotation angle is pi, not zero.
     """
     
     ##Some assertions (e.g. latA, lonA, latB, lonB must be len=1, while latC and lonC do not 
     ##Perhaps change names of latA etc to something more meaningful (e.g. new_np_lat)?
 
-    lonC_mesh, latC_mesh = numpy.meshgrid(lonC, latC)  # This is the correct order
-    latC_flat = latC_mesh.flatten()
-    lonC_flat = lonC_mesh.flatten()
-    latA_flat = numpy.repeat(latA, len(lonC_flat))
-    lonA_flat = numpy.repeat(lonA, len(lonC_flat))
-    latB_flat = numpy.repeat(latB, len(lonC_flat))
-    lonB_flat = numpy.repeat(lonB, len(lonC_flat))
+    latA_flat = numpy.repeat(latA, len(lonsC))
+    lonA_flat = numpy.repeat(lonA, len(lonsC))
+    latB_flat = numpy.repeat(latB, len(lonsC))
+    lonB_flat = numpy.repeat(lonB, len(lonsC))
 
-    a_vals = angular_distance(latB_flat, lonB_flat, latC_flat, lonC_flat)
-    b_vals = angular_distance(latA_flat, lonA_flat, latC_flat, lonC_flat)
+    a_vals = angular_distance(latB_flat, lonB_flat, latsC, lonsC)
+    b_vals = angular_distance(latA_flat, lonA_flat, latsC, lonsC)
     c_vals = angular_distance(latA_flat, lonA_flat, latB_flat, lonB_flat)
 
     #### QUICK FIX - MUST BE REPLACED BY A FIX FOR WHEN locationC = locationA or locationB, which makes a or b zero
@@ -297,9 +303,19 @@ def rotation_angle(latA, lonA, latB, lonB, latC, lonC):
     #angleB_magnitude = numpy.arccos((numpy.cos(b) - numpy.cos(c)*numpy.cos(a)) / (numpy.sin(c)*numpy.sin(a)))
     angleC_magnitude = numpy.arccos(_arccos_check((numpy.cos(c_vals) - numpy.cos(a_vals)*numpy.cos(b_vals)) / (numpy.sin(a_vals)*numpy.sin(b_vals))))
 
-    angleC = _rotation_sign(angleC_magnitude, lonB_flat, lonC_flat)
+    angleC = _rotation_sign(angleC_magnitude, lonB_flat, lonsC)
     
-    return numpy.reshape(angleC, [len(latC), len(lonC)])
+#    pdb.set_trace()
+#    test = angleC > 0.1
+#    error_lats = numpy.extract(test, latsC)
+#    error_lons = numpy.extract(test, lonsC)
+    
+    if reshape:
+        angleC = numpy.reshape(angleC, reshape)
+    
+    
+    
+    return _filter_tiny(angleC)
 
 
 def _rotation_sign(angleC, lonB, lonC):
