@@ -84,9 +84,8 @@ class testTransformationMatrix(unittest.TestCase):
         for phi, theta, psi in self.angles[0:2]:
             for inv in [True, False]:
                 result = rot.rotation_matrix(phi, theta, psi, inverse=inv)
-                self.assertIsNone(numpy.testing.assert_allclose(result, numpy.identity(3), rtol=1e-07, atol=1e-07)) 
-                # an alternative is numpy.testing.assert_array_almost_equal()
-
+                numpy.testing.assert_allclose(result, numpy.identity(3), rtol=1e-07, atol=1e-07)) 
+                
 
     def test_known_value(self):
         """Test the rotation matrix for a known answer (derived by hand) [test for success]"""
@@ -108,7 +107,7 @@ class testTransformationMatrix(unittest.TestCase):
 	answer[2, 1] = -(a * c)
 	answer[2, 2] = b
 
-        self.assertIsNone(numpy.testing.assert_allclose(result, answer, rtol=1e-07, atol=1e-07)) 
+        numpy.testing.assert_allclose(result, answer, rtol=1e-07, atol=1e-07) 
 
 
     def test_known_inverse(self):
@@ -131,7 +130,7 @@ class testTransformationMatrix(unittest.TestCase):
 	answer[2, 1] = a * a
 	answer[2, 2] = b
 
-        self.assertIsNone(numpy.testing.assert_allclose(result, answer, rtol=1e-07, atol=1e-07)) 
+        numpy.testing.assert_allclose(result, answer, rtol=1e-07, atol=1e-07) 
 
 
     def test_invalid_input(self):
@@ -149,7 +148,7 @@ class testTransformationMatrix(unittest.TestCase):
             Ainv = rot.rotation_matrix(phi, theta, psi, inverse=True)
             product = numpy.dot(A, Ainv)
 
-            self.assertIsNone(numpy.testing.assert_allclose(product, numpy.identity(3), rtol=1e-07, atol=1e-07))
+            numpy.testing.assert_allclose(product, numpy.identity(3), rtol=1e-07, atol=1e-07)
 
 
 

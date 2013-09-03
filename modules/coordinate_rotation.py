@@ -6,8 +6,11 @@ module_dir = os.path.join(os.environ['HOME'], 'data_processing')
 sys.path.insert(0, module_dir)
 
 Included functions:
+adjust_lon_range
+  --  Express longitude values in desired 360 degree interval
+
 rotation_matrix  
-  -- Get the rotation matrix or its inverse
+  --  Get the rotation matrix or its inverse
 rotate_cartesian  
   --  Convert from geographic cartestian coordinates (x, y, z) to
       rotated cartesian coordinates (xrot, yrot, zrot)  
@@ -54,6 +57,12 @@ import matplotlib.pyplot as plt
 import MV2
 import css
 
+import sys
+import os 
+module_dir = os.path.join(os.environ['HOME'], 'modules')
+sys.path.insert(0, module_dir)
+import netcdf_io as nio
+
 import pdb
 
 
@@ -67,13 +76,9 @@ def switch_axes(data, lats, lons, new_np, pm_point=None, invert=False):
     a regular grid with the same resolution as the original
     
     Note inputs for css.Cssgrid:
-    - lats_rot and lons_rot are a flattened meshgrid
-    - lats and lons are not (i.e. they are just axis values)
+    - lats_rot and loDefault range = [0, 360)
     
-    Not input for rgrd:
-    - the input data array must be flattened 
-    
-    pm = prime meridian
+    Input and output can be in radians or degrees.
     
     """
 
@@ -109,15 +114,31 @@ def _filter_tiny(data, threshold=0.000001):
     return numpy.where(numpy.absolute(data) < threshold, 0.0, data)
  
 
-def _adjust_lon_range(lons, radians=True, start=0.0):
-    """Express longitude values in the range [0, 2pi]
+def adjust_lon_range(lons, radians=True, start=0.0):
+    """Express longitude values in the 360 degree (or 2*pi radians)
+    interval that begins at start.
+
+    Default range = [0, 360)
     
     Input and output can be in radians or degrees.
     """
     
-    add = 2.0*numpy.pi if radians else 360.0
+    lons = nio.single2list(lons, numpy_array=True)    
     
-    return numpy.where(lons < start, lons + add, lons)
+    interval360 = 2.0*numpy.pi if radians else 360.0
+    end = start + interval360    
+    
+    less_than_start = numpy.ones([len(lons),])
+    while numpy.sum(less_than_start) != 0:
+        lons = numpy.where(lons < start, lons + interval360, lons)
+        less_than_start = lons < start
+    
+    more_than_end = numpy.ones([len(lons),])
+    while numpy.sum(more_than_end) != 0:
+        lons = numpy.where(lons >= end, lons - interval360, lons)
+        more_than_end = lons >= end
+
+    return lons
 
 
 #################################
@@ -285,6 +306,9 @@ def rotation_angle(latA, lonA, latB, lonB, latsC, lonsC, reshape=None):
     ##Some assertions (e.g. latA, lonA, latB, lonB must be len=1, while latC and lonC do not 
     ##Perhaps change names of latA etc to something more meaningful (e.g. new_np_lat)?
 
+    latsC = nio.single2list(latsC)
+    lonsC = nio.single2list(lonsC)
+
     latA_flat = numpy.repeat(latA, len(lonsC))
     lonA_flat = numpy.repeat(lonA, len(lonsC))
     latB_flat = numpy.repeat(latB, len(lonsC))
@@ -313,33 +337,37 @@ def rotation_angle(latA, lonA, latB, lonB, latsC, lonsC, reshape=None):
     if reshape:
         angleC = numpy.reshape(angleC, reshape)
     
-    
-    
     return _filter_tiny(angleC)
 
 
 def _rotation_sign(angleC, lonB, lonC):
-   """Determine the sign of the rotation angle.
-   
-   The basic premise is that grid points with a longitude in the range of
-   180 degrees less than the longitude of the new pole have a negative angle.
-   
-   Not sure if this is a universal rule (i.e. this works for when the original
-   north pole was at 90N, 0E. 
-   
-   """
-   
-   lonB_360 = _adjust_lon_range(lonB, radians=False, start=0.0)
-   lonC_360 = _adjust_lon_range(lonC, radians=False, start=0.0)
-   
-   new_start = lonB_360[0] - 180.0
-   
-   lonB_360 = _adjust_lon_range(lonB_360, radians=False, start=new_start)
-   lonC_360 = _adjust_lon_range(lonC_360, radians=False, start=new_start)
-   
-   angleC_adjusted = numpy.where(lonC_360 < lonB_360, -angleC, angleC)
-   
-   return angleC_adjusted
+    """Determine the sign of the rotation angle.
+
+    The basic premise is that grid points (lonC) with a longitude in the range of
+    180 degrees less than the longitude of the new pole (lonB) have a negative angle.
+
+    Not sure if this is a universal rule (i.e. this works for when the original
+    north pole was at 90N, 0E) 
+
+    """
+    
+    lonB = single2list(lonB, numpy_array=True)
+    lonC = single2list(lonC, numpy_array=True)
+
+    assert len(lonB) == len(lonC), \
+    "Input arrays must be the same length"   
+
+    lonB_360 = _adjust_lon_range(lonB, radians=False, start=0.0)
+    lonC_360 = _adjust_lon_range(lonC, radians=False, start=0.0)
+
+    new_start = lonB_360[0] - 180.0
+
+    lonB_360 = _adjust_lon_range(lonB_360, radians=False, start=new_start)
+    lonC_360 = _adjust_lon_range(lonC_360, radians=False, start=new_start)
+
+    angleC_adjusted = numpy.where(lonC_360 < lonB_360, -angleC, angleC)
+
+    return angleC_adjusted
    
     
 #############################

@@ -2,7 +2,7 @@
 A unit testing module for the rotation of the meridional wind.
 
 Functions/methods tested:
-  calc_vwind_rotation.
+  coordinate_rotation.angular_distance
 
 """
 

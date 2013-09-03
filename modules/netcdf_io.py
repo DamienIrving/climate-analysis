@@ -16,6 +16,7 @@ list_kwargs          -- List keyword arguments of a function
 regrid_uniform       -- Regrid data to a uniform output grid
 running_average      -- Calculate running average
 scale_offset         -- Apply scaling and offset factors
+single2list          -- Check if item is a list, then convert if not
 temporal_aggregation -- Create a temporal aggregate of 
                         the input data (i.e. raw, climatology or anomaly)
 time_axis_check      -- Check whether 2 time axes are the same
@@ -593,6 +594,22 @@ def scale_offset(data, scale=1.0, offset=0.0):
     
     return numpy.ma.add(numpy.ma.multiply(data, float(scale)),
                         float(offset))
+
+
+def single2list(item, numpy_array=False):
+    """Check if item is a list, then convert if not"""
+    
+    try:
+        test = len(item)
+    except TypeError:
+        output = [item,]
+    else:
+        output = item 
+        
+    if numpy_array and not isinstance(output, numpy.ndarray):
+        return numpy.array(output)
+    else:
+        return output
 
 
 def _subset_data(infile, var_id, **kwargs):
