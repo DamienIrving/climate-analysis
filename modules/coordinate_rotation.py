@@ -232,7 +232,7 @@ def rotate_spherical(lat_axis, lon_axis, phir, thetar, psir, invert=False):
     #### It also outputs lons that are (-180, 180), but this is not really a problem.
 
     
-    return latrot, _adjust_lon_range(lonrot) 
+    return latrot, adjust_lon_range(lonrot) 
 
 
 ############################
@@ -289,7 +289,7 @@ def rotation_angle(latA, lonA, latB, lonB, latsC, lonsC, reshape=None):
       Point C = Point of interest
       reshape = Reshaped dimensions of output array
       
-      Input in degrees
+      Input in degrees. Output in radians.
       
       There can be only one specified original and new north pole, 
       but multiple points of interest.
@@ -351,19 +351,19 @@ def _rotation_sign(angleC, lonB, lonC):
 
     """
     
-    lonB = single2list(lonB, numpy_array=True)
-    lonC = single2list(lonC, numpy_array=True)
+    lonB = nio.single2list(lonB, numpy_array=True)
+    lonC = nio.single2list(lonC, numpy_array=True)
 
     assert len(lonB) == len(lonC), \
     "Input arrays must be the same length"   
 
-    lonB_360 = _adjust_lon_range(lonB, radians=False, start=0.0)
-    lonC_360 = _adjust_lon_range(lonC, radians=False, start=0.0)
+    lonB_360 = adjust_lon_range(lonB, radians=False, start=0.0)
+    lonC_360 = adjust_lon_range(lonC, radians=False, start=0.0)
 
     new_start = lonB_360[0] - 180.0
 
-    lonB_360 = _adjust_lon_range(lonB_360, radians=False, start=new_start)
-    lonC_360 = _adjust_lon_range(lonC_360, radians=False, start=new_start)
+    lonB_360 = adjust_lon_range(lonB_360, radians=False, start=new_start)
+    lonC_360 = adjust_lon_range(lonC_360, radians=False, start=new_start)
 
     angleC_adjusted = numpy.where(lonC_360 < lonB_360, -angleC, angleC)
 

@@ -58,13 +58,34 @@ def calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np, old_np=(90.0, 0.0)):
                                lats, lons, reshape=[len(lat_axis), len(lon_axis)])
     theta = numpy.resize(theta, numpy.shape(dataU))
     
-    wsp = numpy.sqrt(numpy.square(dataU) + numpy.square(dataV))
-    alpha = numpy.arctan2(dataV, dataU) - theta
-    dataV_rot = wsp * numpy.sin(alpha)
+    dataV_rot = vwind_trig(dataU, dataV, theta) 
 
     return dataV_rot  
     
+    
+def vwind_trig(u, v, theta):
+    """Do the trigonometry required to calculate new meridional
+    wind from the old one.
+    
+    u      -  zonal wind data
+    v      -  meridional wind data
+    theta  -  angle through which the x/y coordinate axes must be rotated 
+              (measured anticlockwise starting on the original positive x-axis 
+	      (i.e. at 90 deg in a 360 circle))
+    phi    -  angle that the wind vector makes with original positive x-axis
+              (measured anticlockwise starting on the original positive x-axis)
+    alpha  -  angle that the wind vector makes with the new positive x-axis
+              (measured anticlockwise starting on the new positive x-axis)
+               
+    """
+    
+    wsp = numpy.sqrt(numpy.square(u) + numpy.square(v))
+    phi = numpy.arctan2(v, u)
+    alpha = phi - theta
+    
+    return wsp * numpy.sin(alpha)
 
+     
 def main(inargs):
     """Run the program."""
     

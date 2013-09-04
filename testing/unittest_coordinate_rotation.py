@@ -84,7 +84,7 @@ class testTransformationMatrix(unittest.TestCase):
         for phi, theta, psi in self.angles[0:2]:
             for inv in [True, False]:
                 result = rot.rotation_matrix(phi, theta, psi, inverse=inv)
-                numpy.testing.assert_allclose(result, numpy.identity(3), rtol=1e-07, atol=1e-07)) 
+                numpy.testing.assert_allclose(result, numpy.identity(3), rtol=1e-07, atol=1e-07)
                 
 
     def test_known_value(self):
