@@ -4,6 +4,7 @@ A unit testing module for coordinate system rotation.
 Functions/methods tested:
   coordinate_rotation.adjust_lon_range  
   coordinate_rotation.rotation_matrix
+  coordinate_rotation.rotate_cartesian
 
 """
 
@@ -11,6 +12,7 @@ import unittest
 
 from math import pi, sqrt
 import numpy
+import css
 
 import os
 import sys
@@ -90,7 +92,7 @@ class testTransformationMatrix(unittest.TestCase):
     def test_known_value(self):
         """Test the rotation matrix for a known answer (derived by hand) [test for success]"""
         
-	phi, theta, psi = [pi / 4, pi / 3, pi / 6]
+	phi, theta, psi = [pi/4., pi/3., pi/6.]
         result = rot.rotation_matrix(phi, theta, psi, inverse=False)
         
 	a = sqrt(3.0) / 2
@@ -151,6 +153,74 @@ class testTransformationMatrix(unittest.TestCase):
             numpy.testing.assert_allclose(product, numpy.identity(3), rtol=1e-07, atol=1e-07)
 
 
+class testRotateCartesian(unittest.TestCase):
+    """Test class for rotations in cartestian coordinates."""
+
+    def test_zero_rotation(self):
+        """[test for success]"""
+    
+        phi, theta, psi = 0.0, 0.0, 0.0
+        lats = [35, 35, 35, 35, -35, -35, -35, -35]
+        lons = [55, 150, 234, 340, 55, 150, 234, 340]
+
+	x, y, z = css.cssgridmodule.css2c(lats, lons)
+	xrot, yrot, zrot = rot.rotate_cartesian(x, y, z, phi, theta, psi)
+        
+        numpy.testing.assert_allclose(x, xrot, rtol=1e-07, atol=1e-07)
+        numpy.testing.assert_allclose(y, yrot, rtol=1e-07, atol=1e-07)
+        numpy.testing.assert_allclose(z, zrot, rtol=1e-07, atol=1e-07)
+    
+    def test_pure_phi(self):
+        """Test pure rotations about the original z-axis (phi).
+	
+	For z-axis rotations, the simpliest place to test is the
+	equator, as the specified rotation angle will correspond
+	exactly to the change in longitude.
+	
+	Negative phi values correspond to a positive longitudinal 
+	direction.
+	
+	css.cssgridmodule.csc2s gives longitudes in the range (-180, 180]
+	
+	"""
+	
+	phi = -50
+	lats = numpy.array([0, 0, 0, 0, 0])
+	lons = numpy.array([0, 65, 170, 230, 340])
+	lons_answer = numpy.array([50, 115, -140, -80, 30])
+	
+	x, y, z = css.cssgridmodule.css2c(lats, lons)
+	xrot, yrot, zrot = rot.rotate_cartesian(x, y, z, phi, 0, 0)
+	latsrot, lonsrot = css.cssgridmodule.csc2s(xrot, yrot, zrot)
+	
+	numpy.testing.assert_allclose(lats, latsrot, rtol=1e-07, atol=1e-07)
+	numpy.testing.assert_allclose(lons_answer, lonsrot, rtol=1e-03, atol=1e-03)
+
+
+    def test_pure_theta(self):
+        """Test pure rotations about the original x-axis (theta).
+	
+	For x-axis rotations, the simpliest place to test is the
+	90/270 longitude circle, as the specified rotation angle 
+	will correspond exactly to the change in latitude (to visualise
+	the rotations, draw a vertical crossection of that circle).
+	
+	"""
+
+        theta = 60
+	lats = numpy.array([70, 70, 40, -32, -45, -80])
+	lons = numpy.array([90, -90, -90, 90, -90, 90])
+	lats_answer = numpy.array([10, 50, 80, -88, 15, -40])
+	lons_answer = numpy.array([90, 90, 90, -90, -90, -90])
+	
+	x, y, z = css.cssgridmodule.css2c(lats, lons)
+	xrot, yrot, zrot = rot.rotate_cartesian(x, y, z, 0, theta, 0)
+	latsrot, lonsrot = css.cssgridmodule.csc2s(xrot, yrot, zrot)
+	
+	numpy.testing.assert_allclose(lats_answer, latsrot, rtol=1e-03, atol=1e-03)
+	numpy.testing.assert_allclose(lons_answer, lonsrot, rtol=1e-03, atol=1e-03)
+	
+	
 
 if __name__ == '__main__':
     unittest.main()

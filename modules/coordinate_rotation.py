@@ -189,7 +189,7 @@ def rotation_matrix(phir, thetar, psir, inverse=False):
 
 def rotate_cartesian(x, y, z, phir, thetar, psir, invert=False):
     """Rotate cartestian coordinate system (x, y, z) according to a rotation 
-    about the origial z axis (phir), new z axis after the first rotation (thetar),
+    about the original z axis (phir), new z axis after the first rotation (thetar),
     and about the final z axis (psir).
     
     Invert can be true or false.
@@ -375,30 +375,40 @@ def _rotation_sign(angleC, lonB, lonC):
 #############################
 
 def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=None):
-    """Convert position of rotated north pole to a rotation about the
-    original z axis (phir) and new z axis after the first rotation (thetar).
+    """Convert position of new north pole (latnp, lonnp) to a rotation about the
+    original z axis (phir), new x axis after the first rotation (thetar),
+    and about the final z axis (psir).
     
     Input and output in degrees.
     
     The prime meridian point should be a list of length 2 (lat, lon), representing a
     point through which the prime meridian should travel.
     
+    Required improvements:
+    - I don't understand phi
+         
     """
 
-    psir = 90.0 - lonnp
-    thetar = 90.0 - latnp 
+    phi = -lonnp          #Used to be 90 - lonnp. I think that may have accounted for 
+                          #the orientation of x-y plane in Euler angle setup being 90 deg 
+			  #out of phase with the lat/lon system when I wrote my own 
+			  #xyz to lat/lon code. Now I'm using css, apparently it isn't needed.
+			  
+			  # It should possibly still be -lonnp, as a psi of 30 takes you in the negative direction
+    theta = 90.0 - latnp  #accounts for fact that the original north pole was at 90N
 
     if prime_meridian_point:
         ## I don't fully understand the setting of phir
         assert len(prime_meridian_point) == 2, \
-	'The prime point must be a list of length 2'
+	'The prime point must be a list of length 2 [lat, lon]'
+	
 	pm_lat = prime_meridian_point[0] 
 	pm_lon = prime_meridian_point[1] 
-        lat_temp, phir = rotate_spherical(numpy.array([pm_lat,]), numpy.array([pm_lon,]), 0.0, thetar, psir)
+        lat_temp, psi = rotate_spherical(numpy.array([pm_lat,]), numpy.array([pm_lon,]), phi, theta, psi)
     else:
-        phir = 0.0
+        psi = 0.0
     
-    return phir, thetar, psir    
+    return phi, theta, psi    
 			
               
 ################### 
