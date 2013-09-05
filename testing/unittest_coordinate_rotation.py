@@ -4,7 +4,8 @@ A unit testing module for coordinate system rotation.
 Functions/methods tested:
   coordinate_rotation.adjust_lon_range  
   coordinate_rotation.rotation_matrix
-  coordinate_rotation.rotate_cartesian
+  coordinate_rotation.rotate_spherical
+  coordinate_rotation.switch_regular_axes
 
 """
 
@@ -101,22 +102,22 @@ class testTransformationMatrix(unittest.TestCase):
     def test_known_value(self):
         """Test the rotation matrix for a known answer (derived by hand) [test for success]"""
         
-	phi, theta, psi = [pi/4., pi/3., pi/6.]
+        phi, theta, psi = [pi/4., pi/3., pi/6.]
         result = rot.rotation_matrix(phi, theta, psi, inverse=False)
         
-	a = sqrt(3.0) / 2
-	b = 0.5
-	c = 1 / sqrt(2.0)
-	answer = numpy.empty([3,3])
-	answer[0, 0] = (a * c) - (b * c * b)
-	answer[0, 1] = (a * c) + (b * c * b)
-	answer[0, 2] = b * a
-	answer[1, 0] = -(b * c) - (b * c * a)
-	answer[1, 1] = -(b * c) + (b * c * a)
-	answer[1, 2] = a * a
-	answer[2, 0] = a * c
-	answer[2, 1] = -(a * c)
-	answer[2, 2] = b
+        a = sqrt(3.0) / 2
+        b = 0.5
+        c = 1 / sqrt(2.0)
+        answer = numpy.empty([3,3])
+        answer[0, 0] = (a * c) - (b * c * b)
+        answer[0, 1] = (a * c) + (b * c * b)
+        answer[0, 2] = b * a
+        answer[1, 0] = -(b * c) - (b * c * a)
+        answer[1, 1] = -(b * c) + (b * c * a)
+        answer[1, 2] = a * a
+        answer[2, 0] = a * c
+        answer[2, 1] = -(a * c)
+        answer[2, 2] = b
 
         numpy.testing.assert_allclose(result, answer, rtol=1e-07, atol=1e-07) 
 
@@ -124,22 +125,22 @@ class testTransformationMatrix(unittest.TestCase):
     def test_known_inverse(self):
         """Test the inverse rotation matrix for a known answer (derived by hand) [test for success]"""
         
-	phi, theta, psi = [pi / 4, pi / 3, pi / 6]
+        phi, theta, psi = [pi / 4, pi / 3, pi / 6]
         result = rot.rotation_matrix(phi, theta, psi, inverse=True)
         
-	a = sqrt(3.0) / 2
-	b = 0.5
-	c = 1 / sqrt(2.0)
-	answer = numpy.empty([3,3])
-	answer[0, 0] = (a * c) - (b * c * b)
-	answer[0, 1] = -(b * c) - (b * c * a)
-	answer[0, 2] = a * c
-	answer[1, 0] = (a * c) + (b * c * b)
-	answer[1, 1] = -(b * c) + (b * c * a)
-	answer[1, 2] = -(a * c)
-	answer[2, 0] = a * b
-	answer[2, 1] = a * a
-	answer[2, 2] = b
+        a = sqrt(3.0) / 2
+        b = 0.5
+        c = 1 / sqrt(2.0)
+        answer = numpy.empty([3,3])
+        answer[0, 0] = (a * c) - (b * c * b)
+        answer[0, 1] = -(b * c) - (b * c * a)
+        answer[0, 2] = a * c
+        answer[1, 0] = (a * c) + (b * c * b)
+        answer[1, 1] = -(b * c) + (b * c * a)
+        answer[1, 2] = -(a * c)
+        answer[2, 0] = a * b
+        answer[2, 1] = a * a
+        answer[2, 2] = b
 
         numpy.testing.assert_allclose(result, answer, rtol=1e-07, atol=1e-07) 
 
@@ -179,7 +180,7 @@ class testRotateSpherical(unittest.TestCase):
         lats = [35, 35, 35, 35, -35, -35, -35, -35]
         lons = [55, 150, 234, 340, 55, 150, 234, 340]
 
-	latsrot, lonsrot = rot.rotate_spherical(lats, lons, phi, theta, psi, invert=False)
+        latsrot, lonsrot = rot.rotate_spherical(lats, lons, phi, theta, psi, invert=False)
 	
         numpy.testing.assert_allclose(latsrot, lats, rtol=1e-03, atol=1e-03)
         numpy.testing.assert_allclose(lonsrot, lons, rtol=1e-03, atol=1e-03)
@@ -187,49 +188,46 @@ class testRotateSpherical(unittest.TestCase):
     
     def test_pure_phi(self):
         """Test pure rotations about the original z-axis (phi).
+        For z-axis rotations, the simpliest place to test is the
+        equator, as the specified rotation angle will correspond
+        exactly to the change in longitude.
+        
+        Negative phi values correspond to a positive longitudinal 
+        direction.
+        
+	    """
 	
-	For z-axis rotations, the simpliest place to test is the
-	equator, as the specified rotation angle will correspond
-	exactly to the change in longitude.
-	
-	Negative phi values correspond to a positive longitudinal 
-	direction.
-	
-	css.cssgridmodule.csc2s gives longitudes in the range (-180, 180]
-	
-	"""
-	
-	phi = -50
-	lats = numpy.array([0, 0, 0, 0, 0])
-	lons = numpy.array([0, 65, 170, 230, 340])
-	lons_answer = numpy.array([50, 115, 220, 280, 30])
+        phi = -50
+        lats = numpy.array([0, 0, 0, 0, 0])
+        lons = numpy.array([0, 65, 170, 230, 340])
+        lons_answer = numpy.array([50, 115, 220, 280, 30])
 	
         latsrot, lonsrot = rot.rotate_spherical(lats, lons, phi, 0, 0, invert=False)
-
-	numpy.testing.assert_allclose(lats, latsrot, rtol=1e-07, atol=1e-07)
-	numpy.testing.assert_allclose(lons_answer, lonsrot, rtol=1e-03, atol=1e-03)
+        
+        numpy.testing.assert_allclose(lats, latsrot, rtol=1e-07, atol=1e-07)
+        numpy.testing.assert_allclose(lons_answer, lonsrot, rtol=1e-03, atol=1e-03)
 
 
     def test_pure_theta(self):
         """Test pure rotations about the original x-axis (theta).
+        
+        For x-axis rotations, the simpliest place to test is the
+        90/270 longitude circle, as the specified rotation angle 
+        will correspond exactly to the change in latitude (to visualise
+        the rotations, draw a vertical crossection of that circle).
 	
-	For x-axis rotations, the simpliest place to test is the
-	90/270 longitude circle, as the specified rotation angle 
-	will correspond exactly to the change in latitude (to visualise
-	the rotations, draw a vertical crossection of that circle).
-	
-	"""
+        """
 
         theta = 60
-	lats = numpy.array([70, 70, 40, -32, -45, -80])
-	lons = numpy.array([90, 270, -90, 90, -90, 90])
-	lats_answer = numpy.array([10, 50, 80, -88, 15, -40])
-	lons_answer = numpy.array([90, 90, 90, 270, 270, 270])
+        lats = numpy.array([70, 70, 40, -32, -45, -80])
+        lons = numpy.array([90, 270, -90, 90, -90, 90])
+        lats_answer = numpy.array([10, 50, 80, -88, 15, -40])
+        lons_answer = numpy.array([90, 90, 90, 270, 270, 270])
 		
         latsrot, lonsrot = rot.rotate_spherical(lats, lons, 0, theta, 0, invert=False)
-
-	numpy.testing.assert_allclose(lats_answer, latsrot, rtol=1e-03, atol=1e-03)
-	numpy.testing.assert_allclose(lons_answer, lonsrot, rtol=1e-03, atol=1e-03)
+        
+        numpy.testing.assert_allclose(lats_answer, latsrot, rtol=1e-03, atol=1e-03)
+        numpy.testing.assert_allclose(lons_answer, lonsrot, rtol=1e-03, atol=1e-03)
 	
 
     def test_pure_psi(self):
@@ -291,69 +289,75 @@ class testSwitchAxes(self):
 ## plotting ##
 ##############        
 
+def create_latlon_dataset(res=2.5):
+    """Create a dataset corresponding to the latitude (output 1) and
+    longitude (output 2) of each grid point"""
 
-def quick_plot(data, outfile_name, projection='cyl', contour=False, ticks=None):
-    """Quickly plot data"""
+    nlats = int((180.0 / res) + 1)
+    nlons = int(360.0 / res)
+    grid = cdms2.createUniformGrid(-90.0, nlats, res, 0.0, nlons, res)
     
-    plot_map.multiplot(data,
-                       ofile=outfile_name, 
-		       projection=projection,
-                       ticks=ticks,
-                       draw_axis=True, delat=15, delon=30, equator=True,
-                       contour=contour)
+    lat_data = numpy.zeros([nlats, nlons])
+    lat_axis = numpy.arange(-90, 90 + res, res)
+    for index in range(0, len(lats)):
+        lat_data[index, :] = lats[index]
+    lat_data_cdms = cdms2.createVariable(lat_data[:], grid=grid)
+
+    lon_data = numpy.zeros([nlats, nlons])
+    lon_axis1 = numpy.arange(0, 180 + res, res)
+	lon_axis2 = numpy.arange(180 - res, 0, -res)
+	for index in range(0, len(lon_axis1)):
+	    lon_data[:, index] = lon_axis1[index]
+    for index in range(0, len(lon_axis2)):
+	    lon_data[:, index + len(lon_axis1)] = lon_axis2[index]
+    lon_data_cdms = cdms2.createVariable(lon_data[:], grid=grid)
+
+    return lat_data_cdms, lon_data_cdms
 
 
-def create_dataset(lat=True):
-    """Create the data for testing. It is a spatial field with 
-    grid point values equal to the latitude (lat=True) or 
-    longitude (lat=False)"""
-
-    grid = cdms2.createUniformGrid(-90.0, 73, 2.5, 0.0, 144, 2.5)
-    data = numpy.zeros([73, 144])
-    if lat:
-        text = 'lat'
-        lats = numpy.arange(-90, 92.5, 2.5)
-        for index in range(0, len(lats)):
-            data[index, :] = lats[index]
-    else:
-        text = 'lon'
-	lons1 = numpy.arange(0, 182.5, 2.5)
-	lons2 = numpy.arange(177.5, 0, -2.5)
-	for index in range(0, len(lons1)):
-	    data[:, index] = lons1[index]
-        for index in range(0, len(lons2)):
-	    data[:, index+len(lons1)] = lons2[index]
-
-    cdms_data = cdms2.createVariable(data[:], grid=grid)
-
-    return cdms_data
-
-
-def switch_and_restore(np, lat=True):
+def switch_and_restore(data, new_np):
     """Test the switch_axes function"""
-
-    data = test_dataset(lat=lat)
 
     lat_axis = data.getLatitude()
     lon_axis = data.getLongitude()
     
-    rotated_data = rot.switch_axes(data, lat_axis[:], lon_axis[:], np)
+    rotated_data = rot.switch_regular_axes(data, lat_axis[:], lon_axis[:], new_np, invert=False)
     cdms_rotated_data = cdms2.createVariable(rotated_data[:], axes=[lat_axis, lon_axis])
 
-    returned_data = calc_envelope.reset_axes(rotated_data, lat_axis[:], lon_axis[:], np)
+    returned_data = calc_envelope.switch_regular_axes(rotated_data, lat_axis[:], lon_axis[:], new_np, invert=True)
     cdms_returned_data = cdms2.createVariable(returned_data[:], axes=[lat_axis, lon_axis])
 
     return cdms_rotated_data, cdms_returned_data
     
 
-def plot_axis_switch(np, lat=True):
+def plot_axis_switch(new_np):
     """Plot the original, rotated and returned data"""
 
-    original_data = create_dataset(lat=lat)
-    rotated_data, returned_data = switch_and_restore(np, lat=lat)
+    orig_lat_data, orig_lon_data = create_latlon_dataset()
+    rotated_lat_data, returned_lat_data = switch_and_restore(orig_lat_data, new_np)
+    rotated_lon_data, returned_lon_data = switch_and_restore(orig_lon_data, new_np)
 
-    quick_plot()
+    title = 'Axis switch for new NP at %sN, %sE' %(str(new_np[0]), str(new_np[1])) 
+
+    # Latitude plot
+    plot_lat_list = [original_lat_data, rotated_lat_data, returned_lat_data]
+    plot_map.multiplot(plot_lat_list,
+                       dimensions=(3, 1),  
+                       title=title,
+                       ofile='axis_switch_lat_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
+                       row_headings=['original', 'rotated', 'returned'],
+                       draw_axis=True, delat=15, delon=30, equator=True)
+
+    # Longitude plot
 
 
 if __name__ == '__main__':
+    
     unittest.main()
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--plot", type=float, nargs=2, default=None, metavar=('LAT', 'LON'), 
+                        help="latitude and longitude of new north pole for plot [default: 30N, 270E]")
+    args = parser.parse_args()
+    if args.plot:
+        plot_axis_switch(args.plot)
