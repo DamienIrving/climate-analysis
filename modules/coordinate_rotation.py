@@ -70,8 +70,8 @@ import pdb
 ## Switching between coordinate systems ##
 ##########################################
 
-def switch_axes(data, lats, lons, new_np, pm_point=None, invert=False):
-    """Take some data on a regular grid (lat, lon), rotate the axes 
+def switch_regular_axes(data, lat_axis, lon_axis, new_np, pm_point=None, invert=False):
+    """Take some data on a regular grid (lat_axis, lon_axis), rotate the axes 
     (according to the position of the new north pole) and regrid to 
     a regular grid with the same resolution as the original
     
@@ -83,7 +83,8 @@ def switch_axes(data, lats, lons, new_np, pm_point=None, invert=False):
     """
 
     phi, theta, psi = north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)   
-
+    lons, lats = nio.coordinate_pairs(lon_axis, lat_axis) 
+    
     lats_rot, lons_rot = rotate_spherical(lats, lons, phi, theta, psi, invert=invert)
 
     grid_instance = css.Cssgrid(lats_rot, lons_rot, lats, lons)
@@ -211,28 +212,34 @@ def rotate_cartesian(x, y, z, phir, thetar, psir, invert=False):
     return xrot, yrot, zrot
     
 
-def rotate_spherical(lat_axis, lon_axis, phir, thetar, psir, invert=False):
+def rotate_spherical(lats, lons, phi, theta, psi, invert=False):
     """Rotate spherical coordinate system (lat, lon) according to the rotation 
-    about the origial z axis (phir), new x axis after the first rotation (thetar),
-    and about the final z axis (psir).
+    about the origial z axis (phi), new x axis after the first rotation (theta),
+    and about the final z axis (psi).
+    
+    lats and lons are pairs corresponding to each grid point. For regular grids, these
+    pairs can be generated using netcdfio.coordinate_pairs()
     
     Inputs and outputs are all in degrees. Longitudes are output [0, 360]
     Output is a flattened lat and lon array, with element-wise pairs corresponding 
     to every grid point.
     """
     
-    lons, lats = nio.coordinate_pairs(lon_axis, lat_axis) 
+    lats = nio.single2list(lats)
+    lons = nio.single2list(lons)
+    
+    assert len(lats) == len(lons), \
+    'lats and lons are pairs corresponding to each grid point'
     
     x, y, z = css.cssgridmodule.css2c(lats, lons)
-    xrot, yrot, zrot = rotate_cartesian(x, y, z, phir, thetar, psir, invert=invert)
+    xrot, yrot, zrot = rotate_cartesian(x, y, z, phi, theta, psi, invert=invert)
     latrot, lonrot = css.cssgridmodule.csc2s(xrot, yrot, zrot)
     
     #### At the poles, csc2s produces longitude values that are 180 degrees out of
     #### phase with the original data.
     #### It also outputs lons that are (-180, 180), but this is not really a problem.
 
-    
-    return latrot, adjust_lon_range(lonrot) 
+    return latrot, adjust_lon_range(lonrot, radians=False, start=0.0) 
 
 
 ############################
@@ -389,7 +396,7 @@ def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=None):
          
     """
 
-    phi = -lonnp          #Used to be 90 - lonnp. I think that may have accounted for 
+    phi = 90.0 - lonnp         #Used to be 90 - lonnp. I think that may have accounted for 
                           #the orientation of x-y plane in Euler angle setup being 90 deg 
 			  #out of phase with the lat/lon system when I wrote my own 
 			  #xyz to lat/lon code. Now I'm using css, apparently it isn't needed.
@@ -402,9 +409,7 @@ def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=None):
         assert len(prime_meridian_point) == 2, \
 	'The prime point must be a list of length 2 [lat, lon]'
 	
-	pm_lat = prime_meridian_point[0] 
-	pm_lon = prime_meridian_point[1] 
-        lat_temp, psi = rotate_spherical(numpy.array([pm_lat,]), numpy.array([pm_lon,]), phi, theta, psi)
+        lat_temp, psi = rotate_spherical(prime_meridian_point[0], prime_meridian_point[1], phi, theta, 0)
     else:
         psi = 0.0
     

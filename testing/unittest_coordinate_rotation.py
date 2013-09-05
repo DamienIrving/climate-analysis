@@ -12,7 +12,6 @@ import unittest
 
 from math import pi, sqrt
 import numpy
-import css
 
 import os
 import sys
@@ -21,8 +20,18 @@ module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import coordinate_rotation as rot
 
+module_dir2 = os.path.join(os.environ['HOME'], 'visualisation')
+sys.path.insert(0, module_dir2)
+import plot_map
+
+import cdms2
+
 import pdb
 
+
+##########################
+## unittest test clases ##
+##########################
 
 class testLonAdjust(unittest.TestCase):
     """Test class for testing the adjustment of longitude values."""
@@ -153,8 +162,15 @@ class testTransformationMatrix(unittest.TestCase):
             numpy.testing.assert_allclose(product, numpy.identity(3), rtol=1e-07, atol=1e-07)
 
 
-class testRotateCartesian(unittest.TestCase):
-    """Test class for rotations in cartestian coordinates."""
+class testRotateSpherical(unittest.TestCase):
+    """Test class for rotations in spherical coordinates.
+    
+    I'm pretty sure rotate_spherical does not do lat=90 things properly.
+    THIS NEEDS TO BE TESTED. If it doesn't, it may be a matter of altering the
+    code so that lat=90 points are by default just allocated the coordinates of the
+    new north pole.
+    
+    """
 
     def test_zero_rotation(self):
         """[test for success]"""
@@ -163,12 +179,11 @@ class testRotateCartesian(unittest.TestCase):
         lats = [35, 35, 35, 35, -35, -35, -35, -35]
         lons = [55, 150, 234, 340, 55, 150, 234, 340]
 
-	x, y, z = css.cssgridmodule.css2c(lats, lons)
-	xrot, yrot, zrot = rot.rotate_cartesian(x, y, z, phi, theta, psi)
-        
-        numpy.testing.assert_allclose(x, xrot, rtol=1e-07, atol=1e-07)
-        numpy.testing.assert_allclose(y, yrot, rtol=1e-07, atol=1e-07)
-        numpy.testing.assert_allclose(z, zrot, rtol=1e-07, atol=1e-07)
+	latsrot, lonsrot = rot.rotate_spherical(lats, lons, phi, theta, psi, invert=False)
+	
+        numpy.testing.assert_allclose(latsrot, lats, rtol=1e-03, atol=1e-03)
+        numpy.testing.assert_allclose(lonsrot, lons, rtol=1e-03, atol=1e-03)
+
     
     def test_pure_phi(self):
         """Test pure rotations about the original z-axis (phi).
@@ -187,12 +202,10 @@ class testRotateCartesian(unittest.TestCase):
 	phi = -50
 	lats = numpy.array([0, 0, 0, 0, 0])
 	lons = numpy.array([0, 65, 170, 230, 340])
-	lons_answer = numpy.array([50, 115, -140, -80, 30])
+	lons_answer = numpy.array([50, 115, 220, 280, 30])
 	
-	x, y, z = css.cssgridmodule.css2c(lats, lons)
-	xrot, yrot, zrot = rot.rotate_cartesian(x, y, z, phi, 0, 0)
-	latsrot, lonsrot = css.cssgridmodule.csc2s(xrot, yrot, zrot)
-	
+        latsrot, lonsrot = rot.rotate_spherical(lats, lons, phi, 0, 0, invert=False)
+
 	numpy.testing.assert_allclose(lats, latsrot, rtol=1e-07, atol=1e-07)
 	numpy.testing.assert_allclose(lons_answer, lonsrot, rtol=1e-03, atol=1e-03)
 
@@ -209,18 +222,138 @@ class testRotateCartesian(unittest.TestCase):
 
         theta = 60
 	lats = numpy.array([70, 70, 40, -32, -45, -80])
-	lons = numpy.array([90, -90, -90, 90, -90, 90])
+	lons = numpy.array([90, 270, -90, 90, -90, 90])
 	lats_answer = numpy.array([10, 50, 80, -88, 15, -40])
-	lons_answer = numpy.array([90, 90, 90, -90, -90, -90])
-	
-	x, y, z = css.cssgridmodule.css2c(lats, lons)
-	xrot, yrot, zrot = rot.rotate_cartesian(x, y, z, 0, theta, 0)
-	latsrot, lonsrot = css.cssgridmodule.csc2s(xrot, yrot, zrot)
-	
+	lons_answer = numpy.array([90, 90, 90, 270, 270, 270])
+		
+        latsrot, lonsrot = rot.rotate_spherical(lats, lons, 0, theta, 0, invert=False)
+
 	numpy.testing.assert_allclose(lats_answer, latsrot, rtol=1e-03, atol=1e-03)
 	numpy.testing.assert_allclose(lons_answer, lonsrot, rtol=1e-03, atol=1e-03)
 	
-	
+
+    def test_pure_psi(self):
+        """Test pure rotations about the final z-axis (psi)."""
+
+        pass
+
+
+class testNorthPoleToAngles(unittest.TestCase):
+    """Test class for converting a new north pole position to the
+    corresponding Euler angles."""
+
+    def test_no_change(self):
+        """Test for no change in north pole location [test for success]"""
+
+        result = rot.north_pole_to_rotation_angles(90, 0)
+        numpy.testing.assert_array_equal(result, numpy.zeros(1))
+
+
+    def test_pure_meridional(self):
+        """Test for a north pole change purely in the meridional direction"""
+
+        r1 = rot.north_pole_to_rotation_angles(70, 0)
+        r2 = rot.north_pole_to_rotation_angles(-60, 0)
+        r3 = rot.north_pole_to_rotation_angles(-90, 0)
+        results = [r1, r2, r3]
+
+        a1 = [0, 20, 0]
+        a2 = [0, 150, 0]
+        a3 = [0, 180, 0]
+        answers = [a1, a2, a3]
+
+        for i in range(0,3):
+            numpy.testing.assert_allclose(results[i], answers[i], rtol=1e-03, atol=1e-03)
+
+
+class testSwitchAxes(self):
+    """Test the complete switch of axes"""
+
+    def test_np_0N_180E(self):
+        """Test for new north pole at 0N, 180E [test for success].
+        (corresponds to a swap of the lat and lon coordinates of each point?)
+
+        """
+        
+        pass
+
+
+    def test_np_90S_0E(self):
+        """Test for new north pole at 90S, 0E [test for success].
+        (corresponds to change in sign of latitude values)
+
+        """
+        
+        pass
+
+
+##############
+## plotting ##
+##############        
+
+
+def quick_plot(data, outfile_name, projection='cyl', contour=False, ticks=None):
+    """Quickly plot data"""
+    
+    plot_map.multiplot(data,
+                       ofile=outfile_name, 
+		       projection=projection,
+                       ticks=ticks,
+                       draw_axis=True, delat=15, delon=30, equator=True,
+                       contour=contour)
+
+
+def create_dataset(lat=True):
+    """Create the data for testing. It is a spatial field with 
+    grid point values equal to the latitude (lat=True) or 
+    longitude (lat=False)"""
+
+    grid = cdms2.createUniformGrid(-90.0, 73, 2.5, 0.0, 144, 2.5)
+    data = numpy.zeros([73, 144])
+    if lat:
+        text = 'lat'
+        lats = numpy.arange(-90, 92.5, 2.5)
+        for index in range(0, len(lats)):
+            data[index, :] = lats[index]
+    else:
+        text = 'lon'
+	lons1 = numpy.arange(0, 182.5, 2.5)
+	lons2 = numpy.arange(177.5, 0, -2.5)
+	for index in range(0, len(lons1)):
+	    data[:, index] = lons1[index]
+        for index in range(0, len(lons2)):
+	    data[:, index+len(lons1)] = lons2[index]
+
+    cdms_data = cdms2.createVariable(data[:], grid=grid)
+
+    return cdms_data
+
+
+def switch_and_restore(np, lat=True):
+    """Test the switch_axes function"""
+
+    data = test_dataset(lat=lat)
+
+    lat_axis = data.getLatitude()
+    lon_axis = data.getLongitude()
+    
+    rotated_data = rot.switch_axes(data, lat_axis[:], lon_axis[:], np)
+    cdms_rotated_data = cdms2.createVariable(rotated_data[:], axes=[lat_axis, lon_axis])
+
+    returned_data = calc_envelope.reset_axes(rotated_data, lat_axis[:], lon_axis[:], np)
+    cdms_returned_data = cdms2.createVariable(returned_data[:], axes=[lat_axis, lon_axis])
+
+    return cdms_rotated_data, cdms_returned_data
+    
+
+def plot_axis_switch(np, lat=True):
+    """Plot the original, rotated and returned data"""
+
+    original_data = create_dataset(lat=lat)
+    rotated_data, returned_data = switch_and_restore(np, lat=lat)
+
+    quick_plot()
+
 
 if __name__ == '__main__':
     unittest.main()
