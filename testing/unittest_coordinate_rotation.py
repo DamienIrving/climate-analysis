@@ -20,12 +20,7 @@ import sys
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import coordinate_rotation as rot
-
-module_dir2 = os.path.join(os.environ['HOME'], 'visualisation')
-sys.path.insert(0, module_dir2)
-import plot_map
-
-import cdms2
+import netcdf_io as nio
 
 import pdb
 
@@ -177,8 +172,12 @@ class testRotateSpherical(unittest.TestCase):
         """[test for success]"""
     
         phi, theta, psi = 0.0, 0.0, 0.0
-        lats = [35, 35, 35, 35, -35, -35, -35, -35]
-        lons = [55, 150, 234, 340, 55, 150, 234, 340]
+        #lats = [35, 35, 35, 35, -35, -35, -35, -35]
+        #lons = [55, 150, 234, 340, 55, 150, 234, 340]
+
+        lat_axis = numpy.arange(-90, 100, 10)
+	lon_axis = numpy.arange(0, 370, 10)
+	lats, lons = nio.coordinate_pairs(lat_axis, lon_axis) 
 
         latsrot, lonsrot = rot.rotate_spherical(lats, lons, phi, theta, psi, invert=False)
 	
@@ -244,29 +243,48 @@ class testNorthPoleToAngles(unittest.TestCase):
         """Test for no change in north pole location [test for success]"""
 
         result = rot.north_pole_to_rotation_angles(90, 0)
-        numpy.testing.assert_array_equal(result, numpy.zeros(1))
+        numpy.testing.assert_array_equal(result, numpy.zeros(3))
 
 
-    def test_pure_meridional(self):
-        """Test for a north pole change purely in the meridional direction"""
+#    def test_pure_meridional(self):
+#        """Test for a north pole change purely in the meridional direction"""
+#
+#        r1 = rot.north_pole_to_rotation_angles(70, 0)
+#        r2 = rot.north_pole_to_rotation_angles(-60, 0)
+#        r3 = rot.north_pole_to_rotation_angles(-90, 0)
+#        results = [r1, r2, r3]
+#
+#        a1 = [0, 20, 0]
+#        a2 = [0, 150, 0]
+#        a3 = [0, 180, 0]
+#        answers = [a1, a2, a3]
+#
+#        for i in range(0,3):
+#            numpy.testing.assert_allclose(results[i], answers[i], rtol=1e-03, atol=1e-03)
 
-        r1 = rot.north_pole_to_rotation_angles(70, 0)
-        r2 = rot.north_pole_to_rotation_angles(-60, 0)
-        r3 = rot.north_pole_to_rotation_angles(-90, 0)
-        results = [r1, r2, r3]
 
-        a1 = [0, 20, 0]
-        a2 = [0, 150, 0]
-        a3 = [0, 180, 0]
-        answers = [a1, a2, a3]
-
-        for i in range(0,3):
-            numpy.testing.assert_allclose(results[i], answers[i], rtol=1e-03, atol=1e-03)
-
-
-class testSwitchAxes(self):
+class testSwitchAxes(unittest.TestCase):
     """Test the complete switch of axes"""
 
+    def setUp(self):
+        """Set axes"""
+
+        self.lat_axis = numpy.arange(-90, 92.5, 2.5)
+	self.lon_axis = numpy.arange(0.0, 362.5, 2.5)
+	self.nlats = len(self.lat_axis)
+	self.nlons = len(self.lon_axis)
+
+    def test_no_switch(self):
+        """Test for n shift in the north pole [test for success].
+
+        """
+        
+	data = numpy.ones([self.nlats, self.nlons])
+        result = rot.switch_regular_axes(data, self.lat_axis, self.lon_axis, [90, 0], invert=False)
+        
+	numpy.testing.assert_allclose(result, data, rtol=1e-07, atol=1e-07)
+    
+    
     def test_np_0N_180E(self):
         """Test for new north pole at 0N, 180E [test for success].
         (corresponds to a swap of the lat and lon coordinates of each point?)
@@ -282,82 +300,16 @@ class testSwitchAxes(self):
 
         """
         
-        pass
+        data = numpy.zeros([self.nlats, self.nlons])
+        for index in range(0, self.nlats):
+            data[index, :] = self.lat_axis[index]
+      
+        answer = data * -1
+	result = rot.switch_regular_axes(data, self.lat_axis, self.lon_axis, [-90, 0], invert=False)
 
-
-##############
-## plotting ##
-##############        
-
-def create_latlon_dataset(res=2.5):
-    """Create a dataset corresponding to the latitude (output 1) and
-    longitude (output 2) of each grid point"""
-
-    nlats = int((180.0 / res) + 1)
-    nlons = int(360.0 / res)
-    grid = cdms2.createUniformGrid(-90.0, nlats, res, 0.0, nlons, res)
-    
-    lat_data = numpy.zeros([nlats, nlons])
-    lat_axis = numpy.arange(-90, 90 + res, res)
-    for index in range(0, len(lats)):
-        lat_data[index, :] = lats[index]
-    lat_data_cdms = cdms2.createVariable(lat_data[:], grid=grid)
-
-    lon_data = numpy.zeros([nlats, nlons])
-    lon_axis1 = numpy.arange(0, 180 + res, res)
-	lon_axis2 = numpy.arange(180 - res, 0, -res)
-	for index in range(0, len(lon_axis1)):
-	    lon_data[:, index] = lon_axis1[index]
-    for index in range(0, len(lon_axis2)):
-	    lon_data[:, index + len(lon_axis1)] = lon_axis2[index]
-    lon_data_cdms = cdms2.createVariable(lon_data[:], grid=grid)
-
-    return lat_data_cdms, lon_data_cdms
-
-
-def switch_and_restore(data, new_np):
-    """Test the switch_axes function"""
-
-    lat_axis = data.getLatitude()
-    lon_axis = data.getLongitude()
-    
-    rotated_data = rot.switch_regular_axes(data, lat_axis[:], lon_axis[:], new_np, invert=False)
-    cdms_rotated_data = cdms2.createVariable(rotated_data[:], axes=[lat_axis, lon_axis])
-
-    returned_data = calc_envelope.switch_regular_axes(rotated_data, lat_axis[:], lon_axis[:], new_np, invert=True)
-    cdms_returned_data = cdms2.createVariable(returned_data[:], axes=[lat_axis, lon_axis])
-
-    return cdms_rotated_data, cdms_returned_data
-    
-
-def plot_axis_switch(new_np):
-    """Plot the original, rotated and returned data"""
-
-    orig_lat_data, orig_lon_data = create_latlon_dataset()
-    rotated_lat_data, returned_lat_data = switch_and_restore(orig_lat_data, new_np)
-    rotated_lon_data, returned_lon_data = switch_and_restore(orig_lon_data, new_np)
-
-    title = 'Axis switch for new NP at %sN, %sE' %(str(new_np[0]), str(new_np[1])) 
-
-    # Latitude plot
-    plot_lat_list = [original_lat_data, rotated_lat_data, returned_lat_data]
-    plot_map.multiplot(plot_lat_list,
-                       dimensions=(3, 1),  
-                       title=title,
-                       ofile='axis_switch_lat_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
-                       row_headings=['original', 'rotated', 'returned'],
-                       draw_axis=True, delat=15, delon=30, equator=True)
-
-    # Longitude plot
+        numpy.testing.assert_allclose(result, data, rtol=1e-07, atol=1e-07)
 
 
 if __name__ == '__main__':
-    
     unittest.main()
     
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--plot", type=float, nargs=2, default=None, metavar=('LAT', 'LON'), 
-                        help="latitude and longitude of new north pole for plot [default: 30N, 270E]")
-    args = parser.parse_args()
-    if args.plot:
-        plot_axis_switch(args.plot)

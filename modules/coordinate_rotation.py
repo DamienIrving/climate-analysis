@@ -76,18 +76,19 @@ def switch_regular_axes(data, lat_axis, lon_axis, new_np, pm_point=None, invert=
     a regular grid with the same resolution as the original
     
     Note inputs for css.Cssgrid:
-    - lats_rot and loDefault range = [0, 360)
+    - lats_rot and lons_rot are all grid point value
+    - lats and lons are not (i.e. they are just axis values)
     
     Input and output can be in radians or degrees.
     
     """
 
-    phi, theta, psi = north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)   
-    lons, lats = nio.coordinate_pairs(lon_axis, lat_axis) 
+    phi, theta, psi = north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)
+    lats, lons = nio.coordinate_pairs(lat_axis, lon_axis) 
     
     lats_rot, lons_rot = rotate_spherical(lats, lons, phi, theta, psi, invert=invert)
 
-    grid_instance = css.Cssgrid(lats_rot, lons_rot, lats, lons)
+    grid_instance = css.Cssgrid(lats_rot, lons_rot, lat_axis, lon_axis)
     if numpy.rank(data) == 3:
         data_rot = numpy.zeros(numpy.shape(data))
         for tstep in range(0, numpy.shape(data)[0]):
@@ -396,7 +397,7 @@ def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=None):
          
     """
 
-    phi = 90.0 - lonnp         #Used to be 90 - lonnp. I think that may have accounted for 
+    phi = 90.0 -lonnp         #Used to be 90 - lonnp. I think that may have accounted for 
                           #the orientation of x-y plane in Euler angle setup being 90 deg 
 			  #out of phase with the lat/lon system when I wrote my own 
 			  #xyz to lat/lon code. Now I'm using css, apparently it isn't needed.

@@ -291,6 +291,8 @@ def multiplot(indata,
             print "Error row headings do not match number of rows, ",
             print "there are %s rows and %s headings" % (nrows, len(row_headings))
             sys.exit(1)
+	else:
+	    row_headings.reverse()  #now top to bottom, not bottom to top
 
     if col_headings:
         if not (len(col_headings) == ncols):
