@@ -183,7 +183,7 @@ def rotation_matrix(phir, thetar, psir, inverse=False):
 	matrix[2,1] = numpy.sin(thetar) * numpy.cos(psir)
 	matrix[2,2] = numpy.cos(thetar)
 
-    return matrix
+    return _filter_tiny(matrix)
 
 
 def rotate_cartesian(x, y, z, phir, thetar, psir, invert=False):
@@ -207,7 +207,7 @@ def rotate_cartesian(x, y, z, phir, thetar, psir, invert=False):
     yrot = dot_product[1, :]
     zrot = dot_product[2, :]
     
-    return xrot, yrot, zrot
+    return _filter_tiny(xrot), _filter_tiny(yrot), _filter_tiny(zrot)
     
 
 def rotate_spherical(lats, lons, phi, theta, psi, invert=False):
@@ -230,13 +230,17 @@ def rotate_spherical(lats, lons, phi, theta, psi, invert=False):
     'lats and lons are pairs corresponding to each grid point'
     
     x, y, z = css.cssgridmodule.css2c(lats, lons)
-    xrot, yrot, zrot = rotate_cartesian(x, y, z, phi, theta, psi, invert=invert)
-    latrot, lonrot = css.cssgridmodule.csc2s(xrot, yrot, zrot)
+    x = _filter_tiny(x)    # Filter small values or else they can cause innaccurate
+    y = _filter_tiny(y)    # values at poles by moving into wrong quadrant
+    z = _filter_tiny(z)    # (lon can end up 180 degrees displaced)
     
-    #### At the poles, csc2s produces longitude values that are 180 degrees out of
-    #### phase with the original data.
-    #### It also outputs lons that are (-180, 180), but this is not really a problem.
-
+    xrot, yrot, zrot = rotate_cartesian(x, y, z, phi, theta, psi, invert=invert)
+    
+    latrot, lonrot = css.cssgridmodule.csc2s(xrot, yrot, zrot)  # csc2s produces lon values (-180, 180)
+    #lonrot = numpy.where(numpy.abs(lats) == 90.0, lons + phi + psi, lonrot)
+    # accounts for the fact that in x, y, z the pole is [0,0,1] or [0,0,-1], which css.cssgridmodule.csc2s
+    # always interprets as having a longitude of zero 
+    
     return latrot, adjust_lon_range(lonrot, radians=False, start=0.0) 
 
 
@@ -334,11 +338,6 @@ def rotation_angle(latA, lonA, latB, lonB, latsC, lonsC, reshape=None):
 
     angleC = _rotation_sign(angleC_magnitude, lonB_flat, lonsC)
     
-#    pdb.set_trace()
-#    test = angleC > 0.1
-#    error_lats = numpy.extract(test, latsC)
-#    error_lons = numpy.extract(test, lonsC)
-    
     if reshape:
         angleC = numpy.reshape(angleC, reshape)
     
@@ -399,6 +398,6 @@ def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=None):
 	'The prime point must be a list of length 2 [lat, lon]'
         lat_temp, phi = rotate_spherical(prime_meridian_point[0], prime_meridian_point[1], 0, theta, psi)
     else:
-        phi = 0.0
+        phi = -90.0   # default lines back up with original prime meridian (cancels out the '90 -' in the psi calculation) 
     
     return phi, theta, psi

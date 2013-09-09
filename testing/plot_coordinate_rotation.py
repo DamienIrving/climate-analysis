@@ -78,6 +78,8 @@ def plot_axis_switch(new_np):
 
     title = 'Axis switch for NP %sN, %sE' %(str(new_np[0]), str(new_np[1])) 
 
+    plot_search_path(rotated_lat_data, new_np)
+
     # Latitude plot
     plot_lat_list = [orig_lat_data, rotated_lat_data, returned_lat_data]
     plot_map.multiplot(plot_lat_list,
@@ -96,7 +98,10 @@ def plot_axis_switch(new_np):
                        row_headings=['original', 'rotated', 'returned'],
                        draw_axis=True, delat=15, delon=30, equator=True)
     
-    # Search paths
+    
+def plot_search_path(rotated_lat_data, new_np):
+    """Plot the wave extraction search path"""
+    
     bmap = Basemap(llcrnrlon=0, llcrnrlat=-90, urcrnrlon=360, urcrnrlat=90, projection='cyl')
     bmap.drawcoastlines()
     bmap.drawparallels(numpy.arange(-90,90,30), labels=[1,0,0,0], color='grey', dashes=[1,3])
