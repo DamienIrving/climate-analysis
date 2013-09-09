@@ -7,6 +7,10 @@ Functions/methods tested:
 """
 import os, sys
 
+from mpl_toolkits.basemap import Basemap
+import matplotlib.pyplot as plt
+import matplotlib
+
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import coordinate_rotation as rot
@@ -72,7 +76,7 @@ def plot_axis_switch(new_np):
     rotated_lat_data, returned_lat_data = switch_and_restore(orig_lat_data, new_np)
     rotated_lon_data, returned_lon_data = switch_and_restore(orig_lon_data, new_np)
 
-    title = 'Axis switch for new NP at %sN, %sE' %(str(new_np[0]), str(new_np[1])) 
+    title = 'Axis switch for NP %sN, %sE' %(str(new_np[0]), str(new_np[1])) 
 
     # Latitude plot
     plot_lat_list = [orig_lat_data, rotated_lat_data, returned_lat_data]
@@ -84,6 +88,31 @@ def plot_axis_switch(new_np):
                        draw_axis=True, delat=15, delon=30, equator=True)
 
     # Longitude plot
+    plot_lon_list = [orig_lon_data, rotated_lon_data, returned_lon_data]
+    plot_map.multiplot(plot_lon_list,
+                       dimensions=(3, 1),  
+                       title=title,
+                       ofile='axis_switch_lon_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
+                       row_headings=['original', 'rotated', 'returned'],
+                       draw_axis=True, delat=15, delon=30, equator=True)
+    
+    # Search paths
+    bmap = Basemap(llcrnrlon=0, llcrnrlat=-90, urcrnrlon=360, urcrnrlat=90, projection='cyl')
+    bmap.drawcoastlines()
+    bmap.drawparallels(numpy.arange(-90,90,30), labels=[1,0,0,0], color='grey', dashes=[1,3])
+    bmap.drawmeridians(numpy.arange(0,360,45), labels=[0,0,0,1], color='grey', dashes=[1,3])
+    matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
+    
+    lons, lats = numpy.meshgrid(rotated_lat_data.getLongitude()[:],
+                                rotated_lat_data.getLatitude()[:])
+    x, y = bmap(lons, lats)
+    im = bmap.contour(x, y, rotated_lat_data, [-20.0, -15.0, -10.0, -5.0, 0, 5.0, 10.0, 15.0, 20.0], colors='k')
+    plt.clabel(im, fontsize=5, inline=1, fmt='%.1f')  
+    
+    plt.savefig('search_paths_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])))
+
 
 if __name__ == '__main__':
-    plot_axis_switch([0, 0])
+    plot_axis_switch([float(sys.argv[1]), float(sys.argv[2])])
+    
+    

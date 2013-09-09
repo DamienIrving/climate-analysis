@@ -23,8 +23,6 @@ angular_distance
 rotation_angle
   --  Find angle of rotation between the old and new north pole.
 
-plot_equator
-  --  Plot the rotated equator
 
 Reference:
 Rotation theory: http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
@@ -51,8 +49,6 @@ Required improvements:
 
 import math
 import numpy
-from mpl_toolkits.basemap import Basemap
-import matplotlib.pyplot as plt
 
 import MV2
 import css
@@ -84,6 +80,7 @@ def switch_regular_axes(data, lat_axis, lon_axis, new_np, pm_point=None, invert=
     """
 
     phi, theta, psi = north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)
+    
     lats, lons = nio.coordinate_pairs(lat_axis, lon_axis) 
     
     lats_rot, lons_rot = rotate_spherical(lats, lons, phi, theta, psi, invert=invert)
@@ -391,72 +388,17 @@ def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=None):
     
     The prime meridian point should be a list of length 2 (lat, lon), representing a
     point through which the prime meridian should travel.
-    
-    Required improvements:
-    - I don't understand phi
          
     """
 
-    phi = 90.0 -lonnp         #Used to be 90 - lonnp. I think that may have accounted for 
-                          #the orientation of x-y plane in Euler angle setup being 90 deg 
-			  #out of phase with the lat/lon system when I wrote my own 
-			  #xyz to lat/lon code. Now I'm using css, apparently it isn't needed.
-			  
-			  # It should possibly still be -lonnp, as a psi of 30 takes you in the negative direction
+    psi = 90.0 - lonnp  
     theta = 90.0 - latnp  #accounts for fact that the original north pole was at 90N
 
     if prime_meridian_point:
-        ## I don't fully understand the setting of phir
         assert len(prime_meridian_point) == 2, \
 	'The prime point must be a list of length 2 [lat, lon]'
-	
-        lat_temp, psi = rotate_spherical(prime_meridian_point[0], prime_meridian_point[1], phi, theta, 0)
+        lat_temp, phi = rotate_spherical(prime_meridian_point[0], prime_meridian_point[1], 0, theta, psi)
     else:
-        psi = 0.0
+        phi = 0.0
     
-    return phi, theta, psi    
-			
-              
-################### 
-## Visualisation ##
-###################
-
-def plot_equator(npole_lat, npole_lon, psir_deg, projection='cyl', ofile=False):
-    """Plot the rotated equator"""
-
-    phir, thetar = north_pole_to_rotation_angles(npole_lat, npole_lon)   #30.0, 0.0 gives a nice PSA line
-    psir = numpy.deg2rad(psir_deg) 
-
-    lonrot = numpy.arange(0, 360, 1) 
-    latrot = numpy.zeros(len(lonrot))
-
-    latgeo, longeo = rotated_to_geographic_spherical(numpy.deg2rad(latrot), numpy.deg2rad(lonrot), phir, thetar, psir)
-
-    #print values to screen
-
-    for i in range(0, len(latgeo)):
-        print '(%s, %s) rotated becomes (%s, %s) geographic'  %(latrot[i], lonrot[i], numpy.rad2deg(latgeo[i]), numpy.rad2deg(longeo[i]))
-
-    #create the plot
-    if projection == 'nsper':
-        h = 12000  #height of satellite, 
-        lon_central = 235
-        lat_central = -60
-        map = Basemap(projection='nsper', lon_0=lon_central, lat_0=lat_central, satellite_height=h*1000.)
-    else:
-        map = Basemap(llcrnrlon=0, llcrnrlat=-90, urcrnrlon=360, urcrnrlat=90, projection='cyl')
-
-    map.drawcoastlines()
-    map.drawparallels(numpy.arange(-90,90,30),labels=[1,0,0,0],color='grey',dashes=[1,3])
-    map.drawmeridians(numpy.arange(0,360,45),labels=[0,0,0,1],color='grey',dashes=[1,3])
-    #map.drawmapboundary(fill_color='#99ffff')
-
-    lats = numpy.rad2deg(latgeo)
-    lons = numpy.rad2deg(longeo)
-    x, y = map(lons, lats)
-    map.scatter(x, y, linewidth=1.5, color='r')
-
-    if ofile:
-        plt.savefig(ofile)
-    else:
-        plt.show()
+    return phi, theta, psi
