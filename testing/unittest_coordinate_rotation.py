@@ -159,30 +159,25 @@ class testTransformationMatrix(unittest.TestCase):
 
 
 class testRotateSpherical(unittest.TestCase):
-    """Test class for rotations in spherical coordinates.
-    
-    I'm pretty sure rotate_spherical does not do lat=90 things properly.
-    THIS NEEDS TO BE TESTED. If it doesn't, it may be a matter of altering the
-    code so that lat=90 points are by default just allocated the coordinates of the
-    new north pole.
-    
-    """
+    """Test class for rotations in spherical coordinates."""
 
     def test_zero_rotation(self):
         """[test for success]"""
     
         phi, theta, psi = rot.north_pole_to_rotation_angles(90, 0)
-        #lats = [35, 35, 35, 35, -35, -35, -35, -35]
-        #lons = [55, 150, 234, 340, 55, 150, 234, 340]
 
         lat_axis = numpy.arange(-90, 100, 10)
 	lon_axis = numpy.arange(0, 360, 10)
 	lats, lons = nio.coordinate_pairs(lat_axis, lon_axis) 
-
+	
+	lons_answer = lons
+	lons_answer[0:len(lon_axis)] = 0.0
+	lons_answer[-len(lon_axis):] = 0.0
+	
         latsrot, lonsrot = rot.rotate_spherical(lats, lons, phi, theta, psi, invert=False)
 	
         numpy.testing.assert_allclose(latsrot, lats, rtol=1e-03, atol=1e-03)
-        numpy.testing.assert_allclose(lonsrot, lons, rtol=1e-03, atol=1e-03)
+        numpy.testing.assert_allclose(lonsrot, lons_answer, rtol=1e-03, atol=1e-03)
 
     
     def test_pure_phi(self):
@@ -194,7 +189,7 @@ class testRotateSpherical(unittest.TestCase):
         Negative phi values correspond to a positive longitudinal 
         direction.
         
-	    """
+	"""
 	
         phi = -50
         lats = numpy.array([0, 0, 0, 0, 0])
@@ -235,36 +230,6 @@ class testRotateSpherical(unittest.TestCase):
         pass
 
 
-class testNorthPoleToAngles(unittest.TestCase):
-    """Test class for converting a new north pole position to the
-    corresponding Euler angles."""
-
-    def test_no_change(self):
-        """Test for no change in north pole location [test for success]"""
-
-        pass
-	
-#        result = rot.north_pole_to_rotation_angles(90, 0)
-#        numpy.testing.assert_array_equal(result, numpy.zeros(3))
-
-
-#    def test_pure_meridional(self):
-#        """Test for a north pole change purely in the meridional direction"""
-#
-#        r1 = rot.north_pole_to_rotation_angles(70, 0)
-#        r2 = rot.north_pole_to_rotation_angles(-60, 0)
-#        r3 = rot.north_pole_to_rotation_angles(-90, 0)
-#        results = [r1, r2, r3]
-#
-#        a1 = [0, 20, 0]
-#        a2 = [0, 150, 0]
-#        a3 = [0, 180, 0]
-#        answers = [a1, a2, a3]
-#
-#        for i in range(0,3):
-#            numpy.testing.assert_allclose(results[i], answers[i], rtol=1e-03, atol=1e-03)
-
-
 class testSwitchAxes(unittest.TestCase):
     """Test the complete switch of axes"""
 
@@ -277,7 +242,7 @@ class testSwitchAxes(unittest.TestCase):
 	self.nlons = len(self.lon_axis)
 
     def test_no_switch(self):
-        """Test for n shift in the north pole [test for success].
+        """Test for no shift in the north pole [test for success].
 
         """
         

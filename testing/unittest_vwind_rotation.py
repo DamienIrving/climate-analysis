@@ -119,6 +119,7 @@ class testVwindTrig(unittest.TestCase):
 	
 	numpy.testing.assert_allclose(results, answers, rtol=1e-07, atol=1e-07)
 	
+	
     def test_90deg_rotations(self):
         """[test for success]"""
 	
@@ -136,6 +137,31 @@ class testVwindTrig(unittest.TestCase):
         """Test for known values derived by hand [test for success]"""
 
         pass
+
+
+class testRotateVwind(unittest.TestCase):
+    """Test rotate_vwind, which is the function that ultimately performs the 
+    rotation of the vwind, calling other functions like vwind_trig as required
+    [test for success]
+    
+    """
+    
+    def test_no_rotation(self):
+        """Test for leaving the north pole at 90N, 0E"""
+
+        new_np = [90, 0]
+        dataU = nio.InputData()
+
+        vrot.rotate_vwind(dataU, dataV, new_np, anomaly=None):
+
+
+
+
+
+
+       
+    
+    
 
 
 if __name__ == '__main__':

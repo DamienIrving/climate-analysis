@@ -27,14 +27,11 @@ def rotate_vwind(dataU, dataV, new_np, anomaly=None):
     assert isinstance(dataU, cdms2.tvariable.TransientVariable)
     assert isinstance(dataV, cdms2.tvariable.TransientVariable)
 
-    if new_np == [90.0, 0.0]:
-        new_vwind_data = dataV.data
-    else:
-        lat_axis = dataU.getLatitude()[:]
-	lon_axis = dataU.getLongitude()[:]
-	dataU_rot = rot.switch_axes(dataU[:], lat_axis, lon_axis, new_np)
-        dataV_rot = rot.switch_axes(dataV[:], lat_axis, lon_axis, new_np)	
-        new_vwind = calc_vwind(dataU_rot, dataV_rot, lat_axis, lon_axis, new_np) 
+    lat_axis = dataU.getLatitude()[:]
+    lon_axis = dataU.getLongitude()[:]
+    dataU_rot = rot.switch_regular_axes(dataU[:], lat_axis, lon_axis, new_np)
+    dataV_rot = rot.switch_regular_axes(dataV[:], lat_axis, lon_axis, new_np)	
+    new_vwind = calc_vwind(dataU_rot, dataV_rot, lat_axis, lon_axis, new_np) 
 
     new_vwind = cdms2.createVariable(new_vwind, grid=dataU.getGrid(), axes=dataU.getAxisList())
     if anomaly:
@@ -102,18 +99,25 @@ def main(inargs):
 
     # Write the output file #
 
+    if inargs.anomaly:
+        name_insert = ' anomaly'
+        clim = 'Base period: %s - %s' %(inargs.anomaly[0], inargs.anomaly[1])
+    else:
+        name_insert = ''
+	clim = ''  
+
     var_atts = {'id': 'vrot',
-                'name': 'Rotated meridional wind',
-                'long_name': 'Meridional wind on a rotated coordinate grid (i.e. the poles are shifted)',
+                'name': 'Rotated meridional wind'+name_insert,
+                'long_name': 'Meridional wind'+name_insert+' on a rotated coordinate grid (i.e. the poles are shifted)',
                 'units': indataU.data.units,
-                'history': 'Location of north pole: %s N, %s E' %(str(inargs.north_pole[0]), str(inargs.north_pole[1]))}
+                'history': 'Location of north pole: %s N, %s E. %s' %(str(inargs.north_pole[0]), str(inargs.north_pole[1]), clim)}
 
     indata_list = [indataU, indataV,]
     outdata_list = [vwind,]
     outvar_atts_list = [var_atts,]
     outvar_axes_list = [vwind.getAxisList(),]
 
-    nio.write_netcdf(inargs.outfile, 'Rotated meridional wind', 
+    nio.write_netcdf(inargs.outfile, 'Rotated meridional wind'+name_insert, 
                      indata_list, 
                      outdata_list,
                      outvar_atts_list, 
@@ -127,18 +131,14 @@ example (abyss.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_vwind_rotation.py 
   /work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc ua
   /work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc va 
-  /work/dbirving/datasets/Merra/data/processed/vrot_Merra_250hPa_monthly_native-np30-270.nc
+  /work/dbirving/datasets/Merra/data/processed/vrot_Merra_250hPa_monthly_y181x360-np30-270.nc
   --north_pole 30 270
+  --anomaly all all
+  --grid -90.0 181 1.0 0.0 360 1.0
 
 required improvements:
   1. There might be some funny point in the grid switch that need to be looked at. This
-     might be able to be fixed by using a higher resolution grid
-  2. Testing indicates that the regridding is accurate everywhere except at 
-     the poles. This may relate to the problems with csc2s and css2c, which
-     I logged as an issue on the UVCDAT Github page. They responded that it's not
-     their package, so I might need to contact someone else.
-  3. Look for opportunities to process data as multidimensional arrays, instead
-     of using mesh/flatten or looping.
+     might be able to be fixed by using a higher resolution grid.
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
