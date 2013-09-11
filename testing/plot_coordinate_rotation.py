@@ -19,6 +19,10 @@ module_dir2 = os.path.join(os.environ['HOME'], 'visualisation')
 sys.path.insert(0, module_dir2)
 import plot_map
 
+module_dir3 = os.path.join(os.environ['HOME'], 'data_processing')
+sys.path.insert(0, module_dir3)
+import calc_vwind_rotation as vrot
+
 import numpy
 import cdms2
 
@@ -97,8 +101,8 @@ def plot_axis_switch(new_np):
                        ofile='axis_switch_lon_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
                        row_headings=['original', 'rotated', 'returned'],
                        draw_axis=True, delat=15, delon=30, equator=True)
-    
-    
+
+
 def plot_search_path(rotated_lat_data, new_np):
     """Plot the wave extraction search path"""
     
@@ -117,7 +121,69 @@ def plot_search_path(rotated_lat_data, new_np):
     plt.savefig('search_paths_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])))
 
 
+def plot_real_data(new_np):
+    """Real data plot"""
+    
+    fin = cdms2.open('/work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc')
+    orig_real_data = fin('va', time=('1979-01-01', '1979-01-29'), squeeze=1)
+    fin.close()
+
+    rotated_real_data, returned_real_data = switch_and_restore(orig_real_data, new_np)
+    
+    title = 'Axis switch for NP %sN, %sE' %(str(new_np[0]), str(new_np[1]))
+    
+    plot_real_list = [orig_real_data, rotated_real_data, returned_real_data]
+    plot_map.multiplot(plot_real_list,
+                       dimensions=(3, 1),  
+                       title=title,
+                       ofile='axis_switch_real_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
+                       row_headings=['original', 'rotated', 'returned'],
+                       draw_axis=True, delat=15, delon=30, equator=True)
+
+
+def plot_vwind_rot(new_np):
+
+    fin = cdms2.open('/work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc')
+    dataU = fin('ua', time=('1979-01-01', '1979-01-29'), squeeze=1)
+    fin.close()
+
+    fin = cdms2.open('/work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc')
+    dataV = fin('va', time=('1979-01-01', '1979-01-29'), squeeze=1)
+    fin.close()
+
+    dataVrot = vrot.rotate_vwind(dataU, dataV, new_np, anomaly=None)
+    diff = dataVrot - dataV
+    
+    title = 'Rotated v-wind for NP %sN, %sE' %(str(new_np[0]), str(new_np[1]))
+    
+    # Plot absolute values
+    plot_list = [dataV, dataVrot]
+    plot_map.multiplot(plot_list,
+                       dimensions=(2, 1),  
+                       title=title,
+                       ofile='vrot_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
+                       row_headings=['original', 'rotated'],
+                       draw_axis=True, delat=15, delon=30, equator=True)
+    
+    # Plot difference
+    plot_map.multiplot([diff,],
+                       dimensions=(1, 1),  
+                       title=title,
+                       ofile='vrot-diff_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
+                       row_headings=['difference'],
+                       draw_axis=True, delat=15, delon=30, equator=True)
+    
+    
+    
+
 if __name__ == '__main__':
-    plot_axis_switch([float(sys.argv[1]), float(sys.argv[2])])
+    
+    new_np = [float(sys.argv[1]), float(sys.argv[2])]
+    if sys.argv[3] == 'vrot':
+        plot_vwind_rot(new_np)
+    elif sys.argv[3] == 'real':
+        plot_real_data(new_np)
+    else:
+        plot_axis_switch(new_np)
     
     

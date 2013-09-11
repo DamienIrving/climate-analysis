@@ -241,8 +241,10 @@ class testSwitchAxes(unittest.TestCase):
 	self.nlats = len(self.lat_axis)
 	self.nlons = len(self.lon_axis)
 
-    def test_no_switch(self):
-        """Test for no shift in the north pole [test for success].
+
+    def test_no_switch_basic(self):
+        """Test for no shift in the north pole, using a basic test
+	dataset of all ones [test for success].
 
         """
         
@@ -250,6 +252,17 @@ class testSwitchAxes(unittest.TestCase):
         result = rot.switch_regular_axes(data, self.lat_axis, self.lon_axis, [90, 0], invert=False)
         
 	numpy.testing.assert_allclose(result, data, rtol=1e-07, atol=1e-07)
+    
+    
+    def test_no_switch_data(self):
+        """Test for no shift in the north pole, using real data [test for success]."""
+        
+	data = nio.InputData('/work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc', 'va', time=('1979-01-01', '1979-01-29', 'none'))
+        lat_axis = data.data.getLatitude()[:]
+	lon_axis = data.data.getLongitude()[:]
+	result = rot.switch_regular_axes(data.data, lat_axis, lon_axis, [90, 0], invert=False)
+        
+	numpy.testing.assert_allclose(result, data.data, rtol=1e-07, atol=1e-07)
     
     
     def test_np_0N_180E(self):

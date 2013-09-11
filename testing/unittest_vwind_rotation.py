@@ -76,11 +76,16 @@ class testRotationAngle(unittest.TestCase):
     the meridional wind. Tests focus on the original pole at 90N 0E.    
     """
 
-    def test_np_equal_sp(self):
+    def test_no_rotation(self):
         """Test for the special case where the pole hasn't moved [test for success]"""
 
-        angles = rot.rotation_angle(90, 0, 90, 0, [-40, 90], [260, 0])
-        numpy.testing.assert_allclose(angles, [0., 0.], rtol=1e-07, atol=1e-07)
+        lat_axis = numpy.arange(-90.0, 95.0, 10.0)
+	lon_axis = numpy.arange(0.0, 360.0, 30.0)
+        lats, lons = nio.coordinate_pairs(lat_axis, lon_axis) 
+
+        angles = rot.rotation_angle(90, 0, 90, 0, lats, lons)
+	
+        numpy.testing.assert_allclose(angles, numpy.zeros(len(lats)), rtol=1e-07, atol=1e-07)
 
 
     def test_plus90deg(self):
@@ -139,29 +144,23 @@ class testVwindTrig(unittest.TestCase):
         pass
 
 
-class testRotateVwind(unittest.TestCase):
-    """Test rotate_vwind, which is the function that ultimately performs the 
-    rotation of the vwind, calling other functions like vwind_trig as required
-    [test for success]
-    
-    """
-    
-    def test_no_rotation(self):
-        """Test for leaving the north pole at 90N, 0E"""
-
-        new_np = [90, 0]
-        dataU = nio.InputData()
-
-        vrot.rotate_vwind(dataU, dataV, new_np, anomaly=None):
-
-
-
-
-
-
-       
-    
-    
+#class testRotateVwind(unittest.TestCase):
+#    """Test rotate_vwind, which is the function that ultimately performs the 
+#    rotation of the vwind, calling other functions like vwind_trig as required
+#    [test for success]
+#    
+#    """
+#    
+#    def test_no_rotation(self):
+#        """Test for leaving the north pole at 90N, 0E"""
+#
+#        new_np = [90, 0]
+#        dataU = nio.InputData('/work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc', 'ua', time=('1979-01-01', '1979-01-29', 'none'))
+#        dataV = nio.InputData('/work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc', 'va', time=('1979-01-01', '1979-01-29', 'none'))
+#
+#        dataVrot = vrot.rotate_vwind(dataU.data, dataV.data, new_np, anomaly=None)
+#     
+#        numpy.testing.assert_allclose(dataVrot, dataV.data, rtol=0.0, atol=0.5)
 
 
 if __name__ == '__main__':
