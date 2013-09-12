@@ -66,26 +66,25 @@ import pdb
 ## Switching between coordinate systems ##
 ##########################################
 
-def switch_regular_axes(data, lat_axis, lon_axis, new_np, pm_point=None, invert=False):
-    """Take some data on a regular grid (lat_axis, lon_axis), rotate the axes 
+def switch_regular_axes(data, lats_in, lons_in, lat_axis_out, lon_axis_out, new_np, pm_point=None, invert=False):
+    """Take data on a specified grid (lats_in, lons_in), rotate the axes 
     (according to the position of the new north pole) and regrid to 
-    a regular grid with the same resolution as the original
+    a new regular grid (lat_axis_out, lon_axis_out) 
     
-    Note inputs for css.Cssgrid:
-    - lats_rot and lons_rot are all grid point value
-    - lats and lons are not (i.e. they are just axis values)
+    lats_in and lons_in are lists which together describe pairs corresponding 
+    to each grid point. For regular grids, these pairs can be generated 
+    using netcdf_io.coordinate_pairs()
     
-    Input and output can be in radians or degrees.
+    lat_axis_out and lat_axis_in are simply axis values for a regular/uniform grid
+    (i.e. together, they do not desribe coordinate pairs for every grid point)
     
     """
 
     phi, theta, psi = north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)
     
-    lats, lons = nio.coordinate_pairs(lat_axis, lon_axis) 
-    
-    lats_rot, lons_rot = rotate_spherical(lats, lons, phi, theta, psi, invert=invert)
+    lats_in_rot, lons_in_rot = rotate_spherical(lats_in, lons_in, phi, theta, psi, invert=invert)
 
-    grid_instance = css.Cssgrid(lats_rot, lons_rot, lat_axis, lon_axis)
+    grid_instance = css.Cssgrid(lats_in_rot, lons_in_rot, lat_axis_out, lon_axis_out)
     if numpy.rank(data) == 3:
         data_rot = numpy.zeros(numpy.shape(data))
         for tstep in range(0, numpy.shape(data)[0]):
@@ -216,7 +215,7 @@ def rotate_spherical(lats, lons, phi, theta, psi, invert=False):
     and about the final z axis (psi).
     
     lats and lons are pairs corresponding to each grid point. For regular grids, these
-    pairs can be generated using netcdfio.coordinate_pairs()
+    pairs can be generated using netcdf_io.coordinate_pairs()
     
     Inputs and outputs are all in degrees. Longitudes are output [0, 360]
     Output is a flattened lat and lon array, with element-wise pairs corresponding 
@@ -327,15 +326,18 @@ def rotation_angle(latA, lonA, latB, lonB, latsC, lonsC, reshape=None):
     b_vals = angular_distance(latA_flat, lonA_flat, latsC, lonsC)
     c_vals = angular_distance(latA_flat, lonA_flat, latB_flat, lonB_flat)
 
-    #### QUICK FIX - MUST BE REPLACED BY A FIX FOR WHEN locationC = locationA or locationB, which makes a or b zero
-    a_vals = numpy.where(a_vals == 0.0, 1.0, a_vals)
-    b_vals = numpy.where(b_vals == 0.0, 1.0, b_vals)
-    ####
+    # Temporary fix to avoid divide by zero error when locationC = locationA or locationB, which makes a or b zero
+    a_vals_fix = numpy.where(_filter_tiny(numpy.sin(a_vals)) == 0.0, 1.0, a_vals)
+    b_vals_fix = numpy.where(_filter_tiny(numpy.sin(b_vals)) == 0.0, 1.0, b_vals)
 
     #angleA_magnitude = numpy.arccos((numpy.cos(a) - numpy.cos(b)*numpy.cos(c)) / (numpy.sin(b)*numpy.sin(c)))
     #angleB_magnitude = numpy.arccos((numpy.cos(b) - numpy.cos(c)*numpy.cos(a)) / (numpy.sin(c)*numpy.sin(a)))
-    angleC_magnitude = numpy.arccos(_arccos_check((numpy.cos(c_vals) - numpy.cos(a_vals)*numpy.cos(b_vals)) / (numpy.sin(a_vals)*numpy.sin(b_vals))))
+    angleC_magnitude = numpy.arccos(_arccos_check((numpy.cos(c_vals) - numpy.cos(a_vals_fix)*numpy.cos(b_vals_fix)) / (numpy.sin(a_vals_fix)*numpy.sin(b_vals_fix))))
 
+    # Make the rotation angle 0.0 and points where it is undefined
+    angleC_magnitude = numpy.where(_filter_tiny(numpy.sin(a_vals)) == 0.0, 0.0, angleC_magnitude)
+    angleC_magnitude = numpy.where(_filter_tiny(numpy.sin(b_vals)) == 0.0, 0.0, angleC_magnitude)
+    
     angleC = _rotation_sign(angleC_magnitude, lonB_flat, lonsC)
     
     if reshape:

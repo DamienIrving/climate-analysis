@@ -14,6 +14,7 @@ import matplotlib
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import coordinate_rotation as rot
+import netcdf_io as nio
 
 module_dir2 = os.path.join(os.environ['HOME'], 'visualisation')
 sys.path.insert(0, module_dir2)
@@ -63,11 +64,12 @@ def switch_and_restore(data, new_np):
 
     lat_axis = data.getLatitude()
     lon_axis = data.getLongitude()
+    lats, lons = nio.coordinate_pairs(lat_axis, lon_axis)
     
-    rotated_data = rot.switch_regular_axes(data, lat_axis[:], lon_axis[:], new_np, invert=False)
+    rotated_data = rot.switch_regular_axes(data, lats, lons, lat_axis[:], lon_axis[:], new_np, invert=False)
     cdms_rotated_data = cdms2.createVariable(rotated_data[:], axes=[lat_axis, lon_axis])
 
-    returned_data = rot.switch_regular_axes(rotated_data, lat_axis[:], lon_axis[:], new_np, invert=True)
+    returned_data = rot.switch_regular_axes(rotated_data, lats, lons, lat_axis[:], lon_axis[:], new_np, invert=True)
     cdms_returned_data = cdms2.createVariable(returned_data[:], axes=[lat_axis, lon_axis])
 
     return cdms_rotated_data, cdms_returned_data
@@ -141,7 +143,7 @@ def plot_real_data(new_np):
                        draw_axis=True, delat=15, delon=30, equator=True)
 
 
-def plot_vwind_rot(new_np):
+def plot_vwind_zero_rot(new_np):
 
     fin = cdms2.open('/work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc')
     dataU = fin('ua', time=('1979-01-01', '1979-01-29'), squeeze=1)
@@ -151,39 +153,46 @@ def plot_vwind_rot(new_np):
     dataV = fin('va', time=('1979-01-01', '1979-01-29'), squeeze=1)
     fin.close()
 
-    dataVrot = vrot.rotate_vwind(dataU, dataV, new_np, anomaly=None)
-    diff = dataVrot - dataV
-    
+    lat_axis = dataU.getLatitude()
+    lon_axis = dataU.getLongitude()
+
+    wsp = MV2.sqrt(dataU**2 + dataV**2)
+    vwind_rot = vrot.calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np)
+    vwind_rot_switch = vrot.rotate_vwind(dataU, dataV, new_np, res=1.0, anomaly=None)
+
     title = 'Rotated v-wind for NP %sN, %sE' %(str(new_np[0]), str(new_np[1]))
     
     # Plot absolute values
-    plot_list = [dataV, dataVrot]
+    plot_list = [wsp,]
     plot_map.multiplot(plot_list,
-                       dimensions=(2, 1),  
-                       title=title,
-                       ofile='vrot_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
-                       row_headings=['original', 'rotated'],
-                       draw_axis=True, delat=15, delon=30, equator=True)
-    
-    # Plot difference
-    plot_map.multiplot([diff,],
                        dimensions=(1, 1),  
-                       title=title,
-                       ofile='vrot-diff_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
-                       row_headings=['difference'],
+                       title='Original wsp data',
+                       ofile='vrot_original_wsp.png',
                        draw_axis=True, delat=15, delon=30, equator=True)
-    
-    
-    
+
+def plot_vwind_rot(new_np):
+
 
 if __name__ == '__main__':
     
-    new_np = [float(sys.argv[1]), float(sys.argv[2])]
-    if sys.argv[3] == 'vrot':
+    extra_info ="""Describe plots..."""
+
+    description='Plot various elements of the wind rotation process'
+    parser = argparse.ArgumentParser(description=description,
+                                     epilog=extra_info, 
+                                     argument_default=argparse.SUPPRESS,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("north_pole_lat", type=float, help="Latitude of north pole")
+    parser.add_argument("north_pole_lon", type=float, help="Longitude of north pole")
+    parser.add_argument("plot_type", type=str, choices=('latlon_switch', 'real_switch', 'vrot'),  
+                        help="Type of plot")
+    
+    args = parser.parse_args()            
+
+    new_np = [args.north_pole_lat, args.north_pole_lon]
+    if args.plot_type == 'vrot':
         plot_vwind_rot(new_np)
-    elif sys.argv[3] == 'real':
-        plot_real_data(new_np)
+    elif args.plot_type == 'real':
+        plot_real_data(new_np)    
     else:
         plot_axis_switch(new_np)
-    
-    

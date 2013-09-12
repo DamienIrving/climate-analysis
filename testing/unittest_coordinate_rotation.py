@@ -238,6 +238,7 @@ class testSwitchAxes(unittest.TestCase):
 
         self.lat_axis = numpy.arange(-90, 92.5, 2.5)
 	self.lon_axis = numpy.arange(0.0, 362.5, 2.5)
+	self.lats, self.lons = nio.coordinate_pairs(self.lat_axis, self.lon_axis)
 	self.nlats = len(self.lat_axis)
 	self.nlons = len(self.lon_axis)
 
@@ -249,7 +250,7 @@ class testSwitchAxes(unittest.TestCase):
         """
         
 	data = numpy.ones([self.nlats, self.nlons])
-        result = rot.switch_regular_axes(data, self.lat_axis, self.lon_axis, [90, 0], invert=False)
+        result = rot.switch_regular_axes(data, self.lats, self.lons, self.lat_axis, self.lon_axis, [90, 0], invert=False)
         
 	numpy.testing.assert_allclose(result, data, rtol=1e-07, atol=1e-07)
     
@@ -260,7 +261,9 @@ class testSwitchAxes(unittest.TestCase):
 	data = nio.InputData('/work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc', 'va', time=('1979-01-01', '1979-01-29', 'none'))
         lat_axis = data.data.getLatitude()[:]
 	lon_axis = data.data.getLongitude()[:]
-	result = rot.switch_regular_axes(data.data, lat_axis, lon_axis, [90, 0], invert=False)
+	lats, lons = nio.coordinate_pairs(lat_axis, lon_axis)
+	
+	result = rot.switch_regular_axes(data.data, lats, lons, lat_axis, lon_axis, [90, 0], invert=False)
         
 	numpy.testing.assert_allclose(result, data.data, rtol=1e-07, atol=1e-07)
     
@@ -285,7 +288,7 @@ class testSwitchAxes(unittest.TestCase):
             data[index, :] = self.lat_axis[index] * -1
       
         answer = data * -1
-	result = rot.switch_regular_axes(data, self.lat_axis, self.lon_axis, [-90, 0], invert=False)
+	result = rot.switch_regular_axes(data, self.lats, self.lons, self.lat_axis, self.lon_axis, [-90, 0], invert=False)
 
         numpy.testing.assert_allclose(result, answer, rtol=0.0, atol=0.4)
 

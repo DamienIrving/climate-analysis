@@ -19,8 +19,10 @@ sys.path.insert(0, module_dir)
 import netcdf_io as nio
 import coordinate_rotation as rot
 
+import pdb
 
-def rotate_vwind(dataU, dataV, new_np, anomaly=None):
+
+def rotate_vwind(dataU, dataV, new_np, res=1.0, anomaly=None):
     """Define the new meridional wind field, according to the 
     position of the new north pole."""
 
@@ -29,11 +31,12 @@ def rotate_vwind(dataU, dataV, new_np, anomaly=None):
 
     lat_axis = dataU.getLatitude()[:]
     lon_axis = dataU.getLongitude()[:]
-    dataU_rot = rot.switch_regular_axes(dataU[:], lat_axis, lon_axis, new_np)
-    dataV_rot = rot.switch_regular_axes(dataV[:], lat_axis, lon_axis, new_np)	
-    new_vwind = calc_vwind(dataU_rot, dataV_rot, lat_axis, lon_axis, new_np) 
+    lats, lons = nio.coordinate_pairs(lat_axis, lon_axis)
 
-    new_vwind = cdms2.createVariable(new_vwind, grid=dataU.getGrid(), axes=dataU.getAxisList())
+    # Calculate new vwind on the native grid
+
+    vwind_rot = calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np) 
+
     if anomaly:
         date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
         if re.search(date_pattern, anomaly[0]) and re.search(date_pattern, anomaly[1]):
@@ -41,9 +44,21 @@ def rotate_vwind(dataU, dataV, new_np, anomaly=None):
         else:
             print """Input anomaly base period either invalid format or 'all' - base climatology is entire period"""
             period = None
-	new_vwind = nio.temporal_aggregation(new_vwind, 'ANNUALCYCLE', 'anomaly', time_period=period)  #hard wired to annual cycle
+	vwind_rot = nio.temporal_aggregation(vwind_rot, 'ANNUALCYCLE', 'anomaly', time_period=period)  #hard wired to annual cycle
 
-    return new_vwind    
+    # Rotate the coordinate axis to desired grid
+
+    nlats = int((180.0 / res) + 1)
+    nlons = int(360.0 / res)
+    grid = cdms2.createUniformGrid(-90.0, nlats, res, 0.0, nlons, res)
+    lat_axis_rot = grid.getLatitude()
+    lon_axis_rot = grid.getLongitude()
+     
+    vwind_rot_switch = rot.switch_regular_axes(vwind_rot, lats, lons, lat_axis_rot[:], lon_axis_rot[:], new_np)
+    vwind_rot_swtich = cdms2.createVariable(vwind_rot_switch, grid=grid, axes=[lat_axis_rot, lon_axis_rot])
+    
+
+    return vwind_rot_swtich    
         
 
 def calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np, old_np=(90.0, 0.0)):
@@ -75,8 +90,8 @@ def vwind_trig(u, v, theta):
               (measured anticlockwise starting on the new positive x-axis)
                
     """
-    
-    wsp = numpy.sqrt(numpy.square(u) + numpy.square(v))
+
+    wsp = numpy.sqrt(numpy.square(numpy.array(u)) + numpy.square(numpy.array(v)))
     phi = numpy.arctan2(v, u)
     alpha = phi - theta
     
