@@ -26,12 +26,10 @@ import calc_vwind_rotation as vrot
 
 import numpy
 import cdms2
+import argparse
 
 import pdb
 
-##############
-## plotting ##
-##############        
 
 def create_latlon_dataset(res=2.5):
     """Create a dataset corresponding to the latitude (output 1) and
@@ -124,7 +122,12 @@ def plot_search_path(rotated_lat_data, new_np):
 
 
 def plot_real_data(new_np):
-    """Real data plot"""
+    """Real data plot
+    
+    Perhaps I need to test a change in resolution here??
+    (like in calc_vwind)
+    
+    """
     
     fin = cdms2.open('/work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc')
     orig_real_data = fin('va', time=('1979-01-01', '1979-01-29'), squeeze=1)
@@ -133,66 +136,49 @@ def plot_real_data(new_np):
     rotated_real_data, returned_real_data = switch_and_restore(orig_real_data, new_np)
     
     title = 'Axis switch for NP %sN, %sE' %(str(new_np[0]), str(new_np[1]))
+        
+    # Plot original data #
     
-    plot_real_list = [orig_real_data, rotated_real_data, returned_real_data]
-    plot_map.multiplot(plot_real_list,
-                       dimensions=(3, 1),  
+    plot_map.multiplot([orig_real_data,],
+                       dimensions=(1, 1),
+		       centre=(90, 0), projection='nsper',  
                        title=title,
-                       ofile='axis_switch_real_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
-                       row_headings=['original', 'rotated', 'returned'],
-                       draw_axis=True, delat=15, delon=30, equator=True)
+                       ofile='axis_switch_orig-real_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
+                       draw_axis=True, delat=15, delon=30)
 
+    # Plot rotated data #
 
-def plot_vwind_zero_rot(new_np):
+    plot_map.multiplot([rotated_real_data,],
+                       dimensions=(1, 1),
+		       centre=(new_np[0], new_np[1]), projection='nsper',  
+                       title=title,
+                       ofile='axis_switch_rot-real_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
+                       draw_axis=True, delat=15, delon=30)
 
-    fin = cdms2.open('/work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc')
-    dataU = fin('ua', time=('1979-01-01', '1979-01-29'), squeeze=1)
-    fin.close()
-
-    fin = cdms2.open('/work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc')
-    dataV = fin('va', time=('1979-01-01', '1979-01-29'), squeeze=1)
-    fin.close()
-
-    lat_axis = dataU.getLatitude()
-    lon_axis = dataU.getLongitude()
-
-    wsp = MV2.sqrt(dataU**2 + dataV**2)
-    vwind_rot = vrot.calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np)
-    vwind_rot_switch = vrot.rotate_vwind(dataU, dataV, new_np, res=1.0, anomaly=None)
-
-    title = 'Rotated v-wind for NP %sN, %sE' %(str(new_np[0]), str(new_np[1]))
+    # Plot returned data #
     
-    # Plot absolute values
-    plot_list = [wsp,]
-    plot_map.multiplot(plot_list,
-                       dimensions=(1, 1),  
-                       title='Original wsp data',
-                       ofile='vrot_original_wsp.png',
-                       draw_axis=True, delat=15, delon=30, equator=True)
-
-def plot_vwind_rot(new_np):
+    plot_map.multiplot([returned_real_data,],
+                       dimensions=(1, 1),
+		       centre=(90, 0), projection='nsper',  
+                       title=title,
+                       ofile='axis_switch_returned-real_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])), 
+                       draw_axis=True, delat=15, delon=30)
 
 
 if __name__ == '__main__':
     
-    extra_info ="""Describe plots..."""
-
-    description='Plot various elements of the wind rotation process'
+    description='Visualise the various components of coordinate rotation'
     parser = argparse.ArgumentParser(description=description,
-                                     epilog=extra_info, 
-                                     argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("north_pole_lat", type=float, help="Latitude of north pole")
     parser.add_argument("north_pole_lon", type=float, help="Longitude of north pole")
-    parser.add_argument("plot_type", type=str, choices=('latlon_switch', 'real_switch', 'vrot'),  
+    parser.add_argument("plot_type", type=str, choices=('latlon_switch', 'real_switch'),  
                         help="Type of plot")
     
     args = parser.parse_args()            
 
     new_np = [args.north_pole_lat, args.north_pole_lon]
-    if args.plot_type == 'vrot':
-        plot_vwind_rot(new_np)
-    elif args.plot_type == 'real':
+    if args.plot_type == 'real_switch':
         plot_real_data(new_np)    
     else:
         plot_axis_switch(new_np)
