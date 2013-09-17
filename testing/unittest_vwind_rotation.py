@@ -20,7 +20,7 @@ import sys
 
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
-import coordinate_rotation as rot
+import coordinate_rotation as rotvrot_newv_origaxes_30.0N_270.0E_nsper.png
 import netcdf_io as nio
 
 module_dir = os.path.join(os.environ['HOME'], 'data_processing')

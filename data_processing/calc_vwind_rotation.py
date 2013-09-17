@@ -44,6 +44,8 @@ def rotate_vwind(dataU, dataV, new_np, res=1.0, anomaly=None):
         else:
             print """Input anomaly base period either invalid format or 'all' - base climatology is entire period"""
             period = None
+	
+	## vwind_rot is not a cdms transient variable here - could be a problem for temporal_aggregation!! ##
 	vwind_rot = nio.temporal_aggregation(vwind_rot, 'ANNUALCYCLE', 'anomaly', time_period=period)  #hard wired to annual cycle
 
     # Rotate the coordinate axis to desired grid
@@ -55,6 +57,8 @@ def rotate_vwind(dataU, dataV, new_np, res=1.0, anomaly=None):
     lon_axis_rot = grid.getLongitude()
      
     vwind_rot_switch = rot.switch_regular_axes(vwind_rot, lats, lons, lat_axis_rot[:], lon_axis_rot[:], new_np)
+    
+    ## Is it a problem that the axes here don't include the time axis?? ##
     vwind_rot_swtich = cdms2.createVariable(vwind_rot_switch, grid=grid, axes=[lat_axis_rot, lon_axis_rot])
     
 
