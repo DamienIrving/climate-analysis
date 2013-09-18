@@ -24,10 +24,18 @@ import pdb
 
 def rotate_vwind(dataU, dataV, new_np, res=1.0, anomaly=None):
     """Define the new meridional wind field, according to the 
-    position of the new north pole."""
+    position of the new north pole.
+    
+    FIX: Need a more general method of dealing with input axes
+    (e.g. what if there is multiple levels)
+    
+    """
 
     assert isinstance(dataU, cdms2.tvariable.TransientVariable)
     assert isinstance(dataV, cdms2.tvariable.TransientVariable)
+
+    assert 'yx' in dataU.getOrder(), \
+    'Input data must have a latitude and longitude axis'
 
     lat_axis = dataU.getLatitude()[:]
     lon_axis = dataU.getLongitude()[:]
@@ -45,7 +53,7 @@ def rotate_vwind(dataU, dataV, new_np, res=1.0, anomaly=None):
             print """Input anomaly base period either invalid format or 'all' - base climatology is entire period"""
             period = None
 	
-	## vwind_rot is not a cdms transient variable here - could be a problem for temporal_aggregation!! ##
+	vwind_rot = cdms2.createVariable(vwind_rot, grid=dataU.getGrid(), axes=dataU.getAxisList())
 	vwind_rot = nio.temporal_aggregation(vwind_rot, 'ANNUALCYCLE', 'anomaly', time_period=period)  #hard wired to annual cycle
 
     # Rotate the coordinate axis to desired grid
@@ -56,10 +64,14 @@ def rotate_vwind(dataU, dataV, new_np, res=1.0, anomaly=None):
     lat_axis_rot = grid.getLatitude()
     lon_axis_rot = grid.getLongitude()
      
-    vwind_rot_switch = rot.switch_regular_axes(vwind_rot, lats, lons, lat_axis_rot[:], lon_axis_rot[:], new_np)
+    vwind_rot_switch = rot.switch_regular_axes(vwind_rot, lats, lons, lat_axis_rot[:], lon_axis_rot[:], new_np, invert=True)
     
-    ## Is it a problem that the axes here don't include the time axis?? ##
-    vwind_rot_swtich = cdms2.createVariable(vwind_rot_switch, grid=grid, axes=[lat_axis_rot, lon_axis_rot])
+    if 't' in dataU.getOrder():
+        axis_list = [dataU.getTime(), lat_axis_rot, lon_axis_rot]
+    else: 
+        axis_list = [lat_axis_rot, lon_axis_rot]
+    
+    vwind_rot_swtich = cdms2.createVariable(vwind_rot_switch, grid=grid, axes=axis_list)
     
 
     return vwind_rot_swtich    
@@ -69,7 +81,7 @@ def calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np, old_np=(90.0, 0.0)):
     """Calculate the new meridional wind field, according to the
     new position of the north pole"""
     
-    lons, lats = nio.coordinate_pairs(lon_axis, lat_axis) 
+    lats, lons = nio.coordinate_pairs(lat_axis, lon_axis) 
     theta = rot.rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], 
                                lats, lons, reshape=[len(lat_axis), len(lon_axis)])
     theta = numpy.resize(theta, numpy.shape(dataU))

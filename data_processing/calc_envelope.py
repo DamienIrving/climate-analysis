@@ -113,9 +113,9 @@ reference:
 
 example (abyss.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_envelope.py 
-  /work/dbirving/datasets/processed/data/vrot_Merra_250hPa_monthly_y73x144_np30-270.nc vrot
-  /work/dbirving/processed/indices/data/vrot-env_Merra_250hPa_monthly_y73x144_np30-270.nc
-  --time 1995-06-01 1995-08-01 None
+  /work/dbirving/datasets/Merra/data/processed/vrot_Merra_250hPa_monthly-anom-wrt-1979-2012_y181x360_np30-270.nc vrot
+  /work/dbirving/datasets/Merra/data/processed/vrot-env_Merra_250hPa_monthly-anom-wrt-1979-2012_y181x360_np30-270.nc
+  --latitude -25 25
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -143,8 +143,7 @@ author:
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
     parser.add_argument("--grid", type=float, nargs=6, metavar=('START_LAT', 'NLAT', 'DELTALAT', 'START_LON', 'NLON', 'DELTALON'),
-                        default=(-90.0, 73, 2.5, 0.0, 144, 2.5),
-                        help="Uniform regular grid to regrid data to [default = 2.5 by 2.5 deg]")
+                        help="Uniform regular grid to regrid data to [default = no regridding]")
     
     args = parser.parse_args()            
 
