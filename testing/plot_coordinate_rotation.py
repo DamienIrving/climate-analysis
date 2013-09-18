@@ -57,28 +57,28 @@ def create_latlon_dataset(res=2.5):
     return lat_data_cdms, lon_data_cdms
 
 
-def switch_and_restore(data, new_np):
+def switch_and_restore(data, new_np, pm):
     """Test the switch_axes function"""
 
     lat_axis = data.getLatitude()
     lon_axis = data.getLongitude()
     lats, lons = nio.coordinate_pairs(lat_axis, lon_axis)
     
-    rotated_data = rot.switch_regular_axes(data, lats, lons, lat_axis[:], lon_axis[:], new_np, invert=False)
+    rotated_data = rot.switch_regular_axes(data, lats, lons, lat_axis[:], lon_axis[:], new_np, pm_point=pm, invert=False)
     cdms_rotated_data = cdms2.createVariable(rotated_data[:], axes=[lat_axis, lon_axis])
 
-    returned_data = rot.switch_regular_axes(rotated_data, lats, lons, lat_axis[:], lon_axis[:], new_np, invert=True)
+    returned_data = rot.switch_regular_axes(rotated_data, lats, lons, lat_axis[:], lon_axis[:], new_np, pm_point=pm, invert=True)
     cdms_returned_data = cdms2.createVariable(returned_data[:], axes=[lat_axis, lon_axis])
 
     return cdms_rotated_data, cdms_returned_data
     
 
-def plot_axis_switch(new_np):
+def plot_axis_switch(new_np, pm):
     """Plot the original, rotated and returned data"""
 
     orig_lat_data, orig_lon_data = create_latlon_dataset()
-    rotated_lat_data, returned_lat_data = switch_and_restore(orig_lat_data, new_np)
-    rotated_lon_data, returned_lon_data = switch_and_restore(orig_lon_data, new_np)
+    rotated_lat_data, returned_lat_data = switch_and_restore(orig_lat_data, new_np, pm)
+    rotated_lon_data, returned_lon_data = switch_and_restore(orig_lon_data, new_np, pm)
 
     title = 'Axis switch for NP %sN, %sE' %(str(new_np[0]), str(new_np[1])) 
 
@@ -121,7 +121,7 @@ def plot_search_path(rotated_lat_data, new_np):
     plt.savefig('search_paths_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])))
 
 
-def plot_real_data(new_np):
+def plot_real_data(new_np, pm):
     """Real data plot
     
     Perhaps I need to test a change in resolution here??
@@ -133,7 +133,7 @@ def plot_real_data(new_np):
     orig_real_data = fin('va', time=('1979-01-01', '1979-01-29'), squeeze=1)
     fin.close()
 
-    rotated_real_data, returned_real_data = switch_and_restore(orig_real_data, new_np)
+    rotated_real_data, returned_real_data = switch_and_restore(orig_real_data, new_np, pm)
     
     title = 'Axis switch for NP %sN, %sE' %(str(new_np[0]), str(new_np[1]))
         
@@ -174,11 +174,13 @@ if __name__ == '__main__':
     parser.add_argument("north_pole_lon", type=float, help="Longitude of north pole")
     parser.add_argument("plot_type", type=str, choices=('latlon_switch', 'real_switch'),  
                         help="Type of plot")
+    parser.add_argument("--pm", type=float, nargs=2, metavar=('LAT', 'LON'), default=(0.0, 0.0),
+                        help="Location of the prime meridian point")	
     
     args = parser.parse_args()            
 
     new_np = [args.north_pole_lat, args.north_pole_lon]
     if args.plot_type == 'real_switch':
-        plot_real_data(new_np)    
+        plot_real_data(new_np, args.pm)    
     else:
-        plot_axis_switch(new_np)
+        plot_axis_switch(new_np, args.pm)

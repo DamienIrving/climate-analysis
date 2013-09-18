@@ -77,8 +77,11 @@ def main(inargs):
     
     # Extract the wave envelope #
 
-    outdata = numpy.empty(list(vwind.shape)) 
-    ntime, nlat, nlon = indata.data.shape 
+    assert indata.data.getOrder() == 'tyx', \
+    'This script only works if the input data has a time, latitude and longitude axis'
+ 
+    ntime, nlat, nlon = indata.data.shape
+    outdata = numpy.empty([ntime, nlat, nlon]) 
     kmin, kmax = inargs.wavenumbers
     
     for time in xrange(0, ntime):

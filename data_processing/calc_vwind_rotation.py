@@ -22,7 +22,7 @@ import coordinate_rotation as rot
 import pdb
 
 
-def rotate_vwind(dataU, dataV, new_np, res=1.0, anomaly=None):
+def rotate_vwind(dataU, dataV, new_np, pm_point, res=1.0, anomaly=None):
     """Define the new meridional wind field, according to the 
     position of the new north pole.
     
@@ -64,7 +64,7 @@ def rotate_vwind(dataU, dataV, new_np, res=1.0, anomaly=None):
     lat_axis_rot = grid.getLatitude()
     lon_axis_rot = grid.getLongitude()
      
-    vwind_rot_switch = rot.switch_regular_axes(vwind_rot, lats, lons, lat_axis_rot[:], lon_axis_rot[:], new_np, invert=True)
+    vwind_rot_switch = rot.switch_regular_axes(vwind_rot, lats, lons, lat_axis_rot[:], lon_axis_rot[:], new_np, pm_point=pm_point, invert=True)
     
     if 't' in dataU.getOrder():
         axis_list = [dataU.getTime(), lat_axis_rot, lon_axis_rot]
@@ -126,7 +126,7 @@ def main(inargs):
     
     # Calulate the new vwind #
 
-    vwind = rotate_vwind(indataU.data, indataV.data, inargs.north_pole, anomaly=inargs.anomaly)
+    vwind = rotate_vwind(indataU.data, indataV.data, inargs.north_pole, inargs.pm, anomaly=inargs.anomaly)
 
     # Write the output file #
 
@@ -141,7 +141,10 @@ def main(inargs):
                 'name': 'Rotated meridional wind'+name_insert,
                 'long_name': 'Meridional wind'+name_insert+' on a rotated coordinate grid (i.e. the poles are shifted)',
                 'units': indataU.data.units,
-                'history': 'Location of north pole: %s N, %s E. %s' %(str(inargs.north_pole[0]), str(inargs.north_pole[1]), clim)}
+                'history': 'Location of north pole: %s N, %s E. Prime meridian point = %s N, %s E. %s' %(str(inargs.north_pole[0]), 
+		                                                                                         str(inargs.north_pole[1]), 
+													 str(inargs.pm[0]), 
+													 str(inargs.pm[1]), clim)}
 
     indata_list = [indataU, indataV,]
     outdata_list = [vwind,]
@@ -201,6 +204,8 @@ author:
                         help="Uniform regular grid to regrid data to [default = None]")
     parser.add_argument("--north_pole", type=float, nargs=2, metavar=('LAT', 'LON'), default=[90.0, 0.0],
                         help="Location of north pole [default = (90, 0)] - (30, 270) for PSA pattern")
+    parser.add_argument("--pm", type=float, nargs=2, metavar=('LAT', 'LON'), default=(0.0, 0.0),
+                        help="Location of the prime meridian point")	
     parser.add_argument("--anomaly", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=None,
                         help="""Output the anomaly timeseries (calculated from annual cycle monthly climatology). Each date can be 'all' or 'YYYY-MM-DD' [default=False]""") 	
     

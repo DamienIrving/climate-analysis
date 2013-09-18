@@ -66,7 +66,7 @@ import pdb
 ## Switching between coordinate systems ##
 ##########################################
 
-def switch_regular_axes(data, lats_in, lons_in, lat_axis_out, lon_axis_out, new_np, pm_point=None, invert=False):
+def switch_regular_axes(data, lats_in, lons_in, lat_axis_out, lon_axis_out, new_np, pm_point=(0, 0), invert=False):
     """Take data on a specified grid (lats_in, lons_in), rotate the axes 
     (according to the position of the new north pole) and regrid to 
     a new regular grid (lat_axis_out, lon_axis_out) 
@@ -81,7 +81,6 @@ def switch_regular_axes(data, lats_in, lons_in, lat_axis_out, lon_axis_out, new_
     """
 
     phi, theta, psi = north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)
-    
     lats_in_rot, lons_in_rot = rotate_spherical(lats_in, lons_in, phi, theta, psi, invert=invert)
 
     grid_instance = css.Cssgrid(lats_in_rot, lons_in_rot, lat_axis_out, lon_axis_out)
@@ -380,7 +379,7 @@ def _rotation_sign(angleC, lonB, lonC):
 ## North pole manipulation ##
 #############################
 
-def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=None):
+def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=(0, 0)):
     """Convert position of new north pole (latnp, lonnp) to a rotation about the
     original z axis (phir), new x axis after the first rotation (thetar),
     and about the final z axis (psir).
@@ -395,11 +394,7 @@ def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=None):
     psi = 90.0 - lonnp  
     theta = 90.0 - latnp  #accounts for fact that the original north pole was at 90N
 
-    if prime_meridian_point:
-        assert len(prime_meridian_point) == 2, \
-	'The prime point must be a list of length 2 [lat, lon]'
-        lat_temp, phi = rotate_spherical(prime_meridian_point[0], prime_meridian_point[1], 0, theta, psi)
-    else:
-        phi = -90.0   # default lines back up with original prime meridian (cancels out the '90 -' in the psi calculation) 
+    lat_temp, phi = rotate_spherical(prime_meridian_point[0], prime_meridian_point[1], 0, theta, psi)
+    # Note that a value of phi = -90.0 lines back up with original prime meridian (cancels out the '90 -' in the psi calculation) 
     
     return phi, theta, psi
