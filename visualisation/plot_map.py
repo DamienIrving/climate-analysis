@@ -307,7 +307,7 @@ def multiplot(indata,
 
     # Define colourbar and contour ticks #
 
-    ticks, colourmap, min_level, max_level, dec = _set_colourbar(indata_dict, colourbar_colour, 
+    tick_marks, colourmap, min_level, max_level, dec = _set_colourbar(indata_dict, colourbar_colour, 
                                                                 ticks, discrete_segments, extend)
     if contour_dict:
         contour_ticks, contour_dec = _set_contour_ticks(contour_dict, contour_ticks)
@@ -391,7 +391,7 @@ def multiplot(indata,
             lons, lats = numpy.meshgrid(data_lon, data_lat)
             x, y = bmap(lons, lats)     
 	    if contour:     
-		im = bmap.contourf(x, y, data, ticks, cmap=colourmap, extend=extend)
+		im = bmap.contourf(x, y, data, tick_marks, cmap=colourmap, extend=extend)
 	    else:	
                 im = bmap.pcolor(x, y, data, cmap=colourmap)
             
@@ -458,7 +458,7 @@ def multiplot(indata,
 
     cb = plt.colorbar(mappable=im, cax=cax, 
                       orientation='horizontal', 
-		      ticks=ticks, 
+		      ticks=tick_marks, 
 		      extend=extend, 
 		      format='%.'+str(dec)+'f') # draw colorbar
 
@@ -472,6 +472,10 @@ def multiplot(indata,
         plt.savefig(ofile, dpi=dpi, transparent=transparent)
     else:
 	plt.savefig('test.png', dpi=dpi, transparent=transparent)
+
+    del ticks
+    del tick_marks
+    plt.close()
 
 
 def _plot_contours(bmap, projection, cont_data, contour_ticks, contour_dec):
@@ -823,6 +827,8 @@ def _shuffle(in_list, rows, cols):
 
     if not in_list:
         return None
+
+    in_list = nio.single2list(in_list)
 
     rows = int(rows)
     cols = int(cols)

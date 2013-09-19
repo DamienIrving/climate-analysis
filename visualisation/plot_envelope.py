@@ -92,8 +92,11 @@ def main(inargs):
 		           quiver_scale=200, quiver_width=0.002,
         	           projection=inargs.projection, 
         	           extend='max',
-        	           image_size=inargs.image_size
-		           )
+        	           image_size=inargs.image_size)
+        
+        inargs.ticks = inargs.ticks[0: -1]   # Fix for weird thing where it keeps appending to 
+	                                     # the end of the ticks list, presumable due to the 
+					     # extend = 'max' 
 
 
 if __name__ == '__main__':
