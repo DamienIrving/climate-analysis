@@ -11,7 +11,12 @@ import argparse
 
 module_dir = os.path.join(os.environ['HOME'], 'visualisation')
 sys.path.insert(0, module_dir)
-import plot_map as pm
+import plot_map
+
+module_dir2 = os.path.join(os.environ['HOME'], 'modules')
+sys.path.insert(0, module_dir2)
+import coordinate_rotation as rot
+import netcdf_io as nio
 
 import numpy
 import cdms2
@@ -19,26 +24,76 @@ import MV2
 
 
 def main(inargs):
+    """Create the plot"""
 
+    # Read input data #
 
+    indata_env = nio.InputData(inargs.env_file, inargs.env_var, 
+                               **nio.dict_filter(vars(inargs), ['time',]))
+    indata_u = nio.InputData(inargs.u_file, inargs.u_var, 
+                             **nio.dict_filter(vars(inargs), ['time',]))
+    indata_v = nio.InputData(inargs.v_file, inargs.v_var, 
+                             **nio.dict_filter(vars(inargs), ['time',]))
+    indata_sf = nio.InputData(inargs.sf_file, inargs.sf_var, 
+                              **nio.dict_filter(vars(inargs), ['time',]))
 
-    pm.multiplot(indata,
-		 dimensions=dims,
-		 ofile=inargs.ofile,
-		 title=title,
-		 units=units,
-		 img_headings=img_headings_list,
-		 draw_axis=True,
-		 delat=30, delon=30,
-		 contour=True,
-		 ticks=ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
-        	 contour_data=contdata, contour_ticks=cticks,
-		 uwnd_data=wafxdata, vwnd_data=wafydata, quiver_type='waf', quiver_thin=2,
-		 quiver_scale=220, quiver_width=0.002,
-        	 projection=inargs.projection, 
-        	 extend='both',
-        	 image_size=image_size
-		 )
+    env_times = indata_env.data.getTime().asComponentTime()
+    u_times = indata_u.data.getTime().asComponentTime()
+    v_times = indata_v.data.getTime().asComponentTime()
+    sf_times = indata_sf.data.getTime().asComponentTime()
+
+    assert env_times == u_times == v_times == sf_times, \
+    'Time axis must be the same for all input data'
+
+    # Restore env data to standard lat/lon grid #
+
+    lat_axis = indata_env.data.getLatitude()
+    lon_axis = indata_env.data.getLongitude()
+    lats, lons = nio.coordinate_pairs(lat_axis[:], lon_axis[:])
+    grid = indata_env.data.getGrid()
+    new_np = [inargs.np_lat, inargs.np_lon]
+    pm_point = [inargs.pm_lat, inargs.pm_lon]
+    
+    env_restored = rot.switch_regular_axes(indata_env.data, lats, lons, 
+                                           lat_axis[:], lon_axis[:],
+                                           new_np, pm_point=pm_point, invert=False)
+    
+    if 't' in indata_env.data.getOrder():
+        axis_list = [indata_env.data.getTime(), lat_axis, lon_axis]
+    else: 
+        axis_list = [lat_axis, lon_axis]
+    
+    env_restored = cdms2.createVariable(env_restored, grid=grid, axes=axis_list)
+
+    # Plot every time step #
+
+    for date in env_times:
+        year = str(date).split(' ')[0].split('-')[0]
+        month = str(date).split(' ')[0].split('-')[1]
+        date_abbrev = year+'-'+month
+        env_data = env_restored(time=(date, date_abbrev), squeeze=1)
+        u_data = indata_u.data(time=(date, date_abbrev), squeeze=1)
+        v_data = indata_v.data(time=(date, date_abbrev), squeeze=1)
+        sf_data = indata_sf.data(time=(date, date_abbrev), squeeze=1)
+
+        title = 'Wave envelope, 250hPa wind & sf anomaly, %s' %(date_abbrev)
+        ofile = '%s_%s.png' %(inargs.ofile, date_abbrev)
+
+        plot_map.multiplot([env_data,],
+		           ofile=ofile,
+		           title=title,
+		           units='$m s^{-1}$',
+                           draw_axis=True,
+		           delat=30, delon=30,
+		           contour=True,
+		           ticks=inargs.ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
+        	           contour_data=[sf_data,], contour_ticks=inargs.sf_ticks,
+		           uwnd_data=[u_data,], vwnd_data=[v_data,], quiver_thin=9, key_value=5,
+		           quiver_scale=200, quiver_width=0.002,
+        	           projection=inargs.projection, 
+        	           extend='max',
+        	           image_size=inargs.image_size
+		           )
 
 
 if __name__ == '__main__':
@@ -47,12 +102,11 @@ if __name__ == '__main__':
 example (abyss.earthsci.unimelb.edu.au):
     /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_envelope.py
     /work/dbirving/test_data/vrot-env_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360-np30-270.nc
-    vrot 30 270 0 0 
+    env 30 270 0 0 
     /work/dbirving/datasets/Merra/data/processed/ua_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc ua
     /work/dbirving/datasets/Merra/data/processed/va_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc va
     /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc sf
-
-    --ticks 0 1 2 3 4 5 6 7 8 9 10 11 12
+    /work/dbirving/test_data/env-wind-sf_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360-native-np30-270
 
 """
   
@@ -74,17 +128,24 @@ example (abyss.earthsci.unimelb.edu.au):
     parser.add_argument("v_var", type=str, help="meridional wind anomaly variable")
     parser.add_argument("sf_file", type=str, help="streamfunction anomaly file")
     parser.add_argument("sf_var", type=str, help="streamfunction anomaly variable")
+    parser.add_argument("ofile", type=str, help="name of output file (without the file ending - date will be tacked on)")
+    
+    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
+                        help="Time period [default = entire]")
 
-    parser.add_argument("--ofile", type=str, default='test.png',
-                        help="name of output file [default: test.png]")
-    parser.add_argument("--ticks", type=float, nargs='*', default=None,
+    parser.add_argument("--ticks", type=float, nargs='*', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                         help="List of tick marks to appear on the colour bar [default: auto]")
     parser.add_argument("--segments", type=str, nargs='*', default=None,
                         help="List of colours to appear on the colour bar")
-    parser.add_argument("--palette", type=str, default='RdBu_r',
-                        help="Colourbar name [default: RdBu_r]")
+    parser.add_argument("--palette", type=str, default='Oranges',
+                        help="Colourbar name [default: Organges]")
     parser.add_argument("--projection", type=str, default='cyl', choices=['cyl', 'nsper'],
                         help="Map projection [default: nsper]")
+    parser.add_argument("--image_size", type=float, default=9, 
+                        help="size of image [default: 9]")
+
+    parser.add_argument("--sf_ticks", type=float, nargs='*', default=[-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30], 
+                        help="list of tick marks for sf contours, or just the number of contour lines")
     
     args = parser.parse_args() 
 
