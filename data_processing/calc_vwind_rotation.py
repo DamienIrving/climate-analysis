@@ -74,7 +74,7 @@ def rotate_vwind(dataU, dataV, new_np, pm_point, res=1.0, anomaly=None):
     vwind_rot_swtich = cdms2.createVariable(vwind_rot_switch, grid=grid, axes=axis_list)
     
 
-    return vwind_rot_swtich    
+    return vwind_rot, vwind_rot_swtich    
         
 
 def calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np, old_np=(90.0, 0.0)):
@@ -126,7 +126,7 @@ def main(inargs):
     
     # Calulate the new vwind #
 
-    vwind = rotate_vwind(indataU.data, indataV.data, inargs.north_pole, inargs.pm, anomaly=inargs.anomaly)
+    vwind_rot, vwind_rot_switch = rotate_vwind(indataU.data, indataV.data, inargs.north_pole, inargs.pm, anomaly=inargs.anomaly)
 
     # Write the output file #
 
@@ -137,19 +137,27 @@ def main(inargs):
         name_insert = ''
 	clim = ''  
 
-    var_atts = {'id': 'vrot',
-                'name': 'Rotated meridional wind'+name_insert,
-                'long_name': 'Meridional wind'+name_insert+' on a rotated coordinate grid (i.e. the poles are shifted)',
-                'units': indataU.data.units,
-                'history': 'Location of north pole: %s N, %s E. Prime meridian point = %s N, %s E. %s' %(str(inargs.north_pole[0]), 
-		                                                                                         str(inargs.north_pole[1]), 
-													 str(inargs.pm[0]), 
-													 str(inargs.pm[1]), clim)}
-
+    history = 'Location of north pole: %s N, %s E. Prime meridian point = %s N, %s E. %s' %(str(inargs.north_pole[0]), str(inargs.north_pole[1]), 
+											    str(inargs.pm[0]), str(inargs.pm[1]), clim)
     indata_list = [indataU, indataV,]
-    outdata_list = [vwind,]
-    outvar_atts_list = [var_atts,]
-    outvar_axes_list = [vwind.getAxisList(),]
+    if inargs.noswitch:
+        vrot_atts = {'id': 'vrot',
+                     'name': 'Rotated meridional wind'+name_insert,
+                     'long_name': 'Meridional wind'+name_insert+' on a rotated coordinate grid (but the poles have not yet been shifted)',
+                     'units': indataU.data.units,
+                     'history': history}
+        outdata_list = [vwind_rot,]
+        outvar_atts_list = [vrot_atts,]
+        outvar_axes_list = [vwind_rot.getAxisList(),]
+    else:    
+        vrot_atts = {'id': 'vrot',
+                     'name': 'Rotated meridional wind'+name_insert,
+                     'long_name': 'Meridional wind'+name_insert+' on a rotated coordinate grid (the poles have been shifted)',
+                     'units': indataU.data.units,
+                     'history': history}
+        outdata_list = [vwind_rot_swtich,]
+        outvar_atts_list = [vrot_atts,]
+        outvar_axes_list = [vwind_rot_switch.getAxisList(),]
 
     nio.write_netcdf(inargs.outfile, 'Rotated meridional wind'+name_insert, 
                      indata_list, 
@@ -207,7 +215,9 @@ author:
     parser.add_argument("--pm", type=float, nargs=2, metavar=('LAT', 'LON'), default=(0.0, 0.0),
                         help="Location of the prime meridian point")	
     parser.add_argument("--anomaly", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=None,
-                        help="""Output the anomaly timeseries (calculated from annual cycle monthly climatology). Each date can be 'all' or 'YYYY-MM-DD' [default=False]""") 	
+                        help="""Output the anomaly timeseries (calculated from annual cycle monthly climatology). Each date can be 'all' or 'YYYY-MM-DD' [default=False]""")
+    parser.add_argument("--noswitch", action="store_true", default=False,
+                        help="Switch for outputing the vwind on the original grid, as opposed to the switched (or rotated) grid [default: False]") 	
     
     args = parser.parse_args()            
 

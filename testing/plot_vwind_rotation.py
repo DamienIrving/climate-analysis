@@ -33,23 +33,24 @@ import argparse
 import pdb
 
 
-def plot_data(new_np, res):
+def plot_data(new_np, res, date):
     """Create the various plots"""
     
     ## Get input data ##
 
     fin = cdms2.open('/work/dbirving/datasets/Merra/data/ua_Merra_250hPa_monthly_native.nc')
-    dataU = fin('ua', time=('1979-01-01', '1979-01-29'), squeeze=1)
+    dataU = fin('ua', time=(date, date), squeeze=1)
     fin.close()
 
     fin = cdms2.open('/work/dbirving/datasets/Merra/data/va_Merra_250hPa_monthly_native.nc')
-    dataV = fin('va', time=('1979-01-01', '1979-01-29'), squeeze=1)
+    dataV = fin('va', time=(date, date), squeeze=1)
     fin.close()
 
     lat_axis = dataU.getLatitude()
     lon_axis = dataU.getLongitude()
     lats, lons = nio.coordinate_pairs(lat_axis, lon_axis)
     grid_orig = dataU.getGrid()
+    year, month, day = date.split('-') 
 
     ## Plot original wind vectors with wsp underneath ##
 
@@ -57,11 +58,11 @@ def plot_data(new_np, res):
 
     plot_map.multiplot([wsp,],
                        dimensions=(1, 1),
-                       title='Original wsp data',
-                       ofile='vrot_original_wsp_cyl.png',
+                       title='Original wsp data, %s' %(date),
+                       ofile='vrot_original_wsp_cyl_%s-%s.png' %(year, month),
 		       units='$m s^{-1}$',
 		       uwnd_data=[dataU,], vwnd_data=[dataV,],
-		       quiver_thin=8, key_value=10,
+		       quiver_thin=8, key_value=10, quiver_scale=220,
                        draw_axis=True, delat=15, delon=30, equator=True,
 		       image_size=10)
 
@@ -70,22 +71,22 @@ def plot_data(new_np, res):
     vwind_rot = vrot.calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np)
     vwind_rot_cdms = cdms2.createVariable(vwind_rot, grid=grid_orig, axes=[lat_axis, lon_axis])
 
-    title = 'New meridional wind, original coordinate axes, for NP %sN, %sE' %(str(new_np[0]), str(new_np[1]))
-    ofile = 'vrot_newv_origaxes_%sN_%sE_cyl.png' %(str(new_np[0]), str(new_np[1]))
+    title = 'New v-wind, original axes, for NP %sN, %sE (%s)' %(str(new_np[0]), str(new_np[1]), date)
+    ofile = 'vrot_newv_origaxes_%sN_%sE_cyl_%s-%s.png' %(str(new_np[0]), str(new_np[1]), year, month)
     plot_map.multiplot([vwind_rot_cdms,],
                        dimensions=(1, 1),
                        title=title,
                        ofile=ofile,
 		       units='$m s^{-1}$',
 		       uwnd_data=[dataU,], vwnd_data=[dataV,],
-		       quiver_thin=8, key_value=10,
+		       quiver_thin=8, key_value=10, quiver_scale=220,
                        draw_axis=True, delat=15, delon=30, equator=True,
 		       image_size=10)
 		       
     ## Plot rotated vwind (original axes, nsper projection) ##
 
-    title = 'New meridional wind, original coordinate axes, for NP %sN, %sE' %(str(new_np[0]), str(new_np[1]))
-    ofile = 'vrot_newv_origaxes_%sN_%sE_nsper.png' %(str(new_np[0]), str(new_np[1]))
+    title = 'New v-wind, original axes, for NP %sN, %sE (%s)' %(str(new_np[0]), str(new_np[1]), date)
+    ofile = 'vrot_newv_origaxes_%sN_%sE_nsper_%s-%s.png' %(str(new_np[0]), str(new_np[1]), year, month)
     plot_map.multiplot([vwind_rot_cdms,],
                        dimensions=(1, 1),  
 		       centre=(new_np[0], new_np[1]), projection='nsper',
@@ -106,8 +107,8 @@ def plot_data(new_np, res):
     vwind_rot_switch = rot.switch_regular_axes(vwind_rot, lats, lons, lat_axis_rot[:], lon_axis_rot[:], new_np, invert=True)
     vwind_rot_switch_cdms = cdms2.createVariable(vwind_rot_switch, grid=grid_rot, axes=[lat_axis_rot, lon_axis_rot])
 
-    title = 'New meridional wind, rotated coordinate axes, for NP %sN, %sE' %(str(new_np[0]), str(new_np[1]))
-    ofile = 'vrot_newv_rotaxes_%sN_%sE_nsper.png' %(str(new_np[0]), str(new_np[1]))
+    title = 'New v-wind, rotated axes, for NP %sN, %sE (%s)' %(str(new_np[0]), str(new_np[1]), date)
+    ofile = 'vrot_newv_rotaxes_%sN_%sE_nsper_%s-%s.png' %(str(new_np[0]), str(new_np[1]), year, month)
     plot_map.multiplot([vwind_rot_switch_cdms,],
                        dimensions=(1, 1), nocoast=True,
 		       centre=(90, 0), projection='nsper',  
@@ -158,9 +159,11 @@ if __name__ == '__main__':
     parser.add_argument("plot_type", type=str, choices=('data', 'angle'),  
                         help="Type of plot")
     parser.add_argument("--res", type=float, default=1.0, 
-                        help="Resolution of final rotated data")
+                        help="Resolution of final rotated data [default: 1.0]")
     parser.add_argument("--projection", type=str, choices=('cyl', 'nsper'), default='cyl',
                         help="map projection for angles plot [default: cyl]")
+    parser.add_argument("--date", type=str, default='1979-01-01',
+                        help='date to plot [default: 1979-01-01]')
 
     args = parser.parse_args()            
 
@@ -169,4 +172,4 @@ if __name__ == '__main__':
     if args.plot_type == 'angle':
         plot_angles(new_np, args.projection)
     else:
-        plot_data(new_np, args.res)    
+        plot_data(new_np, args.res, args.date)    

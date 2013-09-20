@@ -116,9 +116,8 @@ reference:
 
 example (abyss.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_envelope.py 
-  /work/dbirving/datasets/Merra/data/processed/vrot_Merra_250hPa_monthly-anom-wrt-1979-2012_y181x360_np30-270.nc vrot
-  /work/dbirving/datasets/Merra/data/processed/vrot-env_Merra_250hPa_monthly-anom-wrt-1979-2012_y181x360_np30-270.nc
-  --latitude -25 25
+  /work/dbirving/datasets/Merra/data/processed/vrot_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360_np30-270.nc vrot
+  /work/dbirving/datasets/Merra/data/processed/vrot-env-w567_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360_np30-270.nc
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -135,8 +134,8 @@ author:
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[2, 4],
-                        help="Wavenumber range [default = (2, 4)]. The upper and lower values are included (i.e. default selection is 2, 3, 4).")			
+    parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[5, 7],
+                        help="Wavenumber range [default = (5, 7)]. The upper and lower values are included (i.e. default selection is 2, 3, 4).")			
     parser.add_argument("--region", type=str, choices=nio.regions.keys(),
                         help="Region [default = entire]")
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
