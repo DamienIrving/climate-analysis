@@ -698,6 +698,7 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
 
     Arguments:
     output_timescale options: 
+    - DAILY
     - SEASONALCYCLE (i.e. DJF/MAM/JJA/SON)
     - ANNUALCYCLE (i.e. JAN/FEB/MAR/.../DEC)
     - YEAR
@@ -708,7 +709,7 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
     output_product options: 
     - 'raw', 'climatology' or 'anomaly'
     
-    time_period (only applies to anomaly)
+    time_period (for climatology used in calculating the anomaly)
     - ['lower_bound', 'upper_bound']
     e.g. ['1979-01-01', '1980-12-31']
 
@@ -724,54 +725,96 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
 			   'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
                            'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
     double_alphabet = 'JFMAMJJASONDJFMAMJJASOND'
-    assert (output_timescale in accepted_timescales) or (output_timescale in double_alphabet) 
+    assert (output_timescale in accepted_timescales) or \
+           (output_timescale in double_alphabet) or \
+	   (output_timescale.lower() == 'input')
    
     if time_period:
         assert len(time_period) == 2, \
         """time_period should be a list or tuple of length 2. e.g. ('1979-01-01', '1980-12-31')"""
 
-    # Find input timescale #
-    
     time_axis = data.getTime().asComponentTime()
     input_timescale = _get_timescale(get_datetime(time_axis[0:2]))
+    
+    if output_timescale.lower() == 'daily':
+        assert output_timescale == input_timescale, \
+        "For the daily output timescale, the input data must also be daily"
 
-    # Set time bounds #
-
-    daily_freq = {'hourly': 24, '6hourly': 4, '12hourly': 2, 'daily': 1}
-
-    if input_timescale in daily_freq.keys():
-        cdutil.setTimeBoundsDaily(data, frequency=daily_freq[input_timescale])
-    elif input_timescale == 'monthly':
-        cdutil.setTimeBoundsMonthly(data)
-    elif input_timescale == 'yearly':
-        cdutil.setTimeBoundsYearly(data)
+        outdata = _daily_aggregation(data, output_quantity, time_period)
+    
     else:
-        print 'Unrecognised input timescale.'
-        print 'Must be daily, monthly or yearly.'
-        sys.exit(1)
+	# Set time bounds #
+	daily_freq = {'hourly': 24, '6hourly': 4, '12hourly': 2, 'daily': 1}
+	if input_timescale in daily_freq.keys():
+            cdutil.setTimeBoundsDaily(data, frequency=daily_freq[input_timescale])
+	elif input_timescale == 'monthly':
+            cdutil.setTimeBoundsMonthly(data)
+	elif input_timescale == 'yearly':
+            cdutil.setTimeBoundsYearly(data)
+	else:
+            print 'Unrecognised input timescale.'
+            print 'Must be daily, monthly or yearly.'
+            sys.exit(1)
 
-    # Extract subset of interest #
+	# Extract subset of interest #
+	if output_timescale in accepted_timescales:
+            season = eval('cdutil.' + output_timescale)
+	elif output_timescale in double_alphabet:
+            season = cdutil.times.Seasons(output_timescale)
 
-    if output_timescale in accepted_timescales:
-        season = eval('cdutil.' + output_timescale)
-    elif output_timescale in double_alphabet:
-        season = cdutil.times.Seasons(output_timescale)
+	if output_quantity == 'raw':
+            outdata = season(data)
+	elif output_quantity == 'climatology':
+            outdata = season.climatology(data)
+	elif output_quantity == 'anomaly':
+            clim = season.climatology(data(time=time_period)) if time_period else season.climatology(data)
+	    assert type(clim) != type(None), \
+	    'Input data are of insufficient temporal extent to calculate climatology'	
+            outdata = season.departures(data, ref=clim)
 
-    if output_quantity == 'raw':
-        outdata = season(data)
-    elif output_quantity == 'climatology':
-        outdata = season.climatology(data)
-    elif output_quantity == 'anomaly':
-        clim = season.climatology(data(time=time_period)) if time_period else season.climatology(data)
-	assert type(clim) != type(None), \
-	'Input data are of insufficient temporal extent to calculate climatology'	
-        outdata = season.departures(data, ref=clim)
-
-    assert type(outdata) != type(None), \
-    'Input data are of insufficient temporal extent to calculate the requested temporal aggregation (%s)' %(output_quantity)
+	assert type(outdata) != type(None), \
+	'Input data are of insufficient temporal extent to calculate the requested temporal aggregation (%s)' %(output_quantity)
 
     return outdata
 
+
+def _daily_aggregation(data, output_quantity, time_period):
+    """Create a temporal aggregate for daily data (cdat doesn't offer this
+    functionality."""
+
+    order = data.getOrder()
+    assert order[0] == 't', \
+    'The first dimension of the input data must be time'
+
+    assert len(order) == 3 or len(order) == 4, \
+    'The input data must be three or four dimensional'
+
+    if output_quantity == 'raw':
+        return data
+
+    # Remove Feb 29 from time axis 
+    
+    input_taxis = map(str, data.getTime().asComponentTime())
+    feb29_dates = [s for s in input_taxis if '-2-29' in s]
+
+    new_shape = data.shape
+    new_shape[0] = int(math.ceil(data.shape[0] / 365.0) * 365.0)  
+    extended_data = MV2.ones(new_shape) * data.missing_value
+    if len(order) == 3:
+        extended_data[0:data.shape[0] - 1, 0:data.shape[1] - 1, 0:data.shape[2] - 1]
+    else:
+        extended_data[0:data.shape[0] - 1, 0:data.shape[1] - 1, 0:data.shape[2] - 1, 0:data.shape[2] - 1]
+            
+    clim = MV2.average(data(time=time_period), axis=0) if time_period else MV2.average(data, axis=0)
+    if output_quantity == 'climatology':
+        output = clim
+    elif output_quantity == 'anomaly':
+        output = data - clim
+
+    monthly_climatology = MV2.masked_values(monthly_climatology, base_data.data.missing_value)
+
+    return output
+   
 
 def temporal_extract(data, indices):
     """Extract the data corresponding to a list of time
