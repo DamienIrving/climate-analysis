@@ -698,7 +698,6 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
 
     Arguments:
     output_timescale options: 
-    - DAILY
     - SEASONALCYCLE (i.e. DJF/MAM/JJA/SON)
     - ANNUALCYCLE (i.e. JAN/FEB/MAR/.../DEC)
     - YEAR
@@ -735,101 +734,44 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
 
     time_axis = data.getTime().asComponentTime()
     input_timescale = _get_timescale(get_datetime(time_axis[0:2]))
+   
+    # Set time bounds #
     
-    if output_timescale.lower() == 'daily':
-        assert output_timescale == input_timescale, \
-        "For the daily output timescale, the input data must also be daily"
-
-        outdata = _daily_aggregation(data, output_quantity, time_period)
-    
+    daily_freq = {'hourly': 24, '6hourly': 4, '12hourly': 2, 'daily': 1}
+    if input_timescale in daily_freq.keys():
+        cdutil.setTimeBoundsDaily(data, frequency=daily_freq[input_timescale])
+    elif input_timescale == 'monthly':
+        cdutil.setTimeBoundsMonthly(data)
+    elif input_timescale == 'yearly':
+        cdutil.setTimeBoundsYearly(data)
     else:
-	# Set time bounds #
-	daily_freq = {'hourly': 24, '6hourly': 4, '12hourly': 2, 'daily': 1}
-	if input_timescale in daily_freq.keys():
-            cdutil.setTimeBoundsDaily(data, frequency=daily_freq[input_timescale])
-	elif input_timescale == 'monthly':
-            cdutil.setTimeBoundsMonthly(data)
-	elif input_timescale == 'yearly':
-            cdutil.setTimeBoundsYearly(data)
-	else:
-            print 'Unrecognised input timescale.'
-            print 'Must be daily, monthly or yearly.'
-            sys.exit(1)
+        print 'Unrecognised input timescale.'
+        print 'Must be daily, monthly or yearly.'
+        sys.exit(1)
 
-	# Extract subset of interest #
-	if output_timescale in accepted_timescales:
-            season = eval('cdutil.' + output_timescale)
-	elif output_timescale in double_alphabet:
-            season = cdutil.times.Seasons(output_timescale)
+    # Extract subset of interest #
+    
+    if output_timescale in accepted_timescales:
+        season = eval('cdutil.' + output_timescale)
+    elif output_timescale in double_alphabet:
+        season = cdutil.times.Seasons(output_timescale)
 
-	if output_quantity == 'raw':
-            outdata = season(data)
-	elif output_quantity == 'climatology':
-            outdata = season.climatology(data)
-	elif output_quantity == 'anomaly':
-            clim = season.climatology(data(time=time_period)) if time_period else season.climatology(data)
-	    assert type(clim) != type(None), \
-	    'Input data are of insufficient temporal extent to calculate climatology'	
-            outdata = season.departures(data, ref=clim)
+    if output_quantity == 'raw':
+        outdata = season(data)
+    elif output_quantity == 'climatology':
+        outdata = season.climatology(data)
+    elif output_quantity == 'anomaly':
+        clim = season.climatology(data(time=time_period)) if time_period else season.climatology(data)
+	assert type(clim) != type(None), \
+	'Input data are of insufficient temporal extent to calculate climatology'	
+        outdata = season.departures(data, ref=clim)
 
-	assert type(outdata) != type(None), \
-	'Input data are of insufficient temporal extent to calculate the requested temporal aggregation (%s)' %(output_quantity)
+    assert type(outdata) != type(None), \
+    'Input data are of insufficient temporal extent to calculate the requested temporal aggregation (%s)' %(output_quantity)
 
     return outdata
 
 
-def _daily_aggregation(data, output_quantity, time_period):
-    """Create a temporal aggregate for daily data (cdat doesn't offer this
-    functionality)"""
-
-    order = data.getOrder()
-    assert order == 'tyx' 
-
-    if output_quantity == 'raw':
-        return data
-
-    # Remove Feb 29 from time axis 
-    
-    input_time_axis = map(str, data.getTime().asComponentTime())
-    feb29_dates = [s for s in input_time_axis if '-2-29' in s]
- 
-    feb29_indexes = []
-    for date in feb29_dates:
-        feb29_indexes.append(input_time_axis.index(date))
-
-    data_no26Feb = numpy.delete(data, feb29_indexes, axis=0)
-
-    # Re-shape the data so the time axis is split into two (year, day)
-    ntimes, nlats, nlons = data.shape
-    nyears = int(math.ceil(ntimes / 365.0) * 365.0)
-    days_remainder = ntimes % 365
-      
-    extended_data = numpy.ones([nyears, 365, nlats, nlons) * data.missing_value
-    for i in range(0, nyears-1):
-        start = i*nyears
-        end = start + 365
-        extended_data[i, :, :, :] = data[start:end, :, :] 
-    extended_data[-1, 0:days_remainder, :, :] = data[end:, :, :]
-
-    extended_data = numpy.ma.masked_values(extended_data, data.missing_value)
-
-    # Calculate the climatology and anomaly
-
-    daily_clim = numpy.ma.average(extended_data, axis=0)
-    if output_quantity == 'climatology':
-        output = daily_clim
-    elif output_quantity == 'anomaly':
-        
-        daily_anom = numpy.ma.resize(
-	    
-    clim = MV2.average(data(time=time_period), axis=0) if time_period else MV2.average(data, axis=0)
-    
-        output = clim
-    elif output_quantity == 'anomaly':
-        output = data - clim
-
-    return output
-   
 
 def temporal_extract(data, indices):
     """Extract the data corresponding to a list of time
