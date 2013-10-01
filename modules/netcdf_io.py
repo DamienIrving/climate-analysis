@@ -780,38 +780,53 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
 
 def _daily_aggregation(data, output_quantity, time_period):
     """Create a temporal aggregate for daily data (cdat doesn't offer this
-    functionality."""
+    functionality)"""
 
     order = data.getOrder()
-    assert order[0] == 't', \
-    'The first dimension of the input data must be time'
-
-    assert len(order) == 3 or len(order) == 4, \
-    'The input data must be three or four dimensional'
+    assert order == 'tyx' 
 
     if output_quantity == 'raw':
         return data
 
     # Remove Feb 29 from time axis 
     
-    input_taxis = map(str, data.getTime().asComponentTime())
-    feb29_dates = [s for s in input_taxis if '-2-29' in s]
+    input_time_axis = map(str, data.getTime().asComponentTime())
+    feb29_dates = [s for s in input_time_axis if '-2-29' in s]
+ 
+    feb29_indexes = []
+    for date in feb29_dates:
+        feb29_indexes.append(input_time_axis.index(date))
 
-    new_shape = data.shape
-    new_shape[0] = int(math.ceil(data.shape[0] / 365.0) * 365.0)  
-    extended_data = MV2.ones(new_shape) * data.missing_value
-    if len(order) == 3:
-        extended_data[0:data.shape[0] - 1, 0:data.shape[1] - 1, 0:data.shape[2] - 1]
-    else:
-        extended_data[0:data.shape[0] - 1, 0:data.shape[1] - 1, 0:data.shape[2] - 1, 0:data.shape[2] - 1]
-            
-    clim = MV2.average(data(time=time_period), axis=0) if time_period else MV2.average(data, axis=0)
+    data_no26Feb = numpy.delete(data, feb29_indexes, axis=0)
+
+    # Re-shape the data so the time axis is split into two (year, day)
+    ntimes, nlats, nlons = data.shape
+    nyears = int(math.ceil(ntimes / 365.0) * 365.0)
+    days_remainder = ntimes % 365
+      
+    extended_data = numpy.ones([nyears, 365, nlats, nlons) * data.missing_value
+    for i in range(0, nyears-1):
+        start = i*nyears
+        end = start + 365
+        extended_data[i, :, :, :] = data[start:end, :, :] 
+    extended_data[-1, 0:days_remainder, :, :] = data[end:, :, :]
+
+    extended_data = numpy.ma.masked_values(extended_data, data.missing_value)
+
+    # Calculate the climatology and anomaly
+
+    daily_clim = numpy.ma.average(extended_data, axis=0)
     if output_quantity == 'climatology':
+        output = daily_clim
+    elif output_quantity == 'anomaly':
+        
+        daily_anom = numpy.ma.resize(
+	    
+    clim = MV2.average(data(time=time_period), axis=0) if time_period else MV2.average(data, axis=0)
+    
         output = clim
     elif output_quantity == 'anomaly':
         output = data - clim
-
-    monthly_climatology = MV2.masked_values(monthly_climatology, base_data.data.missing_value)
 
     return output
    
