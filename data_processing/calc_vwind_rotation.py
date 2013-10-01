@@ -155,7 +155,7 @@ def main(inargs):
                      'long_name': 'Meridional wind'+name_insert+' on a rotated coordinate grid (the poles have been shifted)',
                      'units': indataU.data.units,
                      'history': history}
-        outdata_list = [vwind_rot_swtich,]
+        outdata_list = [vwind_rot_switch,]
         outvar_atts_list = [vrot_atts,]
         outvar_axes_list = [vwind_rot_switch.getAxisList(),]
 
