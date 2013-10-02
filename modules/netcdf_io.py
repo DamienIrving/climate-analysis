@@ -53,16 +53,18 @@ cdms2.setNetcdfDeflateLevelFlag(0)
 import MV2
 import regrid2
 
-from git import Repo
-REPO_DIR = os.path.join(os.environ['HOME'], 'git_repo', 'phd')
-MODULE_HASH = Repo(REPO_DIR).head.commit.hexsha
-
+try:
+    from git import Repo  #doesn't come standard with uvcdat install
+    REPO_DIR = os.path.join(os.environ['HOME'], 'git_repo', 'phd')
+    MODULE_HASH = Repo(REPO_DIR).head.commit.hexsha
+except ImportError:
+    MODULE_HASH = 'unknown'
+  
 ## Alternative provenance tracking, if netcdf_io.py 
 #  was under version control directly ##
 #repo_dir = os.path.abspath(os.path.dirname(__file__))
 #MODULE_HASH = Repo(repo_dir).head.commit.hexsha
 
-import pdb
 
 ## Define regions ##
 
