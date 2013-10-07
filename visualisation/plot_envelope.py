@@ -66,11 +66,25 @@ def main(inargs):
     env_restored = cdms2.createVariable(env_restored, grid=grid, axes=axis_list)
 
     # Plot every time step #
+   
+    if inargs.timescale == 'monthly':
+        tick_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+	keyval = 5
+	quiv_scale = 200
+	quiv_width = 0.002
+    else:
+        tick_list = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
+	keyval = 10
+	quiv_scale = 300
+	quiv_width = 0.002
 
     for date in env_times:
-        year = str(date).split(' ')[0].split('-')[0]
-        month = str(date).split(' ')[0].split('-')[1]
-        date_abbrev = year+'-'+month
+        year, month, day = str(date).split(' ')[0].split('-')
+	if inargs.timescale == 'monthly':
+	    date_abbrev = year+'-'+month
+	else:
+	    date_abbrev = year+'-'+month+'-'+day
+	    
         env_data = env_restored(time=(date, date_abbrev), squeeze=1)
         u_data = indata_u.data(time=(date, date_abbrev), squeeze=1)
         v_data = indata_v.data(time=(date, date_abbrev), squeeze=1)
@@ -86,15 +100,16 @@ def main(inargs):
                            draw_axis=True,
 		           delat=30, delon=30,
 		           contour=True,
-		           ticks=inargs.ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
+		           ticks=tick_list, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
         	           contour_data=[sf_data,], contour_ticks=inargs.sf_ticks,
-		           uwnd_data=[u_data,], vwnd_data=[v_data,], quiver_thin=9, key_value=5,
-		           quiver_scale=200, quiver_width=0.002,
+		           uwnd_data=[u_data,], vwnd_data=[v_data,], quiver_thin=9, key_value=keyval,
+		           quiver_scale=quiv_scale, quiver_width=quiv_width,
         	           projection=inargs.projection, 
         	           extend='max',
+			   search_paths=[30, 270],
         	           image_size=inargs.image_size)
         
-        inargs.ticks = inargs.ticks[0: -1]   # Fix for weird thing where it keeps appending to 
+        tick_list = tick_list[0: -1]   # Fix for weird thing where it keeps appending to 
 	                                     # the end of the ticks list, presumable due to the 
 					     # extend = 'max' 
 
@@ -104,12 +119,12 @@ if __name__ == '__main__':
     extra_info="""
 example (abyss.earthsci.unimelb.edu.au):
     /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_envelope.py
-    /work/dbirving/test_data/vrot-env_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360-np30-270.nc
+    /work/dbirving/test_data/vrot-env-w567_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360-np30-270.nc
     env 30 270 0 0 
     /work/dbirving/datasets/Merra/data/processed/ua_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc ua
     /work/dbirving/datasets/Merra/data/processed/va_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc va
     /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc sf
-    /work/dbirving/test_data/env-wind-sf_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360-native-np30-270
+    /work/dbirving/test_data/env-w567-wind-sf_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360-native-np30-270
 
 """
   
@@ -132,6 +147,7 @@ example (abyss.earthsci.unimelb.edu.au):
     parser.add_argument("sf_file", type=str, help="streamfunction anomaly file")
     parser.add_argument("sf_var", type=str, help="streamfunction anomaly variable")
     parser.add_argument("ofile", type=str, help="name of output file (without the file ending - date will be tacked on)")
+    parser.add_argument("timescale", type=str, choices=['daily', 'monthly'], help="timescale of the input data")
     
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")

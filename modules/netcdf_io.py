@@ -512,7 +512,7 @@ def _infile_attribute_check(infile, var_id):
     # File dimension attributes #
     
     for dimension in infile.listdimension():
-	if not dimension in ['bound', 'nv']:
+	if not dimension in ['bound', 'nv', 'nb2']:
 	    assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
 	    'Input dimensions must have an axis attribute that is X, Y, Z or T'
 

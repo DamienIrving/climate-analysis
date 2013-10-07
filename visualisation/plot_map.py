@@ -37,6 +37,10 @@ module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
+module_dir2 = os.path.join(os.environ['HOME'], 'testing')
+sys.path.insert(0, module_dir2)
+import plot_coordinate_rotation as pcr
+
 
 blue1, blue2, blue3, blue4, blue5 = ['#EAF4FF', '#DFEFFF', '#BFDFFF', '#95CAFF', '#55AAFF']
 blue6, blue7, blue8, blue9, blue10 = ['#0B85FF', '#006AD5', '#004080', '#002B55', '#001B35']
@@ -200,7 +204,7 @@ def multiplot(indata,
               #headings
               row_headings=None, inline_row_headings=None, col_headings=None, img_headings=None,
               #axis options to draw lat/lon lines
-              draw_axis=False, delat=30, delon=30, equator=False, enso=None,
+              draw_axis=False, delat=30, delon=30, equator=False, enso=None, search_paths=None,
 	      #contour plot
 	      contour=False,
               #width of image in inches (individual image)
@@ -312,7 +316,6 @@ def multiplot(indata,
     if contour_dict:
         contour_ticks, contour_dec = _set_contour_ticks(contour_dict, contour_ticks)
 
-    
     # Determine image size #
 
     minlat, maxlat = nio.regions[region][0][0: 2]
@@ -400,6 +403,10 @@ def multiplot(indata,
 
             # Plot the secondary data #
     
+            #draw wave envelope search paths
+	    if search_paths:
+	        _plot_search_paths(bmap, search_paths)
+
             if contour_dict: 
                 _plot_contours(bmap, projection, 
                                contour_dict[row, col], contour_ticks, contour_dec)
@@ -596,6 +603,20 @@ def _plot_stippling(bmap, projection,
                         	  markerfacecolor='red', markeredgecolor='red')
     else:
         pass
+
+def _plot_search_paths(bmap, new_np):
+    """PLot the search paths used in wave envelope
+    extraction, according to the location of the north
+    pole (np)"""
+    
+    orig_lat_data, orig_lon_data = pcr.create_latlon_dataset()
+    rotated_lat_data, returned_lat_data = pcr.switch_and_restore(orig_lat_data, new_np, [0, 0])
+    
+    lons, lats = numpy.meshgrid(rotated_lat_data.getLongitude()[:],
+                                rotated_lat_data.getLatitude()[:])
+    x, y = bmap(lons, lats)
+    bmap.contour(x, y, rotated_lat_data, [-20.0, -15.0, -10.0, -5.0, 0, 5.0, 10.0, 15.0, 20.0], colors='0.25')
+    #plt.clabel(im, fontsize=5, inline=1, fmt='%.1f') 
 
 
 def _plot_enso(bmap, region_list, projection):
@@ -943,6 +964,8 @@ improvements:
     parser.add_argument("--enso", type=str, nargs='*', 
                         choices=('IEMI', 'Nino12', 'Nino3', 'Nino34', 'Nino4'),
                         help="draw grid lines marking ENSO regions [default: None]")
+    parser.add_argument("--search_paths", type=float, nargs=2, metavar=('LAT', 'LON'),
+                        help="draw the search paths for the specified north pole [default: None]")
     parser.add_argument("--image_size", type=float, 
                         help="size of image [default: 6]")
     parser.add_argument("--projection", type=str, choices=('cyl', 'nsper'),
