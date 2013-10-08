@@ -24,23 +24,11 @@ rotation_angle
   --  Find angle of rotation between the old and new north pole.
 
 
-Reference:
-Rotation theory: http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
-
 Required improvements:
-1. In rotation_angle(), what do I do when side a or b of the spherical
-   triangle is equal to zero (and hence no triangle exists)? This occurs 
-   when the point of interest (C) is at the same point as the old (A) or 
-   new (B) north pole. 
-2. I've come across a number of issues related to numerical precision.
-   These have been covered over with makeshfit functions like _filter_tiny()
-   and _arccos_check(), however I would prefer if these functions weren't 
-   required.
-3. Many of the functions lack assertions (e.g. assert that the input is a 
+1. Many of the functions lack assertions (e.g. assert that the input is a 
    numpy array).
-4. Look for opportunities to process data as multidimensional arrays, instead
+2. Look for opportunities to process data as multidimensional arrays, instead
    of using mesh/flatten or looping.
-   
 """
 
 #############################
@@ -78,9 +66,12 @@ def switch_regular_axes(data, lats_in, lons_in, lat_axis_out, lon_axis_out, new_
     lat_axis_out and lat_axis_in are simply axis values for a regular/uniform grid
     (i.e. together, they do not desribe coordinate pairs for every grid point)
     
+    References:
+    The css package (http://www2-pcmdi.llnl.gov/cdat/contrib/csgriddoc) is based on the
+    ngmath library (http://ngwww.ucar.edu/ngmath/)
     """
 
-    if euler:
+    if euler: #override the north_pole_to_rotation_angles function
         phi, theta, psi = euler
     else:
         phi, theta, psi = north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)
@@ -96,12 +87,7 @@ def switch_regular_axes(data, lats_in, lons_in, lat_axis_out, lon_axis_out, new_
     else: 
         regrid = grid_instance.rgrd(data.flatten())
 	data_rot = numpy.transpose(regrid)
-        
-    #### NOTE: the regridding of rgrd seems to be fairly accurate (i.e. when you give it 
-    #### the same input and output grid) except at the poles (ie when the lat = 90 or -90)
-    #### This may relate to the problems at the poles the css2c and csc2s have - I'm not
-    #### sure if rgrd uses these functions.
-    
+           
     return data_rot
 
 
@@ -120,7 +106,6 @@ def adjust_lon_range(lons, radians=True, start=0.0):
     interval that begins at start.
 
     Default range = [0, 360)
-    
     Input and output can be in radians or degrees.
     """
     
@@ -149,9 +134,10 @@ def adjust_lon_range(lons, radians=True, start=0.0):
 def rotation_matrix(phir, thetar, psir, inverse=False):
     """Get the rotation matrix or its inverse.
     Inputs angles are expected in radians.
-    Reference: http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
-    Note that the transformation matrix (and its inverse) given in
-    the reference is exactly correct - I checked the derivation by hand.
+
+    Reference:
+    Pacanowski R, & Griffies S (2000). Defining the rotation. The MOM manual.
+    http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
     """
     
     for angle in [phir, thetar, psir]:
@@ -223,6 +209,10 @@ def rotate_spherical(lats, lons, phi, theta, psi, invert=False):
     Inputs and outputs are all in degrees. Longitudes are output [0, 360]
     Output is a flattened lat and lon array, with element-wise pairs corresponding 
     to every grid point.
+    
+    Reference:
+    The css package (http://www2-pcmdi.llnl.gov/cdat/contrib/csgriddoc) is based on the
+    ngmath library (http://ngwww.ucar.edu/ngmath/)    
     """
     
     lats = nio.single2list(lats)
@@ -239,9 +229,11 @@ def rotate_spherical(lats, lons, phi, theta, psi, invert=False):
     xrot, yrot, zrot = rotate_cartesian(x, y, z, phi, theta, psi, invert=invert)
     
     latrot, lonrot = css.cssgridmodule.csc2s(xrot, yrot, zrot)  # csc2s produces lon values (-180, 180)
+
+    #In cartesian coordinates (x, y, z) the poles are at [0,0,1] and [0,0,-1], which css.cssgridmodule.csc2s
+    #always interprets as having a longitude of zero. Could try and fix this with a function like:
     #lonrot = numpy.where(numpy.abs(lats) == 90.0, lons + phi + psi, lonrot)
-    # accounts for the fact that in x, y, z the pole is [0,0,1] or [0,0,-1], which css.cssgridmodule.csc2s
-    # always interprets as having a longitude of zero 
+    #but I haven't. Accuracy at the poles is not important
     
     return latrot, adjust_lon_range(lonrot, radians=False, start=0.0) 
 
@@ -256,7 +248,6 @@ def _arccos_check(data):
     numpy.arccos is only defined [-1, 1]. Sometimes due to precision
     you can get values that are very slightly > 1 or < -1, which causes
     numpy.arccos to be undefinded. This function adjusts for this.
-        
     """
     
     data = numpy.clip(data, -1.0, 1.0)
@@ -268,11 +259,11 @@ def angular_distance(lat1deg, lon1deg, lat2deg, lon2deg):
     """Find the angular distance between two points on
     the sphere.
     
-    Calculation taken from http://www.movable-type.co.uk/scripts/latlong.html
-    
     Assumes a sphere of unit radius.
-    
     Input in degrees. Output in radians.
+    
+    Reference:
+    Calculation taken from http://www.movable-type.co.uk/scripts/latlong.html
     """
 
     lat1 = numpy.deg2rad(lat1deg)
@@ -329,7 +320,8 @@ def rotation_angle(latA, lonA, latB, lonB, latsC, lonsC, reshape=None):
     b_vals = angular_distance(latA_flat, lonA_flat, latsC, lonsC)
     c_vals = angular_distance(latA_flat, lonA_flat, latB_flat, lonB_flat)
 
-    # Temporary fix to avoid divide by zero error when locationC = locationA or locationB, which makes a or b zero
+    # Fix to avoid divide by zero error when locationC = locationA or locationB, which makes a or b zero
+    # (later on the angle will be defined as zero at these points)
     a_vals_fix = numpy.where(_filter_tiny(numpy.sin(a_vals)) == 0.0, 1.0, a_vals)
     b_vals_fix = numpy.where(_filter_tiny(numpy.sin(b_vals)) == 0.0, 1.0, b_vals)
 
@@ -337,7 +329,7 @@ def rotation_angle(latA, lonA, latB, lonB, latsC, lonsC, reshape=None):
     #angleB_magnitude = numpy.arccos((numpy.cos(b) - numpy.cos(c)*numpy.cos(a)) / (numpy.sin(c)*numpy.sin(a)))
     angleC_magnitude = numpy.arccos(_arccos_check((numpy.cos(c_vals) - numpy.cos(a_vals_fix)*numpy.cos(b_vals_fix)) / (numpy.sin(a_vals_fix)*numpy.sin(b_vals_fix))))
 
-    # Make the rotation angle 0.0 and points where it is undefined
+    # Make the rotation angle 0.0 at points where it is undefined
     angleC_magnitude = numpy.where(_filter_tiny(numpy.sin(a_vals)) == 0.0, 0.0, angleC_magnitude)
     angleC_magnitude = numpy.where(_filter_tiny(numpy.sin(b_vals)) == 0.0, 0.0, angleC_magnitude)
     
@@ -357,7 +349,6 @@ def _rotation_sign(angleC, lonB, lonC):
 
     Not sure if this is a universal rule (i.e. this works for when the original
     north pole was at 90N, 0E) 
-
     """
     
     lonB = nio.single2list(lonB, numpy_array=True)
@@ -385,14 +376,18 @@ def _rotation_sign(angleC, lonB, lonC):
 
 def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=(0, 0)):
     """Convert position of new north pole (latnp, lonnp) to a rotation about the
-    original z axis (phir), new x axis after the first rotation (thetar),
-    and about the final z axis (psir).
+    original z axis (phi), new x axis after the first rotation (theta),
+    and about the final z axis (psi).
     
     Input and output in degrees.
     
     The prime meridian point should be a list of length 2 (lat, lon), representing a
     point through which the prime meridian should travel.
-         
+    
+    Reference:
+    Pacanowski R, & Griffies S (2000). Defining the rotation. The MOM manual.
+    http://www.ocgy.ubc.ca/~yzq/books/MOM3/s4node19.html
+    (although my definition of phi differs slightly from theirs)
     """
 
     phi = lonnp + 90       #rotates the y-axis 'underneath' the pole (albeit 180 degrees around from it), 
