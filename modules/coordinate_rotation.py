@@ -66,7 +66,7 @@ import pdb
 ## Switching between coordinate systems ##
 ##########################################
 
-def switch_regular_axes(data, lats_in, lons_in, lat_axis_out, lon_axis_out, new_np, pm_point=(0, 0), invert=False):
+def switch_regular_axes(data, lats_in, lons_in, lat_axis_out, lon_axis_out, new_np, pm_point=(0, 0), invert=False, euler=None):
     """Take data on a specified grid (lats_in, lons_in), rotate the axes 
     (according to the position of the new north pole) and regrid to 
     a new regular grid (lat_axis_out, lon_axis_out) 
@@ -80,7 +80,11 @@ def switch_regular_axes(data, lats_in, lons_in, lat_axis_out, lon_axis_out, new_
     
     """
 
-    phi, theta, psi = north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)
+    if euler:
+        phi, theta, psi = euler
+    else:
+        phi, theta, psi = north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)
+    
     lats_in_rot, lons_in_rot = rotate_spherical(lats_in, lons_in, phi, theta, psi, invert=invert)
 
     grid_instance = css.Cssgrid(lats_in_rot, lons_in_rot, lat_axis_out, lon_axis_out)
@@ -155,7 +159,7 @@ def rotation_matrix(phir, thetar, psir, inverse=False):
 	"Input angles must be in radians [0, 2*pi]" 
     
     matrix = numpy.empty([3, 3])
-    if not inverse:
+    if inverse:
 	matrix[0,0] = (numpy.cos(psir) * numpy.cos(phir)) - (numpy.cos(thetar) * numpy.sin(phir) * numpy.sin(psir))
 	matrix[0,1] = (numpy.cos(psir) * numpy.sin(phir)) + (numpy.cos(thetar) * numpy.cos(phir) * numpy.sin(psir))
 	matrix[0,2] = numpy.sin(psir) * numpy.sin(thetar)
@@ -391,10 +395,10 @@ def north_pole_to_rotation_angles(latnp, lonnp, prime_meridian_point=(0, 0)):
          
     """
 
-    psi = 90.0 - lonnp  
-    theta = 90.0 - latnp  #accounts for fact that the original north pole was at 90N
+    phi = lonnp + 90       #rotates the y-axis 'underneath' the pole (albeit 180 degrees around from it), 
+                           #in preparation for the second rotation, where the latitude will be adjusted
+    theta = 90.0 - latnp   #accounts for fact that the original north pole was at 90N
 
-    lat_temp, phi = rotate_spherical(prime_meridian_point[0], prime_meridian_point[1], 0, theta, psi)
-    # Note that a value of phi = -90.0 lines back up with original prime meridian (cancels out the '90 -' in the psi calculation) 
+    lat_temp, psi = rotate_spherical(prime_meridian_point[0], prime_meridian_point[1], phi, theta, 0)
     
     return phi, theta, psi
