@@ -10,7 +10,6 @@ import os
 
 import argparse
 import numpy
-import re
 
 import MV2
 import cdutil
@@ -19,22 +18,50 @@ module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
+import pdb
+
 
 def clip_data(data, method, threshold):
     """Define the envelope clipping threshold.
     
-    Method can be 'absolute' or 'scaled'. 
+    Method can be 'absolute' or 'scaled'.
+      - Absolute simply sets all data < threshold to zero
+      - Scaled sets all data < tau to zero, where tau is
+        the spatial average of the input data for each timestep
+	mutliplied by threshold (see equation 1, Glatt et al 2013)
+      
     """
 
     if method == 'absolute':
         clipped_data = MV2.where(data < threshold, 0.0, data)
 
     elif method == 'scaled':
-        ave_axes = data.getOrder().translate(None, 't')
-        spatial_ave = MV2.resize(cdutil.averager(data, axis=ave_axes, weights=['unweighted']*len(ave_axes)), data.shape)
-        tau = threshold * spatial_ave
 
+        # Calulate the spatial average of the input data at each timestep #
+	
+	pdb.set_trace()
+	
+	ave_axes = data.getOrder().translate(None, 't')
+        spatial_ave = cdutil.averager(data, axis=ave_axes, weights=['unweighted']*len(ave_axes))
+
+        # Resize the spatial average so it matches the input data #
+	
+	try:
+	    index = data.getOrder().index('t')
+	    tile_shape = list(data.shape)
+	    tile_shape.pop(index)
+	except ValueError:
+	    tile_shape = data.shape
+	
+        for dim in ave_axes:
+	    spatial_ave = numpy.expand_dims(spatial_ave, axis=1)     #spatial_ave[:, numpy.newaxis]
+	spatial_ave = numpy.tile(spatial_ave, tile_shape)
+	
+	# Calculate the clipping threshold (tau) and apply it to data #
+	
+	tau = threshold * spatial_ave
         clipped_data = MV2.where(data < tau, 0.0, data)
+    
     
     return clipped_data
         
@@ -53,7 +80,7 @@ def main(inargs):
 
     # Collapse the spatial dimension #
 
-    ave_axes = indata.data.getOrder().translate(None, 'tx')
+    ave_axes = clipped_data.getOrder().translate(None, 'tx')
     hov_data = cdutil.averager(clipped_data, axis=ave_axes, weights=['unweighted']*len(ave_axes))
   
     # Write output file #
@@ -83,9 +110,10 @@ if __name__ == '__main__':
     extra_info =""" 
 example (abyss.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_envelope.py 
-  /work/dbirving/datasets/Merra/data/processed/vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270.nc
-  /work/dbirving/datasets/Merra/data/processed/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270.nc
-  --latitude -10 10
+  /work/dbirving/datasets/Merra/data/processed/vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270.nc env
+  absolute 12
+  /work/dbirving/datasets/Merra/data/processed/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270_absolute12.nc
+  --latitude -15 15
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
