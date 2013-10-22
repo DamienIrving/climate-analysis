@@ -17,8 +17,7 @@ import cdutil
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
-
-import pdb
+import coordinate_rotation as crot
 
 
 def clip_data(data, method, threshold):
@@ -38,8 +37,6 @@ def clip_data(data, method, threshold):
     elif method == 'scaled':
 
         # Calulate the spatial average of the input data at each timestep #
-	
-	pdb.set_trace()
 	
 	ave_axes = data.getOrder().translate(None, 't')
         spatial_ave = cdutil.averager(data, axis=ave_axes, weights=['unweighted']*len(ave_axes))
@@ -66,13 +63,32 @@ def clip_data(data, method, threshold):
     return clipped_data
         
 
+def apply_lon_filter(data, lon_bounds):
+    """Set all values outside of the specified longitude range [lon_bounds[0], lon_bounds[1]] to zero."""
+    
+    # Convert to common bounds (0, 360) #
+ 
+    lon_min = crot.adjust_lon_range(lon_bounds[0], radians=False, start=0.0)
+    lon_max = crot.adjust_lon_range(lon_bounds[1], radians=False, start=0.0)
+    lon_axis = crot.adjust_lon_range(data.getLongitude()[:], radians=False, start=0.0)
+
+    # Make required values zero #
+    
+    ntimes = len(data.getTime()[:])
+    lon_axis_tiled = numpy.tile(lon_axis, (ntimes, 1))
+    
+    new_data = MV2.where(lon_axis_tiled < lon_min, 0.0, data)
+    
+    return MV2.where(lon_axis_tiled > lon_max, 0.0, new_data)
+    
+    
 def main(inargs):
     """Run the program."""
     
     # Prepate input data #
 
     indata = nio.InputData(inargs.infile, inargs.variable, 
-                           **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude']))
+                           **nio.dict_filter(vars(inargs), ['time', 'latitude']))
  
     # Clip the data #
 
@@ -83,18 +99,25 @@ def main(inargs):
     ave_axes = clipped_data.getOrder().translate(None, 'tx')
     hov_data = cdutil.averager(clipped_data, axis=ave_axes, weights=['unweighted']*len(ave_axes))
   
+    # Make values outside the PSA longitude range 0.0 #
+    
+    hov_data_filtered = apply_lon_filter(hov_data, inargs.longitude)
+  
     # Write output file #
 
+    specifics = 'Clip method: %s. Clip threshold: %s. Lat range: %s to %s. Lon filter: %s to %s' %(inargs.clip_method, 
+                                                                                                   inargs.clip_threshold,
+                                                                                                   str(indata.data.getLatitude()[0]),
+                                                                                                   str(indata.data.getLatitude()[-1]),
+												   str(inargs.longitude[0]),
+												   str(inargs.longitude[1]))
+    hx = 'Clipped wave envelope as Hovmoller diagram (i.e. time, longitude axes). ' 
     var_atts = {'id': 'env',
-                'name': 'Clipped wave envelope',
-                'long_name': 'Clipped wave envelope, presented on a Hovmoller diagram (i.e. time, longitude axes)',
+                'long_name': 'envelope',
                 'units': 'm s-1',
-                'history': 'Clip method: %s. Clip threshold: %s. Latitude range: %s to %s' %(inargs.clip_method, 
-                                                                                             inargs.clip_threshold,
-                                                                                             str(indata.data.getLatitude()[0]),
-                                                                                             str(indata.data.getLatitude()[-1]))}
+                'history': hx+specifics }
     indata_list = [indata,]
-    outdata_list = [hov_data,]
+    outdata_list = [hov_data_filtered,]
     outvar_atts_list = [var_atts,]
     outvar_axes_list = [hov_data.getAxisList(),]
 
@@ -111,9 +134,9 @@ if __name__ == '__main__':
 example (abyss.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_envelope.py 
   /work/dbirving/datasets/Merra/data/processed/vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270.nc env
-  absolute 12
-  /work/dbirving/datasets/Merra/data/processed/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270_absolute12.nc
-  --latitude -15 15
+  absolute 14
+  /work/dbirving/datasets/Merra/data/processed/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270_absolute14_lon180-340.nc
+  --latitude -15 15 --longitude 180 340
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -134,8 +157,6 @@ author:
                         help="Threshold for the clipping")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    parser.add_argument("--region", type=str, choices=nio.regions.keys(),
-                        help="Region [default = entire]")
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
                         help="Latitude range [default = entire]")
     parser.add_argument("--longitude", type=float, nargs=2, metavar=('START', 'END'),

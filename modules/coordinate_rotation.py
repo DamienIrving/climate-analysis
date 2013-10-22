@@ -105,8 +105,12 @@ def adjust_lon_range(lons, radians=True, start=0.0):
     """Express longitude values in the 360 degree (or 2*pi radians)
     interval that begins at start.
 
-    Default range = [0, 360)
-    Input and output can be in radians or degrees.
+    Arguments:
+       lons      List of longitude axis values (monotonically increasing)
+       radians   Specify whether the input data are in radians (True) or
+                 degrees (False). Output will be the same units.
+       start     Start value for the output axis (add 360 degrees or 2*pi
+                 radians to get the end point)
     """
     
     lons = nio.single2list(lons, numpy_array=True)    
