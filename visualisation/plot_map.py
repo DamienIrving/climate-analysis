@@ -36,6 +36,7 @@ import pylab
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
+import coordinate_rotation as crot
 
 module_dir2 = os.path.join(os.environ['HOME'], 'testing')
 sys.path.insert(0, module_dir2)
@@ -604,19 +605,22 @@ def _plot_stippling(bmap, projection,
     else:
         pass
 
-def _plot_search_paths(bmap, new_np):
+
+def _plot_search_paths(bmap, new_np, lon_bounds=[180, 340], res=1.0):
     """PLot the search paths used in wave envelope
     extraction, according to the location of the north
     pole (np)"""
     
-    orig_lat_data, orig_lon_data = pcr.create_latlon_dataset()
-    rotated_lat_data, returned_lat_data = pcr.switch_and_restore(orig_lat_data, new_np, [0, 0])
+    phi, theta, psi = crot.north_pole_to_rotation_angles(new_np[0], new_np[1])
+    for orig_lat in [-20.0, -15.0, -10.0, -5.0, 0, 5.0, 10.0, 15.0, 20.0]:
+        lat_axis = [orig_lat,]
+        lon_axis = range(180, 341)
+        orig_lats, orig_lons = nio.coordinate_pairs(lat_axis, lon_axis)
+        rot_lats, rot_lons = crot.rotate_spherical(orig_lats, orig_lons, phi, theta, psi, invert=False)
     
-    lons, lats = numpy.meshgrid(rotated_lat_data.getLongitude()[:],
-                                rotated_lat_data.getLatitude()[:])
-    x, y = bmap(lons, lats)
-    bmap.contour(x, y, rotated_lat_data, [-20.0, -15.0, -10.0, -5.0, 0, 5.0, 10.0, 15.0, 20.0], colors='0.25')
-    #plt.clabel(im, fontsize=5, inline=1, fmt='%.1f') 
+        x, y = bmap(rot_lons, rot_lats)
+        bmap.plot(x, y, '-', color='0.5')
+
 
 
 def _plot_enso(bmap, region_list, projection):
