@@ -79,15 +79,15 @@ def switch_regular_axes(data, lats_in, lons_in, lat_axis_out, lon_axis_out, new_
     lats_in_rot, lons_in_rot = rotate_spherical(lats_in, lons_in, phi, theta, psi, invert=invert)
 
     grid_instance = css.Cssgrid(lats_in_rot, lons_in_rot, lat_axis_out, lon_axis_out)
-    if numpy.rank(data) == 3:
+    if numpy.rank(data) == 3:    
         data_rot = numpy.zeros(numpy.shape(data))
-        for tstep in range(0, numpy.shape(data)[0]):
+        for tstep in xrange(0, numpy.shape(data)[0]):
 	    regrid = grid_instance.rgrd(data[tstep, :, :].flatten())
 	    data_rot[tstep, :, :] = numpy.transpose(regrid)
-    else: 
+    elif numpy.rank(data) == 2: 
         regrid = grid_instance.rgrd(data.flatten())
 	data_rot = numpy.transpose(regrid)
-           
+    	
     return data_rot
 
 
