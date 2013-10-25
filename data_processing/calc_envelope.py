@@ -80,13 +80,8 @@ def main(inargs):
     assert indata.data.getOrder() == 'tyx', \
     'This script only works if the input data has a time, latitude and longitude axis'
  
-    ntime, nlat, nlon = indata.data.shape
-    outdata = numpy.empty([ntime, nlat, nlon]) 
     kmin, kmax = inargs.wavenumbers
-    
-    for time in xrange(0, ntime):
-        for lat in xrange(0, nlat):
-            outdata[time, lat, :] = envelope(indata.data[time, lat, :], kmin, kmax)
+    outdata = numpy.apply_along_axis(envelope, 2, indata.data, kmin, kmax)
     
     # Write output file #
 
