@@ -31,6 +31,7 @@ cdo ydaysub /work/dbirving/datasets/Merra/data/processed/vrot_Merra_250hPa_daily
 /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_envelope.py 
 /work/dbirving/datasets/Merra/data/processed/vrot_Merra_250hPa_monthly-anom-wrt-all_y181x360_np30-270.nc vrot
 /work/dbirving/datasets/Merra/data/processed/vrot-env-w567_Merra_250hPa_monthly-anom-wrt-all_y181x360_np30-270.nc
+--longitude 195 340
 
 
 3. Plot the wave envelope together with other relevant variables
@@ -44,13 +45,33 @@ env 30 270 0 0
 /work/dbirving/test_data/env-wind-sf_Merra_250hPa_monthly-anom-wrt-all_y181x360-native-np30-270
 
 
+4. Create the Hovmoller diagram
 
-#. Unit testing
+/usr/local/uvcdat/1.2.0rc1/bin/cdat calc_hovmoller.py
+/work/dbirving/datasets/Merra/data/processed/vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270.nc 
+env absolute 14
+/work/dbirving/datasets/Merra/data/processed/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270_absolute14_lon180-340.nc
+--latitude -15 15 --longitude 180 340
+
+
+5. Implement the ROIM method
+
+matlab &
+then run test_roim.m
+
+
+6. Calculate the climatological statistics
+
+???? 
+
+
+
+##. Unit testing
 
 /home/dbirving/testing/unittest_coordinate_rotation.py
 /home/dbirving/testing/unittest_vwind_rotation.py
 
-#. Visualising the process
+##. Visualising the process
 
 /home/dbirving/testing/plot_vwind_rotation.py
 /home/dbirving/testing/plot_coordinate_rotation.py    

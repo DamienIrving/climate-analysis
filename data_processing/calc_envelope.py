@@ -18,6 +18,11 @@ import cdms2
 module_dir = os.path.join(os.environ['HOME'], 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
+import coordinate_rotation as crot
+
+module_dir2 = os.path.join(os.environ['HOME'], 'visualisation')
+sys.path.insert(0, module_dir2)
+import plot_map
 
 
 def constants(inwave):
@@ -67,21 +72,44 @@ def envelope(inwave, kmin, kmax):
     return numpy.abs(envelope) 
 
 
+def apply_lon_filter(data, lon_bounds):
+    """Set all values outside of the specified longitude range [lon_bounds[0], lon_bounds[1]] to zero."""
+    
+    # Convert to common bounds (0, 360) #
+ 
+    lon_min = crot.adjust_lon_range(lon_bounds[0], radians=False, start=0.0)
+    lon_max = crot.adjust_lon_range(lon_bounds[1], radians=False, start=0.0)
+    lon_axis = crot.adjust_lon_range(data.getLongitude()[:], radians=False, start=0.0)
+
+    # Make required values zero #
+    
+    ntimes, nlats, nlons = data.shape
+    lon_axis_tiled = numpy.tile(lon_axis, (ntimes, nlats, 1))
+    
+    new_data = numpy.where(lon_axis_tiled < lon_min, 0.0, data)
+    
+    return numpy.where(lon_axis_tiled > lon_max, 0.0, new_data)
+
+
 def main(inargs):
     """Run the program."""
     
-    # Prepate input data #
-
-    indata = nio.InputData(inargs.infile, inargs.variable, 
-                           **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude', 'grid']))
+    # Read input data #
     
-    # Extract the wave envelope #
-
+    indata = nio.InputData(inargs.infile, inargs.variable, 
+                           **nio.dict_filter(vars(inargs), ['time', 'latitude']))
+    
     assert indata.data.getOrder() == 'tyx', \
     'This script only works if the input data has a time, latitude and longitude axis'
+    
+    # Apply longitude filter (i.e. set unwanted longitudes to zero) #
+    
+    data_filtered = apply_lon_filter(indata.data, inargs.longitude) if inargs.longitude else indata.data
  
+    # Extract the wave envelope #
+    
     kmin, kmax = inargs.wavenumbers
-    outdata = numpy.apply_along_axis(envelope, 2, indata.data, kmin, kmax)
+    outdata = numpy.apply_along_axis(envelope, 2, data_filtered, kmin, kmax)
     
     # Write output file #
 
@@ -113,6 +141,7 @@ example (abyss.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_envelope.py 
   /work/dbirving/datasets/Merra/data/processed/vrot_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360_np30-270.nc vrot
   /work/dbirving/datasets/Merra/data/processed/vrot-env-w567_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360_np30-270.nc
+  --longitude 195 340
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -131,17 +160,13 @@ author:
 
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[5, 7],
                         help="Wavenumber range [default = (5, 7)]. The upper and lower values are included (i.e. default selection is 2, 3, 4).")			
-    parser.add_argument("--region", type=str, choices=nio.regions.keys(),
-                        help="Region [default = entire]")
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
-                        help="Latitude range [default = entire]")
-    parser.add_argument("--longitude", type=float, nargs=2, metavar=('START', 'END'),
-                        help="Longitude range [default = entire]")
+                        help="Latitude range over which to extract waves [default = entire]")
+    parser.add_argument("--longitude", type=float, nargs=2, metavar=('START', 'END'), default=None,
+                        help="Longitude range over which to extract waves [default = entire]")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
-    parser.add_argument("--grid", type=float, nargs=6, metavar=('START_LAT', 'NLAT', 'DELTALAT', 'START_LON', 'NLON', 'DELTALON'),
-                        help="Uniform regular grid to regrid data to [default = no regridding]")
-    
+  
     args = parser.parse_args()            
 
     print 'Input files: ', args.infile

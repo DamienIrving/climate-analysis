@@ -132,9 +132,9 @@ if __name__ == '__main__':
 
     extra_info =""" 
 example (abyss.earthsci.unimelb.edu.au):
-  /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_envelope.py 
-  /work/dbirving/datasets/Merra/data/processed/vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270.nc env
-  absolute 14
+  /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_hovmoller.py 
+  /work/dbirving/datasets/Merra/data/processed/vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270.nc 
+  env absolute 14
   /work/dbirving/datasets/Merra/data/processed/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270_absolute14_lon180-340.nc
   --latitude -15 15 --longitude 180 340
 
