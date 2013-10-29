@@ -158,7 +158,9 @@ def _main(inargs):
 
     # Now that we have our data in a nice way, lets create the plot
     # contour with 20 levels
-    im = iplt.contourf(cube, 20, cmap=inargs.palette)
+    im = iplt.contourf(cube, 
+                       levels=range(int(inargs.colorbar_bounds[0]), int(inargs.colorbar_bounds[1])), 
+                       extend='max', cmap=inargs.palette)
     #im = iplt.pcolormesh(cube, cmap=inargs.palette)
 
     # Put a custom label on the x axis
@@ -230,6 +232,8 @@ example (irvingnix@earthsci.unimelb.edu.au)
                         help="start & end date for the time axis (e.g. 1979-01-01 1979-01-21)")
     parser.add_argument("--time_tick_interval", type=int, default=2,
                         help="Internal between time tick labels")
+    parser.add_argument("--colorbar_bounds", type=float, nargs=2, default=(0, 20), metavar=('MIN', 'MAX'),
+                        help="Maximum and minimum values on colorbar") 
 
     parser.add_argument("--ofile", type=str, default=None,
                         help="name of output file [default: show]")
