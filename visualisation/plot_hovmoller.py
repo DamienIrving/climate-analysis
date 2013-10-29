@@ -144,8 +144,9 @@ def _main(inargs):
  
     # Load the cube
     fname = inargs.infile
-    cube = iris.load_cube(fname, inargs.variable)
- 
+    #cube = iris.load_cube(fname, inargs.variable)
+    cube = iris.load_cube(fname, iris.Constraint(inargs.variable, longitude=lambda v: 195 < v < 340))
+
     # Apply time constraint
     if inargs.time_bounds:
         year1, month1, day1 = inargs.time_bounds[0].split('-')
@@ -158,6 +159,7 @@ def _main(inargs):
     # Now that we have our data in a nice way, lets create the plot
     # contour with 20 levels
     im = iplt.contourf(cube, 20, cmap=inargs.palette)
+    #im = iplt.pcolormesh(cube, cmap=inargs.palette)
 
     # Put a custom label on the x axis
     plt.xlabel('longitude')
@@ -194,7 +196,9 @@ def _main(inargs):
     elif inargs.units:
         cb.set_label(inargs.units)
         
-    
+    if inargs.title:
+        plt.title(inargs.title.replace('_',' '))    
+
     if inargs.ofile:
         plt.savefig(inargs.ofile)
     else:
@@ -204,9 +208,11 @@ def _main(inargs):
 if __name__ == '__main__':
 
     extra_info = """ 
-
-
-
+example (irvingnix@earthsci.unimelb.edu.au)
+    python plot_hovmoller.py 
+    ~/Downloads/Data/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-all_y181x360_np30-270_absolute14_lon195-340.nc 
+    envelope DAILY --time_bounds 1980-01-01 1980-02-01 --units ms-1 --title January_1980
+    
     """
 
     description='Plot hovmoller diagram'
@@ -220,7 +226,7 @@ if __name__ == '__main__':
     parser.add_argument("timescale", type=str, choices=timescales.keys(),
                         help="timescale of plotted data")
 
-    parser.add_argument("--time_bounds", type=str, nargs=2, default=None,
+    parser.add_argument("--time_bounds", type=str, nargs=2, default=None, metavar=('START', 'END'),
                         help="start & end date for the time axis (e.g. 1979-01-01 1979-01-21)")
     parser.add_argument("--time_tick_interval", type=int, default=2,
                         help="Internal between time tick labels")
@@ -230,7 +236,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--orientation", type=str, choices=('horizontal', 'vertical'), default='vertical',
                         help="Orientation of the colourbar")
-    parser.add_argument("--title", type=str,
+    parser.add_argument("--title", type=str, default=None,
                         help="plot title [default: None]")
   
     parser.add_argument("--palette", type=str, default=None,
