@@ -816,7 +816,7 @@ def time_axis_check(axis1, axis2):
         sys.exit('Input files do not all have the same time axis')
 
 
-def write_netcdf(outfile_name, out_quantity, indata, 
+def write_netcdf(outfile_name, history_entry, global_atts, 
                  outdata, outvar_atts, outvar_axes, 
                  clear_history=False, extra_history=' '):
     """Write an output netCDF file.
@@ -829,8 +829,11 @@ def write_netcdf(outfile_name, out_quantity, indata,
     
     Positional arguments (incl. type/description):
       outfile_name  -- string
-      out_quantity  -- e.g. variable or statistic name
-      indata        -- List or tuple of InputData instances
+      out_quantity  -- e.g. entry for the global history attribute
+                       (usually generated from " ".join(sys.argv))
+      global_atts   -- Dictionary of global attributes for output file
+                       (usually obtained from InputData instances via
+		       the .global_atts attribute)
       outdata       -- List or tuple of numpy arrays, containing 
                        the data for each output variable
       outvar_atts   -- List or tuple of dictionaries, containing 
@@ -850,8 +853,7 @@ def write_netcdf(outfile_name, out_quantity, indata,
 
     """
 
-    assert isinstance(indata, (list, tuple)) and isinstance(indata[0], InputData), \
-    '3rd argument (indata) must be a list or tuple of InputData instances, e.g. (data,)'
+    assert type(global_atts) == dict
     
     assert isinstance(outdata, (list, tuple)), \
     '4th argument (outdata) must be a list or tuple of data arrays, e.g. (data,)'
@@ -875,27 +877,19 @@ def write_netcdf(outfile_name, out_quantity, indata,
     
     # Global attributes #
     
-    infile_global_atts = indata[0].global_atts
-    
-    for att_name in infile_global_atts.keys():
-        if att_name != "history":
-            setattr(outfile, att_name, infile_global_atts[att_name])
+    for att_name in global_atts.keys():
+        if att_name not in ["history", "calendar"]:  # Calendar excluded because iris doesn't like it
+            setattr(outfile, att_name, global_atts[att_name])
     
     if not clear_history:
-        old_history = infile_global_atts['history'] if ('history' in \
-                      infile_global_atts.keys()) else ''
+        old_history = global_atts['history'] if ('history' in \
+                      global_atts.keys()) else ''
     else:
         old_history = ''
     
-    infile_names = []
-    for item in indata:
-        infile_names.append(item.fname)
-    
-    infile_names_unique = str(set(infile_names)).strip('set([').strip('])')
-        
     setattr(outfile, 'history', 
-    """%s: %s calculated from %s using %s (Git hash: %s), format=NETCDF3_CLASSIC. %s\n%s""" %(datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
-    out_quantity, infile_names_unique, sys.argv[0], MODULE_HASH, extra_history, old_history))
+    """%s: cdat %s (Git hash: %s; format=NETCDF3_CLASSIC). %s\n%s""" %(datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
+    history_entry, MODULE_HASH, extra_history, old_history))
 
     # Variables #
 

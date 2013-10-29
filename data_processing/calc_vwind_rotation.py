@@ -19,8 +19,6 @@ sys.path.insert(0, module_dir)
 import netcdf_io as nio
 import coordinate_rotation as rot
 
-import pdb
-
 
 def rotate_vwind(dataU, dataV, new_np, pm_point, res=1.0, anomaly=None):
     """Define the new meridional wind field, according to the 
@@ -131,36 +129,29 @@ def main(inargs):
     # Write the output file #
 
     if inargs.anomaly:
-        name_insert = ' anomaly'
+        standard_name = 'rotated_meridional_wind_anomaly'
+	long_name = 'Meridional wind anomaly on a rotated coordinate grid (but the poles have not yet been shifted)'
         clim = 'Base period: %s - %s' %(inargs.anomaly[0], inargs.anomaly[1])
     else:
-        name_insert = ''
+        standard_name = 'rotated_meridional_wind'
+	long_name = 'Meridional wind on a rotated coordinate grid (but the poles have not yet been shifted)'
 	clim = ''  
 
     history = 'Location of north pole: %s N, %s E. Prime meridian point = %s N, %s E. %s' %(str(inargs.north_pole[0]), str(inargs.north_pole[1]), 
 											    str(inargs.pm[0]), str(inargs.pm[1]), clim)
-    indata_list = [indataU, indataV,]
-    if inargs.noswitch:
-        vrot_atts = {'id': 'vrot',
-                     'name': 'Rotated meridional wind'+name_insert,
-                     'long_name': 'Meridional wind'+name_insert+' on a rotated coordinate grid (but the poles have not yet been shifted)',
-                     'units': indataU.data.units,
-                     'history': history}
-        outdata_list = [vwind_rot,]
-        outvar_atts_list = [vrot_atts,]
-        outvar_axes_list = [vwind_rot.getAxisList(),]
-    else:    
-        vrot_atts = {'id': 'vrot',
-                     'name': 'Rotated meridional wind'+name_insert,
-                     'long_name': 'Meridional wind'+name_insert+' on a rotated coordinate grid (the poles have been shifted)',
-                     'units': indataU.data.units,
-                     'history': history}
-        outdata_list = [vwind_rot_switch,]
-        outvar_atts_list = [vrot_atts,]
-        outvar_axes_list = [vwind_rot_switch.getAxisList(),]
 
-    nio.write_netcdf(inargs.outfile, 'Rotated meridional wind'+name_insert, 
-                     indata_list, 
+    vrot_atts = {'id': 'vrot',
+                 'standard_name': standard_name,
+                 'long_name': long_name,
+                 'units': indataU.data.units,
+                 'history': history}
+											    
+    outdata_list = [vwind_rot,] if inargs.noswitch else [vwind_rot_switch,]
+    outvar_atts_list = [vrot_atts,]
+    outvar_axes_list = [vwind_rot.getAxisList(),] if inargs.noswitch else [vwind_rot_switch.getAxisList(),]
+ 
+    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
+                     indataU.global_atts, 
                      outdata_list,
                      outvar_atts_list, 
                      outvar_axes_list)

@@ -114,18 +114,17 @@ def main(inargs):
     # Write output file #
 
     var_atts = {'id': 'env',
-                'name': 'Amplitude of wave envelope',
-                'long_name': 'Extracted envelope of atmospheric wave packet, obtained using Hiltbert transform',
+                'standard_name': 'envelope',
+                'long_name': 'Amplitude of Wave Envelope',
                 'units': 'm s-1',
                 'history': 'Ref: Zimin et al. 2003. Mon. Wea. Rev. 131, 1011-1017. Wavenumber range: %s to %s' %(kmin, kmax)}
 
-    indata_list = [indata,]
     outdata_list = [outdata,]
     outvar_atts_list = [var_atts,]
     outvar_axes_list = [indata.data.getAxisList(),]
 
-    nio.write_netcdf(inargs.outfile, 'Amplitude of wave envelope', 
-                     indata_list, 
+    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
+                     indata.global_atts, 
                      outdata_list,
                      outvar_atts_list, 
                      outvar_axes_list)

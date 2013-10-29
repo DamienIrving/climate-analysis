@@ -28,86 +28,104 @@ import netcdf_io as nio
 
 ## The current release of UV-CDAT doesn't have the windspharm.cdms module (the latest version does)
 #from windspharm.cdms import VectorWind
-from windspharm.standard import VectorWind
-from windspharm.tools import prep_data, recover_data, order_latdim
+
+#from windspharm.standard import VectorWind
+#from windspharm.tools import prep_data, recover_data, order_latdim
+
+module_dir = os.path.join(os.environ['HOME'], 'data_processing', 'windspharm', 'windspharm', 'lib', 'windspharm')
+sys.path.insert(0, module_dir)
+from standard import VectorWind
+from tools import prep_data, recover_data, order_latdim
 
 
 var_atts = {}
 
 var_atts['magnitude'] = {'id': 'spd',
-    'long_name': 'wind speed',
+    'standard_name': 'wind_speed',
+    'long_name': 'Wind Speed',
     'units': 'm s-1',
     'history': 'windspharm magnitude() function - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['vorticity'] = {'id': 'vrt',
-    'long_name': 'relative vorticity',
+    'standard_name': 'relative_vorticity'
+    'long_name': 'Relative Vorticity',
     'units': 's-1',   
     'history': 'windspharm vorticity(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['divergence'] = {'id': 'div',
-    'long_name': 'divergence',
+    'standard_name': 'divergence',
+    'long_name': 'Divergence',
     'units': '1.e-6 s-1',   
     'history': 'windspharm divergence(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['absolutevorticity'] = {'id': 'avrt',
-    'name': 'absolute vorticity',
-    'long_name': 'absolute vorticity (sum of relative and planetary)',
+    'standard_name': 'absolute_vorticity',
+    'long_name': 'Absolute Vorticity (sum of relative and planetary)',
     'units': '1.e-5 s-1',
     'history': 'windspharm absolutevorticity(), http://ajdawson.github.com/windspharm/index.html'}
 
+var_atts['absolutevorticitygradient'] = {'id': 'avrtgrad',
+    'standard_name': 'absolute_vorticity_gradient',
+    'long_name': 'Absolute Vorticity (sum of relative and planetary) gradient',
+    'units': '1.e-5 s-1',
+    'history': 'windspharm gradient(absolutevorticity()), http://ajdawson.github.com/windspharm/index.html'}
+
 var_atts['planetaryvorticity'] = {'id': 'pvrt',
-    'name': 'planetary vorticity',
-    'long_name': 'planetary vorticity (Coriolis parameter)',
+    'standard_name': 'planetary_vorticity',
+    'long_name': 'Planetary Vorticity (Coriolis parameter)',
     'units': 's-1',
     'history': 'windspharm planetaryvorticity(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['irrotationalcomponent','u'] = {'id': 'uchi',
-    'name': 'irrotational zonal wind',
-    'long_name': 'zonal irrotational (divergent) component of the vector wind (from Helmholtz decomposition)',
+    'standard_name': 'irrotational_zonal_wind',
+    'long_name': 'Zonal irrotational (divergent) component of the vector wind (from Helmholtz decomposition)',
     'units': 'm s-1',
     'history': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['irrotationalcomponent','v'] = {'id': 'vchi',
-    'name': 'irrotational meridional wind',
-    'long_name': 'meridional irrotational (divergent) component of the vector wind (from Helmholtz decomposition)',
+    'standard_name': 'irrotational_meridional_wind',
+    'long_name': 'Meridional irrotational (divergent) component of the vector wind (from Helmholtz decomposition)',
     'units': 'm s-1',
     'history': 'windspharm irrotationalcomponent() - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['nondivergentcomponent','u'] = {'id': 'upsi',
-    'name': 'non-divergent zonal wind',
-    'long_name': 'zonal non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)',
+    'standard_name': 'non_divergent_zonal_wind',
+    'long_name': 'Zonal non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)',
     'units': 'm s-1',
     'history': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['nondivergentcomponent','v'] = {'id': 'vpsi',
-    'name': 'non-divergent meridional wind',
+    'standard_name': 'non-divergent meridional wind',
     'long_name': 'meridional non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)',
     'units': 'm s-1',
     'history': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['streamfunction'] = {'id': 'sf',
-    'name': 'streamfunction',
-    'long_name': 'streamfunction (rotational wind blows along streamfunction contours, speed proportional to gradient)',
+    'standard_name': 'streamfunction',
+    'long_name': 'Streamfunction (rotational wind blows along streamfunction contours, speed proportional to gradient)',
     'units': '1.e+6 m2 s-1',  
     'history': 'windspharm streamfunction() - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['velocitypotential'] = {'id':'vp',
-    'name': 'velocity potential',
-    'long_name': 'velocity potential (divergent wind blows along velocity potential contours, speed proportional to gradient)',
+    'standard_name': 'velocity_potential',
+    'long_name': 'Velocity Potential (divergent wind blows along velocity potential contours, speed proportional to gradient)',
     'units': '1.e+6 m2 s-1',  
     'history': 'windspharm velocitypotential() - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['rossbywavesource'] = {'id': 'rws',
-    'long_name': 'Rossby wave source',
+    'standard_name': 'rossby_wave_source',
+    'long_name': 'Rossby Wave Source',
     'units': '1.e-11 s-2',  
     'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['rossbywavesource1'] = {'id': 'rws1',
+    'standard_name': 'rossby_wave_source_vortex'
     'long_name': 'Rossby wave source, vortex stretching term',
     'units': '1.e-11 s-2',  
     'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['rossbywavesource2'] = {'id': 'rws2',
+    'standard_name': 'rossby_wave_source_advection'
     'long_name': 'Rossby wave source, advection of absolute vorticity by divergent flow term',
     'units': '1.e-11 s-2',  
     'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
@@ -169,8 +187,8 @@ def calc_quantity(data_u, data_v, quantity):
     if quantity[0:16] == 'rossbywavesource':
 	# Compute components of rossby wave source: absolute vorticity, divergence,
 	# irrotational (divergent) wind components, gradients of absolute vorticity.
-	eta = w.vorticity() - w.planetaryvorticity()
-	#eta = w.absolutevorticity()
+	#eta = w.vorticity() - w.planetaryvorticity()
+	eta = w.absolutevorticity()
 	div = w.divergence()
 	uchi, vchi = w.irrotationalcomponent()
 	etax, etay = w.gradient(eta)
@@ -196,8 +214,15 @@ def calc_quantity(data_u, data_v, quantity):
 	data_out = data_out / (1.e-6)
     
     elif quantity == 'absolutevorticity':
-        #data_out = w.absolutevorticity()
-	data_out = w.vorticity() - w.planetaryvorticity()
+        data_out = w.absolutevorticity()
+	#data_out = w.vorticity() - w.planetaryvorticity()
+	data_out = data_out / (1.e-5)
+    
+    elif quantity == 'absolutevorticitygradient':
+        avrt = w.absolutevorticity()
+	ugrad, vgrad = w.gradient(avrt)
+	#data_out = w.vorticity() - w.planetaryvorticity()
+	data_out = numpy.sqrt(numpy.square(ugrad) + numpy.square(vgrad)) 
 	data_out = data_out / (1.e-5)
     
     elif quantity == 'planetaryvorticity':
@@ -274,8 +299,8 @@ def main(inargs):
         outvar_atts_list = [var_atts[inargs.quantity],]
         outvar_axes_list = [data_u.data.getAxisList(),]
 
-    nio.write_netcdf(inargs.outfile, inargs.quantity, 
-                     indata_list, 
+    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
+                     data_u.global_atts, 
                      outdata_list,
                      outvar_atts_list, 
                      outvar_axes_list)
@@ -330,7 +355,7 @@ bugs:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("quantity", type=str, help="Quantity to calculate",
-                        choices=['magnitude', 'vorticity', 'divergence', 'absolutevorticity', 'planetaryvorticity',
+                        choices=['magnitude', 'vorticity', 'divergence', 'absolutevorticity', 'absolutevorticitygradient', 'planetaryvorticity',
                                  'irrotationalcomponent', 'nondivergentcomponent', 'streamfunction', 
 				 'velocitypotential', 'rossbywavesource', 'rossbywavesource1', 'rossbywavesource2'])
     parser.add_argument("infileu", type=str, help="Input U-wind file name")

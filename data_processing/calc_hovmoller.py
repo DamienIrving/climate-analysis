@@ -1,7 +1,7 @@
 """
 Filename:     calc_hovmoller.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Write data to a hovmoller diagram
+Description:  Clip wave envelope data and write data to a hovmoller diagram
 
 """
 
@@ -105,24 +105,24 @@ def main(inargs):
   
     # Write output file #
 
-    specifics = 'Clip method: %s. Clip threshold: %s. Lat range: %s to %s. Lon filter: %s to %s' %(inargs.clip_method, 
-                                                                                                   inargs.clip_threshold,
-                                                                                                   str(indata.data.getLatitude()[0]),
-                                                                                                   str(indata.data.getLatitude()[-1]),
-												   str(inargs.longitude[0]),
-												   str(inargs.longitude[1]))
-    hx = 'Clipped wave envelope as Hovmoller diagram (i.e. time, longitude axes). ' 
+    hx = 'Clip method: %s. Clip threshold: %s. Lat range: %s to %s. Lon filter: %s to %s' %(inargs.clip_method, 
+                                                                                            inargs.clip_threshold,
+                                                                                            str(indata.data.getLatitude()[0]),
+                                                                                            str(indata.data.getLatitude()[-1]),
+										            str(inargs.longitude[0]),
+										            str(inargs.longitude[1])) 
     var_atts = {'id': 'env',
-                'long_name': 'envelope',
+                'standard_name': 'envelope',
+		'long_name': 'Clipped Wave Envelope'
                 'units': 'm s-1',
-                'history': hx+specifics }
-    indata_list = [indata,]
+                'history': hx }
+		
     outdata_list = [hov_data_filtered,]
     outvar_atts_list = [var_atts,]
     outvar_axes_list = [hov_data.getAxisList(),]
 
-    nio.write_netcdf(inargs.outfile, 'Hovmoller diagram of clipped wave envelope', 
-                     indata_list, 
+    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
+                     indata.global_atts, 
                      outdata_list,
                      outvar_atts_list, 
                      outvar_axes_list)
@@ -143,7 +143,7 @@ author:
 
 """
 
-    description='Create Hovmoller diagram'
+    description='Clip wave envelope and create resultant Hovmoller diagram (i.e. time/longitude) '
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
@@ -168,5 +168,5 @@ author:
 
     print 'Input file: ', args.infile
     print 'Output file: ', args.outfile  
-
+    
     main(args)
