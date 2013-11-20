@@ -1,15 +1,12 @@
-### University of Melbourne computing notes ###
-
+### University of Melbourne computing notes###
 
 ## Help ##
 
-How to get in touch with IT support (i.e. Doug Morrison and Brett Holman):
+How to get in touch with IT support (i.e. Doug Morrison):
 
 1. The *preferred way* is through the Science IT service desk: http://ithelp.science.unimelb.edu.au/servicedesk/
 
-2. You can also email us (support@earthsci.unimelb.edu.au is best, it reaches both of us), call us (x54367 for me, x47222 for Doug), or drop by (room 301). These are less preferable because they don't provide an audit trail, and ultimately might lead to less IT support being provided to Earth Sciences. But it's certainly fine if you just want to ask us something, as opposed to have a problem which needs to be resolved.
-
-3. Don't call our mobiles. Really, don't. Unless the server room is on fire or something, and even then you should be calling x46666 instead. The University does not provide us with mobiles so calling us on our private numbers is inappropriate.
+2. You can also email (support@earthsci.unimelb.edu.au is best), call us (x47222 for Doug), or drop by (room 301). These are less preferable because they don't provide an audit trail, and ultimately might lead to less IT support being provided to Earth Sciences. But it's certainly fine if you just want to ask us something, as opposed to have a problem which needs to be resolved.
 
 
 ## abyss.earthsci.unimelb.edu.au ##
@@ -19,10 +16,10 @@ ssh -Y STUDENT\\dbirving@abyss
 
 Work areas:	
 /home/dbirving/	(small memory, for code only)
-/work/dbirving/	(20GB of storage, can be increased)
+/work/dbirving/	(default 20GB of storage, which I've had increased to 60GB)
 	
 cdat install (includes Python 2.5):
-/opt/cdat/bin/cdat				(to execute)
+/opt/cdat/bin/cdat			(to execute)
 /opt/cdat/lib/python2.5/site-packages/	(to see packages available to cdat)
 
 General python install (Python 2.6.6):
@@ -33,10 +30,26 @@ UV-CDAT install (includes Python 2.7.3)
 /usr/local/uvcdat/1.2.0rc1/bin/uvcdat
 /usr/local/uvcdat/1.2.0rc1/bin/cdat
 /usr/local/uvcdat/1.2.0rc1/bin/ipython
+/usr/local/uvcdat/1.2.0rc1/bin/python2.7/site-packages/ 
 
 Fortran compiler: 
 gfortran (open source compiler that will do f77, f90 and f95)
 	
+
+## vortex.earthsci.unimelb.edu.au ##
+
+Login:
+ssh -Y STUDENT\\dbirving@vortex
+Note that you can't ssh into vortex from an external machine (need to go via abyss or irvingnix)
+
+Work areas:
+/home/STUDENT/dbirving/               (small memory, for code only)
+/mnt/meteo0/data/simmonds/dbirving    (large memory, for data)
+
+UV-CDAT install:
+/usr/local/uvcdat/1.2.0/bin/cdat      (same as on abyss)
+/usr/local/uvcdat/1.3.0/bin/cdat      (is actually version 1.3.1)
+
 			
 ## dcc.nci.org.au ##
  
@@ -46,7 +59,8 @@ ssh -X dbi599@dcc.nci.org.au
 
 ## irvingnix.earthsci.unimelb.edu.au ##
 
-Operating system = Ubuntu 12.04 LTS, 64-bit (it's Debian based)
+Operating system: Ubuntu 13.04, 64-bit (it's Debian based)
+Memory (RAM): 2GB 
 I have sudo admin access, so I need to type 'sudo' at the command line before any admin commands. e.g. sudo apt-get install git-core
 
 
