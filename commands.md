@@ -1,5 +1,7 @@
 # Common commands
 
+| Task   | Command  |
+| :----- | :------  |
 |  Git   | `git add` |
 |        | `git commit -m "comment"` |
 |        | `git push -u origin master` | 
