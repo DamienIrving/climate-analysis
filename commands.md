@@ -2,7 +2,10 @@
 
 | Task   | Command  |
 | :----- | :------  |
-|  Git   | `git add` |
+| Remove directory | `rm -r -f` |
+|                  | `-r` recursive (do all directories underneath) |
+|                  | `-f` supresses prompt for write protected files (useful for deleting a git repo) |
+| Git    | `git add` |
 |        | `git commit -m "comment"` |
 |        | `git push -u origin master` | 
 |        | `git pull` |
