@@ -19,7 +19,7 @@ import numpy
 
 import eof2
 
-module_dir = os.path.join(os.environ['HOME'], 'modules')
+module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
@@ -45,7 +45,7 @@ class EofAnalysis:
 
         self.neofs = neofs
         self.data = data
-        self.solver = eof2.Eof(data.data, weights='coslat')
+        self.solver = eof2.Eof(data.data, weights='cos_lat')
 	self.var_exp = self.solver.varianceFraction(neigs=neofs)
 
 
@@ -142,11 +142,9 @@ def main(inargs):
             outdata_list.append(pc_data[:, adj_index])
             outvar_atts_list.append(pc_atts[adj_index])
             outvar_axes_list.append(pc_axes) 
-        
-    indata_list = [indata,]
     
-    nio.write_netcdf(inargs.outfile, 'EOF', 
-                     indata_list, 
+    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
+                     indata.global_atts, 
                      outdata_list,
                      outvar_atts_list, 
                      outvar_axes_list)
@@ -175,11 +173,8 @@ example (abyss.earthsci.unimelb.edu.au):
   /work/dbirving/processed/indices/data/ts_Merra_surface_EOF_monthly-1981-2010_native-ocean-eqpacific.nc
 
 note:
-  The data are area weighting according the the sqrt of the cosine of the latitude, as recommended by
-  Wilks2011
-  Using monthly anomaly data gives a different result to letting the program automatically 
-  remove the time mean at each grid point (because you haven't taken seasonality into account
-  if you simply remove the mean of the entire monthly timeseries)
+  The data are area weighted according the the sqrt of the cosine of the latitude, as 
+  recommended by Wilks2011
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -200,7 +195,7 @@ author:
                         help="Number of EOFs for output [default=5]")
     parser.add_argument("--region", type=str, choices=nio.regions.keys(),
                         help="Region over which to calculate EOF [default = entire]")
-    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
+    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period over which to calculate the EOF [default = entire]")
     parser.add_argument("--agg", type=str,
                         help="temporal aggregation selector")
@@ -210,7 +205,6 @@ author:
                         help="Scaling method applied to EOF post calculation [default = None]")
     
     args = parser.parse_args()            
-
 
     print 'Input file: ', args.infile
     print 'Output file: ', args.outfile  

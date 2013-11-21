@@ -55,7 +55,7 @@ import regrid2
 
 try:
     from git import Repo  #doesn't come standard with uvcdat install
-    REPO_DIR = os.path.join(os.environ['HOME'], 'git_repo', 'phd')
+    REPO_DIR = os.path.join(os.environ['HOME'], 'phd')
     MODULE_HASH = Repo(REPO_DIR).head.commit.hexsha
 except ImportError:
     MODULE_HASH = 'unknown'
@@ -88,7 +88,8 @@ regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
            'nino34': [(-5, 5, 'cc'), (190, 240, 'cc')],
            'nino4': [(-5, 5, 'cc'), (160, 210, 'cc')],
            'sh': [(-90, 0, 'cc'), (0, 360, 'cc')],
-           'shextropics': [(-90, -30, 'cc'), (0, 360, 'cc')],
+	   'shextropics20': [(-90, -20, 'cc'), (0, 360, 'cc')],
+           'shextropics30': [(-90, -30, 'cc'), (0, 360, 'cc')],
            'tropics': [(-30, 30, 'cc'), (0, 360, 'cc')],
            'greenwich': [(-90, 90, 'cc'), (-180, 180, 'cc')],
 	   'glatt': [(20, 80, 'cc'), (-180, 180, 'cc')],
