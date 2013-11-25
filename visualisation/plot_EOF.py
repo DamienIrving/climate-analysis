@@ -20,11 +20,11 @@ import argparse
 
 import cdms2 
 
-module_dir = os.path.join(os.environ['HOME'], 'modules')
+module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
-module_dir = os.path.join(os.environ['HOME'], 'visualisation')
+module_dir = os.path.join(os.environ['HOME'], 'phd', 'visualisation')
 sys.path.insert(0, module_dir)
 import plot_map
 
@@ -62,6 +62,7 @@ if __name__ == '__main__':
 example:
   /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_EOF.py  
   /work/dbirving/processed/indices/data/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.nc 
+  eqpacific
   --ofile /work/dbirving/processed/indices/figures/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.png
   --title 250hPa_streamfunction_EOF_analysis,_1979-2012,_Merra
   --ticks -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0

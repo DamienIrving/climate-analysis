@@ -33,12 +33,12 @@ import os
 
 import pylab
 
-module_dir = os.path.join(os.environ['HOME'], 'modules')
+module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 import coordinate_rotation as crot
 
-module_dir2 = os.path.join(os.environ['HOME'], 'testing')
+module_dir2 = os.path.join(os.environ['HOME'], 'phd', 'testing')
 sys.path.insert(0, module_dir2)
 import plot_coordinate_rotation as pcr
 

@@ -11,16 +11,16 @@ from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 import matplotlib
 
-module_dir = os.path.join(os.environ['HOME'], 'modules')
+module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import coordinate_rotation as rot
 import netcdf_io as nio
 
-module_dir2 = os.path.join(os.environ['HOME'], 'visualisation')
+module_dir2 = os.path.join(os.environ['HOME'], 'phd', 'visualisation')
 sys.path.insert(0, module_dir2)
 import plot_map
 
-module_dir3 = os.path.join(os.environ['HOME'], 'data_processing')
+module_dir3 = os.path.join(os.environ['HOME'], 'phd', 'data_processing')
 sys.path.insert(0, module_dir3)
 import calc_vwind_rotation as vrot
 
