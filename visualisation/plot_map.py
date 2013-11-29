@@ -190,7 +190,7 @@ def _get_min_max(data_dict, plot='primary'):
 def multiplot(indata,
               dimensions=None, textsize=16,
               ofile=None, dpi=None, transparent=False, title=None, 
-              region='dateline', centre=(-45, -125), projection='cyl',
+              region='world-dateline', centre=(-45, -125), projection='cyl',
               #colourbar settings
               colourbar_colour='jet', ticks=None, discrete_segments=None, units=None, convert=False, extend="neither",
               #resolution of image
@@ -257,6 +257,7 @@ def multiplot(indata,
       delat, delon         --  Space between lat and lon gridlines
       equator              --  Flag for drawing a special gridline for the equator
       enso                 --  List of ENSO regions plot gridlines for (can be IEMI or any Nino indices)
+      search_paths         --  
       contour              --  Flag for creating a contour colourmap (otherwise each grid point value is
                                plotted with no smoothing
       image_size           --  Size of each individual image
@@ -406,7 +407,10 @@ def multiplot(indata,
     
             #draw wave envelope search paths
 	    if search_paths:
-	        _plot_search_paths(bmap, search_paths)
+	        new_np = search_paths[0:2]
+		plot_lons = search_paths[2:4]
+		plot_lats = search_paths[4:]
+	        _plot_search_paths(bmap, new_np, plot_lons, plot_lats, minlon)
 
             if contour_dict: 
                 _plot_contours(bmap, projection, 
@@ -606,19 +610,34 @@ def _plot_stippling(bmap, projection,
         pass
 
 
-def _plot_search_paths(bmap, new_np, lon_bounds=[180, 340], res=1.0):
+def _plot_search_paths(bmap, new_np, plot_lons, plot_lats, lon_start):
     """PLot the search paths used in wave envelope
     extraction, according to the location of the north
-    pole (np)"""
+    pole (np)
+    
+    new_np     -- location of new north pole [lat, lon]
+    plot_lons  -- longitude range (on rotated grid) to plot [start, end]
+    plot_lats  -- latitude range (on rotated grid) to plot [start, end, stride]
+    lon_start  -- starting longitude bound on the plot
+    
+    """
     
     phi, theta, psi = crot.north_pole_to_rotation_angles(new_np[0], new_np[1])
-    for orig_lat in [-20.0, -15.0, -10.0, -5.0, 0, 5.0, 10.0, 15.0, 20.0]:
-        lat_axis = [orig_lat,]
-        lon_axis = range(180, 341)
-        orig_lats, orig_lons = nio.coordinate_pairs(lat_axis, lon_axis)
+    
+    start_lon, end_lon = plot_lons
+    lon_vals = numpy.arange(start_lon, end_lon + 1)
+    
+    start_lat, end_lat, stride_lat = plot_lats
+    lat_vals = numpy.arange(start_lat, end_lat + stride_lat, stride_lat)
+        
+    for lat in lat_vals:
+        lat_val = [lat,]
+        orig_lats, orig_lons = nio.coordinate_pairs(lat_val, lon_vals)
         rot_lats, rot_lons = crot.rotate_spherical(orig_lats, orig_lons, phi, theta, psi, invert=False)
     
-        x, y = bmap(rot_lons, rot_lats)
+        rot_lons_adjust = crot.adjust_lon_range(rot_lons, radians=False, start=lon_start)
+    
+        x, y = bmap(rot_lons_adjust, rot_lats)
         bmap.plot(x, y, '-', color='0.5')
 
 
@@ -947,8 +966,10 @@ improvements:
     parser.add_argument("--contour", action="store_true",
                         help="switch for drawing contour plot [default: False]")
     #Map details
-    parser.add_argument("--region", type=str, choices=nio.regions.keys(), default='dateline',
-                        help="name of region to plot [default: dateline]")
+    parser.add_argument("--region", type=str, choices=nio.regions.keys(), default='world-dateline',
+                        help="name of region to plot [default: world-dateline]")
+    parser.add_argument("--bounds", type=float, nargs=4, metavar=('MINLAT', 'MAXLAT', 'MINLON', 'MAXLON'),
+                        help="corner points of the map (overrides any specified region)")	
     parser.add_argument("--centre", type=float, nargs=2, metavar=('LAT', 'LON'),
                         help="centre point of map projection")
     parser.add_argument("--nocoast", action="store_true", 
@@ -968,7 +989,8 @@ improvements:
     parser.add_argument("--enso", type=str, nargs='*', 
                         choices=('IEMI', 'Nino12', 'Nino3', 'Nino34', 'Nino4'),
                         help="draw grid lines marking ENSO regions [default: None]")
-    parser.add_argument("--search_paths", type=float, nargs=2, metavar=('LAT', 'LON'),
+    parser.add_argument("--search_paths", type=float, nargs=7, 
+                        metavar=('NP_LAT', 'NP_LON', 'START_LON', 'END_LON', 'START_LAT', 'END_LAT', 'LAT_STRIDE'),
                         help="draw the search paths for the specified north pole [default: None]")
     parser.add_argument("--image_size", type=float, 
                         help="size of image [default: 6]")
