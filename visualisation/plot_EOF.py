@@ -66,6 +66,13 @@ example:
   --ofile /work/dbirving/processed/indices/figures/sf_Merra_250hPa_EOF_monthly-1979-2012_native-eqpacific.png
   --title 250hPa_streamfunction_EOF_analysis,_1979-2012,_Merra
   --ticks -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0
+  
+  /usr/local/uvcdat/1.2.0/bin/cdat plot_EOF.py 
+  /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/eof-sf_Merra_250hPa_monthly-anom-wrt-1979-2011-annual_native-sh.nc sh-psa 
+  --ticks -1 -0.8 -0.6 -0.4 -0.2 0.0 0.2 0.4 0.6 0.8 1.0 
+  --search_paths 30 270 190 340 -20 20 5
+  --title 250hPa_streamfunction_anomaly_EOF_analysis,_1979-2012,_Merra
+  
 """
 
     description='Plot EOF spatial maps.'
@@ -77,7 +84,7 @@ example:
     parser.add_argument("infile", type=str, help="input file name")
     parser.add_argument("region", type=str, choices=nio.regions.keys(), 
                         help="region name")
-
+			
     parser.add_argument("--neofs", type=int, default=4, 
                         help="number of EOFs to plot")
     parser.add_argument("--units", type=str, 
@@ -92,6 +99,9 @@ example:
                         help="plot title [default = None]")
     parser.add_argument("--colourbar_colour", type=str, default='RdBu_r',
                         help="Colourbar name [default = RdBu_r]")
+    parser.add_argument("--search_paths", type=float, nargs=7, 
+                        metavar=('NP_LAT', 'NP_LON', 'START_LON', 'END_LON', 'START_LAT', 'END_LAT', 'LAT_STRIDE'),
+                        help="draw the search paths for the specified north pole [default: None]")
     
     args = parser.parse_args() 
     

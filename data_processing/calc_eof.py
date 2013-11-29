@@ -24,7 +24,6 @@ sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
 
-
 class EofAnalysis:
     """Perform an EOF analysis. 
     

@@ -123,6 +123,9 @@ def extract_data(file_list, region='dateline', convert=False):
 	        print 'WARNING data for %s has a time axis (len = %s), results displayed will be the temporal average'  %(fname, len(data.getTime()))
             data = MV2.average(data, axis=0)
 
+	assert (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0, \
+	'''Longitude values must not be replicated (e.g. you can't have 0 and 360)'''  
+
         new_list.append(data)
 
     return new_list  
@@ -373,7 +376,7 @@ def multiplot(indata,
 	    if projection == 'cyl':
 		bmap = Basemap(llcrnrlon=minlon, llcrnrlat=minlat, urcrnrlon=maxlon, urcrnrlat=maxlat, \
                                resolution=res, area_thresh=area_threshold, projection='cyl')
-		#data, data_lon = shiftgrid(0., data, data_lon, start=True)
+		#data, data_lon = shiftgrid(minlon, data, data_lon, start=True)
             elif projection == 'nsper':
 	        h = 3000000  #height of satellite
 		bmap = Basemap(projection='nsper', lat_0=centre[0], lon_0=centre[1], satellite_height=h*1000., 

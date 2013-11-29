@@ -87,17 +87,17 @@ regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
            'nino3': [(-5, 5, 'cc'), (210, 270, 'cc')],
            'nino34': [(-5, 5, 'cc'), (190, 240, 'cc')],
            'nino4': [(-5, 5, 'cc'), (160, 210, 'cc')],
-           'sh': [(-90, 0, 'cc'), (0, 360, 'cc')],
-	   'shextropics20': [(-90, -20, 'cc'), (0, 360, 'cc')],
-           'shextropics30': [(-90, -30, 'cc'), (0, 360, 'cc')],
-           'tropics': [(-30, 30, 'cc'), (0, 360, 'cc')],
-	   'glatt': [(20, 80, 'cc'), (-180, 180, 'cc')],
-           'nonpolar70': [(-70, 70, 'cc'), (0, 360, 'cc')],
-	   'nonpolar80': [(-80, 80, 'cc'), (0, 360, 'cc')],
-	   'sh-psa': [(-90, 0, 'cc'), (90, 450, 'cc')],
-	   'world-dateline': [(-90, 90, 'cc'), (0, 360, 'cc')],
-	   'world-greenwich': [(-90, 90, 'cc'), (-180, 180, 'cc')],
-	   'world-psa': [(-90, 90, 'cc'), (90, 450, 'cc')],
+           'sh': [(-90, 0, 'cc'), (0, 360, 'co')],
+	   'shextropics20': [(-90, -20, 'cc'), (0, 360, 'co')],
+           'shextropics30': [(-90, -30, 'cc'), (0, 360, 'co')],
+           'tropics': [(-30, 30, 'cc'), (0, 360, 'co')],
+	   'glatt': [(20, 80, 'cc'), (-180, 180, 'co')],
+           'nonpolar70': [(-70, 70, 'cc'), (0, 360, 'co')],
+	   'nonpolar80': [(-80, 80, 'cc'), (0, 360, 'co')],
+	   'sh-psa': [(-90, 0, 'cc'), (90, 450, 'co')],
+	   'world-dateline': [(-90, 90, 'cc'), (0, 360, 'co')],
+	   'world-greenwich': [(-90, 90, 'cc'), (-180, 180, 'co')],
+	   'world-psa': [(-90, 90, 'cc'), (90, 450, 'co')],
            }
 
 
@@ -192,6 +192,9 @@ class InputData:
 	    data = convert_units(data)
 
         # Set object attributes #
+
+        assert (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0, \
+	'''Longitude values must not be replicated (e.g. you can't have 0 and 360)'''  
 
         self.data = data
 	self.fname = fname
