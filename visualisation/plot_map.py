@@ -641,7 +641,8 @@ def _plot_search_paths(bmap, new_np, plot_lons, plot_lats, lon_start):
         rot_lons_adjust = crot.adjust_lon_range(rot_lons, radians=False, start=lon_start)
     
         x, y = bmap(rot_lons_adjust, rot_lats)
-        bmap.plot(x, y, '-', color='0.5')
+        shade = '0.5' if lat == 0.0 else '0.8'
+	bmap.plot(x, y, '-', color=shade)
 
 
 

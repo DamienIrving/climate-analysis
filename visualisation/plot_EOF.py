@@ -89,6 +89,8 @@ example:
                         help="number of EOFs to plot")
     parser.add_argument("--units", type=str, 
                         help="units label for the colourbar")
+    parser.add_argument("--projection", type=str, default='cyl', choices=('cyl', 'nsper'),
+                        help="map projection")
     parser.add_argument("--ofile", type=str,
                         help="name of output file [default = test.png]")
     parser.add_argument("--ticks", type=float, nargs='*',
