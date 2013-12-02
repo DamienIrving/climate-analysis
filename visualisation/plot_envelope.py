@@ -106,7 +106,7 @@ def main(inargs):
 		           quiver_scale=quiv_scale, quiver_width=quiv_width,
         	           projection=inargs.projection, 
         	           extend='max',
-			   search_paths=[30, 270],
+			   search_paths=inargs.search_paths,
         	           image_size=inargs.image_size)
         
         tick_list = tick_list[0: -1]   # Fix for weird thing where it keeps appending to 
@@ -165,6 +165,9 @@ example (abyss.earthsci.unimelb.edu.au):
 
     parser.add_argument("--sf_ticks", type=float, nargs='*', default=[-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30], 
                         help="list of tick marks for sf contours, or just the number of contour lines")
+    parser.add_argument("--search_paths", type=float, nargs=7, default=None,
+                        metavar=('NP_LAT', 'NP_LON', 'START_LON', 'END_LON', 'START_LAT', 'END_LAT', 'LAT_STRIDE'),
+                        help="draw the search paths for the specified north pole [default: None]")
     
     args = parser.parse_args() 
 

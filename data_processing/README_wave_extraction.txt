@@ -1,5 +1,13 @@
 The wave envelope extraction is a multi-step process:
 
+0. Experiment with the location of the north pole and subsequent search paths:
+/usr/local/uvcdat/1.2.0/bin/cdat plot_EOF.py 
+/mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/eof-sf_Merra_250hPa_monthly-anom-wrt-1979-2011-MAM_native-sh.nc 
+world-psa 
+--ticks -1 -0.8 -0.6 -0.4 -0.2 0.0 0.2 0.4 0.6 0.8 1.0 
+--search_paths 20 255 225 335 -15 15 5
+
+
 1. Calculate the new meridional wind anomaly and output it on a rotated grid:
 
 a. For monthly data
