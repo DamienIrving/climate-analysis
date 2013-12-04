@@ -28,7 +28,7 @@ Omega (=dp/dt; or vertical pressure velocity), 500 hPa (originally omega500, now
 # Commands #
 
 cdo mergetime
-cdo chname
+cdo chname,u250,ua
 cdo iften mask.nc infile.nc outfile.nc
 cdo sellonlatbox,0,359.9,-90,90       # For having longitude values 0 to 360, instead of -180 to 180
 ncatted -O -a units,psl,c,c,Pa        # Adding a units attribute (for psl in this case)
