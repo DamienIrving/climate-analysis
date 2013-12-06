@@ -15,12 +15,12 @@ import re
 
 import cdms2
 
-module_dir = os.path.join(os.environ['HOME'], 'modules')
+module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 import coordinate_rotation as crot
 
-module_dir2 = os.path.join(os.environ['HOME'], 'visualisation')
+module_dir2 = os.path.join(os.environ['HOME'], 'phd', 'visualisation')
 sys.path.insert(0, module_dir2)
 import plot_map
 
