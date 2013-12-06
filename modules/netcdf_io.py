@@ -781,18 +781,25 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
 
 
 
-def temporal_extract(data, indices):
-    """Extract the data corresponding to a list of time
-    axis indices."""
+def temporal_extract(data, selection, indexes=True):
+    """Extract the data corresponding to the supplied selection.
+    
+    indexes = True  ->  the selection is a list of indexes to be selected
+    indexes = False ->  the selection is a list of dates: YYYY-MM-DD
+    
+    """
     
     assert isinstance(data, cdms2.tvariable.TransientVariable)
     
-    times = numpy.take(data.getTime().asComponentTime(), indices)
-    times_str = str(times).strip('[').strip(']').split()
+    if indexes:
+        times = numpy.take(data.getTime().asComponentTime(), indices)
+        times_str = str(times).strip('[').strip(']').split()
         
-    dt_list = []
-    for i in range(0, len(times_str), 2):            
-        dt_list.append(times_str[i]+' '+times_str[i+1])
+        dt_list = []
+        for i in range(0, len(times_str), 2):            
+            dt_list.append(times_str[i]+' '+times_str[i+1])
+    else:
+        dt_list = selection
 
     pick = genutil.picker(time=dt_list)
     
