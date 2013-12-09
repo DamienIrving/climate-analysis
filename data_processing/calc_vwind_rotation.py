@@ -104,7 +104,7 @@ def vwind_trig(u, v, theta):
               (measured anticlockwise starting on the new positive x-axis)
                
     """
-
+    
     wsp = numpy.sqrt(numpy.square(numpy.array(u)) + numpy.square(numpy.array(v)))
     phi = numpy.arctan2(v, u)
     alpha = phi - theta

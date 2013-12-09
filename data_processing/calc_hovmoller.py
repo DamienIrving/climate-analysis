@@ -14,7 +14,7 @@ import numpy
 import MV2
 import cdutil
 
-module_dir = os.path.join(os.environ['HOME'], 'modules')
+module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 import coordinate_rotation as crot
@@ -113,7 +113,7 @@ def main(inargs):
 										            str(inargs.longitude[1])) 
     var_atts = {'id': 'env',
                 'standard_name': 'envelope',
-		'long_name': 'Clipped Wave Envelope'
+		'long_name': 'Clipped Wave Envelope',
                 'units': 'm s-1',
                 'history': hx }
 		
