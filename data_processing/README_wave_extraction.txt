@@ -5,7 +5,7 @@ The wave envelope extraction is a multi-step process:
 /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/eof-sf_Merra_250hPa_monthly-anom-wrt-1979-2011-MAM_native-sh.nc 
 world-psa 
 --ticks -1 -0.8 -0.6 -0.4 -0.2 0.0 0.2 0.4 0.6 0.8 1.0 
---search_paths 20 255 225 335 -15 15 5
+--search_paths 20 260 225 335 -15 15 5
 
 
 1. Calculate the new meridional wind anomaly and output it on a rotated grid:
@@ -46,11 +46,11 @@ cdo ydaysub /work/dbirving/datasets/Merra/data/processed/vrot_Merra_250hPa_daily
 
 /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_envelope.py
 /work/dbirving/test_data/vrot-env_Merra_250hPa_monthly-anom-wrt-all_y181x360-np30-270.nc
-env 30 270 0 0 
-/work/dbirving/datasets/Merra/data/processed/ua_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc ua
-/work/dbirving/datasets/Merra/data/processed/va_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc va
-/work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc sf
-/work/dbirving/test_data/env-wind-sf_Merra_250hPa_monthly-anom-wrt-all_y181x360-native-np30-270
+env 30 270 0 0 monthly
+--sf /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc sf
+--ofile /work/dbirving/test_data/env-wind-sf_Merra_250hPa_monthly-anom-wrt-all_y181x360-native-np30-270
+--time 1979-01-01 1982-12-31 none 
+--search_paths 20 260 225 335 -20 20 5
 
 
 4. Create the Hovmoller diagram
@@ -70,7 +70,11 @@ then run test_roim.m
 
 6. Calculate the climatological statistics
 
-???? 
+(this requires pandas)
+
+python roim_stat.py
+
+
 
 
 
