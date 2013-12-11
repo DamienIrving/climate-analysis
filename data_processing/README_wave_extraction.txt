@@ -65,14 +65,31 @@ env absolute 14
 5. Implement the ROIM method
 
 matlab &
-then run test_roim.m
+#then run test_roim.m, which will output file.csv
 
 
-6. Calculate the climatological statistics
+6a. Generate the desired list of PSA-active dates (and output some very basic climatological statistics if you like)
 
 (this requires pandas)
 
-python roim_stat.py
+python roim_stat.py file.csv dates 
+--property startpoint_temporal endpoint_temporal 
+--ofile dates.txt
+
+
+6b. Further filter the list of dates and output new_dates.txt or totals.txt
+
+filter_dates.py 
+
+
+7a. Calculate a composite based on dates.txt or new_dates.txt
+
+calc_composite.py
+
+
+7b. Compare totals.txt to another metric 
+
+metric_comparison.py 
 
 
 
