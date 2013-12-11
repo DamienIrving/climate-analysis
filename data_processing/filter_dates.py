@@ -20,6 +20,15 @@ import netcdf_io as nio
 
 
 
+def west_antarctica_filter():
+    """Filter according to the sign of the meridional wind anomaly
+    over the region 110W to 75W and 65S to 75S. This is an approximate
+    area based on the findings of Ding2013 and you'd expect there to be 
+    a signal in autumn
+    """  
+
+
+
 
 def main(inargs):
     """Run program."""
@@ -34,7 +43,7 @@ def main(inargs):
     
     # Perform additional filtering
     
-    filters = {'amundsen': amundsen_filter,}  
+    filters = {'west_antarctica': west_antarctica_filter,}  
     
     filter_func = filters[inargs.statistic]
     new_date_list = stat_func(, )
