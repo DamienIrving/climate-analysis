@@ -792,7 +792,7 @@ def temporal_extract(data, selection, indexes=True):
     assert isinstance(data, cdms2.tvariable.TransientVariable)
     
     if indexes:
-        times = numpy.take(data.getTime().asComponentTime(), indices)
+        times = numpy.take(data.getTime().asComponentTime(), selection)
         times_str = str(times).strip('[').strip(']').split()
         
         dt_list = []

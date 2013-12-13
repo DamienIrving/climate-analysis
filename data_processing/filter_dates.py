@@ -16,23 +16,25 @@ import cdutil
 module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
+import general_io as gio
 
-roim_dir = os.path.join(os.environ['HOME'], 'phd', 'data_processing', 'roim')
-sys.path.insert(0, roim_dir)
-from roim_stat import write_dates
+import pdb
 
 
-def west_antarctica_filter(date_list, infile, var, threshold, select):
+def west_antarctica_filter(date_file, data_file, var, threshold, select):
     """Filter according to the sign of the meridional wind anomaly
     over the region 110W to 75W and 65S to 75S. This is an approximate
     area based on the findings of Ding2013 and you'd expect there to be 
     a signal in autumn.
     """  
     
+    pdb.set_trace()
+    
     # Read meridional wind data and extract region of interest
-    indata = nio.InputData(infile, var, latitude=(-75, -65, 'cc'), longitude=(250, 285, 'cc'))
+    indata = nio.InputData(data_file, var, latitude=(-75, -65, 'cc'), longitude=(250, 285, 'cc'))
     
     # Select data corresponding to input date list
+    date_list = gio.read_dates(date_file)
     input_selection = nio.temporal_extract(indata.data, date_list, indexes=False) 
     
     # Calculate the spatial average of the data
@@ -52,40 +54,33 @@ def west_antarctica_filter(date_list, infile, var, threshold, select):
     return map(lambda x: x.split()[0], new_date_list)
 
 
-def read_dates(infile):
-    """Read a file of dates (one per line) and write to a list"""
-    
-    fin = open(infile, 'r')
-    date_list = []
-    for line in fin:
-        date_list.append(line.rstrip('\n'))
-    fin.close()
-
-    return date_list
-    
-
 def main(inargs):
     """Run program."""
 
     # Read dates
-    date_list = read_dates(inargs.dates)
+    date_list = gio.read_dates(inargs.dates)
 
     # Perform additional filtering
     filters = {'west_antarctica': west_antarctica_filter,}
 
     filter_func = filters[inargs.filter]
-    new_date_list = stat_func(inargs.dates, 
-                              inargs.infile, inargs.var, 
-                              inargs.threshold, inargs.selection)
+    new_date_list = filter_func(inargs.dates, 
+                                inargs.infile, inargs.var, 
+                                inargs.threshold, inargs.selection)
     
     # Write output file
-    write_dates(inargs.outfile, new_date_list)
+    gio.write_dates(inargs.outfile, new_date_list)
 
 
 if __name__ == '__main__':
 
     extra_info =""" 
 example:
+  /usr/local/uvcdat/1.3.0/bin/cdat filter_dates.py 
+  hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt 
+  west_antarctica 
+  /mnt/meteo0/data/simmonds/dbirving/Merra/data/va_Merra_250hPa_daily_native.nc va 
+  0 below
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -111,7 +106,7 @@ author:
     parser.add_argument("selection", type=str, choices=('above', 'below'),  
                         help="Segment of the selection to retain (i.e. above or below threshold)")   
 
-    parser.add_argument("--outfile", type='str', default='test.txt',
+    parser.add_argument("--outfile", type=str, default='test.txt',
                         help="Name of output file")   
                         
     args = parser.parse_args()            
