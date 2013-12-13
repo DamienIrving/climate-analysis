@@ -72,9 +72,10 @@ matlab &
 
 (this requires pandas)
 
-python roim_stat.py file.csv dates 
---property startpoint_temporal endpoint_temporal 
---ofile dates.txt
+python roim_stat.py 
+hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335.txt 
+--duration_histogram hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_duration-histogram.png 
+--date_list startpoint_temporal endpoint_temporal hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt
 
 
 6b. Further filter the list of dates and output new_dates.txt or totals.txt
