@@ -12,6 +12,7 @@ import calendar
 
 import numpy
 import argparse
+from collections import OrderedDict
 
 import os
 import sys
@@ -28,6 +29,9 @@ def bin_dates(date_list, timescale, start, end):
       start  -- tuple: (year, month)
       end    -- tuple: (year, month) 
     
+    Output:
+      Returns an ordered dictionary
+    
     """
         
     dt_list = map(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), date_list)
@@ -36,7 +40,7 @@ def bin_dates(date_list, timescale, start, end):
     start_dt = datetime.datetime(start[0], start[1], 1)
     end_dt = datetime.datetime(end[0], start[1], 1) + datetime.timedelta(months=1)
     dt_bin_edges = rrule(MONTHLY, dtstart=start_dt, until=end_dt) #interval=1
-    num_bin_edges = map(date2num, dt_bin_edges)
+    num_bin_edges = date2num(dt_bin_edges)
     
     hist_data, edges = numpy.histogram(num_list, bins=num_bin_edges)
     assert len(hist_data) == len(dt_bin_edges[:-1])
@@ -45,10 +49,11 @@ def bin_dates(date_list, timescale, start, end):
     for i in range(0, len(hist_data)):
         histogram[dt_bin_edges[i]] = hist_data[i]
     
-    return histogram
+    return OrderedDict(sorted(histogram.items(), key=lambda t: t[0])) 
+    #t[1] would sort by value instead of key  
 
 
-def print_summary(histogram, dt_labels):
+def print_summary(histogram):
     """Print summary statistics to the screen"""
 
     monthly_totals = dict((month, 0) for month in range(1,13))
@@ -59,7 +64,34 @@ def print_summary(histogram, dt_labels):
     for i in range(1,13):
         print calendar[i], monthly_totals[i]
 
-     
+
+def write_totals(histogram, outfile):
+    """Write the monthly totals to a netCDF file"""
+
+    # Create time axis
+    assert histogram.keys() == sorted(histogram.keys()), \
+    'Time values in histogram dictionary are not monotonic'
+    time_vals = date2num(histogram.keys()) - 1  #date2num converts to days since 0001-01-01 UTC + 1
+    
+    time_axis = cdms2.createAxis(time_vals)
+    time_axis.id = 'time'
+    time_axis.units = 'days since 0001-1-1'
+    time_axis.axis = 'T'
+
+    # Define variable attributes
+    outvar_atts = {'id': 'total',
+                   'long_name': 'total days for each month',
+                   'units': 'days'}
+    global_atts = {}
+
+    # Write output file
+    nio.write_netcdf(outfile, " ".join(sys.argv), 
+                     global_atts, 
+                     [histogram.values(),],
+                     [outvar_atts,], 
+                     [time_axis,])
+
+
 def main(inargs):
     """Run the program"""
 
@@ -71,6 +103,10 @@ def main(inargs):
     
     # Print summary stats to screen
     print_summary(histogram)
+    
+    # Write the output file
+    if inargs.ofile:
+        write_totals(histogram, inargs.ofile)
     
 
 if __name__ == '__main__':
@@ -94,14 +130,15 @@ author:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    # Required arguments
     parser.add_argument("dates", type=str, help="Name of input file containing the list of dates")
     
-    # Time filters
     parser.add_argument("--start", type=int, nargs=2, metavar=('YEAR', 'MONTH'), default=(1979, 1), 
                         help="Time start filter (e.g. 1979 1)")
     parser.add_argument("--end", type=int, nargs=2, metavar=('YEAR', 'MONTHS'), default=(2012, 12),
                         help="Time end filter (e.g. 2012 12)")
+    parser.add_argument("--ofile", type=str, default=None,
+                        help="Name of the netCDF output file")    
+
 
     args = parser.parse_args()            
     main(args)
