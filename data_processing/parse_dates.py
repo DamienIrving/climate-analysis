@@ -1,7 +1,8 @@
 """
 Filename:     parse_dates.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Parse a list of dates and output a simple statistic
+Description:  Parse a list of dates and output simple statistics relating to 
+              the monthly totals
 
 """
 
@@ -24,7 +25,7 @@ sys.path.insert(0, module_dir)
 import netcdf_io as nio
 import general_io as gio
 
-import pdb
+import matplotlib.pyplot as plt
 
 
 def bin_dates(date_list, start, end):
@@ -55,23 +56,39 @@ def bin_dates(date_list, start, end):
     for i in range(0, len(hist_data)):
         histogram[dt_bin_edges[i]] = hist_data[i]
     
-    pdb.set_trace()
-    
     return OrderedDict(sorted(histogram.items(), key=lambda t: t[0])) 
     #t[1] would sort by value instead of key  
 
 
-def print_summary(histogram):
-    """Print summary statistics to the screen"""
+def show_summary(histogram, hist_file=False, year_bounds=None):
+    """Print summary statistics to the screen and plot if hist_file given"""
 
+    # Calculate monthly totals
     monthly_totals = dict((month, 0) for month in range(1,13))
     for key, value in histogram.iteritems():
         monthly_totals[key.month] = monthly_totals[key.month] + value
 
+    # Print to screen
     print 'Total days'
     for i in range(1,13):
         print calendar.month_name[i], monthly_totals[i]
 
+    # Create plot (bar chart)
+    if hist_file and year_bounds:
+        nyears = year_bounds[1] - year_bounds[0] + 1
+        monthly_pct = numpy.zeros(12)
+        for i in range(0, 12):
+            monthly_pct[i] = (monthly_totals[i+1] / (float(calendar.mdays[i+1]) * nyears)) * 100     
+
+        ind = numpy.arange(12)    # the x locations for the bars
+        width = 0.8            # the width of the bars
+        p1 = plt.bar(ind, monthly_pct, width)
+
+        plt.ylabel('Percentage of days')
+        plt.xticks(ind+width/2., ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec') )
+
+        plt.savefig(hist_file)
+        
 
 def write_totals(histogram, outfile):
     """Write the monthly totals to a netCDF file"""
@@ -95,8 +112,6 @@ def write_totals(histogram, outfile):
                    'units': 'days'}
     global_atts = {}
 
-    #pdb.set_trace()
-
     # Write output file
     nio.write_netcdf(outfile, " ".join(sys.argv), 
                      global_atts, 
@@ -114,12 +129,12 @@ def main(inargs):
     # Put the data into monthly or seasonal bins
     histogram = bin_dates(date_list, inargs.start, inargs.end)
     
-    # Print summary stats to screen
-    print_summary(histogram)
+    # Print summary stats to screen and plot if desired
+    show_summary(histogram, inargs.hist_file, (inargs.start[0], inargs.end[0]) )
     
     # Write the output file
-    if inargs.ofile:
-        write_totals(histogram, inargs.ofile)
+    if inargs.totals_file:
+        write_totals(histogram, inargs.totals_file)
     
 
 if __name__ == '__main__':
@@ -128,6 +143,8 @@ if __name__ == '__main__':
 example:
     python parse_dates.py 
     hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt 
+    --totals_file hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_monthly-totals.nc
+    --hist_file hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_monthly-totals.png
 
 note:
     Assumes daily or higher timescale input data
@@ -137,7 +154,7 @@ author:
 
 """
 
-    description='Parse a list of dates and output various statistics'
+    description='Parse a list of dates and output various statistics relating to the monthly totals'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
@@ -149,8 +166,10 @@ author:
                         help="Time start filter (e.g. 1979 1)")
     parser.add_argument("--end", type=int, nargs=2, metavar=('YEAR', 'MONTHS'), default=(2012, 12),
                         help="Time end filter (e.g. 2012 12)")
-    parser.add_argument("--ofile", type=str, default=None,
-                        help="Name of the netCDF output file")    
+    parser.add_argument("--hist_file", type=str, default=None,
+                        help="Name of the .png output file for the histogram of monthly totals")
+    parser.add_argument("--totals_file", type=str, default=None,
+                        help="Name of the netCDF output file for the monthly totals")    
 
 
     args = parser.parse_args()            
