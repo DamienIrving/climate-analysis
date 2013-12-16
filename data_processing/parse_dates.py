@@ -7,6 +7,7 @@ Description:  Parse a list of dates and output a simple statistic
 
 import datetime
 from dateutil.rrule import *
+from dateutil.relativedelta import relativedelta
 from matplotlib.dates import date2num
 import calendar
 
@@ -14,14 +15,19 @@ import numpy
 import argparse
 from collections import OrderedDict
 
+import cdms2
+
 import os
 import sys
 module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
+import netcdf_io as nio
 import general_io as gio
 
+import pdb
 
-def bin_dates(date_list, timescale, start, end):
+
+def bin_dates(date_list, start, end):
     """Take a list of dates and return totals in bins, according to 
     the requested timescale.
     
@@ -38,8 +44,8 @@ def bin_dates(date_list, timescale, start, end):
     num_list = map(date2num, dt_list)
     
     start_dt = datetime.datetime(start[0], start[1], 1)
-    end_dt = datetime.datetime(end[0], start[1], 1) + datetime.timedelta(months=1)
-    dt_bin_edges = rrule(MONTHLY, dtstart=start_dt, until=end_dt) #interval=1
+    end_dt = datetime.datetime(end[0], end[1], 1) + relativedelta(months=1)
+    dt_bin_edges = list(rrule(MONTHLY, dtstart=start_dt, until=end_dt)) #interval=1
     num_bin_edges = date2num(dt_bin_edges)
     
     hist_data, edges = numpy.histogram(num_list, bins=num_bin_edges)
@@ -49,6 +55,8 @@ def bin_dates(date_list, timescale, start, end):
     for i in range(0, len(hist_data)):
         histogram[dt_bin_edges[i]] = hist_data[i]
     
+    pdb.set_trace()
+    
     return OrderedDict(sorted(histogram.items(), key=lambda t: t[0])) 
     #t[1] would sort by value instead of key  
 
@@ -57,12 +65,12 @@ def print_summary(histogram):
     """Print summary statistics to the screen"""
 
     monthly_totals = dict((month, 0) for month in range(1,13))
-    for key, value in historgram.iteritems():
+    for key, value in histogram.iteritems():
         monthly_totals[key.month] = monthly_totals[key.month] + value
 
     print 'Total days'
     for i in range(1,13):
-        print calendar[i], monthly_totals[i]
+        print calendar.month_name[i], monthly_totals[i]
 
 
 def write_totals(histogram, outfile):
@@ -75,21 +83,26 @@ def write_totals(histogram, outfile):
     
     time_axis = cdms2.createAxis(time_vals)
     time_axis.id = 'time'
+    time_axis.standard_name = 'time'
+    time_axis.calendar = 'standard' 
     time_axis.units = 'days since 0001-1-1'
     time_axis.axis = 'T'
 
     # Define variable attributes
     outvar_atts = {'id': 'total',
+                   'standard_name': 'total',
                    'long_name': 'total days for each month',
                    'units': 'days'}
     global_atts = {}
+
+    #pdb.set_trace()
 
     # Write output file
     nio.write_netcdf(outfile, " ".join(sys.argv), 
                      global_atts, 
                      [histogram.values(),],
                      [outvar_atts,], 
-                     [time_axis,])
+                     [(time_axis,),])
 
 
 def main(inargs):
@@ -99,7 +112,7 @@ def main(inargs):
     date_list = gio.read_dates(inargs.dates)
      
     # Put the data into monthly or seasonal bins
-    histogram = bin_dates(date_list, inargs.totals, inargs.start, inargs.end)
+    histogram = bin_dates(date_list, inargs.start, inargs.end)
     
     # Print summary stats to screen
     print_summary(histogram)
