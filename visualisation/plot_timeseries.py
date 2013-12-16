@@ -32,7 +32,7 @@ import numpy
 import numpy.ma as ma
 import math
 
-module_dir = os.path.join(os.environ['HOME'], 'modules')
+module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 

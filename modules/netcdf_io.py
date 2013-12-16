@@ -183,6 +183,7 @@ class InputData:
             data = temporal_aggregation(data, timescale, quantity, time_period=times)
 
         if kwargs.has_key('runave'):
+	    window = kwargs['runave']
             data = running_average(data, window) if window > 1 else data
 
         if kwargs.has_key('grid'):
@@ -192,9 +193,10 @@ class InputData:
 	    data = convert_units(data)
 
         # Set object attributes #
-
-        assert (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0, \
-	'''Longitude values must not be replicated (e.g. you can't have 0 and 360)'''  
+        
+	if 'x' in data.getOrder():
+            assert (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0, \
+	    '''Longitude values must not be replicated (e.g. you can't have 0 and 360)'''  
 
         self.data = data
 	self.fname = fname
