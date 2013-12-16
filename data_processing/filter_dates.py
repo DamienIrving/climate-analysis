@@ -9,6 +9,7 @@ import sys
 import os
 
 import argparse
+import itertools
 import numpy
 
 import cdutil
@@ -54,10 +55,7 @@ def west_antarctica_filter(date_file, data_file, var, threshold, select):
     area based on the findings of Ding2013 and you'd expect there to be 
     a signal in autumn.
     """  
-    
-    pdb.set_trace()
        
-
     # Read meridional wind data and extract region of interest
     indata = nio.InputData(data_file, var, latitude=(-75, -65, 'cc'), longitude=(250, 285, 'cc'))
     
@@ -74,13 +72,9 @@ def west_antarctica_filter(date_file, data_file, var, threshold, select):
     assert select in ['above', 'below']
     test = spatial_ave < threshold if select == 'below' else spatial_ave > threshold
     
-    indexes = numpy.where(test)
-    output_selection = nio.temporal_extract(spatial_ave, indexes, indexes=True)
+    new_date_list = list(itertools.compress(matching_date_list, test))
     
-    # Generate the new date list
-    new_date_list = output_selection.getTime().asComponentTime()
-    
-    return map(lambda x: x.split()[0], new_date_list)
+    return map(lambda x: str(x).split()[0], new_date_list)
 
 
 def main(inargs):

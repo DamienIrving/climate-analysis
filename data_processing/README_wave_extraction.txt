@@ -78,19 +78,29 @@ hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolu
 --date_list startpoint_temporal endpoint_temporal hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt
 
 
-6b. Further filter the list of dates and output new_dates.txt or totals.txt
+6b. Further filter the list of dates
 
-filter_dates.py 
+/usr/local/uvcdat/1.2.0/bin/cdat filter_dates.py /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt 
+west_antarctica 
+/mnt/meteo0/data/simmonds/dbirving/Merra/data/va_Merra_250hPa_daily_native.nc 
+va 0 below
+/mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va.txt
 
 
-7a. Calculate a composite based on dates.txt or new_dates.txt
+6c. Parse that list of dates and calculate some date-based statistics (monthly totals etc)
+
+parse_dates.py 
+
+
+
+7a. Calculate a composite based on a list of dates
 
 calc_composite.py
 
 
-7b. Compare totals.txt to another metric 
+7b. Compare some date-based statistics to another metric 
 
-metric_comparison.py 
+plot_timeseries.py 
 
 
 
