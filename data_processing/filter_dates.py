@@ -22,33 +22,6 @@ import general_io as gio
 import pdb
 
 
-def split_dt(dt):
-    """Split a getTime().asComponentTime() date/time into year, month and day parts"""
-    
-    date = str(dt).split()[0]
-    year, month, day = date.split('-')
-    
-    return (int(year), int(month), int(day))
-    
-
-def match_dates(dates, time_axis):
-    """For the genutil picker to work correctly in nio.temporal_extract, the
-    date list must match perfectly"""
-    
-    dates_split = map(split_dt, dates)
-    time_axis_split = map(split_dt, time_axis)
-    
-    matches = []
-    for date in dates_split:
-        try:
-            index = time_axis_split.index(date)
-            matches.append(time_axis[index])
-        except ValueError:
-	    pass
-
-    return matches
-
-
 def west_antarctica_filter(date_file, data_file, var, threshold, select):
     """Filter according to the sign of the meridional wind anomaly
     over the region 110W to 75W and 65S to 75S. This is an approximate
@@ -61,7 +34,7 @@ def west_antarctica_filter(date_file, data_file, var, threshold, select):
     
     # Select data corresponding to input date list
     date_list = gio.read_dates(date_file)
-    matching_date_list = match_dates(date_list, indata.data.getTime().asComponentTime())
+    matching_date_list = nio.match_dates(date_list, indata.data.getTime().asComponentTime())
     input_selection = nio.temporal_extract(indata.data, matching_date_list, indexes=False) 
     
     # Calculate the spatial average of the data

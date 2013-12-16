@@ -13,10 +13,12 @@ dict_filter          -- Filter dictionary
 get_datetime         -- Return datetime instances for list of dates/times
 hi_lo                -- Update highest and lowest value
 list_kwargs          -- List keyword arguments of a function
+match_dates          --
 regrid_uniform       -- Regrid data to a uniform output grid
 running_average      -- Calculate running average
 scale_offset         -- Apply scaling and offset factors
 single2list          -- Check if item is a list, then convert if not
+split_dt             -- Split a getTime().asComponentTime() date/time into year, month and day parts
 temporal_aggregation -- Create a temporal aggregate of 
                         the input data (i.e. raw, climatology or anomaly)
 time_axis_check      -- Check whether 2 time axes are the same
@@ -542,6 +544,25 @@ def list_kwargs(func):
     return details.args[-nopt:]
 
 
+
+def match_dates(dates, time_axis):
+    """For the genutil picker to work correctly in nio.temporal_extract, the
+    date list must match perfectly"""
+    
+    dates_split = map(split_dt, dates)
+    time_axis_split = map(split_dt, time_axis)
+    
+    matches = []
+    for date in dates_split:
+        try:
+            index = time_axis_split.index(date)
+            matches.append(time_axis[index])
+        except ValueError:
+	    pass
+
+    return matches
+
+
 def normalise_data(indata, sub_mean=False):
     """Normalise data.
     
@@ -618,6 +639,15 @@ def single2list(item, numpy_array=False):
         return numpy.array(output)
     else:
         return output
+
+
+def split_dt(dt):
+    """Split a getTime().asComponentTime() date/time into year, month and day parts"""
+    
+    date = str(dt).split()[0]
+    year, month, day = date.split('-')
+    
+    return (int(year), int(month), int(day))
 
 
 def _subset_data(infile, var_id, **kwargs):
