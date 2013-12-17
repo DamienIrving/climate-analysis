@@ -27,6 +27,8 @@ import general_io as gio
 
 import matplotlib.pyplot as plt
 
+import pdb
+
 
 def bin_dates(date_list, start, end):
     """Take a list of dates and return totals in bins, according to 
@@ -60,35 +62,99 @@ def bin_dates(date_list, start, end):
     #t[1] would sort by value instead of key  
 
 
-def show_summary(histogram, hist_file=False, year_bounds=None):
-    """Print summary statistics to the screen and plot if hist_file given"""
+def calc_seasonal_values(monthly_values):
+    """Calculate the seasonal values from the monthly values"""
+    
+    months = {'DJF': [12, 1, 2], 'MAM': [3, 4, 5],
+              'JJA': [6, 7, 8], 'SON': [9, 10, 11],
+	      'annual': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
+    
+    nyears = len(monthly_values[1])
+    seasonal_values = {}
+    
+    for season in months.keys():    
+        yrs = nyears - 1 if season == 'DJF' else nyears
+	values = numpy.zeros(yrs)
+	for month in months[season]:
+            if season == 'DJF' and month in (1, 2):
+		data = monthly_values[month][1:]
+	    elif season == 'DJF' and month == 12:
+		data = monthly_values[month][:-1]
+	    else: 
+		data = monthly_values[month]
 
-    # Calculate monthly totals
+            values = values + numpy.array(data)
+
+        seasonal_values[season] = values
+
+    return seasonal_values
+
+
+def plot_bar_chart(monthly_totals, nyears, ofile):
+    """Plot a bar chart showing the totals for each month"""
+    
+    monthly_pct = numpy.zeros(12)
+    for i in range(0, 12):
+        monthly_pct[i] = (monthly_totals[i+1] / (float(calendar.mdays[i+1]) * nyears)) * 100     
+
+    ind = numpy.arange(12)    # the x locations for the bars
+    width = 0.8            # the width of the bars
+    p1 = plt.bar(ind, monthly_pct, width)
+
+    plt.ylabel('Percentage of days')
+    plt.xticks(ind+width/2., ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec') )
+
+    plt.savefig(ofile)
+
+
+def plot_line_graph(monthly_values, year_bounds, ofile):
+    """Plot a line graph showing the seasonal values for each year"""
+    
+    seasonal_values = calc_seasonal_values(monthly_values)
+    colors = {'DJF': 'red', 'MAM': 'orange',
+             'JJA': 'blue', 'SON': 'green',
+	     'annual': 'black'}
+    years = numpy.arange(year_bounds[0], year_bounds[1] + 1)
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    for season, values in seasonal_values.iteritems():
+	xvals = years[1:] if season == 'DJF' else years
+	ax.plot(xvals, seasonal_values[season], color=colors[season], lw=2.0, label=season)       
+
+    ax.set_xlim(year_bounds[0], year_bounds[1])
+    ax.set_xlabel('year')
+    ax.set_ylabel('total days')
+    ax.legend(loc=7, fontsize='small', ncol=5)
+
+    plt.savefig(ofile)
+
+
+def show_summary(histogram, bar_file=False, line_file=False, year_bounds=None):
+    """Print summary statistics to the screen and generate plots if requested"""
+
+    # Calculate monthly totals and values
     monthly_totals = dict((month, 0) for month in range(1,13))
+    monthly_values = dict((month, []) for month in range(1,13))
     for key, value in histogram.iteritems():
         monthly_totals[key.month] = monthly_totals[key.month] + value
+        monthly_values[key.month].append(value)
 
     # Print to screen
     print 'Total days'
     for i in range(1,13):
         print calendar.month_name[i], monthly_totals[i]
 
-    # Create plot (bar chart)
-    if hist_file and year_bounds:
+    # Create plots
+    if year_bounds:
         nyears = year_bounds[1] - year_bounds[0] + 1
-        monthly_pct = numpy.zeros(12)
-        for i in range(0, 12):
-            monthly_pct[i] = (monthly_totals[i+1] / (float(calendar.mdays[i+1]) * nyears)) * 100     
-
-        ind = numpy.arange(12)    # the x locations for the bars
-        width = 0.8            # the width of the bars
-        p1 = plt.bar(ind, monthly_pct, width)
-
-        plt.ylabel('Percentage of days')
-        plt.xticks(ind+width/2., ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec') )
-
-        plt.savefig(hist_file)
         
+	if bar_file:
+	    plot_bar_chart(monthly_totals, nyears, bar_file)
+
+        if line_file:
+	    plot_line_graph(monthly_values, year_bounds, line_file)
+
+	
 
 def write_totals(histogram, outfile):
     """Write the monthly totals to a netCDF file"""
@@ -123,6 +189,9 @@ def write_totals(histogram, outfile):
 def main(inargs):
     """Run the program"""
 
+    assert inargs.start[1] == 1 and inargs.end[1] == 12, \
+    "This program assumes all months represented equally"
+
     # Read in the date list
     date_list = gio.read_dates(inargs.dates)
      
@@ -130,7 +199,7 @@ def main(inargs):
     histogram = bin_dates(date_list, inargs.start, inargs.end)
     
     # Print summary stats to screen and plot if desired
-    show_summary(histogram, inargs.hist_file, (inargs.start[0], inargs.end[0]) )
+    show_summary(histogram, inargs.bar_file, inargs.line_file, (inargs.start[0], inargs.end[0]) )
     
     # Write the output file
     if inargs.totals_file:
@@ -166,8 +235,10 @@ author:
                         help="Time start filter (e.g. 1979 1)")
     parser.add_argument("--end", type=int, nargs=2, metavar=('YEAR', 'MONTHS'), default=(2012, 12),
                         help="Time end filter (e.g. 2012 12)")
-    parser.add_argument("--hist_file", type=str, default=None,
-                        help="Name of the .png output file for the histogram of monthly totals")
+    parser.add_argument("--bar_file", type=str, default=None,
+                        help="Name of the .png output file for the bar chart of monthly totals")
+    parser.add_argument("--line_file", type=str, default=None,
+                        help="Name of the .png output file for the line graph of seasonal values")
     parser.add_argument("--totals_file", type=str, default=None,
                         help="Name of the netCDF output file for the monthly totals")    
 
