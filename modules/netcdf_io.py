@@ -67,6 +67,8 @@ except ImportError:
 #repo_dir = os.path.abspath(os.path.dirname(__file__))
 #MODULE_HASH = Repo(repo_dir).head.commit.hexsha
 
+import pdb
+
 
 ## Define regions ##
 
@@ -545,22 +547,38 @@ def list_kwargs(func):
 
 
 
-def match_dates(dates, time_axis):
-    """For the genutil picker to work correctly in nio.temporal_extract, the
-    date list must match perfectly"""
+def match_dates(dates, time_axis, invert_matching=False):
+    """Take a simple list of dates (e.g. 1979-01-01) and match with the corresponding
+    times in a more detailed time axis (e.g. 1979-01-01 12:00:0.0).
+    
+    (for the genutil picker to work correctly in nio.temporal_extract, the
+    date list must match perfectly)
+ 
+    Arguments:   
+      invert_matching = True  => return a list of time_axis values that aren't in dates
+                        False => return a list of time_axis values that are in dates
+    """
     
     dates_split = map(split_dt, dates)
     time_axis_split = map(split_dt, time_axis)
     
     matches = []
+    misses = time_axis[:]  # creates a shallow copy
+    
     for date in dates_split:
         try:
             index = time_axis_split.index(date)
-            matches.append(time_axis[index])
+            if invert_matching:
+		misses.remove(time_axis[index])
+	    else:
+	        matches.append(time_axis[index])
         except ValueError:
-	    pass
+	    pass	    
 
-    return matches
+    if invert_matching:
+        return misses
+    else:
+        return matches
 
 
 def normalise_data(indata, sub_mean=False):

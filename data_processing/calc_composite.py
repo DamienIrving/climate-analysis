@@ -11,32 +11,32 @@ Updates | By | Description
 
 import sys
 import os
-
 import argparse
 
-module_dir = os.path.join(os.environ['HOME'], 'phd, 'modules')
+import MV2
+from scipy import stats
+
+module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import general_io as gio
 import netcdf_io as nio
 
 
-def calc_composite():
+def calc_composite(data_included, data_excluded):
     """Calculate the composite"""
     
     # Perform the t-test 
     # To perform a Welch's t-test (two independent samples, unequal variances), need the 
     # latest version of scipy in order to use the equal_var keyword argument
 	
-    t, p_vals = stats.ttest_ind(data_in_composite, data_out_composite, axis=0) #equal_var=False) 
+    t, p_vals = stats.ttest_ind(data_included, data_excluded, axis=0, equal_var=False) 
 
     # Perform necessary averaging #
 
-#    count = numpy.shape(composite)[0]
-#        
-#    final_composite = MV2.average(composite, axis=0) if average else composite
-#    final_composite.count = count
+    composite_mean = MV2.average(data_included, axis=0)
 
-    return data_in_composite, p_vals
+
+    return composite_mean, p_vals
 
 
 
@@ -48,15 +48,15 @@ def main(inargs):
     indata = nio.InputData(inargs.infile, inargs.var, 
                            **nio.dict_filter(vars(inargs), ['time', 'region']))
 
-    date_list = gio.read_dates(inargs.dates)
+    date_list = gio.read_dates(inargs.date_file)
 
     # Filter the data #
     
-    matching_dates_included = nio.match_dates(date_list, indata.data.getTime().asComponentTime())
-    matching_dates_excluded = nio.match_dates(date_list, indata.data.getTime().asComponentTime(), invert=True)
+    matching_dates = nio.match_dates(date_list, indata.data.getTime().asComponentTime())
+    missing_dates = nio.match_dates(date_list, indata.data.getTime().asComponentTime(), invert_matching=True)
 
-    data_included = nio.temporal_extract(indata.data, matching_dates_included, indexes=False)
-    data_excluded = nio.temporal_extract(indata.data, matching_dates_excluded, indexes=False)
+    data_included = nio.temporal_extract(indata.data, matching_dates, indexes=False)
+    data_excluded = nio.temporal_extract(indata.data, missing_dates, indexes=False)
 
     # Calculate the composite #
         
@@ -64,38 +64,43 @@ def main(inargs):
 	
     # Write the output file #
 
+    try:
+        selector = inargs.time[2]
+	season = selector if selector.lower() != 'none' else 'annual'
+    except AttributeError or IndexError:
+        season = 'annual'
+
     composite_atts = {'id': inargs.var,
                       'long_name': indata.data.long_name,
                       'units': indata.data.units,
-                      'history': '%s data that meet the composite criteria (see global atts)' %(inargs.season)}
+                      'history': 'Composite mean for %s season' %(season)}
 
     pval_atts = {'id': 'p',
                  'long_name': 'Two-tailed p-value',
                  'units': ' ',
                  'history': """Standard independent two sample t-test comparing the data sample that meets the composite criteria to a sample containing the remaining data""",
-                 'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=True)'}
+                 'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=False)'}
 
-    indata_list = [indata, index]
     outdata_list = [composite, p_val]
     outvar_atts_list = [composite_atts, pval_atts]
-    outvar_axes_list = [composite.getAxisList(), composite.getAxisList()[1:]] 
+    outvar_axes_list = [composite.getAxisList(), composite.getAxisList()] 
 
-    extras = 'Threshold method = %s. Limit = %s. Bound = %s. Index = %s, %s. Normalised = %s (mean removed = %s).'  %(inargs.method, 
-    inargs.limit, inargs.bound, inargs.index_file, inargs.index_var, str(inargs.normalise), str(inargs.remove_ave))
-    nio.write_netcdf(inargs.outfile, 'composite', 
-                     indata_list, 
+    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
+                     indata.global_atts, 
                      outdata_list,
                      outvar_atts_list, 
-                     outvar_axes_list,
-		     extra_history=extras)
+                     outvar_axes_list)
 
 
 if __name__ == '__main__':
 
     extra_info =""" 
 example (abyss.earthsci.unimelb.edu.au):
-  cdat calc_composite.py 
-
+  cdat calc_composite.py /usr/local/uvcdat/1.3.0/bin/cdat calc_composite.py 
+  /mnt/meteo0/data/simmonds/dbirving/Merra/data/tas_Merra_surface_daily_native.nc tas 
+  /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va.txt 
+  /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-annual.nc 
+  --time 1979-01-01 2012-12-31 none
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
