@@ -97,7 +97,7 @@ if __name__ == '__main__':
     extra_info =""" 
 example (abyss.earthsci.unimelb.edu.au):
   cdat calc_composite.py /usr/local/uvcdat/1.3.0/bin/cdat calc_composite.py 
-  /mnt/meteo0/data/simmonds/dbirving/Merra/data/tas_Merra_surface_daily_native.nc tas 
+  /mnt/meteo0/data/simmonds/dbirving/Merra/data/tas_Merra_surface_daily-anom-wrt-1979-2012_native.nc tas 
   /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va.txt 
   /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-annual.nc 
   --time 1979-01-01 2012-12-31 none
