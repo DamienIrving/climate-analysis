@@ -13,10 +13,12 @@ dict_filter          -- Filter dictionary
 get_datetime         -- Return datetime instances for list of dates/times
 hi_lo                -- Update highest and lowest value
 list_kwargs          -- List keyword arguments of a function
+match_dates          --
 regrid_uniform       -- Regrid data to a uniform output grid
 running_average      -- Calculate running average
 scale_offset         -- Apply scaling and offset factors
 single2list          -- Check if item is a list, then convert if not
+split_dt             -- Split a getTime().asComponentTime() date/time into year, month and day parts
 temporal_aggregation -- Create a temporal aggregate of 
                         the input data (i.e. raw, climatology or anomaly)
 time_axis_check      -- Check whether 2 time axes are the same
@@ -64,6 +66,8 @@ except ImportError:
 #  was under version control directly ##
 #repo_dir = os.path.abspath(os.path.dirname(__file__))
 #MODULE_HASH = Repo(repo_dir).head.commit.hexsha
+
+import pdb
 
 
 ## Define regions ##
@@ -544,6 +548,41 @@ def list_kwargs(func):
     return details.args[-nopt:]
 
 
+
+def match_dates(dates, time_axis, invert_matching=False):
+    """Take a simple list of dates (e.g. 1979-01-01) and match with the corresponding
+    times in a more detailed time axis (e.g. 1979-01-01 12:00:0.0).
+    
+    (for the genutil picker to work correctly in nio.temporal_extract, the
+    date list must match perfectly)
+ 
+    Arguments:   
+      invert_matching = True  => return a list of time_axis values that aren't in dates
+                        False => return a list of time_axis values that are in dates
+    """
+    
+    dates_split = map(split_dt, dates)
+    time_axis_split = map(split_dt, time_axis)
+    
+    matches = []
+    misses = time_axis[:]  # creates a shallow copy
+    
+    for date in dates_split:
+        try:
+            index = time_axis_split.index(date)
+            if invert_matching:
+		misses.remove(time_axis[index])
+	    else:
+	        matches.append(time_axis[index])
+        except ValueError:
+	    pass	    
+
+    if invert_matching:
+        return misses
+    else:
+        return matches
+
+
 def normalise_data(indata, sub_mean=False):
     """Normalise data.
     
@@ -622,6 +661,15 @@ def single2list(item, numpy_array=False):
         return output
 
 
+def split_dt(dt):
+    """Split a getTime().asComponentTime() date/time into year, month and day parts"""
+    
+    date = str(dt).split()[0]
+    year, month, day = date.split('-')
+    
+    return (int(year), int(month), int(day))
+
+
 def _subset_data(infile, var_id, **kwargs):
     """Take a subset of the infile data
     
@@ -688,6 +736,10 @@ def _subset_data(infile, var_id, **kwargs):
 	    #make the date range selection
 	    if valid_trange:
 		data = data(time=date_selector)
+
+            #reinstate stripped attributes
+	    for att in infile.listattribute(vname=var_id):
+	        setattr(data, att, infile.getattribute(var_id, att))
 
 	elif valid_trange:
 	    kwargs['time'] = kwargs['time'][0:2]

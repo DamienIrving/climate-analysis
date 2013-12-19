@@ -95,6 +95,7 @@ def extract_data(file_list, region='dateline', convert=False):
 
     Positional arguments:
       file_list  -- List of tuples containing:
+                    (file_name, var), or
                     (file_name, var, start, end, months)
 
     Keyword arguments:
@@ -106,16 +107,20 @@ def extract_data(file_list, region='dateline', convert=False):
     if not file_list:
         return None
 
-    assert len(file_list[0]) == 5
+    assert len(file_list[0]) == 5 or len(file_list[0]) == 2
     assert region in nio.regions.keys()
 
     new_list = []
     for item in file_list:
         fname = item[0]
         var = item[1]
-        tselect = (item[2:5])
-
-        data = nio.InputData(fname, var, time=tselect, region=region, convert=convert).data
+	
+	if len(item) > 2:
+             tselect = (item[2:5])
+             data = nio.InputData(fname, var, time=tselect, region=region, convert=convert).data
+        else:
+	     data = nio.InputData(fname, var, region=region, convert=convert).data
+       
        
         #Data must be two dimensional 
         if (re.match('^t', data.getOrder())):
@@ -124,7 +129,7 @@ def extract_data(file_list, region='dateline', convert=False):
             data = MV2.average(data, axis=0)
 
 	assert (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0, \
-	'''Longitude values must not be replicated (e.g. you can't have 0 and 360)'''  
+	"""Longitude values must not be replicated (e.g. you can't have 0 and 360)"""  
 
         new_list.append(data)
 
@@ -481,7 +486,7 @@ def multiplot(indata,
         if units in units_dict.keys():
             cb.set_label(units_dict[units])
 	else:
-	    cb.set_label(units)
+	    cb.set_label(units.replace("_", " "))
     
     if ofile:
         plt.savefig(ofile, dpi=dpi, transparent=transparent)

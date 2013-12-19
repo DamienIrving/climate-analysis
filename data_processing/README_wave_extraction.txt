@@ -89,18 +89,31 @@ va 0 below
 
 6c. Parse that list of dates and calculate some date-based statistics (monthly totals etc)
 
-parse_dates.py 
-
+/usr/local/uvcdat/1.2.0/bin/cdat parse_dates.py 
+hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt
 
 
 7a. Calculate a composite based on a list of dates
 
-calc_composite.py
+/usr/local/uvcdat/1.3.0/bin/cdat calc_composite.py 
+/mnt/meteo0/data/simmonds/dbirving/Merra/data/tas_Merra_surface_daily-anom-wrt-1979-2012_native.nc tas 
+/mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va.txt 
+/mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-annual.nc --time 1979-01-01 2012-12-31 none
+
+...then plot that composite
+
+/usr/local/uvcdat/1.3.0/bin/cdat plot_composite.py 
+hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-annual.nc
+hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-DJF.nc
+hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-MAM.nc
+hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-JJA.nc
+hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-SON.nc
+--ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0
 
 
 7b. Compare some date-based statistics to another metric 
 
-plot_timeseries.py 
+plot_timeseries.py??
 
 
 
