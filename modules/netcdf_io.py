@@ -735,6 +735,10 @@ def _subset_data(infile, var_id, **kwargs):
 	    if valid_trange:
 		data = data(time=date_selector)
 
+            #reinstate stripped attributes
+	    for att in infile.listattribute(vname=var_id):
+	        setattr(data, att, infile.getattribute(var_id, att))
+
 	elif valid_trange:
 	    kwargs['time'] = kwargs['time'][0:2]
 	    data = infile(var_id, **kwargs)
