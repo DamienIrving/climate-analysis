@@ -210,10 +210,11 @@ if __name__ == '__main__':
 
     extra_info =""" 
 example:
-    python parse_dates.py 
-    hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt 
+    /usr/local/uvcdat/1.2.0/bin/cdat parse_dates.py 
+    hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va.txt 
+    --bar_file hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_monthly-totals.png 
+    --line_file hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_seasonal-values.png
     --totals_file hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_monthly-totals.nc
-    --hist_file hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_monthly-totals.png
 
 note:
     Assumes daily or higher timescale input data
@@ -232,9 +233,9 @@ author:
     parser.add_argument("dates", type=str, help="Name of input file containing the list of dates")
     
     parser.add_argument("--start", type=int, nargs=2, metavar=('YEAR', 'MONTH'), default=(1979, 1), 
-                        help="Time start filter (e.g. 1979 1)")
+                        help="Time start filter [default = 1979 1]")
     parser.add_argument("--end", type=int, nargs=2, metavar=('YEAR', 'MONTHS'), default=(2012, 12),
-                        help="Time end filter (e.g. 2012 12)")
+                        help="Time end filter [default = 2012 12]")
     parser.add_argument("--bar_file", type=str, default=None,
                         help="Name of the .png output file for the bar chart of monthly totals")
     parser.add_argument("--line_file", type=str, default=None,
