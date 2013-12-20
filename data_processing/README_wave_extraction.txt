@@ -102,19 +102,20 @@ hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolu
 
 ...then plot that composite
 
-/usr/local/uvcdat/1.3.0/bin/cdat plot_composite.py 
-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-annual.nc
-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-DJF.nc
-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-MAM.nc
-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-JJA.nc
-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-SON.nc
---ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0
+/usr/local/uvcdat/1.2.0/bin/cdat plot_composite.py tas /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/tas-hov-vrot-env-w567_Merra_surface-250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-DJF.nc /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/tas-hov-vrot-env-w567_Merra_surface-250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-MAM.nc /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/tas-hov-vrot-env-w567_Merra_surface-250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-JJA.nc /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/tas-hov-vrot-env-w567_Merra_surface-250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-SON.nc  
+--headings DJF MAM JJA SON 
+--ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0.0 0.5 1.0 1.5 2.0 2.5 3.0 
+--units temperature_anomaly 
+--ofile test_composite_seasons.png 
+--contour_var sf 
+--contour_files /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/sf-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-DJF.nc /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/sf-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-MAM.nc /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/sf-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-JJA.nc /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/sf-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-SON.nc 
+--contour_ticks -30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30 
+--dimensions 2 2
 
 
 7b. Compare some date-based statistics to another metric 
 
 plot_timeseries.py??
-
 
 
 
