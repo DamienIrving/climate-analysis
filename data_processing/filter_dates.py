@@ -19,21 +19,28 @@ sys.path.insert(0, module_dir)
 import netcdf_io as nio
 import general_io as gio
 
-import pdb
 
+def filter_spatial_ave(filter_name, date_list, data_file, var, threshold, select):
+    """Filter the data according to a spatial averaged value.
+    
+    filter_name options:
+      west_antarctica   --  filter according to the sign of the meridional wind anomaly
+                            over the region 110W to 75W and 65S to 75S. This is an 
+			    approximate area based on the findings of Ding2013 and you'd 
+			    expect there to be a signal in autumn
+      tropical_pacific  --  filter according to the sign of the SST anomaly
+                            over the region 180 to 240E and 5S to 5N. This is an 
+			    approximate area based on the findings of Ding2013
 
-def west_antarctica_filter(date_file, data_file, var, threshold, select):
-    """Filter according to the sign of the meridional wind anomaly
-    over the region 110W to 75W and 65S to 75S. This is an approximate
-    area based on the findings of Ding2013 and you'd expect there to be 
-    a signal in autumn.
     """  
-       
+    
     # Read meridional wind data and extract region of interest
-    indata = nio.InputData(data_file, var, latitude=(-75, -65, 'cc'), longitude=(250, 285, 'cc'))
+    bounds = {'west_antarctica': [(-75, -65, 'cc'), (250, 285, 'cc')],
+              'tropical_pacific': [(-5, 5, 'cc'), (180, 240, 'cc')],}
+    lats, lons = bounds[filter_name]
+    indata = nio.InputData(data_file, var, latitude=lats, longitude=lons)
     
     # Select data corresponding to input date list
-    date_list = gio.read_dates(date_file)
     matching_date_list = nio.match_dates(date_list, indata.data.getTime().asComponentTime())
     input_selection = nio.temporal_extract(indata.data, matching_date_list, indexes=False) 
     
@@ -52,20 +59,16 @@ def west_antarctica_filter(date_file, data_file, var, threshold, select):
 
 def main(inargs):
     """Run program."""
-
-    # Read dates
+	       
     date_list = gio.read_dates(inargs.dates)
-
-    # Perform additional filtering
-    filters = {'west_antarctica': west_antarctica_filter,}
-
-    filter_func = filters[inargs.filter]
-    new_date_list = filter_func(inargs.dates, 
-                                inargs.infile, inargs.var, 
-                                inargs.threshold, inargs.selection)
+    for ifilter in inargs.filter:
+	filter_name infile, var, threshold, selection = ifilter
+        date_list = filter_spatial_ave(filter_name, date_list, 
+                                       infile, var, 
+                                       threshold, selection)
     
     # Write output file
-    gio.write_dates(inargs.outfile, new_date_list)
+    gio.write_dates(inargs.outfile, date_list)
 
 
 if __name__ == '__main__':
@@ -74,9 +77,17 @@ if __name__ == '__main__':
 example:
   /usr/local/uvcdat/1.3.0/bin/cdat filter_dates.py 
   hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt 
-  west_antarctica 
-  /mnt/meteo0/data/simmonds/dbirving/Merra/data/va_Merra_250hPa_daily_native.nc va 
-  0 below
+  --filter west_antarctica /mnt/meteo0/data/simmonds/dbirving/Merra/data/va_Merra_250hPa_daily_native.nc va 0 below
+  --filter tropical_pacific /mnt/meteo0/data/simmonds/dbirving/Merra/data/tas_Merra_surface_daily_native.nc tas 0.5 above
+
+note:
+  Mutliple filters can be applied, each with five arguments supplied:
+    - name: west_antarctica, tropical_pacific
+    - infile: file containing data to be used for the filtering method 
+    - var: variable to extract from the infile
+    - threshold: threshold value against which the selection is made
+    - selection: segment of the selection to retain (i.e. 'above' or 'below' threshold)
+        
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -91,17 +102,8 @@ author:
 
     parser.add_argument("dates", type=str, 
                         help="File containing dates of interest (one date per line)")
-    parser.add_argument("filter", type=str, choices=('west_antarctica',),  
-                        help="Method for filtering the list of dates (can be none)")
-    parser.add_argument("infile", type=str,
-                        help="File containing data to be used for the filtering method")
-    parser.add_argument("var", type=str,
-                        help="Variable to extract from file")
-    parser.add_argument("threshold", type=float,  
-                        help="Threshold value against which the selection is made")
-    parser.add_argument("selection", type=str, choices=('above', 'below'),  
-                        help="Segment of the selection to retain (i.e. above or below threshold)")   
-
+    parser.add_argument("--filter", type=str, nargs=5, action='append',  
+                        help="Filter details (name, infile, var, threshold, selection)") 
     parser.add_argument("--outfile", type=str, default='test.txt',
                         help="Name of output file")   
                         
