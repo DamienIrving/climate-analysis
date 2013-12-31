@@ -1,12 +1,12 @@
 ## [UV-CDAT](http://uvcdat.llnl.gov/)
 
 The simplest option for installing UV-CDAT is to 
-[download]((http://sourceforge.net/projects/cdat/files/Releases/UV-CDAT/) the binary file 
+[download](http://sourceforge.net/projects/cdat/files/Releases/UV-CDAT/) the binary file 
 that best matches your operating system and follow the 
-[installation instructions](https://github.com/UV-CDAT/uvcdat/wiki/Install-Binaries). The 
+[binary installation instructions](https://github.com/UV-CDAT/uvcdat/wiki/Install-Binaries). The 
 other option is to install from the 
 [source code on github](https://github.com/UV-CDAT/uvcdat), following the relevant 
-[instructions](https://github.com/UV-CDAT/uvcdat/wiki/Building-UVCDAT).
+[build instructions](https://github.com/UV-CDAT/uvcdat/wiki/Building-UVCDAT).
 
 ### System requirements
 
@@ -43,9 +43,7 @@ is the process I followed to try and install via source code:
 
 1. Clone the UV-CDAT repo: `git clone git://github.com/UV-CDAT/uvcdat.git`
 
-2. Create a build directory 
-        mkdir build-uvcdat
-        cd build-uvcdat
+2. Create a build directory: `mkdir build-uvcdat; cd build-uvcdat`
 
 3. Run the CMake GUI: `cmake-gui ../uvcdat`. For this I clicked the *configure* icon and
    selected the *Unix Makefiles* generator and *default native compilers*. A number of red
