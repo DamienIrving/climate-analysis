@@ -1,0 +1,44 @@
+[INFO] We reset your path to: /Users/dbirving/Software/uvcdat-build/install/Externals/bin:/Users/dbirving/Software/uvcdat-build/install/Externals/bin:/Users/dbirving/Software/uvcdat-build/install/Externals/bin:/usr/bin/anaconda/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin:/usr/local/git/bin:/usr/X11/bin
+[INFO] Updating git submodules
+checking for module 'cairo>=1.7.4'
+  package 'cairo>=1.7.4' not found
+CMAKE_Fortran_COMPILER_ID = 'GNU'.
+Fortran_VERSION = '4.6.0'
+Fortran_COMP_LIB_SUBDIR = gfortran4.6
+RESULTS FOR cmake detected fortran implicit libraries:
+  CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES= 
+  CMAKE_Fortran_IMPLICIT_LINK_DIRECTORIES= 
+RESULTS FOR fortran implicit libraries after removing duplicates and wrapper libraries:
+  Fortran_IMPLICIT_LIBRARIES         = 
+  Fortran_IMPLICIT_LIBRARY_NAMES     = 
+  Fortran_IMPLICIT_LIBRARY_DIRS      = 
+  Fortran_IMPLICIT_LIBFLAGS          = 
+Compiling trycompile/modulesrcfile.f90.
+  Fortran_COMPILER_NAME              = gfortran
+  TX_FC_MODULENAME_CAPITALIZED       = FALSE
+  TX_FC_MODULE_SUFFIX                = mod
+  CMAKE_Fortran_FLAGS_FULL           = -fPIC -O3
+  CMAKE_Fortran_FLAGS_RELEASE        = -fPIC -O3
+  CMAKE_Fortran_FLAGS_RELWITHDEBINFO = -O2 -g -DNDEBUG
+  CMAKE_Fortran_FLAGS_DEBUG          = -fPIC -O0 -g -Wp,-DDEBUG
+  CMAKE_Fortran_FLAGS                =  -ffixed-line-length-132 -fopenmp -pipe
+Could not detect osgeo, 
+Could not detect matplotlib, 
+[INFO] Could not system mpi4py, 
+Unable to determine MPI from MPI driver /usr/bin/mpif90
+[INFO] version 2.7.4 of PYTHON is required by UVCDAT
+[INFO] Building python at /Users/dbirving/Software/uvcdat-build/install/bin/python
+CMake Error at /Applications/CMake 2.8-12.app/Contents/share/cmake-2.8/Modules/FindPackageHandleStandardArgs.cmake:108 (message):
+  Could NOT find Qt4 (missing: QT_MOC_EXECUTABLE QT_RCC_EXECUTABLE
+  QT_UIC_EXECUTABLE) (found suitable version "4.8.5", minimum required is
+  "4.7.2")
+Call Stack (most recent call first):
+  /Applications/CMake 2.8-12.app/Contents/share/cmake-2.8/Modules/FindPackageHandleStandardArgs.cmake:315 (_FPHSA_FAILURE_MESSAGE)
+  /Applications/CMake 2.8-12.app/Contents/share/cmake-2.8/Modules/FindQt4.cmake:1393 (FIND_PACKAGE_HANDLE_STANDARD_ARGS)
+  CMake/cdat_modules/qt4_pkg.cmake:2 (find_package)
+  CMakeLists.txt:395 (include)
+
+
+Configuring incomplete, errors occurred!
+See also "/Users/dbirving/Software/uvcdat-build/CMakeFiles/CMakeOutput.log".
+See also "/Users/dbirving/Software/uvcdat-build/CMakeFiles/CMakeError.log".
