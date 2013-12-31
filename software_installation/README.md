@@ -19,7 +19,10 @@ problems. This is what I've currently installed on my Mac:
 
 * **cmake 2.8.12.1** downloaded from [here](http://www.cmake.org/cmake/resources/software.html#latest)
 * **Qt 4.8.5** downloaded from [here](http://qt-project.org/downloads)
-* **gfortran** downloaded from the [UV-CDAT sourceforge page](http://sourceforge.net/projects/cdat/files/Releases/UV-CDAT/1.4/gfortran-Mac-intel.tar.bz2/download): `cd / ; sudo tar xjvf ~/Downloads/gfortran-Mac-intel.tar.bz2`
+* **gfortran** downloaded from the [UV-CDAT sourceforge page](http://sourceforge.net/projects/cdat/files/Releases/UV-CDAT/1.4/gfortran-Mac-intel.tar.bz2/download): 
+    
+        cd / 
+        sudo tar xjvf ~/Downloads/gfortran-Mac-intel.tar.bz2
 
 
 ### Binary installation issues - Mac OS X 10.6
@@ -39,20 +42,27 @@ get the following error:
 Following the [build instructions](https://github.com/UV-CDAT/uvcdat/wiki/Building-UVCDAT), 
 this is the process I followed to try and install via source code:
 
-1. Clone the UV-CDAT repo: `git clone git://github.com/UV-CDAT/uvcdat.git`
+1. Clone the UV-CDAT repo: 
 
-2. Create a build directory: `mkdir build-uvcdat; cd build-uvcdat`
+        git clone git://github.com/UV-CDAT/uvcdat.git
 
-3. Run the CMake GUI: `cmake-gui ../uvcdat`. For this I clicked the *configure* icon and
-   selected the *Unix Makefiles* generator and *default native compilers*. A number of red
-   lines appeared, so I changed the QT-QMAKE-EXECUTABLE from `/usr/bin/anaconda/bin/qmake` 
-   to `/usr/bin/qmake` and clicked *configure* again. All the red lines were now gone, 
-   however an error was raised (the details of the error are contained in 
-   CMake-GUI-output.log, CMakeError.log and CMakeOutput.log in this directory).
+2. Create a build directory: 
+
+        mkdir build-uvcdat 
+        cd build-uvcdat
+
+3. Run the CMake GUI: 
+
+        cmake-gui ../uvcdat 
+
+    Once the GUI opened, I clicked the *configure* icon and selected the *Unix Makefiles* 
+    generator and *default native compilers*. A number of red lines appeared, so I changed 
+    the QT-QMAKE-EXECUTABLE from `/usr/bin/anaconda/bin/qmake` to `/usr/bin/qmake` and 
+    clicked *configure* again. All the red lines were now gone, however an error was raised 
+    (the details of the error are contained in **CMake-GUI-output.log**, **CMakeError.log** and 
+    **CMakeOutput.log** in this directory).
    
-4. I went back to the terminal and ran `make`, however nothing happened (presumably because
-   of the errors encountered in step 3).
-
+4. Go back to the terminal and run `make` (however nothing happened, presumably because of the errors encountered in step 3).
 
 
 ## Iris
@@ -66,7 +76,7 @@ this is the process I followed to try and install via source code:
         libjasper-dev libfreetype6-dev tk-dev python-tk cython python-scipy matplotlib
         python-nose python-pyke python-mock python-sphinx python-shapely python-pip
 
-    Some additional ones using `sudo pip`:
+   Some additional ones using `sudo pip`:
         
         netCDF4
 
