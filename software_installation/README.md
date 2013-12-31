@@ -69,14 +69,13 @@ this is the process I followed to try and install via source code:
 
 ### Ubuntu 13.04
 
-1. Install the required dependencies. Following the [installation recipes](https://github.com/SciTools/installation-recipes) I installed 
-   the following using either `sudo apt-get install` or the Ubuntu Software Centre: 
+1. Install the required dependencies. Following the [installation recipes](https://github.com/SciTools/installation-recipes) I installed the following using either `sudo apt-get install` or the Ubuntu Software Centre: 
         
         git libhdf5-serial-dev libnetcdf-dev libudunits2-dev libgeos-dev libproj-dev
         libjasper-dev libfreetype6-dev tk-dev python-tk cython python-scipy matplotlib
         python-nose python-pyke python-mock python-sphinx python-shapely python-pip
 
-   Some additional ones using `sudo pip`:
+    Some additional ones using `sudo pip`:
         
         netCDF4
 
