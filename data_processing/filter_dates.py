@@ -50,7 +50,7 @@ def filter_spatial_ave(filter_name, date_list, data_file, var, threshold, select
 
     # Select data where mean meridional wind is less or more than threshold
     assert select in ['above', 'below']
-    test = spatial_ave < threshold if select == 'below' else spatial_ave > threshold
+    test = spatial_ave < float(threshold) if select == 'below' else spatial_ave > float(threshold)
     
     new_date_list = list(itertools.compress(matching_date_list, test))
     
@@ -62,7 +62,7 @@ def main(inargs):
 	       
     date_list = gio.read_dates(inargs.dates)
     for ifilter in inargs.filter:
-	filter_name infile, var, threshold, selection = ifilter
+	filter_name, infile, var, threshold, selection = ifilter
         date_list = filter_spatial_ave(filter_name, date_list, 
                                        infile, var, 
                                        threshold, selection)
@@ -78,7 +78,7 @@ example:
   /usr/local/uvcdat/1.3.0/bin/cdat filter_dates.py 
   hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt 
   --filter west_antarctica /mnt/meteo0/data/simmonds/dbirving/Merra/data/va_Merra_250hPa_daily_native.nc va 0 below
-  --filter tropical_pacific /mnt/meteo0/data/simmonds/dbirving/Merra/data/tas_Merra_surface_daily_native.nc tas 0.5 above
+  --filter tropical_pacific /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/tas_Merra_surface_daily-anom-wrt-1979-2012_native.nc tas 0.5 above
 
 note:
   Mutliple filters can be applied, each with five arguments supplied:
@@ -102,7 +102,7 @@ author:
 
     parser.add_argument("dates", type=str, 
                         help="File containing dates of interest (one date per line)")
-    parser.add_argument("--filter", type=str, nargs=5, action='append',  
+    parser.add_argument("--filter", type=str, nargs=5, action='append', metavar=('NAME', 'INFILE', 'VAR', 'THRESHOLD', 'SELECTION'), 
                         help="Filter details (name, infile, var, threshold, selection)") 
     parser.add_argument("--outfile", type=str, default='test.txt',
                         help="Name of output file")   

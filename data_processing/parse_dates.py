@@ -27,8 +27,6 @@ import general_io as gio
 
 import matplotlib.pyplot as plt
 
-import pdb
-
 
 def bin_dates(date_list, start, end):
     """Take a list of dates and return totals in bins, according to 
@@ -124,7 +122,7 @@ def plot_line_graph(monthly_values, year_bounds, ofile):
     ax.set_xlim(year_bounds[0], year_bounds[1])
     ax.set_xlabel('year')
     ax.set_ylabel('total days')
-    ax.legend(loc=7, fontsize='small', ncol=5)
+    ax.legend(loc=1, fontsize='small', ncol=5)
 
     plt.savefig(ofile)
 
