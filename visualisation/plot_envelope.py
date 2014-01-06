@@ -134,15 +134,14 @@ def main(inargs):
 if __name__ == '__main__':
 
     extra_info="""
-example (abyss.earthsci.unimelb.edu.au):
+example (vortex.earthsci.unimelb.edu.au):
     /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_envelope.py
-    /work/dbirving/test_data/vrot-env-w567_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360-np30-270.nc
-    env 30 270 0 0 
-    /work/dbirving/datasets/Merra/data/processed/ua_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc ua
-    /work/dbirving/datasets/Merra/data/processed/va_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc va
-    /work/dbirving/datasets/Merra/data/processed/sf_Merra_250hPa_monthly-anom-wrt-1979-2011_native.nc sf
-    /work/dbirving/test_data/env-w567-wind-sf_Merra_250hPa_monthly-anom-wrt-1979-2011_y181x360-native-np30-270
-
+    /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260.nc
+    env 20 260 0 0 daily 
+    --sf /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/sf_Merra_250hPa_daily-anom-wrt-all_native.nc sf
+    --ofile /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/figures/env/vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np26-260
+    --time 1981-06-01 1981-06-30 none
+    --search_paths 20 260 225 335 -10 10 5
 """
   
     description='Plot wave envelope and associated wind and streamfunction anomalies'
