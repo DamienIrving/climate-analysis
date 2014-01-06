@@ -112,8 +112,8 @@ def main(inargs):
 										            str(inargs.longitude[0]),
 										            str(inargs.longitude[1])) 
     var_atts = {'id': 'env',
-                'standard_name': 'envelope',
-		'long_name': 'Clipped Wave Envelope',
+                'long_name': 'envelope',  # this is the name that plot_hovmoller.py uses
+		'standard_name': 'Clipped Wave Envelope',
                 'units': 'm s-1',
                 'history': hx }
 		
