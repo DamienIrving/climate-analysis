@@ -407,7 +407,7 @@ def _define_order(infile, var_id, template='tyxz'):
      
     input_order = ''
     for dimension in infile.listdimension(vname=var_id):
-	if not dimension in ['bound', 'nv']:
+	if not dimension in ['bound', 'nv', 'nb2', 'time_bnds', 'tbnds']:
 	    input_order = input_order + infile.getAxis(dimension).axis.lower()
 
     order = copy.deepcopy(template)
@@ -524,7 +524,7 @@ def _infile_attribute_check(infile, var_id):
     # File dimension attributes #
     
     for dimension in infile.listdimension():
-	if not dimension in ['bound', 'nv', 'nb2']:
+	if not dimension in ['bound', 'nv', 'nb2', 'time_bnds', 'tbnds']:
 	    assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
 	    'Input dimensions must have an axis attribute that is X, Y, Z or T'
 
