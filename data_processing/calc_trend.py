@@ -14,6 +14,8 @@ import os
 import argparse
 
 import numpy
+
+import cdms2
 import genutil
 
 module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
@@ -33,6 +35,12 @@ def main(inargs):
         season_text = inargs.agg[1]
     except AttributeError:
         season_text = 'annual'
+    	
+    try:
+        name_text = indata.data.long_name
+    except AttributeError:
+        name_text = 'sea_surface_temperature' #indata.data.standard_name
+
     
     # Modify time axis so trend is per year
     
@@ -54,8 +62,8 @@ def main(inargs):
     slope, slope_error, pt1, pt2, pf1, pf2 = genutil.statistics.linearregression(new_data, axis='t', nointercept=1, error=3, probability=1)
 
     slope_atts = {'id': inargs.var,
-                  'long_name': 'Trend in %s' %(indata.data.long_name),
-                  'units': '%s per year' %(indata.data.units),
+                  'long_name': 'Trend in %s' %(name_text),
+                  'units': 'degC per year', #%(indata.data.units),
                   'history': 'Slope from genutil.statistics.linearregression for %s season ' %(season_text)}
 
 #    pval_atts = {'id': 'p',
@@ -81,8 +89,10 @@ if __name__ == '__main__':
 example (abyss.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.3.0/bin/cdat calc_trend.py 
   /work/dbirving/datasets/HadISST/data/tos_HadISST_surface_monthly_native.nc tos
-  test.nc
+  /work/dbirving/datasets/HadISST/data/processed/test_trend_MAM.nc
   --agg raw MAM 
+  --region tropics
+  --time 1979-01-01 2013-01-31
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
