@@ -13,6 +13,7 @@ import sys
 import os
 import argparse
 
+import numpy
 import genutil
 
 module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
@@ -23,22 +24,39 @@ import netcdf_io as nio
 def main(inargs):
     """Run the program."""
     
-    # Prepate input data #
+    # Read input data #
 
     indata = nio.InputData(inargs.infile, inargs.var, 
                            **nio.dict_filter(vars(inargs), ['time', 'region', 'agg']))
     
     try:
-        season = inargs.agg[1]
+        season_text = inargs.agg[1]
     except AttributeError:
-        season = 'annual'
+        season_text = 'annual'
     
-    slope, slope_error, pt1, pt2, pf1, pf2 = genutil.statistics.linearregression(indata.data, axis='t', nointercept=1, error=3, probability=1)
+    # Modify time axis so trend is per year
+    
+    ntimes = len(indata.data.getTime()[:])
+    tvals = range(0, ntimes)
+    time_axis = cdms2.createAxis(tvals)
+    time_axis.id = 'time'
+    time_axis.standard_name = 'time'
+    time_axis.calendar = 'standard' 
+    time_axis.units = 'years since 1979'
+    time_axis.axis = 'T'
+
+    new_data = cdms2.createVariable(numpy.array(indata.data), 
+                                    grid=indata.data.getGrid(), 
+				    axes=(time_axis, indata.data.getLatitude(), indata.data.getLongitude()))
+
+    # Calculate the trend
+    
+    slope, slope_error, pt1, pt2, pf1, pf2 = genutil.statistics.linearregression(new_data, axis='t', nointercept=1, error=3, probability=1)
 
     slope_atts = {'id': inargs.var,
-                  'long_name': 'Trend in %s' %(inargs.var),
-                  'units': 'K',  #'%s per year' %(indata.data.units),
-                  'history': 'Slope from genutil.statistics.linearregression for %s season ' %(season)}
+                  'long_name': 'Trend in %s' %(indata.data.long_name),
+                  'units': '%s per year' %(indata.data.units),
+                  'history': 'Slope from genutil.statistics.linearregression for %s season ' %(season_text)}
 
 #    pval_atts = {'id': 'p',
 #                 'long_name': 'Two-tailed p-value',
