@@ -776,6 +776,12 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
 
     Reference:
     http://www2-pcmdi.llnl.gov/cdat/source/api-reference/cdutil.times.html
+    
+    Notes:
+    - The cdutil season averager is smart and accounts for the number of days
+      in each month (i.e. months with more days are weighted more heavily in
+      the average)
+    
     """
 
     assert isinstance(data, cdms2.tvariable.TransientVariable)
@@ -819,11 +825,11 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
         season = cdutil.times.Seasons(output_timescale)
 
     if output_quantity == 'raw':
-        outdata = season(data)
+        outdata = season(data, criteriaarg=[1.0, None])   #e.g. means for DJF, the D, J and F data must all be available or else set to missing
     elif output_quantity == 'climatology':
-        outdata = season.climatology(data)
+        outdata = season.climatology(data, criteriaarg=[1.0, None])
     elif output_quantity == 'anomaly':
-        clim = season.climatology(data(time=time_period)) if time_period else season.climatology(data)
+        clim = season.climatology(data(time=time_period), criteriaarg=[1.0, None]) if time_period else season.climatology(data, criteriaarg=[1.0, None])
 	assert type(clim) != type(None), \
 	'Input data are of insufficient temporal extent to calculate climatology'	
         outdata = season.departures(data, ref=clim)
