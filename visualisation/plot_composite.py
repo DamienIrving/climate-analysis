@@ -41,6 +41,7 @@ def main(inargs):
 
     pm.multiplot(indata_list,
                  dimensions=inargs.dimensions,
+		 region=inargs.region,
 		 ofile=inargs.ofile,
 		 units=inargs.units,
 		 img_headings=inargs.headings,
