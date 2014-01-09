@@ -105,7 +105,7 @@ def plot_bar_chart(monthly_totals, nyears, ofile):
     plt.savefig(ofile)
 
 
-def plot_line_graph(monthly_values, year_bounds, ofile):
+def plot_line_graph(monthly_values, year_bounds, ofile, legend_loc):
     """Plot a line graph showing the seasonal values for each year"""
     
     seasonal_values = calc_seasonal_values(monthly_values)
@@ -122,12 +122,12 @@ def plot_line_graph(monthly_values, year_bounds, ofile):
     ax.set_xlim(year_bounds[0], year_bounds[1])
     ax.set_xlabel('year')
     ax.set_ylabel('total days')
-    ax.legend(loc=1, fontsize='small', ncol=5)
+    ax.legend(loc=legend_loc, fontsize='small', ncol=5)
 
     plt.savefig(ofile)
 
 
-def show_summary(histogram, bar_file=False, line_file=False, year_bounds=None):
+def show_summary(histogram, bar_file=False, line_file=False, year_bounds=None, leg_loc=7):
     """Print summary statistics to the screen and generate plots if requested"""
 
     # Calculate monthly totals and values
@@ -150,7 +150,7 @@ def show_summary(histogram, bar_file=False, line_file=False, year_bounds=None):
 	    plot_bar_chart(monthly_totals, nyears, bar_file)
 
         if line_file:
-	    plot_line_graph(monthly_values, year_bounds, line_file)
+	    plot_line_graph(monthly_values, year_bounds, line_file, leg_loc)
 
 	
 
@@ -197,7 +197,7 @@ def main(inargs):
     histogram = bin_dates(date_list, inargs.start, inargs.end)
     
     # Print summary stats to screen and plot if desired
-    show_summary(histogram, inargs.bar_file, inargs.line_file, (inargs.start[0], inargs.end[0]) )
+    show_summary(histogram, inargs.bar_file, inargs.line_file, (inargs.start[0], inargs.end[0]), inargs.leg_loc)
     
     # Write the output file
     if inargs.totals_file:
@@ -240,6 +240,8 @@ author:
                         help="Name of the .png output file for the line graph of seasonal values")
     parser.add_argument("--totals_file", type=str, default=None,
                         help="Name of the netCDF output file for the monthly totals")    
+    parser.add_argument("--leg_loc", type=int, default=7,
+                        help="Location of legend for line graph [default = 7 = centre right]")
 
 
     args = parser.parse_args()            
