@@ -34,6 +34,8 @@ def filter_spatial_ave(filter_name, date_list, data_file, var, threshold, select
 
     """  
     
+    print float(threshold)
+    
     # Read meridional wind data and extract region of interest
     bounds = {'antarctic_peninsula': [(-75, -65, 'cc'), (270, 310, 'cc')],
               'marie_byrd_land': [(-75, -70, 'cc'), (200, 260, 'cc')],
@@ -80,6 +82,7 @@ example:
   hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt 
   --filter antarctic_peninsula /mnt/meteo0/data/simmonds/dbirving/Merra/data/va_Merra_250hPa_daily_native.nc va 0 below
   --filter tropical_pacific /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/tas_Merra_surface_daily-anom-wrt-1979-2012_native.nc tas 0.5 above
+  --outfile hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates-filter-antarctic-peninsula-va-below-0.txt
 
 note:
   Mutliple filters can be applied, each with five arguments supplied:

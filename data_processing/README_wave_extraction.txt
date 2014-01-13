@@ -81,10 +81,8 @@ hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolu
 6b. Further filter the list of dates
 
 /usr/local/uvcdat/1.2.0/bin/cdat filter_dates.py /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt 
-west_antarctica 
-/mnt/meteo0/data/simmonds/dbirving/Merra/data/va_Merra_250hPa_daily_native.nc 
-va 0 below
-/mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va.txt
+--filter marie_byrd_land /mnt/meteo0/data/simmonds/dbirving/Merra/data/va_Merra_250hPa_daily_native.nc va -5.0 below 
+--outfile /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates-filter-marie-byrd-land-va-below-neg5.txt
 
 
 6c. Parse that list of dates and calculate some date-based statistics (monthly totals etc)
@@ -97,6 +95,8 @@ hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolu
 
 
 7a. Calculate a composite based on a list of dates
+
+(can use calc_composite.sh)
 
 /usr/local/uvcdat/1.3.0/bin/cdat calc_composite.py 
 /mnt/meteo0/data/simmonds/dbirving/Merra/data/tas_Merra_surface_daily-anom-wrt-1979-2012_native.nc tas 
