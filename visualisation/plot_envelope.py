@@ -26,8 +26,8 @@ import MV2
 def extract_data(inargs):
     """Extract input data and check that time axes match"""
 
-    env_data = nio.InputData(inargs.env_file, inargs.env_var, 
-                             **nio.dict_filter(vars(inargs), ['time', 'region']))
+    env_data = nio.InputData(inargs.env_file, inargs.env_var, region='world-psa',
+                             **nio.dict_filter(vars(inargs), ['time',]))
     env_times = env_data.data.getTime().asComponentTime()    
 
     opt_data = {}
@@ -35,7 +35,8 @@ def extract_data(inargs):
         try:
             opt_data[opt] = nio.InputData(eval('inargs.'+opt+'[0]'), 
                                           eval('inargs.'+opt+'[1]'), 
-                                          **nio.dict_filter(vars(inargs), ['time', 'region']))
+					  region='world-psa',
+                                          **nio.dict_filter(vars(inargs), ['time',]))
         except AttributeError:
             opt_data[opt] = None
     
@@ -112,7 +113,7 @@ def main(inargs):
         plot_map.multiplot(env_data,
 		           ofile=ofile,
 		           title=title,
-			   region=inargs.region,
+			   region='sh-psa',
 		           units='$m s^{-1}$',
                            draw_axis=True,
 		           delat=30, delon=30,
@@ -180,8 +181,6 @@ example (vortex.earthsci.unimelb.edu.au):
                         help="Map projection [default: nsper]")
     parser.add_argument("--image_size", type=float, default=9, 
                         help="size of image [default: 9]")
-    parser.add_argument("--region", type=str, choices=nio.regions.keys(), default='world-psa',
-                        help="name of region to plot [default: world-psa]")
 
     parser.add_argument("--sf_ticks", type=float, nargs='*', default=[-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30], 
                         help="list of tick marks for sf contours, or just the number of contour lines")
