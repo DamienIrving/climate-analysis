@@ -7,7 +7,7 @@ Functions/methods tested:
 """
 import os, sys
 
-from mpl_toolkits.basemap import Basemap
+from mpl_toolkits.basemap import Basemap, shiftgrid
 import matplotlib.pyplot as plt
 import matplotlib
 
@@ -82,8 +82,6 @@ def plot_axis_switch(new_np, pm):
 
     title = 'Axis switch for NP %sN, %sE' %(str(new_np[0]), str(new_np[1])) 
 
-    plot_search_path(rotated_lat_data, new_np)
-
     # Latitude plot
     plot_lat_list = [orig_lat_data, rotated_lat_data, returned_lat_data]
     plot_map.multiplot(plot_lat_list,
@@ -103,22 +101,38 @@ def plot_axis_switch(new_np, pm):
                        draw_axis=True, delat=15, delon=30, equator=True)
 
 
-def plot_search_path(rotated_lat_data, new_np):
+def plot_search_path(new_np, pm):
     """Plot the wave extraction search path"""
     
-    bmap = Basemap(llcrnrlon=0, llcrnrlat=-90, urcrnrlon=360, urcrnrlat=90, projection='cyl')
-    bmap.drawcoastlines()
-    bmap.drawparallels(numpy.arange(-90,90,30), labels=[1,0,0,0], color='grey', dashes=[1,3])
-    bmap.drawmeridians(numpy.arange(0,360,45), labels=[0,0,0,1], color='grey', dashes=[1,3])
-    matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
+    # Create the data
+    orig_lat_data, orig_lon_data = create_latlon_dataset()
+    rotated_lat_data, returned_lat_data = switch_and_restore(orig_lat_data, new_np, pm)
     
-    lons, lats = numpy.meshgrid(rotated_lat_data.getLongitude()[:],
-                                rotated_lat_data.getLatitude()[:])
-    x, y = bmap(lons, lats)
-    im = bmap.contour(x, y, rotated_lat_data, [-20.0, -15.0, -10.0, -5.0, 0, 5.0, 10.0, 15.0, 20.0], colors='k')
-    plt.clabel(im, fontsize=5, inline=1, fmt='%.1f')  
+    data = rotated_lat_data
+    data_lon = rotated_lat_data.getLongitude()[:]
+    data_lat = rotated_lat_data.getLatitude()[:]
     
-    plt.savefig('search_paths_%sN_%sE.png' %(str(new_np[0]), str(new_np[1])))
+    for proj in ['cyl', 'nsper']:
+        if proj == 'cyl':
+            bmap = Basemap(llcrnrlon=0, llcrnrlat=-90, urcrnrlon=360, urcrnrlat=90, projection='cyl') 
+            bmap.drawparallels(numpy.arange(-90, 90, 30), labels=[1, 0, 0, 0], color='grey', dashes=[1, 3])
+            bmap.drawmeridians(numpy.arange(0, 360, 45), labels=[0, 0, 0, 1], color='grey', dashes=[1, 3])
+        else:
+            h = 3000000  #height of satellite
+            bmap = Basemap(projection='nsper', lat_0=-45, lon_0=-125, satellite_height=h*1000.)
+	    data, data_lon = shiftgrid(180., data, data_lon, start=False)
+    
+	bmap.drawcoastlines()
+	matplotlib.rcParams['contour.negative_linestyle'] = 'solid'
+
+	lons, lats = numpy.meshgrid(data_lon, data_lat)
+	x, y = bmap(lons, lats)
+	lines = [0.0,] #[-20.0, -15.0, -10.0, -5.0, 0, 5.0, 10.0, 15.0, 20.0]
+	im = bmap.contour(x, y, data, lines, colors='k')
+	plt.clabel(im, fontsize=5, inline=1, fmt='%.1f')  
+
+        print proj
+	plt.savefig('search_paths_%sN_%sE_%s.png' %(str(new_np[0]), str(new_np[1]), proj))
 
 
 def plot_real_data(new_np, pm):
@@ -172,7 +186,7 @@ if __name__ == '__main__':
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("north_pole_lat", type=float, help="Latitude of north pole")
     parser.add_argument("north_pole_lon", type=float, help="Longitude of north pole")
-    parser.add_argument("plot_type", type=str, choices=('latlon_switch', 'real_switch'),  
+    parser.add_argument("plot_type", type=str, choices=('latlon_switch', 'real_switch', 'search_path'),  
                         help="Type of plot")
     parser.add_argument("--pm", type=float, nargs=2, metavar=('LAT', 'LON'), default=(0.0, 0.0),
                         help="Location of the prime meridian point")	
@@ -182,5 +196,7 @@ if __name__ == '__main__':
     new_np = [args.north_pole_lat, args.north_pole_lon]
     if args.plot_type == 'real_switch':
         plot_real_data(new_np, args.pm)    
-    else:
+    elif args.plot_type == 'latlon_switch':
         plot_axis_switch(new_np, args.pm)
+    elif args.plot_type == 'search_path':
+        plot_search_path(new_np, args.pm) 
