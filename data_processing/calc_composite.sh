@@ -3,13 +3,13 @@
 data_path=/mnt/meteo0/data/simmonds/dbirving/Merra/data/processed
 base=hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates-filter
 
-for var in sf tas ; do
+for var in tas ; do
     for region in marie-byrd-land antarctic-peninsula ; do
         for season in DJF MAM JJA SON ; do
     
             if [ "${var}" = "sf" ]; then
                 infile=${data_path}/sf_Merra_250hPa_daily-anom-wrt-all_native.nc
-            elif [ "${var}" -eq "tas" ]; then
+            elif [ "${var}" = "tas" ]; then
 	        infile=${data_path}/tas_Merra_surface_daily-anom-wrt-1979-2012_native.nc
             fi
     
