@@ -38,6 +38,8 @@ def main(inargs):
     else:
         contourdata_list = None
 
+    if not inargs.units:
+        inargs.units = 'temperature anomaly (Celsius)'
 
     pm.multiplot(indata_list,
                  dimensions=inargs.dimensions,
@@ -116,8 +118,8 @@ example (abyss.earthsci.unimelb.edu.au):
     # Region/projection
     parser.add_argument("--projection", type=str, default='nsper', choices=['cyl', 'nsper'],
                         help="Map projection [default: nsper]")
-    parser.add_argument("--region", type=str, choices=nio.regions.keys(), default='world-psa',
-                        help="Region over which plot the composite [default = world_psa]")
+    parser.add_argument("--region", type=str, choices=nio.regions.keys(), default='sh-psa-extra',
+                        help="Region over which plot the composite [default = sh-psa-extra]")
     
     # Headings/labels
     parser.add_argument("--headings", type=str, nargs='*', default=None,
