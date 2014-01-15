@@ -90,7 +90,7 @@ def _decimal_places(diff):
     return int(dec)
 
 
-def extract_data(file_list, region='dateline', convert=False):
+def extract_data(file_list, region='world-dateline', convert=False):
     """Create list of nio.InputData.data instances.
 
     Positional arguments:
@@ -128,9 +128,9 @@ def extract_data(file_list, region='dateline', convert=False):
 	        print 'WARNING data for %s has a time axis (len = %s), results displayed will be the temporal average'  %(fname, len(data.getTime()))
             data = MV2.average(data, axis=0)
 
-	assert (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0, \
-	"""Longitude values must not be replicated (e.g. you can't have 0 and 360)"""  
-
+        if not (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0:
+	    print 'WARNING: There are duplicate longitude values (which is useful for sterographic plots but sometimes problematic otherwise)'  
+	
         new_list.append(data)
 
     return new_list  
@@ -274,8 +274,8 @@ def multiplot(indata,
 
     # Perform initial checks #
  
-    assert projection in ['cyl', 'nsper'], \
-    'Map projection must be cylindrical (cyl) or near sided perspective (nsper)'
+    assert projection in ['cyl', 'nsper', 'spstere', 'npstere'], \
+    'Map projection must be cylindrical (cyl), near sided perspective (nsper), or polar sterographic (spstere, npstere)'
 
     assert quiver_type in ['wind', 'waf'], \
     'Quiver type must me wind or wave activity flux (waf)' 
@@ -351,7 +351,7 @@ def multiplot(indata,
 	    if(col == 0 and row_headings):
                 fig.text(sizes['hpadding'], 
 		         sizes['colourbar'] + sizes['cbarbuffer'] + (row * (sizes['totpheight'] + sizes['vpadding'])) + sizes['pheight']/2.,
-		         row_headings[row],
+		         row_headings[row].replace('_', ' '),
 			 size=sizes['rowcolfsize'],
 			 rotation='vertical',
 			 horizontalalignment='left',
@@ -361,7 +361,7 @@ def multiplot(indata,
                 fig.text(sizes['hpadding'] + sizes['row_heading'] + sizes['inline_heading'] + sizes['tpadding'] + \
                          (col * (sizes['totpwidth'] + sizes['hpadding'])) + sizes['pwidth']/2.,
                          sizes['colourbar'] + sizes['cbarbuffer'] + ((row+1) * (sizes['totpheight'] + sizes['vpadding'])),
-                         col_headings[col],
+                         col_headings[col].replace('_', ' '),
                          size=sizes['rowcolfsize'],
                          rotation='horizontal',
                          horizontalalignment='center')
@@ -379,14 +379,19 @@ def multiplot(indata,
 	    # Plot the axes and map #
 	    
 	    if projection == 'cyl':
-		bmap = Basemap(llcrnrlon=minlon, llcrnrlat=minlat, urcrnrlon=maxlon, urcrnrlat=maxlat, \
-                               resolution=res, area_thresh=area_threshold, projection='cyl')
+		bmap = Basemap(llcrnrlon=minlon, llcrnrlat=minlat, urcrnrlon=maxlon, urcrnrlat=maxlat,
+		               resolution=res, area_thresh=area_threshold, projection='cyl')
 		#data, data_lon = shiftgrid(minlon, data, data_lon, start=True)
-            elif projection == 'nsper':
+            
+	    elif projection == 'nsper':
 	        h = 3000000  #height of satellite
 		bmap = Basemap(projection='nsper', lat_0=centre[0], lon_0=centre[1], satellite_height=h*1000., 
                                resolution=res, area_thresh=area_threshold)
 		data, data_lon = shiftgrid(180., data, data_lon, start=False)
+	    
+	    elif projection == 'spstere':
+		bmap = Basemap(projection='spstere', boundinglat=-31, lon_0=180, resolution=res, area_thresh=area_threshold)	    
+	    
 	    else:
 	        print 'Map projection not recognised'
 		sys.exit(0)
@@ -438,10 +443,10 @@ def multiplot(indata,
             # Print the inline row and column headers #
 
             if img_headings_dict:
-                plt.title(img_headings_dict[row, col], size=sizes['inlinerowcolfsize'])
+                plt.title(img_headings_dict[row, col].replace('_', ' '), size=sizes['inlinerowcolfsize'])
             
 	    if inline_row_headings_dict:
-	        plt.ylabel(inline_row_headings_dict[row, col], size=sizes['inlinerowcolfsize'])
+	        plt.ylabel(inline_row_headings_dict[row, col].replace('_', ' '), size=sizes['inlinerowcolfsize'])
 
 	    
             # Draw the gridlines #
@@ -1003,7 +1008,7 @@ improvements:
                         help="draw the search paths for the specified north pole [default: None]")
     parser.add_argument("--image_size", type=float, 
                         help="size of image [default: 6]")
-    parser.add_argument("--projection", type=str, choices=('cyl', 'nsper'),
+    parser.add_argument("--projection", type=str, choices=('cyl', 'nsper', 'spstere', 'npstere'),
                         help="map projection [default: cyl]")
     #Headings
     parser.add_argument("--row_headings", type=str, nargs='*',
@@ -1018,7 +1023,7 @@ improvements:
                         help="size of the column and row headings")
     #Colourbar
     parser.add_argument("--colourbar_colour", type=str, 
-                        choices=('jet', 'jet_r', 'hot', 'hot_r', 'Blues', 'RdBu', 'RdBu_r'),
+                        choices=('jet', 'jet_r', 'hot', 'hot_r', 'Blues', 'RdBu', 'RdBu_r', 'Oranges'),
                         help="Colourbar name [defualt: jet]")
     parser.add_argument("--units", type=str, 
                         help="Units (recognised units: ms-1)")

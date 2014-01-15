@@ -101,6 +101,7 @@ regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
 	   'sh-psa': [(-90, 0, 'cc'), (90, 450, 'co')],
 	   'sh-psa-extra': [(-90, 30, 'cc'), (90, 450, 'co')],
 	   'world-dateline': [(-90, 90, 'cc'), (0, 360, 'co')],
+	   'world-dateline-duplicate360': [(-90, 90, 'cc'), (0, 360, 'cc')],
 	   'world-greenwich': [(-90, 90, 'cc'), (-180, 180, 'co')],
 	   'world-psa': [(-90, 90, 'cc'), (90, 450, 'co')],
            }
@@ -200,8 +201,8 @@ class InputData:
         # Set object attributes #
         
 	if 'x' in data.getOrder():
-            assert (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0, \
-	    '''Longitude values must not be replicated (e.g. you can't have 0 and 360)'''  
+            if not (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0:
+	        print 'WARNING: There are duplicate longitude values (can be problematic for some applications)'  
 
         self.data = data
 	self.fname = fname
