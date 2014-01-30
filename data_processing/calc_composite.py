@@ -13,6 +13,9 @@ import sys
 import os
 import argparse
 
+import datetime
+from dateutil.relativedelta import relativedelta
+
 import MV2
 from scipy import stats
 
@@ -39,6 +42,20 @@ def calc_composite(data_included, data_excluded):
     return composite_mean, p_vals
 
 
+def date_offset(date_list, offset):
+    """Offset a list of dates by the specified number of days"""
+    
+    dt_list = map(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), date_list)
+
+    if offset > 0:
+        edited_dt_list = map(lambda x: x + relativedelta(days=offset), dt_list)
+    else:
+        edited_dt_list = map(lambda x: x - relativedelta(days=abs(offset)), dt_list)
+	
+    edited_date_list = map(lambda x: x.strftime('%Y-%m-%d'), edited_dt_list)
+
+    return edited_date_list
+
 
 def main(inargs):
     """Run the program."""
@@ -49,6 +66,8 @@ def main(inargs):
                            **nio.dict_filter(vars(inargs), ['time', 'region']))
 
     date_list = gio.read_dates(inargs.date_file)
+    if inargs.offset:
+        date_list = date_offset(date_list, inargs.offset)
 
     # Filter the data #
     
@@ -122,6 +141,8 @@ author:
                         help="Region over which to calculate the composite [default: entire]")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period over which to calculate the composite [default = entire]")
+    parser.add_argument("--offset", type=int, default=None,
+                        help="Number of days to offset the input dates by (from date_file) [default = None]")
 
     args = parser.parse_args()            
 
