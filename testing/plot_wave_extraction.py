@@ -1,105 +1,80 @@
 import os, sys
+import argparse
 
 import numpy
 import matplotlib.pyplot as plt
+
+import cdms2
 
 module_dir = os.path.join(os.environ['HOME'], 'phd', 'data_processing')
 sys.path.insert(0, module_dir)
 import calc_envelope
 
 
-def generate_plot(wave_data, function):
+def generate_plot(wave_data, function_text, x_data, envelopes, ofile):
     """Generate plot"""
 
-    font = {'family' : 'serif',
-            'color'  : 'blue',
-            'weight' : 'normal',
-            'size'   : 18,
-            }
-
-    plt.plot(x, wave_data, linewidth=1.5)
-    plt.plot(x, wave_data, linewidth=1.5)
+    plt.plot(x_data, numpy.array(wave_data), linewidth=1.5, label=function_text)
     
+    for wavenumbers in envelopes.keys():
+        tag = str(wavenumbers[0])+'-'+str(wavenumbers[1])
+        plt.plot(x_data, envelopes[wavenumbers], linestyle='--', linewidth=1.5, label=tag)
+        
     plt.xlabel('x')
     plt.ylabel('y')
     #plt.axis((0, 2*numpy.pi, -1.1 , 1.1))
+    plt.xlim(numpy.min(x_data), numpy.max(x_data))
     
-#    plt.text(3.0, 0.65, r'$y = \sin(3x)$', fontdict=font)
-    
-    plt.savefig('test_simple.png')
+    plt.legend(loc=4, ncol=2)
+    plt.savefig(ofile)
 
 
-elif plot_type == 'complex':
-    x = numpy.linspace(numpy.pi, 3 * numpy.pi, 200)
-    N = len(x)
-    k = 7
-    
-    complex_wave = numpy.cos((k - 1)*x) + numpy.cos(k * x) + numpy.cos((k + 1)*x)
-    complex_env = calc_envelope.envelope(complex_wave, 1, 20)
-
-    plt.plot(x, complex_wave, linewidth=1.5)
-    plt.plot(x, complex_env, linewidth=1.5)
-
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.axis((numpy.pi, 3*numpy.pi, -3.1 , 3.1))
-
-    font = {'family' : 'serif',
-            'color'  : 'blue',
-            'weight' : 'normal',
-            'size'   : 13,
-           }
-    plt.text(6.9, -2.8, r'$y = \cos(6x) + \cos(7x) + \cos(8x)$', fontdict=font)
-
-    plt.savefig('test_complex.png')
-
-
-def extract_envelopes(wave_data, selected_range, total_range):
+def extract_envelopes(wave_data, bounds_list):
     """Extract the wave envelopes"""
     
     envelopes = {}
-    
-    envelopes[selected_range] = calc_envelope.envelope(wave_data, 
-                                                       selected_range[0], 
-						       selected_range[1])
-    envelopes[total_range] = calc_envelope.envelope(wave_data, 
-                                                    total_range[0], 
-						    total_range[1])
-    
-    for i in range(total_range[0], total_range[1] + 1):
-        envelopes[i] = calc_envelope.envelope(wave_data, i, i)
-
-
+    for bounds in bounds_list:
+        envelopes[bounds] = calc_envelope.envelope(wave_data, bounds[0], bounds[1])
+ 
     return envelopes
     
 
-def get_wave(source):
-    """Return the wave data, according to the specified source"""
+def get_wave(source, var, time_bounds, lat):
+    """Return the wave data and function name, according to the specified source"""
     
-    x = numpy.linspace(0, 2 * numpy.pi, 200)
     if source == 'simple':
-        wave_data = numpy.sin(3*x)
-        function = r'$y = \sin(3x)$'
+        x = numpy.linspace(0, 2 * numpy.pi, 200)
+	wave_data = numpy.sin(3*x)
+        function_text = r'$y = \sin(3x)$'
+	envelope_list = [(1, 20), (3, 3), (2, 4)]
 		
     elif source == 'complex':
-        k = 7
+        x = numpy.linspace(0, 2 * numpy.pi, 200)
+	k = 7
 	wave_data = numpy.cos((k - 1)*x) + numpy.cos(k * x) + numpy.cos((k + 1)*x)
-        function = r'$y = \cos(6x) + \cos(7x) + \cos(8x)$'
+        function_text = r'$y = \cos(6x) + \cos(7x) + \cos(8x)$'
+        envelope_list = [(1, 20), (7, 9), (6, 10), (8, 8)]
 
     else:
-        #READ IN REAL DATA FOR SPECIFIED LAT AND TIMESTEP
+        fin = cdms2.open(source)
+	wave_data = fin(var, time=time_bounds, latitude=lat, squeeze=1)
+	assert len(wave_data.shape) == 1, \
+	'Must select only one time step and latitude circle'
+	x = wave_data.getLongitude()[:]
+	function_text = 'v-wind'
+	envelope_list = [(1, 20), (2, 4), (2, 3), (3, 4), (1, 5), (3, 3)]
 	
-    return wave_data, function
+    return wave_data, x, function_text, envelope_list
     
 
 def main(inargs):
     """Run the program"""
     
-    wave_data, function = get_wave(inargs.data_source)
+    wave_data, x_data, function_text, envelope_list = get_wave(inargs.data_source, inargs.var, inargs.time_bounds, inargs.lat)
     
-    envelopes = extract_envelopes(wave_data)
+    envelopes = extract_envelopes(wave_data, envelope_list)
 
-    generate_plot(wave_data, envelopes)
+    generate_plot(wave_data, function_text, x_data, envelopes, inargs.ofile)
 
 
 if __name__ == '__main__':
@@ -109,11 +84,16 @@ if __name__ == '__main__':
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("data_source", type=str, 
                         help="""Can be "simple", "complex" or the name of a data file""")
-    parser.add_argument("--wavenumbers", type=int, nargs='*', 
-                        help="Wavenumbers to be retained in the envelope calculation")
-    parser.add_argument("--ofile", type=str, default='test.png',
-                        help="Name of output file [default = test.png")	
     
+    parser.add_argument("--ofile", type=str, default='test.png',
+                        help="Name of output file [default = test.png]")
+    parser.add_argument("--var", type=str, default='va',
+                        help="Name of the variable to read from the input file [default = va]")
+    parser.add_argument("--time_bounds", nargs=2, type=str, default=('1996-04-01', '1996-04-30'),
+                        help="Bounds for time step selection [default = 1996-04-01, 1996-04-30]")
+    parser.add_argument("--lat", type=float, default=-55,
+                        help="Latitude selection [default = -55]")			
+     
     args = parser.parse_args()            
 
     main(args)
