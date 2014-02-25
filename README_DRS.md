@@ -9,7 +9,19 @@ or a change of units, but no averaging or other manipulation of the data).
 * `~/<dataset>/data/processed/`: For data files that have undergone only one or two
 steps of standard processing (e.g. an anomaly timeseries or derived variable like
 the streamfunction.  
-* `~/<dataset>/data/processsed/stats/`: Highly modified data.
+* `~/<dataset>/data/processsed/stats/`: Statistics like eof analysis
+* `~/<dataset>/data/processsed/rwid/`: Files relating to rossby wave identification
+
+
+## Standard variable abbreviations
+
+* `gz`: Geopotential height
+* `psl`: Sea level pressure
+* `sf`: Streamfunction
+* `ua`: Eastward wind velocity
+* `va`: Northward wind velocity
+* `vrot`: Northward wind velocity on a rotated sphere (i.e. the north pole has been shifted and the meridional wind re-calculated accordingly) 
+
 
 ## File name syntax
 
@@ -30,22 +42,30 @@ Examples include:
 `psl_Merra_surface_daily_y181x360.nc`  
 `eof-sf_Merra_250hPa_monthly-anom-wrt-1979-2011-JJA_native-sh.nc`  
 
+### Files generated specifically for Rossby wave identification
 
-### Filtered composites based on ROIM method
+The files in `~/<dataset>/data/processsed/rwid/` go all the way from simple wave extraction, 
+to hovmoller diagrams, and filtered composites.  
 
-`<var>_<dataset>_<level>_<time>_<spatial>_<hovmoller>_<search>_<clip>_<filter>.nc`
+`<var>_<dataset>_<level>_<time>_<spatial>_<searchbounds>_<clip>_<filter>.nc`
 
-`tas_Merra_250hPa_daily-anom-wrt-1979-2012-SON-composite-mean_y181x360_hov-vrot-env_w567-lon225E-335E-lat10S-10N_absolute14_mariebyrdland-va-below-neg5.nc`
+Sub-categories:  
 
+* `<time>`: `<tscale>-<aggregation>-<season>-<composite>`
+* `<spatial>`: `<grid>-<region>-<northpole>-<hovmoller>`
 
-## Standard variable abbreviations
+It is important to note that the details of the north pole location go in the `<spatial>` field
+if the data are actually on a rotated grid, otherwise it needs to go in the `<hovmoller>` field (i.e. if 
+the data are back on a regular lat/lon grid with the north pole at 90N).  
 
-* `gz`: Geopotential height
-* `psl`: Sea level pressure
-* `sf`: Streamfunction
-* `ua`: Eastward wind velocity
-* `va`: Northward wind velocity
-* `vrot`: Northward wind velocity on a rotated sphere (i.e. the north pole has been shifted and the meridional wind re-calculated accordingly) 
+Examples:  
+`vrot_Merra_250hPa_daily_anom-wrt-all_y181x360-np20N260E.nc` #calc_vwind_rotation  
+`env-w567-vrot_Merra_250hPa_daily_anom-wrt-all_y181x360-np20N260E.nc` #calc_envelope  
+`env-w567-vrot_Merra_250hPa_daily-anom-wrt-all_y181x360-np20N260E-hov_lon225E335E-lat10S10N_absolute14.nc` #calc_hovmoller
+`psa-dates_Merra_250hPa_daily-anom-wrt-all_y181x360-np20N260E-hov-env-w567-vrot_lon225E335E-lat10S10N_absolute14.csv` #run_roim
+#filter_dates
+`tas_Merra_250hPa_daily-anom-wrt-all-SON-composite-mean_y181x360-np20N260E-hov-env-w567-vrot_lon225E335E-lat10S10N_absolute14_mariebyrdland-va-below-neg5.nc` #calc_composite
+
 
 
 
