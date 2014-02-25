@@ -128,13 +128,18 @@ def main(inargs):
 
     # Write the output file #
 
+    if inargs.noswitch:
+        grid_insert = '(although the data are still stored on a non-rotated grid)
+    else:
+        grid_insert = '(the data are stored on the rotated/shifted grid)' 
+
     if inargs.anomaly:
         standard_name = 'rotated_meridional_wind_anomaly'
-	long_name = 'Meridional wind anomaly on a rotated coordinate grid (but the poles have not yet been shifted)'
+	long_name = 'Meridional wind anomaly for a shifted north pole %s' %(grid_insert)
         clim = 'Base period: %s - %s' %(inargs.anomaly[0], inargs.anomaly[1])
     else:
         standard_name = 'rotated_meridional_wind'
-	long_name = 'Meridional wind on a rotated coordinate grid (but the poles have not yet been shifted)'
+	long_name = 'Meridional wind for a shifted north pole %s' %(grid_insert)
 	clim = ''  
 
     history = 'Location of north pole: %s N, %s E. Prime meridian point = %s N, %s E. %s' %(str(inargs.north_pole[0]), str(inargs.north_pole[1]), 
