@@ -1,4 +1,10 @@
 # psa_climatology.mk
+#
+# To execute:
+#   make -n -f psa_climatology.mk  (-n is a dry run)
+#   (must be run from the directory that the relevant matlab scripts are in)
+
+## Define marcos ##
 
 include config.mk
 
@@ -10,7 +16,10 @@ CLIP_LABEL=${GRID_LABEL}_${NP_LABEL}
 LON_LABEL=lon$(word 2,${LON_SEARCH})-$(word 3,${LON_SEARCH})
 LAT_LABEL=lat$(word 2,${LAT_SEARCH})-$(word 3,${LAT_SEARCH})
 
-all : ${PDATA_DIR}/vrot-env-w${WAVENUMS}_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}_${NP_LABEL}.nc 
+## Core PSA climatology process ##
+
+# Phony target
+all : ${PDATA_DIR}/hov-vrot-env-w${WAVENUMS}_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}_${NP_LABEL}_${CLIP_LABEL}_${LON_LABEL}_${LAT_LABEL}.csv 
 
 # Step 1: Calculate the rotated meridional wind
 ## (5 years at a time!!!)
@@ -32,3 +41,9 @@ ${PDATA_DIR}/hov-vrot-env-w${WAVENUMS}_Merra_250hPa_daily-anom-wrt-all_${GRID_LA
 	${CDAT} calc_hovmoller.py $< env ${CLIP_METHOD} ${CLIP_THRESH} $@ ${LAT_SEARCH} ${LON_SEARCH} 
 
 # Step 5: Implement the ROIM method
+${PDATA_DIR}/hov-vrot-env-w${WAVENUMS}_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}_${NP_LABEL}_${CLIP_LABEL}_${LON_LABEL}_${LAT_LABEL}.csv : ${PDATA_DIR}/hov-vrot-env-w${WAVENUMS}_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}_${NP_LABEL}_${CLIP_LABEL}_${LON_LABEL}_${LAT_LABEL}.nc
+	matlab -nodesktop -nojvm -nosplash -r "run_roim('$<', '$@', ${ROIM_START}, ${ROIM_TRES}, ${ROIM_ZRES})"
+
+
+
+## Optional extras ##

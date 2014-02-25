@@ -9,6 +9,9 @@ LAT_SEARCH=--latitude -10 10
 WAVENUMS=567
 CLIP_THRESH=14
 CLIP_METHOD=absolute
+ROIM_START=1979010100
+ROIM_TRES=24
+ROIM_ZRES=1
 
 # System configuration
 DATA_DIR=/mnt/meteo0/data/simmonds/dbirving/${DATASET}/data
