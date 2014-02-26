@@ -24,11 +24,11 @@ def filter_spatial_ave(filter_name, date_list, data_file, var, threshold, select
     """Filter the data according to a spatial averaged value.
     
     filter_name options:
-      antarctic_peninsula  --  Filter according to the sign of the meridional wind anomaly
+      antarctic-peninsula  --  Filter according to the sign of the meridional wind anomaly
                                over the region 90W to 50W and 65S to 75S (based on Ding2013)
-      marie_byrd_land      --  Filter according to the sign of the meridional wind anomaly
+      marie-byrd-land      --  Filter according to the sign of the meridional wind anomaly
                                over the region 100W to 160W and 70S to 75S (based in Ding2011)
-      tropical_pacific     --  Filter according to the sign of the SST anomaly
+      tropical-pacific     --  Filter according to the sign of the SST anomaly
                                over the region 180 to 240E and 5S to 5N. This is an 
 			       approximate area based on the findings of Ding2013
 
@@ -37,9 +37,9 @@ def filter_spatial_ave(filter_name, date_list, data_file, var, threshold, select
     print float(threshold)
     
     # Read meridional wind data and extract region of interest
-    bounds = {'antarctic_peninsula': [(-75, -65, 'cc'), (270, 310, 'cc')],
-              'marie_byrd_land': [(-75, -70, 'cc'), (200, 260, 'cc')],
-              'tropical_pacific': [(-5, 5, 'cc'), (180, 240, 'cc')],}
+    bounds = {'antarctic-peninsula': [(-75, -65, 'cc'), (270, 310, 'cc')],
+              'marie-byrd-land': [(-75, -70, 'cc'), (200, 260, 'cc')],
+              'tropical-pacific': [(-5, 5, 'cc'), (180, 240, 'cc')],}
     lats, lons = bounds[filter_name]
     indata = nio.InputData(data_file, var, latitude=lats, longitude=lons)
     
@@ -80,7 +80,7 @@ if __name__ == '__main__':
 example:
   /usr/local/uvcdat/1.3.0/bin/cdat filter_dates.py 
   hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates.txt 
-  --filter antarctic_peninsula /mnt/meteo0/data/simmonds/dbirving/Merra/data/va_Merra_250hPa_daily_native.nc va 0 below
+  --filter antarctic-peninsula /mnt/meteo0/data/simmonds/dbirving/Merra/data/va_Merra_250hPa_daily_native.nc va 0 below
   --filter tropical_pacific /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/tas_Merra_surface_daily-anom-wrt-1979-2012_native.nc tas 0.5 above
   --outfile hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates-filter-antarctic-peninsula-va-below-0.txt
 

@@ -15,6 +15,11 @@ CLIP_METHOD=absolute
 ROIM_START=1979010100
 ROIM_TRES=24
 ROIM_ZRES=1
+FILTER_REGION=marie-byrd-land
+FILTER_DIRECTION=below
+FILTER_THRESH=-5.0
+FILTER_LABEL=marie-byrd-land-va-below-neg5
+
 
 # System configuration
 DATA_DIR=/mnt/meteo0/data/simmonds/dbirving/${DATASET}/data
