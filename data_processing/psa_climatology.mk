@@ -18,12 +18,12 @@ CLIP_LABEL=${CLIP_METHOD}${CLIP_THRESH}
 ## Core PSA climatology process ##
 
 # Phony target
-all : ${RWID_DIR}/psa-dates_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-w${WAVENUMS}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}_${FILTER_LABEL}.txt
+all : ${RWID_DIR}/${COMPOSITE_VAR}_Merra_${COMPOSITE_LEVEL}_daily-anom-wrt-all-composite-mean_${GRID_LABEL}-${NP_LABEL}-hov-env-w${WAVENUMS}-vrot-250hPa_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}_psa-dates-${FILTER_LABEL}.nc
 
 # Step 1: Calculate the rotated meridional wind
 ## (5 years at a time!!!)
 ${RWID_DIR}/vrot_Merra_250hPa_daily_${GRID_LABEL}-${NP_LABEL}.nc : ${DATA_DIR}/ua_Merra_250hPa_daily_native.nc ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
-	${CDAT} calc_vwind_rotation.py $< ua $(word 2,$^) va $@ ${NP} ${GRID}
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_vwind_rotation.py $< ua $(word 2,$^) va $@ ${NP} ${GRID}
 	
 # Step 2: Calculate the rotated meridional wind anomaly
 ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_daily_${GRID_LABEL}-${NP_LABEL}.nc
@@ -33,11 +33,11 @@ ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : 
 ## (5 years at a time!!!)
 ## (look into how the longitude search bit works here - it's not captured in the file names)
 ${RWID_DIR}/env-w${WAVENUMS}-vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
-	${CDAT} calc_envelope.py $< vrot $@ ${SEARCH_LON}
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_envelope.py $< vrot $@ ${SEARCH_LON}
 
 # Step 4: Calculate the hovmoller diagram
 ${RWID_DIR}/env-w${WAVENUMS}-vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.nc : ${RWID_DIR}/env-w${WAVENUMS}-vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
-	${CDAT} calc_hovmoller.py $< env ${CLIP_METHOD} ${CLIP_THRESH} $@ ${LAT_SEARCH} ${LON_SEARCH} 
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_hovmoller.py $< env ${CLIP_METHOD} ${CLIP_THRESH} $@ ${LAT_SEARCH} ${LON_SEARCH} 
 
 # Step 5: Implement the ROIM method
 ${RWID_DIR}/psa-roim-stats_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-w${WAVENUMS}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.csv : ${RWID_DIR}/env-w${WAVENUMS}-vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.nc
@@ -47,13 +47,20 @@ ${RWID_DIR}/psa-roim-stats_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LA
 # (requires pandas)
 # (can also generate a duration histogram with roim_stat.py)
 ${RWID_DIR}/psa-dates_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-w${WAVENUMS}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.txt : ${RWID_DIR}/psa-roim-stats_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-w${WAVENUMS}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.csv
-	python roim_stat.py $< --date_list startpoint_temporal endpoint_temporal $@
+	python ${ROIM_SCRIPT_DIR}/roim_stat.py $< --date_list startpoint_temporal endpoint_temporal $@
 
 # Step 7: Filter the list of dates
 ${RWID_DIR}/psa-dates_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-w${WAVENUMS}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}_${FILTER_LABEL}.txt : ${RWID_DIR}/psa-dates_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-w${WAVENUMS}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.txt
-	${CDAT} filter_dates.py $< --filter ${FLITER_REGION} ${DATA_DIR}/va_Merra_250hPa_daily_native.nc va ${FILTER_THRESH} ${FILTER_DIRECTION} --outfile $@ 
+	${CDAT} ${DATA_SCRIPT_DIR}/filter_dates.py $< --filter ${FLITER_REGION} ${DATA_DIR}/va_Merra_250hPa_daily_native.nc va ${FILTER_THRESH} ${FILTER_DIRECTION} --outfile $@ 
 
-
+# Step 8: Calculate the composite
+${RWID_DIR}/${COMPOSITE_VAR}_Merra_${COMPOSITE_LEVEL}_daily-anom-wrt-all-composite-mean_${GRID_LABEL}-${NP_LABEL}-hov-env-w${WAVENUMS}-vrot-250hPa_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}_psa-dates-${FILTER_LABEL}.nc : ${RWID_DIR}/psa-dates_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-w${WAVENUMS}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}_${FILTER_LABEL}.txt
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_composite.py ${COMPOSITE_VAR}_Merra_${COMPOSITE_LEVEL}_daily-anom-wrt-1979-2012_native.nc ${COMPOSITE_VAR} $< $@ --time 1979-01-01 2012-12-31 ${COMPOSITE_SEASON}
 
 
 ## Optional extras ##
+
+# plot_envelope.py    --   plot the wave envelope with other variabke overlayed
+# roim_stat.py        --   plot the event duration histogram
+# parse_dates.py      --   calculate some statistics from a list of dates (monthly totals, seasonal totals, etc)
+# plot_composite.py   --   plot a composite
