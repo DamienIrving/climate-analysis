@@ -6,13 +6,7 @@
 
 ## Define marcos ##
 
-include config.mk
-
-NPLAT=$(word 2, ${NP})
-NPLON=$(word 3, ${NP})
-NP_LABEL=np${NPLAT}N${NPLON}E
-GRID_LABEL=y$(word 3,${GRID})x$(word 6,${GRID})
-CLIP_LABEL=${CLIP_METHOD}${CLIP_THRESH}
+include psa_climatology_config.mk
 
 
 ### Core PSA climatology process ###
