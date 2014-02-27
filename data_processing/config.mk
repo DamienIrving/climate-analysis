@@ -7,7 +7,8 @@ RWID_DIR=${PDATA_DIR}/rwid
 CDAT=/usr/local/uvcdat/1.2.0rc1/bin/cdat
 DATA_SCRIPT_DIR=~/phd/data_processing
 ROIM_SCRIPT_DIR=${DATA_SCRIPT_DIR}/roim
-VROT_METHOD=${DATA_SCRIPT_DIR}/calc_vwind_rotation.sh   #the .sh breaks the .py routine into 5 yr chunks
+VROT_METHOD=bash ${DATA_SCRIPT_DIR}/calc_vwind_rotation.sh   #${CDAT} ${DATA_SCRIPT_DIR}/calc_vwind_rotation.py                                                  
+ENV_METHOD=bash ${DATA_SCRIPT_DIR}/calc_envelope.sh   #${CDAT} ${DATA_SCRIPT_DIR}/calc_envelope.py
 
 # Dataset
 DATASET=Merra

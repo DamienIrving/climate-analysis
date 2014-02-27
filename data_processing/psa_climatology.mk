@@ -21,19 +21,17 @@ CLIP_LABEL=${CLIP_METHOD}${CLIP_THRESH}
 all : ${RWID_DIR}/${COMPOSITE_VAR}_Merra_${COMPOSITE_LEVEL}_daily-anom-wrt-all-composite-mean_${GRID_LABEL}-${NP_LABEL}-hov-env-w${WAVENUMS}-vrot-250hPa_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}_psa-dates-${FILTER_LABEL}.nc
 
 ## Step 1: Calculate the rotated meridional wind
-## (5 years at a time!!!)
 ${RWID_DIR}/vrot_Merra_250hPa_daily_${GRID_LABEL}-${NP_LABEL}.nc : ${DATA_DIR}/ua_Merra_250hPa_daily_native.nc ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
-	${CDAT} ${VROT_METHOD} $< ua $(word 2,$^) va $@ ${NP} ${GRID}
+	${VROT_METHOD} $< ua $(word 2,$^) va $@ ${NP} ${GRID}
 	
 ## Step 2: Calculate the rotated meridional wind anomaly
 ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_daily_${GRID_LABEL}-${NP_LABEL}.nc
 	cdo ydaysub $< -ydayavg $< $@
 
 ## Step 3: Extract the wave envelope
-## (5 years at a time!!!)
 ## (look into how the longitude search bit works here - it's not captured in the file names)
 ${RWID_DIR}/env-w${WAVENUMS}-vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_envelope.py $< vrot $@ ${SEARCH_LON}
+	${ENV_METHOD} $< vrot $@ ${LON_SEARCH}
 
 ## Step 4: Calculate the hovmoller diagram
 ${RWID_DIR}/env-w${WAVENUMS}-vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.nc : ${RWID_DIR}/env-w${WAVENUMS}-vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
