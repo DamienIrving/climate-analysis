@@ -16,7 +16,8 @@ GRID=r360x181
 # Envelope extraction
 LAT_SEARCH=--latitude -70 -50
 LAT_LABEL=lat70S50S
-WAVENUMS=234
+WAVE_SEARCH=--wavenumbers 2 4
+WAVE_LABEL=w234
 
 # Rossby wve train identification
 CLIP_THRESH=14

@@ -26,7 +26,8 @@ LON_SEARCH=--longitude 225 335
 LAT_SEARCH=--latitude -10 10
 LON_LABEL=lon$(word 2,${LON_SEARCH})E$(word 3,${LON_SEARCH})E
 LAT_LABEL=lat10S10N
-WAVENUMS=567
+WAVE_SEARCH=--wavenumbers 5 7
+WAVE_LABEL=w567
 
 # Rossby wve train identification
 CLIP_THRESH=14
