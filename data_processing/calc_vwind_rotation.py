@@ -129,7 +129,7 @@ def main(inargs):
     # Write the output file #
 
     if inargs.noswitch:
-        grid_insert = '(although the data are still stored on a non-rotated grid)
+        grid_insert = '(although the data are still stored on a non-rotated grid)'
     else:
         grid_insert = '(the data are stored on the rotated/shifted grid)' 
 

@@ -4,7 +4,7 @@
 DATA_DIR=/mnt/meteo0/data/simmonds/dbirving/${DATASET}/data
 PDATA_DIR=${DATA_DIR}/processed
 RWID_DIR=${PDATA_DIR}/rwid/psa
-CDAT=/usr/local/uvcdat/1.2.0rc1/bin/cdat
+CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 DATA_SCRIPT_DIR=~/phd/data_processing
 ROIM_SCRIPT_DIR=${DATA_SCRIPT_DIR}/roim
 VROT_METHOD=bash ${DATA_SCRIPT_DIR}/calc_vwind_rotation.sh   #${CDAT} ${DATA_SCRIPT_DIR}/calc_vwind_rotation.py                               

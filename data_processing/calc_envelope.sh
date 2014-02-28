@@ -52,7 +52,7 @@ for year in "${years[@]}"; do
     end=`expr $year + 5`
     end_label=`expr $year + 4`
     temp_file=${temp_dir}/temp-env_${year}-${end_label}.nc
-    /usr/local/uvcdat/1.2.0rc1/bin/cdat ~/phd/data_processing/calc_envelope.py $infile $invar $outfile ${waveselect[@]} ${lonselect[@]} --time ${year}-01-01 ${end}-01-01 none 
+    /usr/local/uvcdat/1.3.0/bin/cdat ~/phd/data_processing/calc_envelope.py $infile $invar $outfile ${waveselect[@]} ${lonselect[@]} --time ${year}-01-01 ${end}-01-01 none 
     temp_files+=(${temp_file})
 done
 
