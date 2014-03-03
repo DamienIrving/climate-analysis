@@ -58,3 +58,4 @@ done
 
 cdo mergetime ${temp_files[@]} $outfile
 rm ${temp_files[@]}
+ncatted -O -a axis,time,c,c,T $outfile

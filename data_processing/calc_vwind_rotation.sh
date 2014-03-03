@@ -63,9 +63,10 @@ for year in "${years[@]}"; do
     end=`expr $year + 5`
     end_label=`expr $year + 4`
     temp_file=${temp_dir}/temp-vrot_${year}-${end_label}.nc
-    echo /usr/local/uvcdat/1.2.0rc1/bin/cdat ~/phd/data_processing/calc_vwind_rotation.py $ufile $uvar $vfile $vvar ${temp_file} --north_pole $nplat $nplon --grid $latstart $nlat $latstep $lonstart $nlon $lonstep --time ${year}-01-01 ${end}-01-01 none
+    /usr/local/uvcdat/1.2.0rc1/bin/cdat ~/phd/data_processing/calc_vwind_rotation.py $ufile $uvar $vfile $vvar ${temp_file} --north_pole $nplat $nplon --grid $latstart $nlat $latstep $lonstart $nlon $lonstep --time ${year}-01-01 ${end}-01-01 none
     temp_files+=(${temp_file})
 done
 
-echo cdo mergetime ${temp_files[@]} $outfile
-echo rm ${temp_files[@]}
+cdo mergetime ${temp_files[@]} $outfile
+rm ${temp_files[@]}
+ncatted -O -a axis,time,c,c,T $outfile

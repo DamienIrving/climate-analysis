@@ -101,16 +101,20 @@ def main(inargs):
   
     # Make values outside the PSA longitude range 0.0 #
     
-    hov_data_filtered = apply_lon_filter(hov_data, inargs.longitude)
+    if inargs.longitude:
+        hov_data_filtered = apply_lon_filter(hov_data, inargs.longitude)
+        lon_text = '%s to %s' %(inargs.longitude[0], inargs.longitude[1])
+    else:
+        hov_data_filtered = hov_data
+	lon_text = 'none'  
   
     # Write output file #
 
-    hx = 'Clip method: %s. Clip threshold: %s. Lat range: %s to %s. Lon filter: %s to %s' %(inargs.clip_method, 
-                                                                                            inargs.clip_threshold,
-                                                                                            str(indata.data.getLatitude()[0]),
-                                                                                            str(indata.data.getLatitude()[-1]),
-										            str(inargs.longitude[0]),
-										            str(inargs.longitude[1])) 
+    hx = 'Clip method: %s. Clip threshold: %s. Lat range: %s to %s. Lon filter: %s' %(inargs.clip_method, 
+                                                                                      inargs.clip_threshold,
+                                                                                      str(indata.data.getLatitude()[0]),
+                                                                                      str(indata.data.getLatitude()[-1]),
+										      str(lon_text),) 
     var_atts = {'id': 'env',
                 'long_name': 'envelope',  # this is the name that plot_hovmoller.py uses
 		'standard_name': 'Clipped Wave Envelope',
@@ -159,7 +163,7 @@ author:
 
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
                         help="Latitude range [default = entire]")
-    parser.add_argument("--longitude", type=float, nargs=2, metavar=('START', 'END'),
+    parser.add_argument("--longitude", type=float, nargs=2, metavar=('START', 'END'), default=None,
                         help="Longitude range [default = entire]")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
