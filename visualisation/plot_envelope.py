@@ -1,7 +1,7 @@
 """
 Filename:     plot_envelope.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Plot wave envelope and associated wind and streamfunction anomalies
+Description:  Plot wave envelope and associated streamfunction anomalies
 
 """
 
@@ -26,8 +26,8 @@ import MV2
 def extract_data(inargs):
     """Extract input data and check that time axes match"""
 
-    env_data = nio.InputData(inargs.env_file, inargs.env_var, region='world-psa',
-                             **nio.dict_filter(vars(inargs), ['time',]))
+    env_data = nio.InputData(inargs.env_file, inargs.env_var,
+                             **nio.dict_filter(vars(inargs), ['time', 'region']))
     env_times = env_data.data.getTime().asComponentTime()    
 
     opt_data = {}
@@ -35,8 +35,7 @@ def extract_data(inargs):
         try:
             opt_data[opt] = nio.InputData(eval('inargs.'+opt+'[0]'), 
                                           eval('inargs.'+opt+'[1]'), 
-					  region='world-psa',
-                                          **nio.dict_filter(vars(inargs), ['time',]))
+                                          **nio.dict_filter(vars(inargs), ['time', 'region']))
         except AttributeError:
             opt_data[opt] = None
     
@@ -47,15 +46,21 @@ def extract_data(inargs):
     return env_data, opt_data['uwind'], opt_data['vwind'], opt_data['sf']
 
 
-def restore_env(indata_env, inargs):
-    """Restore the rotated envelope data to a typical lat/lon grid"""
+def restore_env(indata_env, rotation_details):
+    """Restore the rotated envelope data to a typical lat/lon grid
+    
+    rotation_details   : [np_lat, np_lon, pm_lat, pm_lon]
+    
+    """
     
     lat_axis = indata_env.data.getLatitude()
     lon_axis = indata_env.data.getLongitude()
     lats, lons = nio.coordinate_pairs(lat_axis[:], lon_axis[:])
     grid = indata_env.data.getGrid()
-    new_np = [inargs.np_lat, inargs.np_lon]
-    pm_point = [inargs.pm_lat, inargs.pm_lon]
+
+    
+    new_np = rotation_details[0:2]
+    pm_point = rotation_details[2:4]
     
     env_restored = rot.switch_regular_axes(indata_env.data, lats, lons, 
                                            lat_axis[:], lon_axis[:],
@@ -80,17 +85,18 @@ def main(inargs):
 
     # Restore env data to standard lat/lon grid #
 
-    env_restored = restore_env(indata_env, inargs)
+    if inargs.rotation:
+        env_data = restore_env(indata_env, inargs)
+    else:
+        env_data = indata_env.data
 
     # Plot every time step #
    
     if inargs.timescale == 'monthly':
-        tick_list = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 	keyval = 5
 	quiv_scale = 200
 	quiv_width = 0.002
     else:
-        tick_list = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
 	keyval = 10
 	quiv_scale = 300
 	quiv_width = 0.002
@@ -107,18 +113,18 @@ def main(inargs):
         v_data = [indata_v.data(time=(date, date_abbrev), squeeze=1),] if indata_v else None
         sf_data = [indata_sf.data(time=(date, date_abbrev), squeeze=1),] if indata_sf else None
 
-        title = 'Wave envelope, 250hPa wind & sf anomaly, %s' %(date_abbrev)
+        title = 'Wave envelope, 250hPa wind & sf anomaly, %s' %(date_abbrev)  ## Change this depending on inputs
         ofile = '%s_%s.png' %(inargs.ofile, date_abbrev)
 
         plot_map.multiplot(env_data,
 		           ofile=ofile,
 		           title=title,
-			   region='sh-psa',
+			   region=inargs.region,
 		           units='$m s^{-1}$',
                            draw_axis=True,
 		           delat=30, delon=30,
 		           contour=True,
-		           ticks=tick_list, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
+		           ticks=inargs.ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
         	           contour_data=sf_data, contour_ticks=inargs.sf_ticks,
 		           uwnd_data=u_data, vwnd_data=v_data, quiver_thin=9, key_value=keyval,
 		           quiver_scale=quiv_scale, quiver_width=quiv_width,
@@ -143,6 +149,19 @@ example (vortex.earthsci.unimelb.edu.au):
     --ofile /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/figures/env/vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np26-260
     --time 1981-06-01 1981-06-30 none
     --search_paths 20 260 225 335 -10 10 5
+    --region world-psa
+    
+    /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_envelope.py
+    /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/env-w234-va_Merra_250hPa_daily_r360x181.nc 
+    env daily
+    --time 2003-06-01 2003-06-30 none
+    --region world-dateline-duplicate360
+    --sf /mnt/meteo0/data/simmonds/dbirving/Merra/data/sf_Merra_250hPa_daily_native.nc
+    --ofile /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/env-w234-va_Merra_250hPa_daily_r360x181
+    --ticks 0 1.5 3 4.5 6 7.5 9 10.5 12.0
+    --sf_ticks -140 -120 -100 -80 -60 -40 -20 0 20 40 60 80 100 120 140
+    --projection spstere
+    
 """
   
     description='Plot wave envelope and associated wind and streamfunction anomalies'
@@ -153,12 +172,17 @@ example (vortex.earthsci.unimelb.edu.au):
 
     parser.add_argument("env_file", type=str, help="envelope file")
     parser.add_argument("env_var", type=str, help="envelope variable")
-    parser.add_argument("np_lat", type=float, help="north pole latitude used for envelope extraction")
-    parser.add_argument("np_lon", type=float, help="north pole longitude used for envelope extraction")
-    parser.add_argument("pm_lat", type=float, help="prime meridian point latitude used for envelope extraction")
-    parser.add_argument("pm_lon", type=float, help="prime meridian point longitude used for envelope extraction")
-    parser.add_argument("timescale", type=str, choices=['daily', 'monthly'], help="timescale of the input data")
+    parser.add_argument("timescale", type=str, choices=['daily', 'monthly'], 
+                         help="timescale of the input data")
     
+    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
+                        help="Time period [default = entire]")
+    parser.add_argument("--region", type=str, choices=nio.regions.keys(), default='world-dateline',
+                        help="name of region to plot [default: world-dateline]")
+
+    parser.add_argument("--rotation", type=float, nargs=4, metavar=('NP_LAT', 'NP_LON', 'PM_LAT', 'PM_LON'), default=None,
+                        help="Details of the rotation that has been applied to the envelope data"    
+
     parser.add_argument("--uwind", type=str, nargs=2, metavar=('FILE', 'VAR'),
                         help="zonal wind anomaly file and variable")
     parser.add_argument("--vwind", type=str, nargs=2, metavar=('FILE', 'VAR'),
@@ -168,16 +192,13 @@ example (vortex.earthsci.unimelb.edu.au):
     parser.add_argument("--ofile", type=str, default='test', 
                         help="name of output file (without the file ending - date will be tacked on)")
     
-    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
-                        help="Time period [default = entire]")
-
     parser.add_argument("--ticks", type=float, nargs='*', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                         help="List of tick marks to appear on the colour bar [default: auto]")
     parser.add_argument("--segments", type=str, nargs='*', default=None,
                         help="List of colours to appear on the colour bar")
     parser.add_argument("--palette", type=str, default='Oranges',
                         help="Colourbar name [default: Organges]")
-    parser.add_argument("--projection", type=str, default='cyl', choices=['cyl', 'nsper'],
+    parser.add_argument("--projection", type=str, default='cyl', choices=['cyl', 'nsper', 'spstere'],
                         help="Map projection [default: nsper]")
     parser.add_argument("--image_size", type=float, default=9, 
                         help="size of image [default: 9]")
