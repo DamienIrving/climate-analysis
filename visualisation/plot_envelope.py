@@ -108,7 +108,7 @@ def main(inargs):
 	else:
 	    date_abbrev = year+'-'+month+'-'+day
 	    
-        env_data = [env_restored(time=(date, date_abbrev), squeeze=1),]
+        env_data_select = [env_data(time=(date, date_abbrev), squeeze=1),]
         u_data = [indata_u.data(time=(date, date_abbrev), squeeze=1),] if indata_u else None
         v_data = [indata_v.data(time=(date, date_abbrev), squeeze=1),] if indata_v else None
         sf_data = [indata_sf.data(time=(date, date_abbrev), squeeze=1),] if indata_sf else None
@@ -116,13 +116,13 @@ def main(inargs):
         title = 'Wave envelope, 250hPa wind & sf anomaly, %s' %(date_abbrev)  ## Change this depending on inputs
         ofile = '%s_%s.png' %(inargs.ofile, date_abbrev)
 
-        plot_map.multiplot(env_data,
+        plot_map.multiplot(env_data_select,
 		           ofile=ofile,
 		           title=title,
 			   region=inargs.region,
 		           units='$m s^{-1}$',
                            draw_axis=True,
-		           delat=30, delon=30,
+		           delat=10, delon=30,
 		           contour=True,
 		           ticks=inargs.ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
         	           contour_data=sf_data, contour_ticks=inargs.sf_ticks,
@@ -133,7 +133,7 @@ def main(inargs):
 			   search_paths=inargs.search_paths,
         	           image_size=inargs.image_size)
         
-        tick_list = tick_list[0: -1]   # Fix for weird thing where it keeps appending to 
+        inargs.ticks = inargs.ticks[0: -1]   # Fix for weird thing where it keeps appending to 
 	                               # the end of the ticks list, presumably due to the 
 				       # extend = 'max' 
 
@@ -156,9 +156,9 @@ example (vortex.earthsci.unimelb.edu.au):
     env daily
     --time 2003-06-01 2003-06-30 none
     --region world-dateline-duplicate360
-    --sf /mnt/meteo0/data/simmonds/dbirving/Merra/data/sf_Merra_250hPa_daily_native.nc
-    --ofile /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/env-w234-va_Merra_250hPa_daily_r360x181
-    --ticks 0 1.5 3 4.5 6 7.5 9 10.5 12.0
+    --sf /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/sf_Merra_250hPa_daily_native.nc sf
+    --ofile /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/figures/env-w234-va_Merra_250hPa_daily_r360x181
+    --ticks 0 4 8 12 16 20 24 28 32
     --sf_ticks -140 -120 -100 -80 -60 -40 -20 0 20 40 60 80 100 120 140
     --projection spstere
     
@@ -181,7 +181,7 @@ example (vortex.earthsci.unimelb.edu.au):
                         help="name of region to plot [default: world-dateline]")
 
     parser.add_argument("--rotation", type=float, nargs=4, metavar=('NP_LAT', 'NP_LON', 'PM_LAT', 'PM_LON'), default=None,
-                        help="Details of the rotation that has been applied to the envelope data"    
+                        help="Details of the rotation that has been applied to the envelope data") 
 
     parser.add_argument("--uwind", type=str, nargs=2, metavar=('FILE', 'VAR'),
                         help="zonal wind anomaly file and variable")
