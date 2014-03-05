@@ -1,14 +1,7 @@
 """
-GIT INFO: $Id$
-Filename:     calc_monthly_anomaly.py
+Filename:     calc_zonal_anomaly.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  
-
-
-Updates | By | Description
---------+----+------------
-23 August 2012 | Damien Irving | Initial version.
-
+Description:  Calculate the zonal anomaly (i.e. subtract the zonal mean at each timestep)
 """
 
 import os
@@ -17,7 +10,6 @@ import sys
 import argparse
 
 import cdutil
-import MV2
 
 module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
@@ -25,15 +17,14 @@ import netcdf_io as nio
 
 
 def calc_zonal_anomaly(indata):
-    """Calculate monthly anomaly."""  
-    
+    """Calculate zonal anomaly."""  
+        
     # Calculate the zonal mean climatology #
-    
     zonal_mean = cdutil.averager(indata, axis='x')
     
     # Broadcast to same shape and subract from data #
-    
-    
+    zonal_mean_field = numpy.resize(zonal_mean, indata.shape)
+    zonal_anomaly = indata - zonal_mean_field
 
     return zonal_anomaly
 
@@ -42,21 +33,19 @@ def main(inargs):
     """Run the program"""
     
     # Open the input file #
-
     indata = nio.InputData(inargs.infile, inargs.variable)
       
     # Calculate the zonal anomaly #
-    
     zonal_anomaly = calc_zonal_anomaly(indata.data)
 
     # Write output file #
-
+    ### Change so I copy all attributes and just rewrite history
     attributes = {'id': inargs.variable,
-                 'long_name': full_data.data.long_name,
-                 'units': full_data.data.units,
+                 'long_name': indata.data.long_name,
+                 'units': indata.data.units,
                  'history': 'The zonal mean has been subtracted at each time step.'}
 
-    outdata_list = [monthly_anomaly,]
+    outdata_list = [zonal_anomaly,]
     outvar_atts_list = [attributes,]
     outvar_axes_list = [indata.data.getAxisList(),]
  
@@ -71,8 +60,8 @@ if __name__ == '__main__':
 
     extra_info = """
 example (vortex.earthsci.unimelb.edu.au):
-  /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_zonal_anomaly.py 
-  zg_Merra_250hPa_monthly_native.nc zg_Merra_250hPa_monthly-zonal-anom_native.nc
+  /usr/local/uvcdat/1.3.0/bin/cdat calc_zonal_anomaly.py 
+  zg_Merra_250hPa_monthly_native.nc zg zg_Merra_250hPa_monthly-zonal-anom_native.nc
 """    	
 
     description = 'Calculate the zonal anomaly (i.e. subtract the zonal mean at each timestep).'
