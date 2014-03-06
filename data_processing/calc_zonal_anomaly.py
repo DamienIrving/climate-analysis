@@ -40,7 +40,7 @@ def main(inargs):
     """Run the program"""
     
     # Open the input file #
-    indata = nio.InputData(inargs.infile, inargs.variable)
+    indata = nio.InputData(inargs.infile, inargs.variable, **nio.dict_filter(vars(inargs), ['time',]))
       
     # Calculate the zonal anomaly #
     zonal_anomaly = calc_zonal_anomaly(indata.data)
@@ -79,6 +79,9 @@ example (vortex.earthsci.unimelb.edu.au):
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
+
+    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
+                        help="Time period [default = entire]")
 
     args = parser.parse_args()            
 
