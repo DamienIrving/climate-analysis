@@ -9,6 +9,7 @@ import sys
 
 import argparse
 
+import numpy
 import cdutil
 
 module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
@@ -18,12 +19,18 @@ import netcdf_io as nio
 
 def calc_zonal_anomaly(indata):
     """Calculate zonal anomaly."""  
+    
+    assert indata.getOrder()[-1] == 'x', \
+    'The last dimension must be longitude'
         
     # Calculate the zonal mean climatology #
     zonal_mean = cdutil.averager(indata, axis='x')
     
     # Broadcast to same shape and subract from data #
-    zonal_mean_field = numpy.resize(zonal_mean, indata.shape)
+    zonal_mean_shape = list(zonal_mean.shape)
+    zonal_mean_shape.append(1)
+    zonal_mean_added_dim = numpy.reshape(zonal_mean, zonal_mean_shape)
+    zonal_mean_field = numpy.repeat(zonal_mean_added_dim, indata.shape[-1], axis=-1)
     zonal_anomaly = indata - zonal_mean_field
 
     return zonal_anomaly
@@ -38,8 +45,7 @@ def main(inargs):
     # Calculate the zonal anomaly #
     zonal_anomaly = calc_zonal_anomaly(indata.data)
 
-    # Write output file #
-    ### Change so I copy all attributes and just rewrite history
+    # Write output file # 
     attributes = {'id': inargs.variable,
                  'long_name': indata.data.long_name,
                  'units': indata.data.units,
