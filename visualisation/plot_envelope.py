@@ -31,7 +31,7 @@ def extract_data(inargs):
     env_times = env_data.data.getTime().asComponentTime()    
 
     opt_data = {}
-    for opt in ['uwind', 'vwind', 'sf']:    
+    for opt in ['uwind', 'vwind', 'contour']:    
         try:
             opt_data[opt] = nio.InputData(eval('inargs.'+opt+'[0]'), 
                                           eval('inargs.'+opt+'[1]'), 
@@ -43,7 +43,7 @@ def extract_data(inargs):
         assert opt_data[opt].data.getTime().asComponentTime() == env_times, \
         'Time axes must be the same for all input data'
 
-    return env_data, opt_data['uwind'], opt_data['vwind'], opt_data['sf']
+    return env_data, opt_data['uwind'], opt_data['vwind'], opt_data['contour']
 
 
 def restore_env(indata_env, rotation_details):
@@ -81,7 +81,7 @@ def main(inargs):
 
     # Read input data #
 
-    indata_env, indata_u, indata_v, indata_sf = extract_data(inargs) 
+    indata_env, indata_u, indata_v, indata_contour = extract_data(inargs) 
 
     # Restore env data to standard lat/lon grid #
 
@@ -111,9 +111,9 @@ def main(inargs):
         env_data_select = [env_data(time=(date, date_abbrev), squeeze=1),]
         u_data = [indata_u.data(time=(date, date_abbrev), squeeze=1),] if indata_u else None
         v_data = [indata_v.data(time=(date, date_abbrev), squeeze=1),] if indata_v else None
-        sf_data = [indata_sf.data(time=(date, date_abbrev), squeeze=1),] if indata_sf else None
+        contour_data = [indata_contour.data(time=(date, date_abbrev), squeeze=1),] if indata_contour else None
 
-        title = 'Wave envelope, 250hPa wind & sf anomaly, %s' %(date_abbrev)  ## Change this depending on inputs
+        title = '%s, %s' %(inargs.title, date_abbrev)
         ofile = '%s_%s.png' %(inargs.ofile, date_abbrev)
 
         plot_map.multiplot(env_data_select,
@@ -125,7 +125,7 @@ def main(inargs):
 		           delat=10, delon=30,
 		           contour=True,
 		           ticks=inargs.ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
-        	           contour_data=sf_data, contour_ticks=inargs.sf_ticks,
+        	           contour_data=contour_data, contour_ticks=inargs.contour_ticks,
 		           uwnd_data=u_data, vwnd_data=v_data, quiver_thin=9, key_value=keyval,
 		           quiver_scale=quiv_scale, quiver_width=quiv_width,
         	           projection=inargs.projection, 
@@ -145,7 +145,7 @@ example (vortex.earthsci.unimelb.edu.au):
     /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_envelope.py
     /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260.nc
     env 20 260 0 0 daily 
-    --sf /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/sf_Merra_250hPa_daily-anom-wrt-all_native.nc sf
+    --contour /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/sf_Merra_250hPa_daily-anom-wrt-all_native.nc sf
     --ofile /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/figures/env/vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np26-260
     --time 1981-06-01 1981-06-30 none
     --search_paths 20 260 225 335 -10 10 5
@@ -156,15 +156,15 @@ example (vortex.earthsci.unimelb.edu.au):
     env daily
     --time 2003-06-01 2003-06-30 none
     --region world-dateline-duplicate360
-    --sf /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/sf_Merra_250hPa_daily_native.nc sf
+    --contour /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/sf_Merra_250hPa_daily_native.nc sf
     --ofile /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/figures/env-w234-va_Merra_250hPa_daily_r360x181
     --ticks 0 4 8 12 16 20 24 28 32
-    --sf_ticks -140 -120 -100 -80 -60 -40 -20 0 20 40 60 80 100 120 140
+    --contour_ticks -140 -120 -100 -80 -60 -40 -20 0 20 40 60 80 100 120 140
     --projection spstere
     
 """
   
-    description='Plot wave envelope and associated wind and streamfunction anomalies'
+    description='Plot wave envelope and associated wind quivers and/or contour lines (e.g. for the streamfunction)'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
@@ -187,11 +187,13 @@ example (vortex.earthsci.unimelb.edu.au):
                         help="zonal wind anomaly file and variable")
     parser.add_argument("--vwind", type=str, nargs=2, metavar=('FILE', 'VAR'),
                         help="meridional wind anomaly file and variable")
-    parser.add_argument("--sf", type=str, nargs=2, metavar=('FILE', 'VAR'),
-                        help="streamfunction anomaly file and variable")
+    parser.add_argument("--contour", type=str, nargs=2, metavar=('FILE', 'VAR'),
+                        help="file and variable for contour lines")
     parser.add_argument("--ofile", type=str, default='test', 
                         help="name of output file (without the file ending - date will be tacked on)")
     
+    parser.add_argument("--title", type=str, default='Wave envelope',
+                        help="plot title - the date is added [default: Wave envelope]")
     parser.add_argument("--ticks", type=float, nargs='*', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                         help="List of tick marks to appear on the colour bar [default: auto]")
     parser.add_argument("--segments", type=str, nargs='*', default=None,
@@ -203,8 +205,8 @@ example (vortex.earthsci.unimelb.edu.au):
     parser.add_argument("--image_size", type=float, default=9, 
                         help="size of image [default: 9]")
 
-    parser.add_argument("--sf_ticks", type=float, nargs='*', default=[-30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30], 
-                        help="list of tick marks for sf contours, or just the number of contour lines")
+    parser.add_argument("--contour_ticks", type=float, nargs='*', default=15, 
+                        help="list of tick marks for the contours, or just the number of contour lines")
     parser.add_argument("--search_paths", type=float, nargs=7, default=None,
                         metavar=('NP_LAT', 'NP_LON', 'START_LON', 'END_LON', 'START_LAT', 'END_LAT', 'LAT_STRIDE'),
                         help="draw the search paths for the specified north pole [default: None]")
