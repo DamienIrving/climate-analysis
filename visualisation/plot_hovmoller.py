@@ -120,7 +120,7 @@ example (irvingnix@earthsci.unimelb.edu.au)
     parser.add_argument("--time_bounds", type=str, nargs=2, default=None, metavar=('START', 'END'),
                         help="start & end date for the time axis (e.g. 1979-01-01 1979-01-21)")
     parser.add_argument("--time_tick_interval", type=int, default=2,
-                        help="Internal between time tick labels")
+                        help="Interval between time tick labels")
     parser.add_argument("--colorbar_bounds", type=float, nargs=2, default=(0, 20), metavar=('MIN', 'MAX'),
                         help="Maximum and minimum values on colorbar") 
     parser.add_argument("--lon_bounds", type=float, nargs=2, default=(0, 360), metavar=('START', 'END'),
