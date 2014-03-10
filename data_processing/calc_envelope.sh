@@ -49,10 +49,9 @@ fi
 years=(1979 1984 1989 1994 1999 2004 2009)
 temp_files=()
 for year in "${years[@]}"; do
-    end=`expr $year + 5`
-    end_label=`expr $year + 4`
-    temp_file=${temp_dir}/temp-env_${year}-${end_label}.nc
-    /usr/local/uvcdat/1.3.0/bin/cdat ~/phd/data_processing/calc_envelope.py $infile $invar ${temp_file} ${waveselect[@]} ${lonselect[@]} --time ${year}-01-01 ${end}-01-01 none 
+    end=`expr $year + 4`
+    temp_file=${temp_dir}/temp-env_${year}-${end}.nc
+    /usr/local/uvcdat/1.3.0/bin/cdat ~/phd/data_processing/calc_envelope.py $infile $invar ${temp_file} ${waveselect[@]} ${lonselect[@]} --time ${year}-01-01 ${end}-12-31 none 
     temp_files+=(${temp_file})
 done
 

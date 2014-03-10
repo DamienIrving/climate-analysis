@@ -744,7 +744,7 @@ def _subset_data(infile, var_id, **kwargs):
 	        setattr(data, att, infile.getattribute(var_id, att))
 
 	elif valid_trange:
-	    kwargs['time'] = kwargs['time'][0:2]
+	    kwargs['time'] = (kwargs['time'][0]+' 0:0:0.0', kwargs['time'][1]+' 23:59:0.0')
 	    data = infile(var_id, **kwargs)
 
 	else:

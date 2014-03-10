@@ -60,10 +60,9 @@ fi
 years=(1979 1984 1989 1994 1999 2004 2009)
 temp_files=()
 for year in "${years[@]}"; do
-    end=`expr $year + 5`
-    end_label=`expr $year + 4`
-    temp_file=${temp_dir}/temp-vrot_${year}-${end_label}.nc
-    /usr/local/uvcdat/1.2.0rc1/bin/cdat ~/phd/data_processing/calc_vwind_rotation.py $ufile $uvar $vfile $vvar ${temp_file} --north_pole $nplat $nplon --grid $latstart $nlat $latstep $lonstart $nlon $lonstep --time ${year}-01-01 ${end}-01-01 none
+    end=`expr $year + 4`
+    temp_file=${temp_dir}/temp-vrot_${year}-${end}.nc
+    /usr/local/uvcdat/1.2.0rc1/bin/cdat ~/phd/data_processing/calc_vwind_rotation.py $ufile $uvar $vfile $vvar ${temp_file} --north_pole $nplat $nplon --grid $latstart $nlat $latstep $lonstart $nlon $lonstep --time ${year}-01-01 ${end}-12-31 none
     temp_files+=(${temp_file})
 done
 
