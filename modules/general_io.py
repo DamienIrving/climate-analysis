@@ -7,10 +7,25 @@ module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 
 Included functions:
+find_duplicates -- Find duplicates in a list
 read_dates      -- Read in a list of dates
 write_dates     -- Write a list of dates
 
 """
+
+from collections import defaultdict
+
+
+def find_duplicates(inlist):
+    """Return list of duplicates in a list"""
+    
+    D = defaultdict(list)
+    for i,item in enumerate(mylist):
+        D[item].append(i)
+    D = {k:v for k,v in D.items() if len(v)>1}
+    
+    return D
+    
 
 def read_dates(infile):
     """Read a file of dates (one per line) and write to a list"""
