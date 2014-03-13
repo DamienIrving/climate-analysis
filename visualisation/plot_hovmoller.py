@@ -73,8 +73,8 @@ def _main(inargs):
     plt.axis('tight')
 
     # Set the time axis ticks
-    interval = '(interval=%s)' %(str(inargs.time_tick_interval))
-    locator = eval(timescales[inargs.timescale][1]+interval) 
+    interval = '(interval=%s)' %(str(inargs.time_ticks[1]))
+    locator = eval(timescales[inargs.time_ticks[0]][1]+interval) 
     plt.gca().yaxis.set_major_locator(locator)
 
     # And format the ticks to just show the year-month-day
@@ -119,8 +119,8 @@ example (irvingnix@earthsci.unimelb.edu.au)
 
     parser.add_argument("--time_bounds", type=str, nargs=2, default=None, metavar=('START', 'END'),
                         help="start & end date for the time axis (e.g. 1979-01-01 1979-01-21)")
-    parser.add_argument("--time_tick_interval", type=int, default=2,
-                        help="Interval between time tick labels")
+    parser.add_argument("--time_ticks", type=str, nargs=2, metavar=('TIMESCALE', 'INTERVAL'),
+                        help="Timescale and interval for time ticks")
     parser.add_argument("--colorbar_bounds", type=float, nargs=2, default=(0, 20), metavar=('MIN', 'MAX'),
                         help="Maximum and minimum values on colorbar") 
     parser.add_argument("--lon_bounds", type=float, nargs=2, default=(0, 360), metavar=('START', 'END'),
