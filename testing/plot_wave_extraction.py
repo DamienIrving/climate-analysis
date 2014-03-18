@@ -59,7 +59,7 @@ def get_wave(source, var, time_bounds, lat):
     elif source == 'zw3_smooth_variation':
 	wave_data = numpy.abs(numpy.sin(0.5*x)) * numpy.cos(3*x)
         function_text = r'$y = \sin(0.5x) \cos(3x)$'
-        envelope_list = [(1, 20), (2, 4), (3, 3)]
+        envelope_list = [(1, 20), (2, 4), (2, 3), (1, 3), (3, 3)]
 
     elif source == 'zw3_breaks':
 	wave_data = numpy.abs(numpy.sin(2*x)) * numpy.cos(3*x)
@@ -74,13 +74,13 @@ def get_wave(source, var, time_bounds, lat):
 	
 	wave_data = amplitude * numpy.cos(3*x)
         function_text = r'$y = \cos(3x), with ramp down$'
-        envelope_list = [(1, 20), (2, 4), (2, 7), (3, 3)]
+        envelope_list = [(1, 20), (2, 4), (1, 3), (2, 3), (3, 3)]
 
     elif source == 'zw3_random':
 	wave_data = numpy.cos(3*x)
 	wave_data[70:130] = numpy.random.uniform(-1, 1, size=60)
         function_text = r'$y = \cos(3x), with random$'
-        envelope_list = [(1, 20), (2, 4), (1, 5), (3, 3)]
+        envelope_list = [(1, 20), (2, 4), (2, 3), (1, 3), (1, 5), (3, 3)]
 
     else:
         fin = cdms2.open(source)
