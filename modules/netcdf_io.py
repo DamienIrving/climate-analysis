@@ -687,7 +687,9 @@ def _subset_data(infile, var_id, **kwargs):
     """     
 
     assert type(infile) == cdms2.dataset.CdmsFile      
-    	
+    
+    kwargs['squeeze'] = 1
+        	
     if kwargs.has_key('time'):
 	assert isinstance(kwargs['time'], (list, tuple)), \
 	'time selector must be a list or tuple'

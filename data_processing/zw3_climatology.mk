@@ -12,24 +12,25 @@ include zw3_climatology_config.mk
 ### Core zonal wave 3 climatology process ###
 
 ## Phony target
-all : ${RWID_DIR}/zw3-dates_Merra_250hPa_${TSCALE}_${GRID}-hov-env-${WAVE_LABEL}-va_${LAT_LABEL}_${CLIP_LABEL}.txt
+all : ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-threshold${EXTENT_THRESH}.csv
 
 ## Step 1: Regrid the meridional wind data
 ${PDATA_DIR}/va_Merra_250hPa_${TSCALE}_${GRID}.nc : ${DATA_DIR}/va_Merra_250hPa_${TSCALE}_native.nc
-    cdo remapcon2,${GRID} $< $@
-    ncatted -O -a axis,time,c,c,T $@
+	cdo remapcon2,${GRID} $< $@
+	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 2: Extract the wave envelope
 ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}.nc : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE}_${GRID}.nc
-    ${ENV_METHOD} $< va $@ ${WAVE_SEARCH}
+	${ENV_METHOD} $< va $@ ${WAVE_SEARCH}
 
 ## Step 3: Calculate the hovmoller diagram
-${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}-hov_${LAT_LABEL}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}.nc
-    cdo mermean -sellatlonbox,0,360,${LAT_SEARCH} $< $@
+${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}.nc
+	cdo mermean -sellonlatbox,0,360,${LAT_SEARCH} $< $@
+	ncatted -O -a axis,time,c,c,T $@
 
-## Step 4: Calculate the extent
-${RWID_DIR}/zw3-extent${EXTENT_THRESH}_Merra_250hPa_${TSCALE}_${GRID}-hov-env-${WAVE_LABEL}-va_${LAT_LABEL}.csv : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}-hov_${LAT_LABEL}.nc
-    ${CDAT} ${SCRIPT_DIR}/calc_extent.py $< env ${EXTENT_THRESH} $@ 
+## Step 4: Calculate the wave statistics
+${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-threshold${EXTENT_THRESH}.csv : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}.nc
+	${CDAT} ${SCRIPT_DIR}/calc_wave_stats.py $< env ${EXTENT_THRESH} $@ 
 
 
 ####

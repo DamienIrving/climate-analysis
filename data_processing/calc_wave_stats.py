@@ -17,15 +17,16 @@ module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
 
+import pdb
 
-def extent_stats(data_double, lons_double, threshold):
+def extent_stats(data_double, lons_double, threshold, lon_spacing):
     """Return key statistics regarding the extent"""
     
-    lons_filtered = lons_double[data_double[i, :] > threshold]
+    lons_filtered = lons_double[data_double > threshold]
     if len(lons_filtered) == 0:
         start_lon, end_lon, extent = 0.0, 0.0, 0.0
     elif len(lons_filtered) == len(lons_double):
-        start_lon, end_lon, extent = 0.0, lons_double[-1], len(lons) / 2
+        start_lon, end_lon, extent = 0.0, lons_double[-1], len(lons_double) / 2
     else: 
         diffs = numpy.diff(lons_filtered)
         diffs_corrected = numpy.where(diffs < 0, diffs + 360, diffs)
@@ -42,18 +43,27 @@ def extent_stats(data_double, lons_double, threshold):
     return start_lon, end_lon, extent
 
 
-def amp_stats(data, lon_axis, start_lon, end_lon):
+def amp_stats(data_double, lons_double, start_lon, end_lon):
     """Return key statistics regarding the amplitude"""
     
-    start_index = numpy.where(lon_axis == start_lon)[0][0]
-    end_index = numpy.where(lon_axis == end_lon)[0][0]
-    
-    data_selection = data[start_index, end_index + 1]
-    
-    amp_mean = numpy.mean(data_selection)
-    amp_max = numpy.max(data_selection)
-    amp_max_index = numpy.where(data == amp_max)[0][0]
-    amp_max_lon = lon_axis[amp_max_index]
+    if start_lon == end_lon:
+        amp_mean, amp_max, amp_max_lon = 0.0, 0.0, 0.0
+    else:
+	start_index = numpy.where(lons_double == start_lon)[0][0]
+	end_indexes = numpy.where(lons_double == end_lon)[0]
+	assert len(end_indexes) == 2, \
+	'There should be two matches in lons_double'
+	if end_indexes[0] > start_index:
+	    end_index = end_indexes[0]
+	else:
+	    end_index = end_indexes[1]
+
+	data_selection = data_double[start_index: end_index + 1]
+
+	amp_mean = numpy.mean(data_selection)
+	amp_max = numpy.max(data_selection)
+	amp_max_index = numpy.where(data_double == amp_max)[0][0]
+	amp_max_lon = lons_double[amp_max_index]
     
     return amp_mean, amp_max, amp_max_lon
 
@@ -83,24 +93,28 @@ def main(inargs):
     
     # Loop through every timestep, writing the statistics to file # 
     
-    ntime = data.shape[0] 
+    ntime = indata.data.shape[0] 
     with open(inargs.outfile, 'wb') as ofile:
         output = csv.writer(ofile, delimiter=',')
-	    output.writerow(['date', 'start-lon', 'end-lon', 'extent', 'amp-mean', 'amp-max', 'amp-max-lon'])
+        output.writerow(['date', 'start-lon', 'end-lon', 'extent', 'amp-mean', 'amp-max', 'amp-max-lon'])
     
         for i in range(0, ntime):
-            start_lon, end_lon, extent = extent_stats(data_double[i, :], lons_double, inargs.threshold)
-            amp_mean, amp_max, amp_max_lon = amp_stats(indata.data[i, :], lons, start_lon, end_lon)
+            start_lon, end_lon, extent = extent_stats(data_double[i, :], lons_double, inargs.threshold, lon_spacing)
+            amp_mean, amp_max, amp_max_lon = amp_stats(data_double[i, :], lons_double, start_lon, end_lon)
             
 	    # Write result to file
 	    date = str(times[i]).split(' ')[0]
-        output.writerow([date, start_lon, end_lon, extent, amp_mean, amp_max, amp_max_lon])
+            output.writerow([date, start_lon, end_lon, extent, amp_mean, amp_max, amp_max_lon])
  
 
 if __name__ == '__main__':
 
     extra_info =""" 
 example (vortex.earthsci.unimelb.edu.au):
+  /usr/local/uvcdat/1.3.0/bin/cdat calc_wave_stats.py 
+  /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/env-w234-va_Merra_250hPa_30day-runmean_r360x181-hov-lat70S40S.nc 
+  env 7 
+  /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/zw3-stats_Merra_250hPa_30day-runmean_r360x181-hov-lat70S40S_env-w234-va-threshold7.csv
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
