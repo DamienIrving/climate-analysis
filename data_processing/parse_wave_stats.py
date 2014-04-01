@@ -74,20 +74,12 @@ def calc_seasonal_values(monthly_values):
               'JJA': [6, 7, 8], 'SON': [9, 10, 11],
 	      'annual': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
     
-    nyears = len(monthly_values[1])
     seasonal_values = {}
-    
     for season in months.keys():    
-        yrs = nyears - 1 if season == 'DJF' else nyears
-	values = numpy.zeros(yrs)
+        nyrs = len(monthly_values[months[season][1]])
+	values = numpy.zeros(nyrs)
 	for month in months[season]:
-            if season == 'DJF' and month in (1, 2):
-		data = monthly_values[month][1:]
-	    elif season == 'DJF' and month == 12:
-		data = monthly_values[month][:-1]
-	    else: 
-		data = monthly_values[month]
-
+	    data = monthly_values[month]
             values = values + numpy.array(data)
 
         seasonal_values[season] = values
@@ -188,15 +180,14 @@ def plot_extent_histogram(data, outfile):
     plt.savefig(outfile)
 
 
-def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_month):
+def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_month, month_years):
     """Plot a bar chart showing the totals for each month"""
     
     date_list = data['date'].tolist()
     monthly_totals, monthly_values = bin_dates(date_list, start_year, start_month, end_year, end_month)
-    years = get_years(date_list)
     monthly_pct = numpy.zeros(12)
     for i in range(0, 12):
-        monthly_pct[i] = (monthly_totals[i+1] / (float(calendar.mdays[i+1]) * len(years))) * 100     
+        monthly_pct[i] = (monthly_totals[i+1] / (float(calendar.mdays[i+1]) * len(month_years[i+1]))) * 100     
 
     ind = numpy.arange(12)    # the x locations for the bars
     width = 0.8               # the width of the bars
@@ -208,26 +199,48 @@ def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_mont
     plt.savefig(ofile)
 
 
-def plot_seasonal_values(data, ofile, legend_loc, start_year, start_month, end_year, end_month):
+get_intersection(dictionary):
+    """Return the common values from a dictionary of lists"""
+    
+    if len(dictionary.keys()) == 1:
+        result = dictionary[dictionary.keys()[0]]
+    else:
+        base_key = dictionary.keys()[0]
+        result = set(dictionary[base_key])
+        for key, value in dictionary.iteritems():
+            result.intersection_update(value)
+
+    return list(result)
+
+
+def plot_seasonal_values(data, ofile, legend_loc, start_year, start_month, end_year, end_month, month_years):
     """Plot a line graph showing the seasonal values for each year"""
     
+    for month, years in month_years.iteritems():
+        assert len(years) > 1, \
+        """Must have more than one year of data for each season or plot_seasonal_values() won't work""" 
+
     date_list = data['date'].tolist()
     monthly_totals, monthly_values = bin_dates(date_list, start_year, start_month, end_year, end_month)
-    seasonal_values = calc_seasonal_values(monthly_values)
-    years = get_years(date_list)
-    assert len(years) > 1, \
-    """Must have more than one year of data or plot_seasonal_values() won't work""" 
-    
+    seasonal_values = calc_seasonal_values(monthly_values, month_years)
+
     colors = {'DJF': 'red', 'MAM': 'orange',
              'JJA': 'blue', 'SON': 'green',
 	     'annual': 'black'}
     
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    pdb.set_trace()
+ 
+    years = {}
+    years['DJF'] = list(set(month_years[1]))
+    years['MAM'] = list(set(month_years[4]))
+    years['JJA'] = list(set(month_years[7]))
+    years['SON'] = list(set(month_years[10]))
+    years['annual'] = get_intersection(month_years)
+    
+    pdb.set_trace() 
     for season, values in seasonal_values.iteritems():
-	xvals = years[1:] if season == 'DJF' else years
-	ax.plot(xvals, seasonal_values[season], color=colors[season], lw=2.0, label=season)       
+	ax.plot(years[season], seasonal_values[season], color=colors[season], lw=2.0, label=season)       
 
     ax.set_xlim(start_year, end_year)
     ax.set_xlabel('year')
@@ -254,10 +267,52 @@ def simple_selector(data_column, threshold):
     return data_column >= threshold
 
 
-def get_date_bounds(indata, dt_selection):
+def crop_dates(start_date, end_date, timescale):
+    """Adjust a start and end date so the data only includes complete
+    months or seasons"""
+    
+    # Crop to complete month
+    if start_date.day != 1:
+        start_date = start_date + relativedelta(months=1)
+    
+    if end_date.day != calendar.monthrange(end_date.year, end_date.month)[1]:
+        end_date = end_date - relativedelta(months=1)
+
+    # Crop to complete season
+    if timescale == 'seasonal':
+	if start_date.month in [1, 4, 7, 10]:
+            start_date = start_date + relativedelta(months=2)
+	elif start_date.month in [2, 5, 8, 11]:
+            start_date = start_date + relativedelta(months=1)
+
+	if end_date.month in [3, 6, 9, 12]:
+            end_date = end_date - relativedelta(months=1)
+	elif end_date.month in [4, 7, 10, 1]:
+            end_date = end_date - relativedelta(months=2)
+    
+    # Count the number of years for each month or season
+    month_years = {}
+    for month in range(1,13):
+        month_years[month] = []
+    date_list = list(rrule(MONTHLY, dtstart=start_date, until=end_date))
+    for date in date_list:
+        month_years[date.month].append(date.year)
+
+    
+    return start_date, end_date, month_years
+    
+
+def get_date_bounds(indata, dt_selection, timescale='monthly'):
     """For a given list of dates, return the year/month bounds for 
-    months of complete data (i.e. incomplete start or end months are
-    not included"""
+    months or seasons of complete data (i.e. incomplete start or end 
+    months/seasons are not included
+    
+    Input arguments:
+        timescale   ->   'monthtly' or 'seasonal'
+    
+    """
+    
+    assert timescale in ['monthly', 'seasonal']
     
     temp_data = indata[dt_selection]
     date_list = temp_data['date'].tolist()
@@ -265,18 +320,9 @@ def get_date_bounds(indata, dt_selection):
     start_date = datetime.strptime(date_list[0], '%Y-%m-%d')
     end_date = datetime.strptime(date_list[-1], '%Y-%m-%d')
     
-    if start_date.day != 1:
-        start_date = start_date + relativedelta(months=1)
-    
-    if end_date.day != calendar.monthrange(end_date.year, end_date.month)[1]:
-        end_date = end_date - relativedelta(months=1)
+    start_date, end_date, month_years = crop_dates(start_date, end_date, timescale)
 
-    month_diff = start_date.month - end_date.month
-    assert month_diff in [-11, 1], \
-    """Select a time period for which each month has the same amount of complete
-    records (i.e. all days)"""
-
-    return start_date.year, start_date.month, end_date.year, end_date.month
+    return start_date.year, start_date.month, end_date.year, end_date.month, month_years
 
 
 def main(inargs):
@@ -305,16 +351,15 @@ def main(inargs):
     if inargs.duration_histogram:
         plot_duration_histogram(data, inargs.duration_histogram)
 
-    if inargs.monthly_totals_histogram or inargs.seasonal_values_line:
-        start_year, start_month, end_year, end_month = get_date_bounds(indata, dt_selection)
-
     if inargs.monthly_totals_histogram:
+        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection, timescale='monthly')
         plot_monthly_totals(data, inargs.monthly_totals_histogram,
-                            start_year, start_month, end_year, end_month)
+                            start_year, start_month, end_year, end_month, month_years)
     
     if inargs.seasonal_values_line:
+        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection, timescale='seasonal')
         plot_seasonal_values(data, inargs.seasonal_values_line, inargs.leg_loc, 
-	                     start_year, start_month, end_year, end_month)
+	                     start_year, start_month, end_year, end_month, month_years)
     
 
 if __name__ == '__main__':
