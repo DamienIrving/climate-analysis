@@ -22,7 +22,8 @@ WAVE_SEARCH=--wavenumbers 2 4
 WAVE_LABEL=w234
 
 # Extent statistics
-EXTENT_THRESH=7
+AMP_MIN=7
+EXTENT_MIN=1
 
 
 

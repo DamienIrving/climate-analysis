@@ -377,7 +377,7 @@ author:
     
     # Other filters
     parser.add_argument("--extent_filter", type=float, default=None,
-                        help="Zonal extent filter - dates below the provided value are discarded")
+                        help="Zonal extent filter - extents below the provided value are discarded")
     
     # Optional outputs
     parser.add_argument("--extent_histogram", type=str, default=None, 
