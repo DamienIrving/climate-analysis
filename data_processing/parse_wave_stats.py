@@ -67,24 +67,30 @@ def bin_dates(date_list, start_year, start_month, end_year, end_month):
     return monthly_totals, monthly_values
 
 
-def calc_seasonal_values(monthly_values):
+def calc_seasonal_values(monthly_values, month_years):
     """Calculate the seasonal values from the monthly values"""
     
     months = {'DJF': [12, 1, 2], 'MAM': [3, 4, 5],
               'JJA': [6, 7, 8], 'SON': [9, 10, 11],
 	      'annual': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
     
+    #pdb.set_trace()
+    
     seasonal_values = {}
-    for season in months.keys():    
-        nyrs = len(monthly_values[months[season][1]])
-	values = numpy.zeros(nyrs)
-	for month in months[season]:
-	    data = monthly_values[month]
-            values = values + numpy.array(data)
+    year_lists = {}
+    for season, months in months.iteritems():    
+        years = get_intersection(month_years, months)
+	values = numpy.zeros(len(years))
+	for year in years:
+	    for month in months:
+	        index = month_years[month].index(year)
+		data = monthly_values[month][index]
+	        values = values + numpy.array(data)
 
         seasonal_values[season] = values
+	year_lists[season] = years
 
-    return seasonal_values
+    return seasonal_values, year_lists
     
 
 def datetime_selector(times_str, season=None, start=None, end=None):
@@ -199,16 +205,13 @@ def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_mont
     plt.savefig(ofile)
 
 
-get_intersection(dictionary):
+def get_intersection(dictionary, key_list):
     """Return the common values from a dictionary of lists"""
-    
-    if len(dictionary.keys()) == 1:
-        result = dictionary[dictionary.keys()[0]]
-    else:
-        base_key = dictionary.keys()[0]
-        result = set(dictionary[base_key])
-        for key, value in dictionary.iteritems():
-            result.intersection_update(value)
+  
+    base_key = key_list[0]
+    result = set(dictionary[base_key])
+    for key in key_list[1:]:
+        result.intersection_update(dictionary[key])
 
     return list(result)
 
@@ -222,7 +225,7 @@ def plot_seasonal_values(data, ofile, legend_loc, start_year, start_month, end_y
 
     date_list = data['date'].tolist()
     monthly_totals, monthly_values = bin_dates(date_list, start_year, start_month, end_year, end_month)
-    seasonal_values = calc_seasonal_values(monthly_values, month_years)
+    seasonal_values, years = calc_seasonal_values(monthly_values, month_years)
 
     colors = {'DJF': 'red', 'MAM': 'orange',
              'JJA': 'blue', 'SON': 'green',
@@ -230,15 +233,7 @@ def plot_seasonal_values(data, ofile, legend_loc, start_year, start_month, end_y
     
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
- 
-    years = {}
-    years['DJF'] = list(set(month_years[1]))
-    years['MAM'] = list(set(month_years[4]))
-    years['JJA'] = list(set(month_years[7]))
-    years['SON'] = list(set(month_years[10]))
-    years['annual'] = get_intersection(month_years)
     
-    pdb.set_trace() 
     for season, values in seasonal_values.iteritems():
 	ax.plot(years[season], seasonal_values[season], color=colors[season], lw=2.0, label=season)       
 
@@ -267,9 +262,8 @@ def simple_selector(data_column, threshold):
     return data_column >= threshold
 
 
-def crop_dates(start_date, end_date, timescale):
-    """Adjust a start and end date so the data only includes complete
-    months or seasons"""
+def crop_dates(start_date, end_date):
+    """Adjust a start and end date so the data only includes complete months"""
     
     # Crop to complete month
     if start_date.day != 1:
@@ -277,20 +271,8 @@ def crop_dates(start_date, end_date, timescale):
     
     if end_date.day != calendar.monthrange(end_date.year, end_date.month)[1]:
         end_date = end_date - relativedelta(months=1)
-
-    # Crop to complete season
-    if timescale == 'seasonal':
-	if start_date.month in [1, 4, 7, 10]:
-            start_date = start_date + relativedelta(months=2)
-	elif start_date.month in [2, 5, 8, 11]:
-            start_date = start_date + relativedelta(months=1)
-
-	if end_date.month in [3, 6, 9, 12]:
-            end_date = end_date - relativedelta(months=1)
-	elif end_date.month in [4, 7, 10, 1]:
-            end_date = end_date - relativedelta(months=2)
     
-    # Count the number of years for each month or season
+    # Get the year corresponding to each month
     month_years = {}
     for month in range(1,13):
         month_years[month] = []
@@ -302,25 +284,20 @@ def crop_dates(start_date, end_date, timescale):
     return start_date, end_date, month_years
     
 
-def get_date_bounds(indata, dt_selection, timescale='monthly'):
+def get_date_bounds(indata, dt_selection):
     """For a given list of dates, return the year/month bounds for 
-    months or seasons of complete data (i.e. incomplete start or end 
-    months/seasons are not included
-    
-    Input arguments:
-        timescale   ->   'monthtly' or 'seasonal'
+    months of complete data (i.e. incomplete start or end 
+    months are not included)
     
     """
-    
-    assert timescale in ['monthly', 'seasonal']
-    
+        
     temp_data = indata[dt_selection]
     date_list = temp_data['date'].tolist()
     
     start_date = datetime.strptime(date_list[0], '%Y-%m-%d')
     end_date = datetime.strptime(date_list[-1], '%Y-%m-%d')
     
-    start_date, end_date, month_years = crop_dates(start_date, end_date, timescale)
+    start_date, end_date, month_years = crop_dates(start_date, end_date)
 
     return start_date.year, start_date.month, end_date.year, end_date.month, month_years
 
@@ -352,12 +329,12 @@ def main(inargs):
         plot_duration_histogram(data, inargs.duration_histogram)
 
     if inargs.monthly_totals_histogram:
-        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection, timescale='monthly')
+        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection)
         plot_monthly_totals(data, inargs.monthly_totals_histogram,
                             start_year, start_month, end_year, end_month, month_years)
     
     if inargs.seasonal_values_line:
-        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection, timescale='seasonal')
+        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection)
         plot_seasonal_values(data, inargs.seasonal_values_line, inargs.leg_loc, 
 	                     start_year, start_month, end_year, end_month, month_years)
     
