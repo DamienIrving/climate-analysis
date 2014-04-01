@@ -213,7 +213,7 @@ def multiplot(indata,
               #headings
               row_headings=None, inline_row_headings=None, col_headings=None, img_headings=None,
               #axis options to draw lat/lon lines
-              draw_axis=False, delat=30, delon=30, equator=False, enso=None, search_paths=None,
+              draw_axis=False, delat=30, delon=30, equator=False, enso=None, search_paths=None, box=None,
 	      #contour plot
 	      contour=False,
               #width of image in inches (individual image)
@@ -265,7 +265,8 @@ def multiplot(indata,
       delat, delon         --  Space between lat and lon gridlines
       equator              --  Flag for drawing a special gridline for the equator
       enso                 --  List of ENSO regions plot gridlines for (can be IEMI or any Nino indices)
-      search_paths         --  
+      search_paths         --  Draw the search paths for the specified north pole
+      box                  --  Draw a box
       contour              --  Flag for creating a contour colourmap (otherwise each grid point value is
                                plotted with no smoothing
       image_size           --  Size of each individual image
@@ -475,6 +476,10 @@ def multiplot(indata,
             if enso:
 	        _plot_enso(bmap, enso, projection)
   
+            #draw custom box
+            if box:
+	        _plot_box(bmap, box)
+  
 
     # Plot the colour bar #
     
@@ -502,6 +507,31 @@ def multiplot(indata,
     del tick_marks
     plt.close()
 
+
+def _plot_box(bmap, box):
+    """Add a box to the plot.
+    
+    Arguments:
+        box  ->  (south_lat, north_lat, west_lon, east_lon)
+    
+    """
+    south_lat, north_lat, west_lon, east_lon = box
+    if east_lon < west_lon:
+        east_lon = east_lon + 360.0
+    borders = {}
+    
+    borders['north_lons'] = borders['south_lons'] =  numpy.arange(west_lon, east_lon + 1, 1)
+    borders['south_lats'] = numpy.repeat(south_lat, len(borders['south_lons']))
+    borders['north_lats'] = numpy.repeat(north_lat, len(borders['south_lons']))
+    
+    borders['east_lats'] = borders['west_lats'] = numpy.arange(south_lat, north_lat + 1, 1)
+    borders['west_lons'] = numpy.repeat(west_lon, len(borders['west_lats']))
+    borders['east_lons'] = numpy.repeat(east_lon, len(borders['west_lats']))
+    
+    for border in ['north', 'south', 'east', 'west']:
+        x, y = bmap(borders[border+'_lons'], borders[border+'_lats'])
+	bmap.plot(x, y, linestyle='-', color='0.7')
+    
 
 def _plot_contours(bmap, projection, cont_data, contour_ticks, contour_dec):
     """Add contours to a plot."""
@@ -1006,6 +1036,9 @@ improvements:
     parser.add_argument("--search_paths", type=float, nargs=7, 
                         metavar=('NP_LAT', 'NP_LON', 'START_LON', 'END_LON', 'START_LAT', 'END_LAT', 'LAT_STRIDE'),
                         help="draw the search paths for the specified north pole [default: None]")
+    parser.add_argument("--box", type=float, nargs=4,
+                        metavar=('SOUTH_LAT', 'NORTH_LAT', 'WEST_LON', 'EAST_LON'),
+                        help="draw a box [default: None]")
     parser.add_argument("--image_size", type=float, 
                         help="size of image [default: 6]")
     parser.add_argument("--projection", type=str, choices=('cyl', 'nsper', 'spstere', 'npstere'),
