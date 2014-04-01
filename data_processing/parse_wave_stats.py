@@ -18,7 +18,6 @@ import calendar
 
 import argparse
 
-import pdb
 
 try:
     module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
@@ -74,23 +73,45 @@ def calc_seasonal_values(monthly_values, month_years):
               'JJA': [6, 7, 8], 'SON': [9, 10, 11],
 	      'annual': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
     
-    #pdb.set_trace()
-    
     seasonal_values = {}
+    for season in months.keys():
+        seasonal_values[season] = []
+	
     year_lists = {}
     for season, months in months.iteritems():    
         years = get_intersection(month_years, months)
-	values = numpy.zeros(len(years))
 	for year in years:
+	    season_total = 0
 	    for month in months:
 	        index = month_years[month].index(year)
-		data = monthly_values[month][index]
-	        values = values + numpy.array(data)
-
-        seasonal_values[season] = values
+		month_total = monthly_values[month][index]
+	        season_total = season_total + month_total
+            seasonal_values[season].append(season_total)
 	year_lists[season] = years
 
     return seasonal_values, year_lists
+
+
+def crop_dates(start_date, end_date):
+    """Adjust a start and end date so the data only includes complete months"""
+    
+    # Crop to complete month
+    if start_date.day != 1:
+        start_date = start_date + relativedelta(months=1)
+    
+    if end_date.day != calendar.monthrange(end_date.year, end_date.month)[1]:
+        end_date = end_date - relativedelta(months=1)
+    
+    # Get the year corresponding to each month
+    month_years = {}
+    for month in range(1,13):
+        month_years[month] = []
+    date_list = list(rrule(MONTHLY, dtstart=start_date, until=end_date))
+    for date in date_list:
+        month_years[date.month].append(date.year)
+
+    
+    return start_date, end_date, month_years
     
 
 def datetime_selector(times_str, season=None, start=None, end=None):
@@ -126,6 +147,35 @@ def datetime_selector(times_str, season=None, start=None, end=None):
     
     return combined_selection
 
+
+def get_date_bounds(indata, dt_selection):
+    """For a given list of dates, return the year/month bounds for 
+    months of complete data (i.e. incomplete start or end 
+    months are not included)
+    
+    """
+        
+    temp_data = indata[dt_selection]
+    date_list = temp_data['date'].tolist()
+    
+    start_date = datetime.strptime(date_list[0], '%Y-%m-%d')
+    end_date = datetime.strptime(date_list[-1], '%Y-%m-%d')
+    
+    start_date, end_date, month_years = crop_dates(start_date, end_date)
+
+    return start_date.year, start_date.month, end_date.year, end_date.month, month_years
+
+
+def get_intersection(dictionary, key_list):
+    """Return the common values from a dictionary of lists"""
+  
+    base_key = key_list[0]
+    result = set(dictionary[base_key])
+    for key in key_list[1:]:
+        result.intersection_update(dictionary[key])
+
+    return list(result)
+    
 
 def get_years(date_list):
     """Return a list of integer years"""
@@ -205,18 +255,9 @@ def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_mont
     plt.savefig(ofile)
 
 
-def get_intersection(dictionary, key_list):
-    """Return the common values from a dictionary of lists"""
-  
-    base_key = key_list[0]
-    result = set(dictionary[base_key])
-    for key in key_list[1:]:
-        result.intersection_update(dictionary[key])
-
-    return list(result)
-
-
-def plot_seasonal_values(data, ofile, legend_loc, start_year, start_month, end_year, end_month, month_years):
+def plot_seasonal_values(data, ofile, 
+                         start_year, start_month, end_year, end_month, month_years,
+			 leg_loc=7, annual=False):
     """Plot a line graph showing the seasonal values for each year"""
     
     for month, years in month_years.iteritems():
@@ -234,13 +275,16 @@ def plot_seasonal_values(data, ofile, legend_loc, start_year, start_month, end_y
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     
-    for season, values in seasonal_values.iteritems():
+    season_list = ['DJF', 'MAM', 'JJA', 'SON']
+    if annual:
+        season_list.append('annual')
+    for season in season_list:
 	ax.plot(years[season], seasonal_values[season], color=colors[season], lw=2.0, label=season)       
 
     ax.set_xlim(start_year, end_year)
     ax.set_xlabel('year')
     ax.set_ylabel('total days')
-    ax.legend(loc=legend_loc, fontsize='small', ncol=5)
+    ax.legend(loc=leg_loc, fontsize='small', ncol=5)
 
     plt.savefig(ofile)
 
@@ -260,46 +304,6 @@ def simple_selector(data_column, threshold):
     """Define a selector that retains all values >= threshold"""
     
     return data_column >= threshold
-
-
-def crop_dates(start_date, end_date):
-    """Adjust a start and end date so the data only includes complete months"""
-    
-    # Crop to complete month
-    if start_date.day != 1:
-        start_date = start_date + relativedelta(months=1)
-    
-    if end_date.day != calendar.monthrange(end_date.year, end_date.month)[1]:
-        end_date = end_date - relativedelta(months=1)
-    
-    # Get the year corresponding to each month
-    month_years = {}
-    for month in range(1,13):
-        month_years[month] = []
-    date_list = list(rrule(MONTHLY, dtstart=start_date, until=end_date))
-    for date in date_list:
-        month_years[date.month].append(date.year)
-
-    
-    return start_date, end_date, month_years
-    
-
-def get_date_bounds(indata, dt_selection):
-    """For a given list of dates, return the year/month bounds for 
-    months of complete data (i.e. incomplete start or end 
-    months are not included)
-    
-    """
-        
-    temp_data = indata[dt_selection]
-    date_list = temp_data['date'].tolist()
-    
-    start_date = datetime.strptime(date_list[0], '%Y-%m-%d')
-    end_date = datetime.strptime(date_list[-1], '%Y-%m-%d')
-    
-    start_date, end_date, month_years = crop_dates(start_date, end_date)
-
-    return start_date.year, start_date.month, end_date.year, end_date.month, month_years
 
 
 def main(inargs):
@@ -335,8 +339,9 @@ def main(inargs):
     
     if inargs.seasonal_values_line:
         start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection)
-        plot_seasonal_values(data, inargs.seasonal_values_line, inargs.leg_loc, 
-	                     start_year, start_month, end_year, end_month, month_years)
+        plot_seasonal_values(data, inargs.seasonal_values_line, 
+	                     start_year, start_month, end_year, end_month, month_years,
+			     leg_loc=inargs.leg_loc, annual=inargs.annual)
     
 
 if __name__ == '__main__':
@@ -388,6 +393,8 @@ author:
 
     parser.add_argument("--leg_loc", type=int, default=7,
                         help="Location of legend for line graph [default = 7 = centre right]")
+    parser.add_argument("--annual", action="store_true", default=False,
+                        help="switch for including the annual season in the seasonal values plot [default: False]")
 
     args = parser.parse_args()            
     main(args)
