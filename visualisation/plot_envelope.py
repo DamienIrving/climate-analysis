@@ -22,6 +22,8 @@ import numpy
 import cdms2
 import MV2
 
+import pdb
+
 
 def extract_data(inargs):
     """Extract input data and check that time axes match"""
@@ -76,12 +78,34 @@ def restore_env(indata_env, rotation_details):
     return env_restored
  
 
+def extract_extent(fname):
+    """Extract the extent information from an input file"""
+    
+    f = open(fname, 'r')
+    lines = f.readlines()
+    f.close()
+
+    extent_output = {}
+    for line in lines[1:]:  #$ skip the header row
+        data = line.split(',')
+	year, month, day = data[0].split('-')
+	date = (int(year), int(month), int(day))
+	start_lon = float(data[1])
+	end_lon = float(data[2])
+    
+        extent_output[date] = (start_lon, end_lon)
+
+    return extent_output
+
+
 def main(inargs):
     """Create the plot"""
 
     # Read input data #
 
     indata_env, indata_u, indata_v, indata_contour = extract_data(inargs) 
+    if inargs.extent:
+        indata_extent = extract_extent(inargs.extent[0])
 
     # Restore env data to standard lat/lon grid #
 
@@ -107,6 +131,16 @@ def main(inargs):
 	    date_abbrev = year+'-'+month
 	else:
 	    date_abbrev = year+'-'+month+'-'+day
+	
+	if inargs.extent:
+	    west_lon, east_lon = indata_extent[(int(year), int(month), int(day))]
+	    if west_lon == east_lon:
+	        box = None
+	    else:
+	        south_lat, north_lat = inargs.extent[1:]
+                box = (float(south_lat), float(north_lat), west_lon, east_lon)
+	else:
+	    box = None
 	    
         env_data_select = [env_data(time=(date, date_abbrev), squeeze=1),]
         u_data = [indata_u.data(time=(date, date_abbrev), squeeze=1),] if indata_u else None
@@ -131,6 +165,7 @@ def main(inargs):
         	           projection=inargs.projection, 
         	           extend='max',
 			   search_paths=inargs.search_paths,
+			   box=box,
         	           image_size=inargs.image_size)
         
         inargs.ticks = inargs.ticks[0: -1]   # Fix for weird thing where it keeps appending to 
@@ -142,7 +177,7 @@ if __name__ == '__main__':
 
     extra_info="""
 example (vortex.earthsci.unimelb.edu.au):
-    /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_envelope.py
+    /usr/local/uvcdat/1.3.0/bin/cdat plot_envelope.py
     /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260.nc
     env 20 260 0 0 daily 
     --contour /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/sf_Merra_250hPa_daily-anom-wrt-all_native.nc sf
@@ -151,7 +186,7 @@ example (vortex.earthsci.unimelb.edu.au):
     --search_paths 20 260 225 335 -10 10 5
     --region world-psa
     
-    /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_envelope.py
+    /usr/local/uvcdat/1.3.0/bin/cdat plot_envelope.py
     /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/env-w234-va_Merra_250hPa_daily_r360x181.nc 
     env daily
     --time 2003-06-01 2003-06-30 none
@@ -210,6 +245,8 @@ example (vortex.earthsci.unimelb.edu.au):
     parser.add_argument("--search_paths", type=float, nargs=7, default=None,
                         metavar=('NP_LAT', 'NP_LON', 'START_LON', 'END_LON', 'START_LAT', 'END_LAT', 'LAT_STRIDE'),
                         help="draw the search paths for the specified north pole [default: None]")
+    parser.add_argument("--extent", type=str, default=None, nargs=3, metavar=('FILE', 'LAT_MIN', 'LAT_MAX'),
+                        help='File with the extent information (so extent box can be plotted) for each timestep, search lat1, lat2')
     
     args = parser.parse_args() 
 
