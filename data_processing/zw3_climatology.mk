@@ -12,7 +12,7 @@ include zw3_climatology_config.mk
 ### Core zonal wave 3 climatology process ###
 
 ## Phony target
-all : ${RWID_DIR}/figures/zw3-seasonal-values-histogram_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}.png
+all : ${RWID_DIR}/figures/zw3-seasonal-values-histogram_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}.png
 
 ## Step 1: Regrid the meridional wind data
 ${PDATA_DIR}/va_Merra_250hPa_${TSCALE}_${GRID}.nc : ${DATA_DIR}/va_Merra_250hPa_${TSCALE}_native.nc
@@ -24,33 +24,37 @@ ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}.nc : ${PDATA_DIR
 	${ENV_METHOD} $< va $@ ${WAVE_SEARCH}
 
 ## Step 3: Calculate the hovmoller diagram
-${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}.nc
-	cdo mermean -sellonlatbox,0,360,${LAT_SEARCH} $< $@
+${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}.nc
+	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 4: Calculate the wave statistics
-${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}.nc
-	${CDAT} ${SCRIPT_DIR}/calc_wave_stats.py $< env ${AMP_MIN} $@ 
+${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< env ${AMP_MIN} $@ 
 
 ## Step 5: Generate list of dates for use in composite creation
-${RWID_DIR}/zw3-dates_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}.txt : ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-	${PYTHON} ${SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} --date_list $@
+${RWID_DIR}/zw3-dates_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}.txt : ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} --date_list $@
 
 ## Step 5a: Plot the extent histogram
-${RWID_DIR}/figures/zw3-extent-histogram_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}.png : ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-	${PYTHON} ${SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} --extent_histogram $@
+${RWID_DIR}/figures/zw3-extent-histogram_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}.png : ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} --extent_histogram $@
 
 ## Step 5b: Plot the monthly totals histogram
-${RWID_DIR}/figures/zw3-monthly-totals-histogram_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}.png : ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-	${PYTHON} ${SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} --monthly_totals_histogram $@
+${RWID_DIR}/figures/zw3-monthly-totals-histogram_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}.png : ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} --monthly_totals_histogram $@
 
 ## Step 5c: Plot the monthly totals histogram
-${RWID_DIR}/figures/zw3-seasonal-values-histogram_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}.png : ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-hov-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-	${PYTHON} ${SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} --seasonal_values_histogram $@ --annual
+${RWID_DIR}/figures/zw3-seasonal-values-histogram_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}.png : ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} --seasonal_values_histogram $@ --annual
+
+## Step 6: Plot the envelope
+${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}_**FINAL-DATE**.png : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}.nc ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv 
+/mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/sf_Merra_250hPa_30day-runmean-zonal-anom_native.nc sf
+        ${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< env daily --extent $< ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --ofile $@ --projection spstere
 
 
 
 ## Optional extras ##
 
-# plot_envelope.py    --   plot the wave envelope with other variables overlayed
 # plot_composite.py   --   plot a composite
