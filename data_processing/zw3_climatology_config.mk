@@ -10,6 +10,7 @@ PYTHON=/usr/bin/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
 VIS_SCRIPT_DIR=~/phd/visualisation
 ENV_METHOD=bash ${SCRIPT_DIR}/calc_envelope.sh   #${CDAT} ${SCRIPT_DIR}/calc_envelope.py
+ZONAL_ANOM_METHOD=${SCRIPT_DIR}/calc_zonal_anomaly.sh
 
 # Dataset
 DATASET=Merra
@@ -27,6 +28,10 @@ WAVE_LABEL=w234
 # Extent statistics
 AMP_MIN=7
 EXTENT_MIN=1
+
+# Plot envelope 
+PLOT_START=1979-06-15
+PLOT_END=1979-06-18
 
 
 
