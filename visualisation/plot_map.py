@@ -838,16 +838,19 @@ def _set_contour_ticks(contour_dict, contour_ticks):
     """Set contour ticks."""
 
     if contour_ticks == None:
-        contour_min_level, contour_max_level = _get_min_max(contour_dict, plot='contour')
+        contour_ticks = 10
+    
+    if type(contour_ticks) == list:
+        contour_min_level, contour_max_level = [contour_ticks[0], contour_ticks[-1]]
+    else:
+	contour_min_level, contour_max_level = _get_min_max(contour_dict, plot='contour')
 	contour_diff = contour_max_level - contour_min_level
-	contour_step = contour_diff/10.0
+	contour_step = contour_diff / contour_ticks
 
 	contour_ticks = list(numpy.arange(contour_min_level, contour_max_level+(contour_step/2), contour_step))
         if contour_max_level > 0 and contour_min_level < 0:
 	    contour_ticks[5] = 0.0
-    else:
-	contour_min_level, contour_max_level = [contour_ticks[0], contour_ticks[-1]]
-
+	
     contour_dec = _decimal_places(contour_max_level - contour_min_level)
 
     return contour_ticks, contour_dec

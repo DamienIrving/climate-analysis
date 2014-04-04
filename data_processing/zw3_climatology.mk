@@ -17,7 +17,7 @@ include zw3_climatology_config.mk
 ### Core zonal wave 3 climatology process ###
 
 ## Phony target
-all : ${RWID_DIR}/figures/zw3-seasonal-values-histogram_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}.png
+all : ${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}_${PLOT_END}.png
 
 ## Step 1: Regrid the meridional wind data
 ${PDATA_DIR}/va_Merra_250hPa_${TSCALE}_${GRID}.nc : ${DATA_DIR}/va_Merra_250hPa_${TSCALE}_native.nc
@@ -54,14 +54,13 @@ ${RWID_DIR}/figures/zw3-seasonal-values-histogram_Merra_250hPa_${TSCALE}_${GRID}
 	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} --seasonal_values_histogram $@ --annual
 
 ## Step 6: Plot the envelope
-${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}_**FINAL-DATE**.png : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}.nc ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv 
-${PDATA_DIR}/sf_Merra_250hPa_${TSCALE}-zonal-anom_native.nc
-        ${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< env daily --extent $(word 2,$^) ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --contour $(word 3,$^) sf --time ${PLOT_START} ${PLOT_END} none --projection spstere --ofile $@
+${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE}_${GRID}.nc ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE}-zonal-anom_native.nc
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< env daily --extent $(word 2,$^) ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --contour $(word 3,$^) sf --time ${PLOT_START} ${PLOT_END} none --projection spstere --ofile $@
 
 ## Step 6a: Calculate the streamfunction zonal anomaly
 ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE}-zonal-anom_native.nc : ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE}_native.nc       
 	${ZONAL_ANOM_METHOD} $< sf $@
-        ncatted -O -a axis,time,c,c,T $@
+	ncatted -O -a axis,time,c,c,T $@
 
 
 

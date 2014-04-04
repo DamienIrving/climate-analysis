@@ -8,6 +8,7 @@ Description:  Plot wave envelope and associated streamfunction anomalies
 import os
 import sys
 import argparse
+import re
 
 module_dir = os.path.join(os.environ['HOME'], 'visualisation')
 sys.path.insert(0, module_dir)
@@ -21,8 +22,6 @@ import netcdf_io as nio
 import numpy
 import cdms2
 import MV2
-
-import pdb
 
 
 def extract_data(inargs):
@@ -148,7 +147,11 @@ def main(inargs):
         contour_data = [indata_contour.data(time=(date, date_abbrev), squeeze=1),] if indata_contour else None
 
         title = '%s, %s' %(inargs.title, date_abbrev)
-        ofile = '%s_%s.png' %(inargs.ofile, date_abbrev)
+
+        date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
+	assert re.search(date_pattern, inargs.ofile), \
+	"""Output file must contain the date of the final timestep in the format YYYY-MM-DD"""
+        ofile = re.sub(r'([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})', date_abbrev, inargs.ofile)
 
         plot_map.multiplot(env_data_select,
 		           ofile=ofile,
@@ -224,8 +227,8 @@ example (vortex.earthsci.unimelb.edu.au):
                         help="meridional wind anomaly file and variable")
     parser.add_argument("--contour", type=str, nargs=2, metavar=('FILE', 'VAR'),
                         help="file and variable for contour lines")
-    parser.add_argument("--ofile", type=str, default='test', 
-                        help="name of output file (without the file ending - date will be tacked on)")
+    parser.add_argument("--ofile", type=str, default='test_envelope_1979-01-01.png', 
+                        help="name of output file (include the date of one of the timesteps in YYYY-MM-DD format - it will be replaced in place)")
     
     parser.add_argument("--title", type=str, default='Wave envelope',
                         help="plot title - the date is added [default: Wave envelope]")

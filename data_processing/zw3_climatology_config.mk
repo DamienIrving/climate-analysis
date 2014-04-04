@@ -18,7 +18,7 @@ GRID=r360x181
 TSCALE=30day-runmean
 
 # Envelope extraction
-MER_METHOD=mermax #mermean
+MER_METHOD=mermax
 LAT_SEARCH_MIN=-70
 LAT_SEARCH_MAX=-40
 LAT_LABEL=lat70S40S
