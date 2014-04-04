@@ -516,7 +516,11 @@ def _plot_box(bmap, box):
     
     """
     south_lat, north_lat, west_lon, east_lon = box
-    if east_lon < west_lon:
+    assert (0.0 <= east_lon <= 360) and  (0.0 <= west_lon <= 360), \
+    """Longitude coordinates for the box must be 0 < lon < 360"""  
+    if (east_lon < west_lon) and (west_lon > 180.0):
+        west_lon = west_lon - 360.0
+    if (east_lon < west_lon) and (west_lon <= 180.0):
         east_lon = east_lon + 360.0
     borders = {}
     
