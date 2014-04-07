@@ -399,8 +399,8 @@ author:
     parser.add_argument("--date_list", type=str, default=None, 
                         help="Name of output file for list of filtered dates")		
 
-    parser.add_argument("--leg_loc", type=int, default=7,
-                        help="Location of legend for line graph [default = 7 = centre right]")
+    parser.add_argument("--leg_loc", type=int, default=0,
+                        help="Location of legend for line graph [default = 0 = top right] (7 = centre right)")
     parser.add_argument("--annual", action="store_true", default=False,
                         help="switch for including the annual season in the seasonal values plot [default: False]")
 
