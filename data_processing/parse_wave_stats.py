@@ -221,10 +221,10 @@ def plot_duration_histogram(data, outfile, stats):
     gio.write_metadata(outfile, extra_notes=stats)
 
 
-def plot_extent_histogram(data, outfile, stats):
+def plot_extent_histogram(data, outfile, bin_width, stats):
     """Plot an extent histogram"""
     
-    edges = numpy.arange(-0.5, 361, 10) 
+    edges = numpy.arange(-0.5, 361, bin_width) 
     counts, bins = numpy.histogram(data, edges)
     counts = (counts.astype(float) / len(data)) * 100
     width = (bins[1]-bins[0]) * .9
@@ -238,7 +238,7 @@ def plot_extent_histogram(data, outfile, stats):
     gio.write_metadata(outfile, extra_notes=stats)
 
 
-def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_month, month_years, stats):
+def plot_monthly_totals(data, outfile, start_year, start_month, end_year, end_month, month_years, stats):
     """Plot a bar chart showing the totals for each month"""
     
     date_list = data['date'].tolist()
@@ -254,11 +254,11 @@ def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_mont
     plt.ylabel('Percentage of days')
     plt.xticks(ind+width/2., calendar.month_abbr[1:])
 
-    plt.savefig(ofile)
+    plt.savefig(outfile)
     gio.write_metadata(outfile, extra_notes=stats)
 
 
-def plot_seasonal_values(data, ofile, 
+def plot_seasonal_values(data, outfile, 
                          start_year, start_month, end_year, end_month, month_years, stats,
 			 leg_loc=7, annual=False):
     """Plot a line graph showing the seasonal values for each year"""
@@ -289,7 +289,7 @@ def plot_seasonal_values(data, ofile,
     ax.set_ylabel('total days')
     ax.legend(loc=leg_loc, fontsize='small', ncol=5)
 
-    plt.savefig(ofile)
+    plt.savefig(outfile)
     gio.write_metadata(outfile, extra_notes=stats)
 
 
@@ -312,7 +312,7 @@ def main(inargs):
     """Run the program"""
    
     # Read data 
-    indata = pandas.read_csv(inargs.infile, header=0)
+    indata = pandas.read_csv(inargs.infile, header=1)
     
     # Apply filters
     dt_selection = datetime_selector(indata['date'], inargs.season, inargs.start, inargs.end)
@@ -330,7 +330,7 @@ def main(inargs):
         gio.write_dates(inargs.date_list, data['date'].tolist())
 
     if inargs.extent_histogram:
-        plot_extent_histogram(data['extent'], inargs.extent_histogram, stats)
+        plot_extent_histogram(data['extent'], inargs.extent_histogram, inargs.extent_bin_width, stats)
 
     if inargs.duration_histogram:
         plot_duration_histogram(data, inargs.duration_histogram, stats)
