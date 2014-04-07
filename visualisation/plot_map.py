@@ -30,12 +30,14 @@ import argparse
 import re
 import sys
 import os
+from datetime import datetime
 
 import pylab
 
 module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
+import general_io as gio
 import coordinate_rotation as crot
 
 module_dir2 = os.path.join(os.environ['HOME'], 'phd', 'testing')
@@ -105,22 +107,25 @@ def extract_data(file_list, region='world-dateline', convert=False):
     """
 
     if not file_list:
-        return None
+        return None, None
 
     assert len(file_list[0]) == 5 or len(file_list[0]) == 2
     assert region in nio.regions.keys()
 
-    new_list = []
+    data_list = []
+    metadata_list = []
     for item in file_list:
         fname = item[0]
         var = item[1]
 	
 	if len(item) > 2:
              tselect = (item[2:5])
-             data = nio.InputData(fname, var, time=tselect, region=region, convert=convert).data
+             indata = nio.InputData(fname, var, time=tselect, region=region, convert=convert)
         else:
-	     data = nio.InputData(fname, var, region=region, convert=convert).data
+	     indata = nio.InputData(fname, var, region=region, convert=convert)
        
+        data = indata.data
+	metadata = [indata.fname, indata.id, indata.global_atts['history']]
        
         #Data must be two dimensional 
         if (re.match('^t', data.getOrder())):
@@ -131,9 +136,10 @@ def extract_data(file_list, region='world-dateline', convert=False):
         if not (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0:
 	    print 'WARNING: There are duplicate longitude values (which is useful for sterographic plots but sometimes problematic otherwise)'  
 	
-        new_list.append(data)
+        data_list.append(data)
+	metadata_list.append(metadata)
 
-    return new_list  
+    return data_list, metadata_list  
 
 
 def _generate_colourmap(colourmap, nsegs):
@@ -217,7 +223,9 @@ def multiplot(indata,
 	      #contour plot
 	      contour=False,
               #width of image in inches (individual image)
-              image_size=6):
+              image_size=6,
+	      #metadata
+	      file_info=None, extra_notes=None):
 
     """Create a spatial plot.
 
@@ -270,6 +278,7 @@ def multiplot(indata,
       contour              --  Flag for creating a contour colourmap (otherwise each grid point value is
                                plotted with no smoothing
       image_size           --  Size of each individual image
+      metadata             --  List of metadata lists, which each contain ['fname', 'var_id', 'global_atts['history']']
 
     """
 
@@ -498,11 +507,11 @@ def multiplot(indata,
 	else:
 	    cb.set_label(units.replace("_", " "))
     
-    if ofile:
-        plt.savefig(ofile, dpi=dpi, transparent=transparent)
-    else:
-	plt.savefig('test.png', dpi=dpi, transparent=transparent)
-
+    ofile_name = ofile if ofile else 'test.png'
+    plt.savefig(ofile_name, dpi=dpi, transparent=transparent)
+    if file_info or extra_notes:
+        gio.write_metadata(ofile_name, file_info=file_info, extra_notes=extra_notes)
+    
     del ticks
     del tick_marks
     plt.close()
@@ -687,7 +696,6 @@ def _plot_search_paths(bmap, new_np, plot_lons, plot_lats, lon_start):
         x, y = bmap(rot_lons_adjust, rot_lats)
         shade = '0.5' if lat == 0.0 else '0.8'
 	bmap.plot(x, y, '-', color=shade)
-
 
 
 def _plot_enso(bmap, region_list, projection):
@@ -953,18 +961,24 @@ def _shuffle(in_list, rows, cols):
             r = r + 1    
 
     return out_list
-    
+
 
 def _main(inargs):
     """Run program."""
 
     # Extract data #
 
-    infile_data = extract_data(inargs.infiles, region=inargs.region, convert=inargs.convert)
-    contour_data = extract_data(inargs.contour_file, region=inargs.region, convert=inargs.convert)
-    uwnd_data = extract_data(inargs.uwnd_file, region=inargs.region, convert=inargs.convert)
-    vwnd_data = extract_data(inargs.vwnd_file, region=inargs.region, convert=inargs.convert)
-    stipple_data = extract_data(inargs.stipple_file, region=inargs.region, convert=inargs.convert)
+    infile_data, infile_metadata = extract_data(inargs.infiles, region=inargs.region, convert=inargs.convert)
+    contour_data, contour_metadata = extract_data(inargs.contour_file, region=inargs.region, convert=inargs.convert)
+    uwnd_data, uwnd_metadata = extract_data(inargs.uwnd_file, region=inargs.region, convert=inargs.convert)
+    vwnd_data, vwnd_metadata = extract_data(inargs.vwnd_file, region=inargs.region, convert=inargs.convert)
+    stipple_data, stipple_metadata = extract_data(inargs.stipple_file, region=inargs.region, convert=inargs.convert)
+    
+    metadata_list = []
+    for ifile_type in [infile_metadata, contour_metadata, uwnd_metadata, vwnd_metadata, stipple_metadata]:
+        if ifile_type:
+	    for ifile in ifile_type:
+	        metadata_list.append(ifile)
       
     # Generate plot #
 
@@ -973,6 +987,7 @@ def _main(inargs):
               uwnd_data=uwnd_data,
               vwnd_data=vwnd_data,
               stipple_data=stipple_data,
+	      file_info=metadata_list, 
               **nio.dict_filter(vars(inargs), nio.list_kwargs(multiplot)))
 
 

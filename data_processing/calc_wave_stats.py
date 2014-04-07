@@ -16,8 +16,7 @@ import csv
 module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
-
-import pdb
+    
 
 def extent_stats(data_double, lons_double, threshold, lon_spacing):
     """Return key statistics regarding the extent"""
@@ -93,11 +92,12 @@ def main(inargs):
     
     # Loop through every timestep, writing the statistics to file # 
     
+    time_stamp = gio.get_timestamp()
     ntime = indata.data.shape[0] 
     with open(inargs.outfile, 'wb') as ofile:
         output = csv.writer(ofile, delimiter=',')
+	output.writerow([time_stamp])
         output.writerow(['date', 'start-lon', 'end-lon', 'extent', 'amp-mean', 'amp-max', 'amp-max-lon'])
-    
         for i in range(0, ntime):
             start_lon, end_lon, extent = extent_stats(data_double[i, :], lons_double, inargs.threshold, lon_spacing)
             amp_mean, amp_max, amp_max_lon = amp_stats(data_double[i, :], lons_double, start_lon, end_lon)

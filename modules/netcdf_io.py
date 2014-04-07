@@ -55,21 +55,11 @@ cdms2.setNetcdfDeflateLevelFlag(0)
 import MV2
 import regrid2
 
-try:
-    from git import Repo  #doesn't come standard with uvcdat install
-    REPO_DIR = os.path.join(os.environ['HOME'], 'phd')
-    MODULE_HASH = Repo(REPO_DIR).head.commit.hexsha
-except ImportError:
-    MODULE_HASH = 'unknown'
+module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
+sys.path.insert(0, module_dir)
+import general_io as gio
+
   
-## Alternative provenance tracking, if netcdf_io.py 
-#  was under version control directly ##
-#repo_dir = os.path.abspath(os.path.dirname(__file__))
-#MODULE_HASH = Repo(repo_dir).head.commit.hexsha
-
-import pdb
-
-
 ## Define regions ##
 
 # The 3rd argument here works as follows:
@@ -964,9 +954,9 @@ def write_netcdf(outfile_name, history_entry, global_atts,
     else:
         old_history = ''
     
+    timestamp = gio.get_timestamp()
     setattr(outfile, 'history', 
-    """%s: cdat %s (Git hash: %s; format=NETCDF3_CLASSIC). %s\n%s""" %(datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y"),
-    history_entry, MODULE_HASH, extra_history, old_history))
+    """%s [format=NETCDF3_CLASSIC]. %s\n%s""" %(timestamp, extra_history, old_history))
 
     # Variables #
 

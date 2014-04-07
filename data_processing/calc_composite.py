@@ -65,7 +65,7 @@ def main(inargs):
     indata = nio.InputData(inargs.infile, inargs.var, 
                            **nio.dict_filter(vars(inargs), ['time', 'region']))
 
-    date_list = gio.read_dates(inargs.date_file)
+    date_list, date_metadata = gio.read_dates(inargs.date_file)
     if inargs.offset:
         date_list = date_offset(date_list, inargs.offset)
 
@@ -103,6 +103,7 @@ def main(inargs):
     outdata_list = [composite, p_val]
     outvar_atts_list = [composite_atts, pval_atts]
     outvar_axes_list = [composite.getAxisList(), composite.getAxisList()] 
+    indata.global_atts['history'] = '%s \n %s' %(date_metadata, indata.global_atts['history'])
 
     nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
                      indata.global_atts, 

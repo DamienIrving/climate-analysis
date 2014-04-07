@@ -218,6 +218,7 @@ def plot_duration_histogram(data, outfile):
     plt.ylabel('Frequency')
     
     plt.savefig(outfile)
+    gio.write_metadata(outfile)
 
 
 def plot_extent_histogram(data, outfile):
@@ -234,6 +235,7 @@ def plot_extent_histogram(data, outfile):
     plt.ylabel('Frequency (% total days)')
     
     plt.savefig(outfile)
+    gio.write_metadata(outfile)
 
 
 def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_month, month_years):
@@ -253,6 +255,7 @@ def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_mont
     plt.xticks(ind+width/2., calendar.month_abbr[1:])
 
     plt.savefig(ofile)
+    gio.write_metadata(outfile)
 
 
 def plot_seasonal_values(data, ofile, 
@@ -287,6 +290,7 @@ def plot_seasonal_values(data, ofile,
     ax.legend(loc=leg_loc, fontsize='small', ncol=5)
 
     plt.savefig(ofile)
+    gio.write_metadata(outfile)
 
 
 def print_stats(data):
@@ -310,7 +314,7 @@ def main(inargs):
     """Run the program"""
    
     # Read data 
-    indata = pandas.read_csv(inargs.infile)
+    indata = pandas.read_csv(inargs.infile, header=1)
     
     # Apply filters
     dt_selection = datetime_selector(indata['date'], inargs.season, inargs.start, inargs.end)
