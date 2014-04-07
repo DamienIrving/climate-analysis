@@ -4,7 +4,6 @@ from collections import OrderedDict
 import numpy
 import pandas
 
-
 import matplotlib.pyplot as plt
 
 from itertools import groupby
@@ -17,7 +16,7 @@ from matplotlib.dates import date2num
 import calendar
 
 import argparse
-
+import pdb
 
 try:
     module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
@@ -112,8 +111,8 @@ def crop_dates(start_date, end_date):
 
     
     return start_date, end_date, month_years
-    
 
+  
 def datetime_selector(times_str, season=None, start=None, end=None):
     """Define a datetime selector based on the supplied datetime column""" 
     
@@ -224,7 +223,7 @@ def plot_duration_histogram(data, outfile, stats):
 def plot_extent_histogram(data, outfile, bin_width, stats):
     """Plot an extent histogram"""
     
-    edges = numpy.arange(-0.5, 361, bin_width) 
+    edges = numpy.arange((0 - (bin_width / 2)), (360 + bin_width), bin_width) 
     counts, bins = numpy.histogram(data, edges)
     counts = (counts.astype(float) / len(data)) * 100
     width = (bins[1]-bins[0]) * .9
@@ -245,7 +244,13 @@ def plot_monthly_totals(data, outfile, start_year, start_month, end_year, end_mo
     monthly_totals, monthly_values = bin_dates(date_list, start_year, start_month, end_year, end_month)
     monthly_pct = numpy.zeros(12)
     for i in range(0, 12):
-        monthly_pct[i] = (monthly_totals[i+1] / (float(calendar.mdays[i+1]) * len(month_years[i+1]))) * 100     
+        ndays = calendar.mdays[i+1] * len(month_years[i+1])
+	if i == 1:
+	    start = start_year if start_month <= 2 else start_year + 1
+	    end = end_year if end_month >= 2 else end_year - 1
+	    nleap = calendar.leapdays(start, end)
+	    ndays = ndays + nleap
+        monthly_pct[i] = (monthly_totals[i+1] / float(ndays)) * 100     
 
     ind = numpy.arange(12)    # the x locations for the bars
     width = 0.8               # the width of the bars
