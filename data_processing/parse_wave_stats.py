@@ -186,7 +186,7 @@ def get_years(date_list):
     return numpy.arange(start_year, end_year + 1, 1)
 
 
-def plot_duration_histogram(data, outfile):
+def plot_duration_histogram(data, outfile, stats):
     """Plot a duration histogram"""
     
     # Group consecutive dates (events) and calculate their duration #
@@ -218,13 +218,13 @@ def plot_duration_histogram(data, outfile):
     plt.ylabel('Frequency')
     
     plt.savefig(outfile)
-    gio.write_metadata(outfile)
+    gio.write_metadata(outfile, extra_notes=stats)
 
 
-def plot_extent_histogram(data, outfile):
+def plot_extent_histogram(data, outfile, stats):
     """Plot an extent histogram"""
     
-    edges = numpy.arange(-0.5, 361, 1) 
+    edges = numpy.arange(-0.5, 361, 10) 
     counts, bins = numpy.histogram(data, edges)
     counts = (counts.astype(float) / len(data)) * 100
     width = (bins[1]-bins[0]) * .9
@@ -235,10 +235,10 @@ def plot_extent_histogram(data, outfile):
     plt.ylabel('Frequency (% total days)')
     
     plt.savefig(outfile)
-    gio.write_metadata(outfile)
+    gio.write_metadata(outfile, extra_notes=stats)
 
 
-def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_month, month_years):
+def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_month, month_years, stats):
     """Plot a bar chart showing the totals for each month"""
     
     date_list = data['date'].tolist()
@@ -255,11 +255,11 @@ def plot_monthly_totals(data, ofile, start_year, start_month, end_year, end_mont
     plt.xticks(ind+width/2., calendar.month_abbr[1:])
 
     plt.savefig(ofile)
-    gio.write_metadata(outfile)
+    gio.write_metadata(outfile, extra_notes=stats)
 
 
 def plot_seasonal_values(data, ofile, 
-                         start_year, start_month, end_year, end_month, month_years,
+                         start_year, start_month, end_year, end_month, month_years, stats,
 			 leg_loc=7, annual=False):
     """Plot a line graph showing the seasonal values for each year"""
     
@@ -290,61 +290,60 @@ def plot_seasonal_values(data, ofile,
     ax.legend(loc=leg_loc, fontsize='small', ncol=5)
 
     plt.savefig(ofile)
-    gio.write_metadata(outfile)
+    gio.write_metadata(outfile, extra_notes=stats)
 
 
-def print_stats(data):
+def basic_stats(data):
     """Print basic statistics to the screen"""
     
-    print 'total number of days:', len(data['date'])
     extent_list = data['extent'].tolist()
-    print 'zero extent days:', extent_list.count(0.0)
-    print 'maximum extent:', data['extent'].max(), 'degrees' 
+    stats = []
+    stats.append('total number of days: ' + str(len(data['date'])))
+    stats.append('zero extent days: ' + str(extent_list.count(0.0)))
+    stats.append('360 extent days: ' + str(extent_list.count(360.0)))
+    stats.append('maximum extent: ' + str(data['extent'].max()) + ' degrees') 
     mean_extent = data['extent'].mean()
-    print 'mean extent:', "%.2f" % round(mean_extent, 2), 'degrees'
+    stats.append('mean extent: ' + "%.2f" % round(mean_extent, 2) + ' degrees')
 
-
-def simple_selector(data_column, threshold):
-    """Define a selector that retains all values >= threshold"""
-    
-    return data_column >= threshold
+    return stats
 
 
 def main(inargs):
     """Run the program"""
    
     # Read data 
-    indata = pandas.read_csv(inargs.infile, header=1)
+    indata = pandas.read_csv(inargs.infile, header=0)
     
     # Apply filters
     dt_selection = datetime_selector(indata['date'], inargs.season, inargs.start, inargs.end)
-    extent_selection = simple_selector(indata['extent'], inargs.extent_filter)
-    selector = dt_selection & extent_selection
+    min_extent_selection = indata['extent'] >= inargs.extent_filter[0]
+    max_extent_selection = indata['extent'] <= inargs.extent_filter[1]
+    selector = dt_selection & min_extent_selection & max_extent_selection
     data = indata[selector]
     data.reset_index(drop=True, inplace=True)
 
     # Print basic statistics to the screen
-    print_stats(data)
+    stats = basic_stats(data)
     
     # Create optional outputs
     if inargs.date_list:    
         gio.write_dates(inargs.date_list, data['date'].tolist())
 
     if inargs.extent_histogram:
-        plot_extent_histogram(data['extent'], inargs.extent_histogram)
+        plot_extent_histogram(data['extent'], inargs.extent_histogram, stats)
 
     if inargs.duration_histogram:
-        plot_duration_histogram(data, inargs.duration_histogram)
+        plot_duration_histogram(data, inargs.duration_histogram, stats)
 
     if inargs.monthly_totals_histogram:
         start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection)
         plot_monthly_totals(data, inargs.monthly_totals_histogram,
-                            start_year, start_month, end_year, end_month, month_years)
+                            start_year, start_month, end_year, end_month, month_years, stats)
     
     if inargs.seasonal_values_line:
         start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection)
         plot_seasonal_values(data, inargs.seasonal_values_line, 
-	                     start_year, start_month, end_year, end_month, month_years,
+	                     start_year, start_month, end_year, end_month, month_years, stats,
 			     leg_loc=inargs.leg_loc, annual=inargs.annual)
     
 
@@ -380,8 +379,8 @@ author:
                         help="Season selector [default = all]")
     
     # Other filters
-    parser.add_argument("--extent_filter", type=float, default=None,
-                        help="Zonal extent filter - extents below the provided value are discarded")
+    parser.add_argument("--extent_filter", type=float, nargs=2, default=None, metavar=('MIN', 'MAX'),
+                        help="Zonal extent filter - only extents equal to or within these bounds are included") 
     
     # Optional outputs
     parser.add_argument("--extent_histogram", type=str, default=None, 
@@ -399,6 +398,11 @@ author:
                         help="Location of legend for line graph [default = 7 = centre right]")
     parser.add_argument("--annual", action="store_true", default=False,
                         help="switch for including the annual season in the seasonal values plot [default: False]")
+
+    # Plot options
+    
+    parser.add_argument("--extent_bin_width", type=float, default=10,
+                        help="Width of the bins for the extent historgram")
 
     args = parser.parse_args()            
     main(args)
