@@ -15,7 +15,8 @@ ZONAL_ANOM_METHOD=${SCRIPT_DIR}/calc_zonal_anomaly.sh
 # Dataset
 DATASET=Merra
 GRID=r360x181
-TSCALE=30day-runmean
+TSCALE=runmean,30
+TSCALE_LABEL=30day-runmean
 
 # Envelope extraction
 MER_METHOD=mermax
