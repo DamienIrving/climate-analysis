@@ -2,7 +2,6 @@
 #
 # To execute:
 #   make -n -f psa_climatology.mk  (-n is a dry run)
-#   (must be run from the directory that the relevant matlab scripts are in)
 
 ## Define marcos ##
 
@@ -21,29 +20,50 @@ ${RWID_DIR}/vrot_Merra_250hPa_daily_${GRID_LABEL}-${NP_LABEL}.nc : ${DATA_DIR}/u
 ## Step 2: Calculate the rotated meridional wind anomaly
 ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_daily_${GRID_LABEL}-${NP_LABEL}.nc
 	cdo ydaysub $< -ydayavg $< $@
+	ncatted -O -a axis,time,c,c,T $@
 
-## Step 3: Extract the wave envelope
-## (look into how the longitude search bit works here - it's not captured in the file names)
-${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
+## Step 3: Apply temporal averaging to the rotated meridional wind anomaly data
+${RWID_DIR}/vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
+    cdo ${TSCALE} $< $@
+    ncatted -O -a axis,time,c,c,T $@
+
+## Step 4: Extract the wave envelope
+${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-{LON_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
 	${ENV_METHOD} $< vrot $@ ${WAVE_SEARCH} ${LON_SEARCH}
 
-## Step 4: Calculate the hovmoller diagram
-${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_hovmoller.py $< env ${CLIP_METHOD} ${CLIP_THRESH} $@ ${LAT_SEARCH} ${LON_SEARCH} 
+## Step 5: Calculate the hovmoller diagram
+${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}.nc
+	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
+	ncatted -O -a axis,time,c,c,T $@
 
-## Step 5: Implement the ROIM method
-${RWID_DIR}/psa-roim-stats_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-${WAVE_LABEL}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.csv : ${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.nc
-	matlab -nodesktop -nojvm -nosplash -r "run_roim('$<', '$@', ${ROIM_START}, ${ROIM_TRES}, ${ROIM_ZRES})"
+## Step 6: Calculate the wave statistics
+${RWID_DIR}/psa-stats_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv : ${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}.nc
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< env ${AMP_MIN} $@ 
 
-## Step 6: Generate a list of PSA-active dates
-# (requires pandas)
-# (can also generate a duration histogram with roim_stat.py)
-${RWID_DIR}/psa-dates_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-${WAVE_LABEL}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.txt : ${RWID_DIR}/psa-roim-stats_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-${WAVE_LABEL}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.csv
-	${PYTHON} ${ROIM_SCRIPT_DIR}/roim_stat.py $< --date_list startpoint_temporal endpoint_temporal $@
+## Step 6: Generate list of dates for use in composite creation
+${RWID_DIR}/psa-dates_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt : ${RWID_DIR}/psa-stats_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --date_list $@
 
-## Step 7: Filter the list of dates
-${RWID_DIR}/psa-dates_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-${WAVE_LABEL}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}_${FILTER_LABEL}.txt : ${RWID_DIR}/psa-dates_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-hov-env-${WAVE_LABEL}-vrot_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}.txt ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
-	${CDAT} ${DATA_SCRIPT_DIR}/filter_dates.py $< --filter ${FLITER_REGION} $(word 2,$^) va ${FILTER_THRESH} ${FILTER_DIRECTION} --outfile $@ 
+## Step 6a: Plot the extent histogram
+${RWID_DIR}/figures/psa-extent-historgram_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.png : ${RWID_DIR}/psa-stats_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --extent_histogram $@
+
+## Step 6b: Plot the monthly totals histogram
+${RWID_DIR}/figures/psa-monthly-totals-historgram_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.png : ${RWID_DIR}/psa-stats_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --monthly_totals_histogram $@
+
+## Step 6c: Plot the seasonal values line graph
+${RWID_DIR}/figures/psa-seasonal-values-line_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.png : ${RWID_DIR}/psa-stats_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --seasonal_values_line $@
+
+## Step 7: Plot the envelope
+${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-{LON_LABEL}.nc
+${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-{LON_LABEL}.nc ${RWID_DIR}/psa-stats_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_native.nc
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< env daily --extent $(word 2,$^) ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --contour $(word 3,$^) sf --time ${PLOT_START} ${PLOT_END} none --projection world-psa --ofile $@
+
+## Step 7a: Calculate the streamfunction anomaly data
+
+
 
 ## Step 8: Calculate the composite
 # Prepare the original composite variable data
