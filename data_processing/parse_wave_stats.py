@@ -220,14 +220,22 @@ def plot_duration_histogram(data, outfile, stats):
     gio.write_metadata(outfile, extra_notes=stats)
 
 
-def plot_extent_histogram(data, outfile, bin_width, stats):
+def plot_extent_histogram(data, outfile, stats, bin_width=1, cumulative=False):
     """Plot an extent histogram"""
     
-    edges = numpy.arange((0 - (bin_width / 2)), (360 + bin_width), bin_width) 
+    #pdb.set_trace()
+    
+    edges = numpy.arange((0 - (bin_width / 2.0)), (360 + bin_width), bin_width) 
+    centres = numpy.arange(0, 360 + bin_width, bin_width)
     counts, bins = numpy.histogram(data, edges)
+    if cumulative:
+        counts = numpy.cumsum(counts)
     counts = (counts.astype(float) / len(data)) * 100
-    width = (bins[1]-bins[0]) * .9
-    plt.bar(bins[:-1], counts, width=width)
+    if cumulative:
+        plt.plot(centres, counts, linewidth=3.0)
+    else:
+        width = (bins[1]-bins[0]) * .9
+        plt.bar(bins[:-1], counts, width=width)
     
     plt.xlim(edges[0], edges[-1])    
     plt.xlabel('Extent (degrees longitude)')
@@ -335,7 +343,10 @@ def main(inargs):
         gio.write_dates(inargs.date_list, data['date'].tolist())
 
     if inargs.extent_histogram:
-        plot_extent_histogram(data['extent'], inargs.extent_histogram, inargs.extent_bin_width, stats)
+        plot_extent_histogram(data['extent'], inargs.extent_histogram, stats, bin_width=inargs.extent_bin_width)
+
+    if inargs.extent_cdf:
+        plot_extent_histogram(data['extent'], inargs.extent_cdf, stats, cumulative=True)
 
     if inargs.duration_histogram:
         plot_duration_histogram(data, inargs.duration_histogram, stats)
@@ -390,6 +401,8 @@ author:
     # Optional outputs
     parser.add_argument("--extent_histogram", type=str, default=None, 
                         help="Name of output file for a histogram of the extent")
+    parser.add_argument("--extent_cdf", type=str, default=None, 
+                        help="Name of output file for a cumulative distribution function of the extent")
     parser.add_argument("--duration_histogram", type=str, default=None, 
                         help="Name of output file for a histogram of the duration")
     parser.add_argument("--monthly_totals_histogram", type=str, default=None,
