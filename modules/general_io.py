@@ -45,7 +45,7 @@ def find_duplicates(inlist):
 def get_timestamp():
     """Return time stamp that incuded the command line entry"""
     
-    time_stamp = """%s: python %s (Git hash: %s)""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"), " ".join(sys.argv), MODULE_HASH[0:7])
+    time_stamp = """%s: %s %s (Git hash: %s)""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"), sys.executable, " ".join(sys.argv), MODULE_HASH[0:7])
 
     return time_stamp
 
