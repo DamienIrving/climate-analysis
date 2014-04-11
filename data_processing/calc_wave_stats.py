@@ -16,6 +16,7 @@ import csv
 module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 import netcdf_io as nio
+import general_io as gio
     
 
 def extent_stats(data_double, lons_double, threshold, lon_spacing):
@@ -96,7 +97,7 @@ def main(inargs):
     ntime = indata.data.shape[0] 
     with open(inargs.outfile, 'wb') as ofile:
         output = csv.writer(ofile, delimiter=',')
-	output.writerow([time_stamp])
+	output.writerow(['# '+time_stamp])
         output.writerow(['date', 'start-lon', 'end-lon', 'extent', 'amp-mean', 'amp-max', 'amp-max-lon'])
         for i in range(0, ntime):
             start_lon, end_lon, extent = extent_stats(data_double[i, :], lons_double, inargs.threshold, lon_spacing)

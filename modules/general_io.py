@@ -68,7 +68,7 @@ def write_dates(outfile, date_list):
     
     fout = open(outfile, 'w')
     timestamp = get_timestamp()
-    fout.write(timestamp+'\n')
+    fout.write('# '+timestamp+'\n')
     for date in date_list:
         fout.write(date+'\n')
     fout.close()

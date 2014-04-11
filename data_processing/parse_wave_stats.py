@@ -307,7 +307,7 @@ def plot_seasonal_values(data, outfile,
 
 
 def basic_stats(data):
-    """Print basic statistics to the screen"""
+    """Return basic statistics"""
     
     extent_list = data['extent'].tolist()
     stats = []
