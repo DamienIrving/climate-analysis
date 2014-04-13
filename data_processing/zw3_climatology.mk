@@ -16,12 +16,12 @@ include zw3_climatology_config.mk
 ### Core zonal wave 3 climatology process ###
 
 ## Phony target
-all : ${RWID_DIR}/figures/zw3-seasonal-values-histogram_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.png
+all : ${TARGET}
 
 ## Step 1: Apply temporal averaging to the meridional wind data
 ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
-    cdo ${TSCALE} $< $@
-    ncatted -O -a axis,time,c,c,T $@
+	cdo ${TSCALE} $< $@
+	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 2: Regrid the meridional wind data
 ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc

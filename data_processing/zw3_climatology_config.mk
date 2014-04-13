@@ -2,7 +2,7 @@
 
 # System configuration
 DATA_HOME=/mnt/meteo0/data/simmonds/dbirving/${DATASET}
-DATA_DIR=${DATA_HOME}/data/processed
+DATA_DIR=${DATA_HOME}/data
 PDATA_DIR=${DATA_HOME}/data/processed
 RWID_DIR=${PDATA_DIR}/rwid/zw3
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
@@ -32,9 +32,12 @@ EXTENT_MIN=0
 EXTENT_MAX=360
 
 # Plot envelope 
-PLOT_START=2002-01-01
-PLOT_END=2002-12-31
+PLOT_START=2003-01-01
+PLOT_END=2003-12-31
 
+# Target
+
+TARGET=${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png
 
 
 
