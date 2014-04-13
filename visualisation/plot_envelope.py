@@ -85,7 +85,7 @@ def extract_extent(fname):
     f.close()
 
     extent_output = {}
-    for line in lines[1:]:  #$ skip the header row
+    for line in lines[2:]:  #$ skip the header row
         data = line.split(',')
 	year, month, day = data[0].split('-')
 	date = (int(year), int(month), int(day))
@@ -180,6 +180,15 @@ if __name__ == '__main__':
 
     extra_info="""
 example (vortex.earthsci.unimelb.edu.au):
+    /usr/local/uvcdat/1.3.0/bin/cdat plot_envelope.py 
+    /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/env-w234-va_Merra_250hPa_30day-runmean_r360x181.nc 
+    env daily 
+    --extent /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/zw3-stats_Merra_250hPa_30day-runmean_r360x181-mermax-lat70S40S_env-w234-va-ampmin7.csv -70 -40 
+    --contour /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/sf_Merra_250hPa_30day-runmean-zonal-anom_native.nc sf 
+    --time 2003-01-01 2003-12-31 none 
+    --projection spstere 
+    --ofile /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/figures/env-w234-va_Merra_250hPa_30day-runmean_r360x181_2003-12-31.png
+
     /usr/local/uvcdat/1.3.0/bin/cdat plot_envelope.py
     /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260.nc
     env 20 260 0 0 daily 
