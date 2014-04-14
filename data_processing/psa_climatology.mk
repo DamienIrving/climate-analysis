@@ -11,7 +11,7 @@ include psa_climatology_config.mk
 ### Core PSA climatology process ###
 
 ## Phony target
-all : ${RWID_DIR}/${COMPOSITE_VAR}_Merra_${COMPOSITE_LEVEL}_daily-anom-wrt-all-composite-mean_${GRID_LABEL}-${NP_LABEL}-hov-env-${WAVE_LABEL}-vrot-250hPa_${LON_LABEL}_${LAT_LABEL}_${CLIP_LABEL}_psa-dates-${FILTER_LABEL}.nc
+all : ${TARGET}
 
 ## Step 1: Calculate the rotated meridional wind
 ${RWID_DIR}/vrot_Merra_250hPa_daily_${GRID_LABEL}-${NP_LABEL}.nc : ${DATA_DIR}/ua_Merra_250hPa_daily_native.nc ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
@@ -24,8 +24,8 @@ ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : 
 
 ## Step 3: Apply temporal averaging to the rotated meridional wind anomaly data
 ${RWID_DIR}/vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
-    cdo ${TSCALE} $< $@
-    ncatted -O -a axis,time,c,c,T $@
+	cdo ${TSCALE} $< $@
+	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 4: Extract the wave envelope
 ${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-{LON_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
@@ -57,12 +57,13 @@ ${RWID_DIR}/figures/psa-seasonal-values-line_Merra_250hPa_{TSCALE_LABEL}-anom-wr
 	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --seasonal_values_line $@
 
 ## Step 7: Plot the envelope
-${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-{LON_LABEL}.nc
-${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-{LON_LABEL}.nc ${RWID_DIR}/psa-stats_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_native.nc
+${RWID_DIR}/figures/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-{LON_LABEL}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-{LON_LABEL}.nc ${RWID_DIR}/psa-stats_Merra_250hPa_{TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_native.nc
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< env daily --extent $(word 2,$^) ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --contour $(word 3,$^) sf --time ${PLOT_START} ${PLOT_END} none --projection world-psa --ofile $@
 
 ## Step 7a: Calculate the streamfunction anomaly data
-
+${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_native.nc : ${PDATA_DIR}/sf_Merra_250hPa_daily_native.nc
+	cdo ydaysub $< -ydayavg $< $@
+	ncatted -O -a axis,time,c,c,T $@
 
 
 ## Step 8: Calculate the composite
