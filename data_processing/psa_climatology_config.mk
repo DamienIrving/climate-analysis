@@ -3,14 +3,14 @@
 # System configuration
 DATA_HOME=/mnt/meteo0/data/simmonds/dbirving/${DATASET}
 DATA_DIR=${DATA_HOME}/data
-PDATA_DIR=${DATA_DIR}/data/processed
+PDATA_DIR=${DATA_DIR}/processed
 RWID_DIR=${PDATA_DIR}/rwid/psa
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/bin/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
 VIS_SCRIPT_DIR=~/phd/visualisation
 ENV_METHOD=bash ${DATA_SCRIPT_DIR}/calc_envelope.sh
-VROT_METHOD=bash ${DATA_SCRIPT_DIR}/calc_vwind_rotation.sh                               
+VROT_METHOD=bash ${DATA_SCRIPT_DIR}/calc_vwind_rotation.sh
 
 # Dataset
 DATASET=Merra
@@ -44,18 +44,20 @@ AMP_MIN=7
 EXTENT_MIN=0
 EXTENT_MAX=360
 
+## Filter date list
+#FILTER_REGION=marie-byrd-land
+#FILTER_DIRECTION=below
+#FILTER_THRESH=-5.0
+#FILTER_LABEL=marie-byrd-land-va-below-neg5
+#
+## Calculate composite
+#COMPOSITE_SEASON=SON
+#COMPOSITE_VAR=tas
+#COMPOSITE_LEVEL=surface
 
-# Filter date list
-FILTER_REGION=marie-byrd-land
-FILTER_DIRECTION=below
-FILTER_THRESH=-5.0
-FILTER_LABEL=marie-byrd-land-va-below-neg5
+# Target
 
-# Calculate composite
-COMPOSITE_SEASON=SON
-COMPOSITE_VAR=tas
-COMPOSITE_LEVEL=surface
-
+TARGET=${RWID_DIR}/psa-stats_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv
 
 
 
