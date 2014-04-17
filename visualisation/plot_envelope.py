@@ -101,7 +101,7 @@ def main(inargs):
     """Create the plot"""
 
     # Read input data #
-
+    
     indata_env, indata_u, indata_v, indata_contour = extract_data(inargs) 
     if inargs.extent:
         indata_extent = extract_extent(inargs.extent[0])
@@ -110,8 +110,10 @@ def main(inargs):
 
     if inargs.rotation:
         env_data = restore_env(indata_env, inargs)
+	np = inargs.rotation[0:2]
     else:
         env_data = indata_env.data
+	np = None
 
     # Plot every time step #
    
@@ -131,15 +133,15 @@ def main(inargs):
 	else:
 	    date_abbrev = year+'-'+month+'-'+day
 	
+	box_list = []
 	if inargs.extent:
 	    west_lon, east_lon = indata_extent[(int(year), int(month), int(day))]
-	    if west_lon == east_lon:
-	        box = None
-	    else:
+	    if west_lon != east_lon:
 	        south_lat, north_lat = inargs.extent[1:]
-                box = (float(south_lat), float(north_lat), west_lon, east_lon)
-	else:
-	    box = None
+                box_list.append([float(south_lat), float(north_lat), west_lon, east_lon, 'blue', 'solid'])
+	if inargs.search_region:
+	    south_lat, north_lat, west_lon, east_lon = inargs.extent[0:4]
+            box_list.append([south_lat, north_lat, west_lon, east_lon, 'blue', 'dashed'])
 	    
         env_data_select = [env_data(time=(date, date_abbrev), squeeze=1),]
         u_data = [indata_u.data(time=(date, date_abbrev), squeeze=1),] if indata_u else None
@@ -167,13 +169,13 @@ def main(inargs):
 		           quiver_scale=quiv_scale, quiver_width=quiv_width,
         	           projection=inargs.projection, 
         	           extend='max',
-			   search_paths=inargs.search_paths,
-			   box=box,
+			   box=box_list,
+			   box_np=np,
         	           image_size=inargs.image_size)
         
         inargs.ticks = inargs.ticks[0: -1]   # Fix for weird thing where it keeps appending to 
-	                               # the end of the ticks list, presumably due to the 
-				       # extend = 'max' 
+	                                     # the end of the ticks list, presumably due to the 
+				             # extend = 'max' 
 
 
 if __name__ == '__main__':
@@ -195,7 +197,7 @@ example (vortex.earthsci.unimelb.edu.au):
     --contour /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/sf_Merra_250hPa_daily-anom-wrt-all_native.nc sf
     --ofile /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/figures/env/vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np26-260
     --time 1981-06-01 1981-06-30 none
-    --search_paths 20 260 225 335 -10 10 5
+    --search_region 20 260 225 335
     --region world-psa
     
     /usr/local/uvcdat/1.3.0/bin/cdat plot_envelope.py
@@ -251,12 +253,11 @@ example (vortex.earthsci.unimelb.edu.au):
                         help="Map projection [default: nsper]")
     parser.add_argument("--image_size", type=float, default=9, 
                         help="size of image [default: 9]")
-
     parser.add_argument("--contour_ticks", type=float, nargs='*', default=15, 
                         help="list of tick marks for the contours, or just the number of contour lines")
-    parser.add_argument("--search_paths", type=float, nargs=7, default=None,
-                        metavar=('NP_LAT', 'NP_LON', 'START_LON', 'END_LON', 'START_LAT', 'END_LAT', 'LAT_STRIDE'),
-                        help="draw the search paths for the specified north pole [default: None]")
+    parser.add_argument("--search_region", type=float, nargs=4, default=None,
+                        metavar=('SOUTH_LAT', 'NORTH_LAT', 'WEST_LON', 'EAST_LON'),
+                        help="draw an outline of the search region [default: None]")
     parser.add_argument("--extent", type=str, default=None, nargs=3, metavar=('FILE', 'LAT_MIN', 'LAT_MAX'),
                         help='File with the extent information (so extent box can be plotted) for each timestep, search lat1, lat2')
     
