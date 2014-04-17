@@ -219,7 +219,7 @@ def multiplot(indata,
               #headings
               row_headings=None, inline_row_headings=None, col_headings=None, img_headings=None,
               #axis options to draw lat/lon lines
-              draw_axis=False, delat=30, delon=30, equator=False, enso=None, search_paths=None, box=None,
+              draw_axis=False, delat=30, delon=30, equator=False, enso=None, search_paths=None, box=[], box_np=None,
 	      #contour plot
 	      contour=False,
               #width of image in inches (individual image)
@@ -275,6 +275,7 @@ def multiplot(indata,
       enso                 --  List of ENSO regions plot gridlines for (can be IEMI or any Nino indices)
       search_paths         --  Draw the search paths for the specified north pole
       box                  --  Draw a box
+      bax_np               --  Rotate the box according the this specified north pole location
       contour              --  Flag for creating a contour colourmap (otherwise each grid point value is
                                plotted with no smoothing
       image_size           --  Size of each individual image
@@ -487,7 +488,7 @@ def multiplot(indata,
   
             #draw custom box
             if box:
-	        _plot_box(bmap, box)
+	        _plot_box(bmap, box, np=box_np)
   
 
     # Plot the colour bar #
@@ -518,33 +519,54 @@ def multiplot(indata,
     plt.close()
 
 
-def _plot_box(bmap, box):
+def _plot_box(bmap, box_list, np=None):
     """Add a box to the plot.
     
     Arguments:
-        box  ->  (south_lat, north_lat, west_lon, east_lon)
+        box  ->  (south_lat, north_lat, west_lon, east_lon, color, style)
     
     """
-    south_lat, north_lat, west_lon, east_lon = box
-    assert (0.0 <= east_lon <= 360) and  (0.0 <= west_lon <= 360), \
-    """Longitude coordinates for the box must be 0 < lon < 360"""  
-    if (east_lon < west_lon) and (west_lon > 180.0):
-        west_lon = west_lon - 360.0
-    if (east_lon < west_lon) and (west_lon <= 180.0):
-        east_lon = east_lon + 360.0
-    borders = {}
+    styles = {}
+    styles['dashed'] = '--'
+    styles['solid'] = '-'
     
-    borders['north_lons'] = borders['south_lons'] =  numpy.arange(west_lon, east_lon + 1, 1)
-    borders['south_lats'] = numpy.repeat(south_lat, len(borders['south_lons']))
-    borders['north_lats'] = numpy.repeat(north_lat, len(borders['south_lons']))
-    
-    borders['east_lats'] = borders['west_lats'] = numpy.arange(south_lat, north_lat + 1, 1)
-    borders['west_lons'] = numpy.repeat(west_lon, len(borders['west_lats']))
-    borders['east_lons'] = numpy.repeat(east_lon, len(borders['west_lats']))
-    
-    for border in ['north', 'south', 'east', 'west']:
-        x, y = bmap(borders[border+'_lons'], borders[border+'_lats'])
-	bmap.plot(x, y, linestyle='-', color='0.7')
+    for box in box_list: 
+	south_lat = float(box[0]) 
+	north_lat = float(box[1])
+	west_lon = float(box[2])
+	east_lon = float(box[3])
+	color = box[4]
+	style = box[5]
+        assert style in styles.keys()
+	
+	# Adjust the longitude values as required
+	assert (0.0 <= east_lon <= 360) and  (0.0 <= west_lon <= 360), \
+	"""Longitude coordinates for the box must be 0 < lon < 360"""  
+	if (east_lon < west_lon) and (west_lon > 180.0):
+            west_lon = west_lon - 360.0
+	if (east_lon < west_lon) and (west_lon <= 180.0):
+            east_lon = east_lon + 360.0
+
+	# Define the plot borders
+	borders = {}
+	borders['north_lons'] = borders['south_lons'] =  numpy.arange(west_lon, east_lon + 1, 1)
+	borders['south_lats'] = numpy.repeat(south_lat, len(borders['south_lons']))
+	borders['north_lats'] = numpy.repeat(north_lat, len(borders['south_lons']))
+
+	borders['east_lats'] = borders['west_lats'] = numpy.arange(south_lat, north_lat + 1, 1)
+	borders['west_lons'] = numpy.repeat(west_lon, len(borders['west_lats']))
+	borders['east_lons'] = numpy.repeat(east_lon, len(borders['west_lats']))
+
+	for side in ['north', 'south', 'east', 'west']:
+            if np:
+		phi, theta, psi = crot.north_pole_to_rotation_angles(np[0], np[1])
+		rot_lats, rot_lons = crot.rotate_spherical(borders[side+'_lats'], borders[side+'_lons'], phi, theta, psi, invert=False)
+        	rot_lons_adjust = crot.adjust_lon_range(rot_lons, radians=False, start=0.0)
+        	borders[side+'_lats'] = rot_lats
+		borders[side+'_lons'] = rot_lons_adjust
+
+            x, y = bmap(borders[side+'_lons'], borders[side+'_lats'])
+	    bmap.plot(x, y, linestyle=style, color=color)
     
 
 def _plot_contours(bmap, projection, cont_data, contour_ticks, contour_dec):
@@ -1056,12 +1078,11 @@ improvements:
     parser.add_argument("--enso", type=str, nargs='*', 
                         choices=('IEMI', 'Nino12', 'Nino3', 'Nino34', 'Nino4'),
                         help="draw grid lines marking ENSO regions [default: None]")
-    parser.add_argument("--search_paths", type=float, nargs=7, 
-                        metavar=('NP_LAT', 'NP_LON', 'START_LON', 'END_LON', 'START_LAT', 'END_LAT', 'LAT_STRIDE'),
-                        help="draw the search paths for the specified north pole [default: None]")
-    parser.add_argument("--box", type=float, nargs=4,
-                        metavar=('SOUTH_LAT', 'NORTH_LAT', 'WEST_LON', 'EAST_LON'),
-                        help="draw a box [default: None]")
+    parser.add_argument("--box", type=str, action='append', default=[], nargs=6,
+                        metavar=('SOUTH_LAT', 'NORTH_LAT', 'WEST_LON', 'EAST_LON', 'COLOUR', 'STYLE'),
+                        help="""draw a box [default: None] - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
+    parser.add_argument("--box_np", type=float, nargs=2, metavar=('NP_LAT', 'NP_LON'),
+                        help="rotate the box according to this north pole [default: None]")  
     parser.add_argument("--image_size", type=float, 
                         help="size of image [default: 6]")
     parser.add_argument("--projection", type=str, choices=('cyl', 'nsper', 'spstere', 'npstere'),
