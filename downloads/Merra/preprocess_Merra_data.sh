@@ -1,6 +1,4 @@
-#
-# Description:  
-#
+#!/bin/bash
 
 function usage {
     echo "USAGE: bash $0 infile invar outfile outvar units"
@@ -24,10 +22,9 @@ outfile=$3
 outvar=$4
 units=$5
 
-cdo chname,${invar},${outvar} ${infile} temp.nc
 cdo sellonlatbox,0,359.9,-90,90 temp.nc ${outfile}
+ncrename -O -v ${invar},${outvar} ${outfile}
 ncatted -O -a comments,${outvar},d,, ${outfile}
 ncatted -O -a units,${ourvar},c,c,"${units}" ${outfile}
 ncatted -O -a axis,time,c,c,T ${outfile}
-rm temp.nc
 
