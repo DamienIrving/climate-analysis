@@ -10,8 +10,9 @@ Downloaded data are processed into the following format (all original downloaded
 ```%variable%_%dataset%_%level%_%timescale%_%grid%.nc```  
 
 
-```%variable%```
+```%variable%```  
 Consistent with the CMIP convention (unless variable is not a CMIP one):  
+
   * tas = surface air temperature  
   * tos = sea surface temperature  
   * ts = surface skin temperature  
@@ -31,6 +32,7 @@ Consistent with the CMIP convention (unless variable is not a CMIP one):
 ### Longitude
 
 Must go from 0 to 360 and include the following attributes:  
+ 
   * standard_name = "longitude"  
   * long_name = "longitude"  
   * units = "degrees_east"  
@@ -40,6 +42,7 @@ Must go from 0 to 360 and include the following attributes:
 ### Latitude
 
 Must go from -90 to 90 and include the following attributes:  
+
   * standard_name = "latitude"  
   * long_name = "latitude"  
   * units = "degrees_north"  
@@ -57,9 +60,10 @@ Must go from -90 to 90 and include the following attributes:
 ### Variable
 
 Remove offsets and scale factors and have attributes like the following:  
+
   * standard_name = "precipitation_flux"  
   * long_name = "Precipitation"  
   * original_name = "Name in original dataset"  
   * units = "kg m-2 s-1"  
-  *_FillValue = %  
+  * _FillValue = %  
   * missing_value =   
