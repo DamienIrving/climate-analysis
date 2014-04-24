@@ -141,7 +141,7 @@ def main(inargs):
 	        south_lat, north_lat = inargs.extent[1:]
                 box_list.append([float(south_lat), float(north_lat), west_lon, east_lon, 'blue', 'solid'])
 	if inargs.search_region:
-	    south_lat, north_lat, west_lon, east_lon = inargs.extent[0:4]
+	    south_lat, north_lat, west_lon, east_lon = inargs.search_region[0:4]
             box_list.append([south_lat, north_lat, west_lon, east_lon, 'blue', 'dashed'])
 	    
         env_data_select = [env_data(time=(date_bounds[0], date_bounds[1]), squeeze=1),]
