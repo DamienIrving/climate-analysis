@@ -25,7 +25,7 @@ import MV2
 
 
 def extract_data(inargs):
-    """Extract input data and check that time axes match"""
+    """Extract input data"""
 
     env_data = nio.InputData(inargs.env_file, inargs.env_var,
                              **nio.dict_filter(vars(inargs), ['time', 'region']))
@@ -40,9 +40,9 @@ def extract_data(inargs):
         except AttributeError:
             opt_data[opt] = None
     
-    if opt_data[opt]:
-        assert opt_data[opt].data.getTime().asComponentTime() == env_times, \
-        'Time axes must be the same for all input data'
+#    if opt_data[opt]:
+#        assert opt_data[opt].data.getTime().asComponentTime() == env_times, \
+#        'Time axes must be the same for all input data'
 
     return env_data, opt_data['uwind'], opt_data['vwind'], opt_data['contour']
 
@@ -109,7 +109,7 @@ def main(inargs):
     # Restore env data to standard lat/lon grid #
 
     if inargs.rotation:
-        env_data = restore_env(indata_env, inargs)
+        env_data = restore_env(indata_env, inargs.rotation)
 	np = inargs.rotation[0:2]
     else:
         env_data = indata_env.data
@@ -132,6 +132,7 @@ def main(inargs):
 	    date_abbrev = year+'-'+month
 	else:
 	    date_abbrev = year+'-'+month+'-'+day
+	    date_bounds = [date_abbrev+' 0:0:0.0', date_abbrev+' 23:59:0.0']
 	
 	box_list = []
 	if inargs.extent:
@@ -143,10 +144,10 @@ def main(inargs):
 	    south_lat, north_lat, west_lon, east_lon = inargs.extent[0:4]
             box_list.append([south_lat, north_lat, west_lon, east_lon, 'blue', 'dashed'])
 	    
-        env_data_select = [env_data(time=(date, date_abbrev), squeeze=1),]
-        u_data = [indata_u.data(time=(date, date_abbrev), squeeze=1),] if indata_u else None
-        v_data = [indata_v.data(time=(date, date_abbrev), squeeze=1),] if indata_v else None
-        contour_data = [indata_contour.data(time=(date, date_abbrev), squeeze=1),] if indata_contour else None
+        env_data_select = [env_data(time=(date_bounds[0], date_bounds[1]), squeeze=1),]
+        u_data = [indata_u.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_u else None
+        v_data = [indata_v.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_v else None
+        contour_data = [indata_contour.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_contour else None
 
         title = '%s, %s' %(inargs.title, date_abbrev)
 

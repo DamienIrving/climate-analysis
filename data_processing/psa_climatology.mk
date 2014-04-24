@@ -58,7 +58,7 @@ ${RWID_DIR}/figures/psa-seasonal-values-line_Merra_250hPa_${TSCALE_LABEL}-anom-w
 
 ## Step 7: Plot the envelope
 ${RWID_DIR}/figures/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}.nc ${RWID_DIR}/psa-stats_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_native.nc
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< env daily --extent $(word 2,$^) ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --contour $(word 3,$^) sf --time ${PLOT_START} ${PLOT_END} none --projection world-psa --ofile $@
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< env daily --time ${PLOT_START} ${PLOT_END} none --rotation ${NPLAT} ${NPLON} 0.0 0.0 --extent $(word 2,$^) ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --contour $(word 3,$^) sf --region sh-psa --projection cyl --ofile $@
 
 ## Step 7a: Calculate the streamfunction anomaly data
 ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_native.nc : ${PDATA_DIR}/sf_Merra_250hPa_daily_native.nc

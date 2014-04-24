@@ -44,6 +44,10 @@ AMP_MIN=7
 EXTENT_MIN=0
 EXTENT_MAX=360
 
+# Plot envelope 
+PLOT_START=2003-01-01
+PLOT_END=2003-01-03
+
 ## Filter date list
 #FILTER_REGION=marie-byrd-land
 #FILTER_DIRECTION=below
@@ -57,7 +61,7 @@ EXTENT_MAX=360
 
 # Target
 
-TARGET=${RWID_DIR}/psa-stats_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv
+TARGET=${RWID_DIR}/figures/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}_${PLOT_END}.png
 
 
 
