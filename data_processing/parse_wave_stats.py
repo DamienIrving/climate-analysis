@@ -236,6 +236,27 @@ def plot_duration_histogram(data, outfile, stats):
     gio.write_metadata(outfile, extra_notes=stats)
 
 
+def create_histogram(data, bin_width=1, min_val=None, max_val=None, cumulative=False):
+    """Create the histogram"""
+    
+    low_bound = data.min() if not min_val else min_val
+    high_bound = data.max() if not max_val else max_val
+    
+    edges = numpy.arange((low_bound - (bin_width / 2.0)), (max_bound + bin_width), bin_width) 
+    centres = numpy.arange(low_bound, high_bound + bin_width, bin_width)
+    counts, bins = numpy.histogram(data, edges)
+    if cumulative:
+        counts = numpy.cumsum(counts)
+    counts = (counts.astype(float) / len(data)) * 100
+    if cumulative:
+        plt.plot(centres, counts, linewidth=3.0)
+    else:
+        width = (bins[1]-bins[0]) * .9
+        plt.bar(bins[:-1], counts, width=width)
+    
+    return bin_centres, bin_counts 
+
+
 def plot_extent_histogram(data, outfile, stats, bin_width=1, cumulative=False):
     """Plot an extent histogram"""
       
