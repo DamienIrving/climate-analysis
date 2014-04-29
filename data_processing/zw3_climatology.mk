@@ -19,9 +19,11 @@ include zw3_climatology_config.mk
 all : ${TARGET}
 
 ## Step 1: Apply temporal averaging to the meridional wind data
-${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
-	cdo ${TSCALE} $< $@
-	ncatted -O -a axis,time,c,c,T $@
+ifneq (${TSCALE_LABEL},daily)
+	${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
+		cdo ${TSCALE} $< $@
+		ncatted -O -a axis,time,c,c,T $@
+endif
 
 ## Step 2: Regrid the meridional wind data
 ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc

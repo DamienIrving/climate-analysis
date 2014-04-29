@@ -25,7 +25,8 @@ GRID_LABEL=y$(word 3,${GRID})x$(word 6,${GRID})
 
 # Temporal smoothing
 TSCALE=runmean,30
-TSCALE_LABEL=30day-runmean
+TSCALE_LABEL=daily
+#30day-runmean
 
 # Envelope extraction
 LON_SEARCH_MIN=225

@@ -23,9 +23,11 @@ ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : 
 	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 3: Apply temporal averaging to the rotated meridional wind anomaly data
-${RWID_DIR}/vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
-	cdo ${TSCALE} $< $@
-	ncatted -O -a axis,time,c,c,T $@
+ifneq (${TSCALE_LABEL},daily)
+	${RWID_DIR}/vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_daily-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
+		cdo ${TSCALE} $< $@
+		ncatted -O -a axis,time,c,c,T $@
+endif
 
 ## Step 4: Extract the wave envelope
 ${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}.nc : ${RWID_DIR}/vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}.nc
@@ -61,7 +63,12 @@ ${RWID_DIR}/figures/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< env daily --time ${PLOT_START} ${PLOT_END} none --rotation ${NPLAT} ${NPLON} 0.0 0.0 --extent $(word 2,$^) ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --contour $(word 3,$^) sf --region world-psa --projection cyl --search_region ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} ${LON_SEARCH_MIN} ${LON_SEARCH_MAX} --ofile $@ 
 
 ## Step 7a: Calculate the streamfunction anomaly data
-${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_native.nc : ${PDATA_DIR}/sf_Merra_250hPa_daily_native.nc
+ifneq (${TSCALE_LABEL},daily)
+	${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}_native.nc : ${PDATA_DIR}/sf_Merra_250hPa_daily_native.nc
+		cdo ${TSCALE} $< $@
+endif
+
+${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_native.nc : ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}_native.nc
 	cdo ydaysub $< -ydayavg $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
