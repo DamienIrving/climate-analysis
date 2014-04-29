@@ -25,12 +25,37 @@ try:
     import general_io as gio
 except:
     module_dir = os.path.join(os.environ['HOME'], 'Documents',
-                          'Professional', 'Scientific_computing',
-			  'git_repo', 'phd', 'modules')
+                              'Professional', 'Scientific_computing',
+                              'git_repo', 'phd', 'modules')
     sys.path.insert(0, module_dir)
     import general_io as gio
 
 
+def add_duration(indata, extent_threshold):
+    """Add a duration column to the input data, where an event is defined by
+    the number of consecutive timesteps greater than the extent_threshold.
+    
+    Note that every timestep is assigned a duration value equal to the number of
+    days in the entire event.
+    
+    """
+    
+    indata['event'] = indata['extent'].map(lambda x: x > extent_threshold)
+    event_list = indata['event'].tolist()
+    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(event_list)]
+
+    duration = []
+    for event in grouped_events:
+        if event[0]:
+            data = [event[1]] * event[1]
+        else:
+            data = [0] * event[1]
+        duration.append(data)
+
+    indata['duration'] = reduce(operator.add, duration)  
+
+    return indata  
+    
 
 def bin_dates(date_list, start_year, start_month, end_year, end_month):
     """Take a list of dates and return totals in bins, according to 
@@ -195,7 +220,7 @@ def plot_duration_histogram(data, outfile, stats):
     mean_duration = data.mean()
     stats.append('mean duration: ' + "%.2f" % round(mean_duration, 2))
 
-    print 'Number of events:', len(durations)
+    #print 'Number of events:', len(durations)
 
     # Plot the historgram #
 
@@ -308,51 +333,26 @@ def basic_stats(data):
     stats.append('mean extent: ' + "%.2f" % round(mean_extent, 2) + ' degrees')
 
     return stats
-
-
-def add_duration(indata, extent_threshold):
-    """Add a duration column to the input data, where an event is defined by
-    the number of consecutive timesteps greater than the extent_threshold.
     
-    Note that every timestep is assigned a duration value equal to the number of
-    days in the entire event.
-    
-    """
-    
-    indata['event'] = indata['extent'].map(lambda x: x > extent_threshold)
-    event_list = indata['event'].tolist()
-    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(event_list)]
-
-    duration = []
-    for event in grouped_events:
-        if event[0]:
-            data = [event[1]] * event[1]
-        else:
-            data = [0] * event[1]
-        duration.append(data)
-
-    indata['duration'] = reduce(operator.add, duration)  
-
-    return indata   
-
 
 def main(inargs):
     """Run the program"""
    
     # Read data 
     indata = pandas.read_csv(inargs.infile, header=1)
+    indata = add_duration(indata, inargs.event_extent)
     
     # Apply filters
-    dt_selection = datetime_selector(indata['date'], inargs.season, inargs.start, inargs.end)
-    min_extent_selection = indata['extent'] >= inargs.extent_filter[0]
-    max_extent_selection = indata['extent'] <= inargs.extent_filter[1]
-    if inargs.duration_filter or inargs.duration_historgram:
-        indata = add_duration(indata, inargs.event_extent)
+    selector = datetime_selector(indata['date'], inargs.season, inargs.start, inargs.end)
+    if inargs.extent_filter:
+        min_extent_selection = indata['extent'] >= inargs.extent_filter[0]
+        max_extent_selection = indata['extent'] <= inargs.extent_filter[1]
+        selector = selector & min_extent_selection & max_extent_selection 
+    if inargs.duration_filter:
         min_duration_selection = indata['duration'] >= inargs.duration_filter[0]
         max_duration_selection = indata['duration'] <= inargs.duration_filter[1]
-        selector = dt_selection & min_extent_selection & max_extent_selection & min_duration_selection & max_duration_selection
-    else:
-        selector = dt_selection & min_extent_selection & max_extent_selection
+        selector = selector & min_duration_selection & max_duration_selection
+
     data = indata[selector]
     data.reset_index(drop=True, inplace=True)
 
