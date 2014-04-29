@@ -1,6 +1,7 @@
 import os, sys
 from collections import OrderedDict
 
+import operator
 import numpy
 import pandas
 
@@ -188,30 +189,20 @@ def get_years(date_list):
 def plot_duration_histogram(data, outfile, stats):
     """Plot a duration histogram"""
     
-    # Group consecutive dates (events) and calculate their duration #
-    
-    date_strs = data['date'].tolist()
-    dates = [datetime.strptime(d, "%Y-%m-%d") for d in date_strs]
-
-    date_ints = map(lambda x: x.toordinal(), dates)
-    events = []
-    for k, g in groupby(enumerate(data), lambda (i,x):i-x):
-        events.append(map(itemgetter(1), g))
-
-    durations = numpy.array(map(len, events))
+    # Add duration stats to met file #
  
-    # Print key stats to screen #
- 
+    stats.append('maximum duration: ' + str(data.max())) 
+    mean_duration = data.mean()
+    stats.append('mean duration: ' + "%.2f" % round(mean_duration, 2))
+
     print 'Number of events:', len(durations)
-    print 'Average duration:', durations.mean()
-    print 'Maximum duration:', durations.max()
 
     # Plot the historgram #
 
-    bin_max = durations.max() + 1
+    bin_max = data.max() + 1
     bin_edges = numpy.arange(0.5, bin_max, 1) 
     
-    n, bins, patches = plt.hist(durations, bins=bin_edges, histtype='bar', rwidth=0.8)
+    n, bins, patches = plt.hist(data, bins=bin_edges, histtype='bar', rwidth=0.8)
     
     plt.xlabel('Duration (days)')
     plt.ylabel('Frequency')
@@ -222,9 +213,7 @@ def plot_duration_histogram(data, outfile, stats):
 
 def plot_extent_histogram(data, outfile, stats, bin_width=1, cumulative=False):
     """Plot an extent histogram"""
-    
-    #pdb.set_trace()
-    
+      
     edges = numpy.arange((0 - (bin_width / 2.0)), (360 + bin_width), bin_width) 
     centres = numpy.arange(0, 360 + bin_width, bin_width)
     counts, bins = numpy.histogram(data, edges)
@@ -321,6 +310,32 @@ def basic_stats(data):
     return stats
 
 
+def add_duration(indata, extent_threshold):
+    """Add a duration column to the input data, where an event is defined by
+    the number of consecutive timesteps greater than the extent_threshold.
+    
+    Note that every timestep is assigned a duration value equal to the number of
+    days in the entire event.
+    
+    """
+    
+    indata['event'] = indata['extent'].map(lambda x: x > extent_threshold)
+    event_list = indata['event'].tolist()
+    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(event_list)]
+
+    duration = []
+    for event in grouped_events:
+        if event[0]:
+            data = [event[1]] * event[1]
+        else:
+            data = [0] * event[1]
+        duration.append(data)
+
+    indata['duration'] = reduce(operator.add, duration)  
+
+    return indata   
+
+
 def main(inargs):
     """Run the program"""
    
@@ -331,7 +346,13 @@ def main(inargs):
     dt_selection = datetime_selector(indata['date'], inargs.season, inargs.start, inargs.end)
     min_extent_selection = indata['extent'] >= inargs.extent_filter[0]
     max_extent_selection = indata['extent'] <= inargs.extent_filter[1]
-    selector = dt_selection & min_extent_selection & max_extent_selection
+    if inargs.duration_filter or inargs.duration_historgram:
+        indata = add_duration(indata, inargs.event_extent)
+        min_duration_selection = indata['duration'] >= inargs.duration_filter[0]
+        max_duration_selection = indata['duration'] <= inargs.duration_filter[1]
+        selector = dt_selection & min_extent_selection & max_extent_selection & min_duration_selection & max_duration_selection
+    else:
+        selector = dt_selection & min_extent_selection & max_extent_selection
     data = indata[selector]
     data.reset_index(drop=True, inplace=True)
 
@@ -349,7 +370,7 @@ def main(inargs):
         plot_extent_histogram(data['extent'], inargs.extent_cdf, stats, cumulative=True)
 
     if inargs.duration_histogram:
-        plot_duration_histogram(data, inargs.duration_histogram, stats)
+        plot_duration_histogram(data['duration'], inargs.duration_histogram, stats)
 
     if inargs.monthly_totals_histogram:
         start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection)
@@ -395,9 +416,13 @@ author:
                         help="Season selector [default = all]")
     
     # Other filters
+    parser.add_argument("--event_extent", type=float, default=100.0, 
+                        help="Minimum extent that will be included as an event")
     parser.add_argument("--extent_filter", type=float, nargs=2, default=None, metavar=('MIN', 'MAX'),
                         help="Zonal extent filter - only extents equal to or within these bounds are included") 
-    
+    parser.add_argument("--duration_filter", type=float, nargs=2, default=None, metavar=('MIN', 'MAX'),
+                        help="Duration filter - only events of length equal to or within these bounds are included")
+                        
     # Optional outputs
     parser.add_argument("--extent_histogram", type=str, default=None, 
                         help="Name of output file for a histogram of the extent")
@@ -418,7 +443,6 @@ author:
                         help="switch for including the annual season in the seasonal values plot [default: False]")
 
     # Plot options
-    
     parser.add_argument("--extent_bin_width", type=float, default=10,
                         help="Width of the bins for the extent historgram")
 
