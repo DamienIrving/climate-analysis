@@ -57,6 +57,22 @@ def add_duration(indata, extent_threshold):
     return indata  
     
 
+def basic_stats(data, stats, before_filtering=True):
+    """Return basic statistics."""
+    
+    if before_filtering:
+        stats.append('# Before filtering')     
+    else:
+        stats.append(' ') 
+        stats.append('# After filtering')
+             
+    stats.append('total number of days: ' + str(len(data['date'])))
+    stats = extent_stats(data['extent'].tolist(), stats)
+    stats = duration_stats(data['duration'].tolist(), stats)
+
+    return stats
+
+
 def bin_dates(date_list, start_year, start_month, end_year, end_month):
     """Take a list of dates and return totals in bins, according to 
     the requested timescale.
@@ -117,6 +133,32 @@ def calc_seasonal_values(monthly_values, month_years):
     return seasonal_values, year_lists
 
 
+def create_histogram(data, bin_width=1, min_val=None, max_val=None, 
+                     cumulative=False, percentage=False, duration=False):
+    """Create the histogram"""
+    
+    low_bound = numpy.min(data) if not min_val else min_val
+    high_bound = numpy.max(data) if not max_val else max_val
+    
+    edges = numpy.arange((low_bound - (bin_width / 2.0)), (high_bound + bin_width), bin_width) 
+    bin_centres = numpy.arange(low_bound, high_bound + bin_width, bin_width)
+    bin_counts, bin_edges = numpy.histogram(data, edges)
+    
+    if duration:
+        if bin_centres[0] == 0.0:
+            bin_counts[1:] = bin_counts[1:] / bin_centres[1:] 
+        else:    
+            bin_counts = bin_counts / bin_centres
+
+    if cumulative:
+        bin_counts = numpy.cumsum(bin_counts)
+
+    if percentage:
+        bin_counts = (bin_counts.astype(float) / len(data)) * 100
+    
+    return bin_counts, bin_centres, bin_edges 
+
+
 def crop_dates(start_date, end_date):
     """Adjust a start and end date so the data only includes complete months"""
     
@@ -173,6 +215,31 @@ def datetime_selector(times_str, season=None, start=None, end=None):
     return combined_selection
 
 
+def duration_stats(duration_list, stats_list):
+    """Append some extent data to a list of statistics"""
+
+    bin_counts, bin_centres, bin_edges = create_histogram(duration_list, duration=True)
+    nevents = sum(bin_counts[1:]) if bin_centres[0] == 0.0 else sum(bin_counts)
+    stats_list.append('number of events: ' + str(nevents)) 
+    stats_list.append('maximum duration: ' + str(numpy.max(duration_list))) 
+    stats_list.append('mean duration: ' + "%.2f" % round(numpy.mean(duration_list), 2))
+    stats_list.append('median duration: ' + "%.2f" % round(numpy.median(duration_list), 2))
+
+    return stats_list
+
+
+def extent_stats(extent_list, stats_list):
+    """Append some extent data to a list of statistics"""
+
+    stats_list.append('zero extent days: ' + str(extent_list.count(0.0)))
+    stats_list.append('360 extent days: ' + str(extent_list.count(360.0)))
+    stats_list.append('maximum extent: ' + str(numpy.max(extent_list)) + ' degrees') 
+    stats_list.append('mean extent: ' + "%.2f" % round(numpy.mean(extent_list), 2) + ' degrees')
+    stats_list.append('median extent: ' + "%.2f" % round(numpy.median(extent_list), 2) + ' degrees')
+
+    return stats_list
+
+
 def get_date_bounds(indata, dt_selection):
     """For a given list of dates, return the year/month bounds for 
     months of complete data (i.e. incomplete start or end 
@@ -213,22 +280,13 @@ def get_years(date_list):
 
 def plot_duration_histogram(data, outfile, stats):
     """Plot a duration histogram"""
-    
-    # Add duration stats to met file #
- 
-    stats.append('maximum duration: ' + str(data.max())) 
-    mean_duration = data.mean()
-    stats.append('mean duration: ' + "%.2f" % round(mean_duration, 2))
 
-    #print 'Number of events:', len(durations)
-
-    # Plot the historgram #
-
-    bin_max = data.max() + 1
-    bin_edges = numpy.arange(0.5, bin_max, 1) 
+    bin_counts, bin_centres, bin_edges = create_histogram(data, duration=True)
+  
+    width = (bin_edges[1]-bin_edges[0]) * .9
+    plt.bar(bin_edges[:-1], bin_counts, width=width)
     
-    n, bins, patches = plt.hist(data, bins=bin_edges, histtype='bar', rwidth=0.8)
-    
+    plt.xlim(bin_edges[0], bin_edges[-1])    
     plt.xlabel('Duration (days)')
     plt.ylabel('Frequency')
     
@@ -236,43 +294,20 @@ def plot_duration_histogram(data, outfile, stats):
     gio.write_metadata(outfile, extra_notes=stats)
 
 
-def create_histogram(data, bin_width=1, min_val=None, max_val=None, cumulative=False):
-    """Create the histogram"""
-    
-    low_bound = data.min() if not min_val else min_val
-    high_bound = data.max() if not max_val else max_val
-    
-    edges = numpy.arange((low_bound - (bin_width / 2.0)), (max_bound + bin_width), bin_width) 
-    centres = numpy.arange(low_bound, high_bound + bin_width, bin_width)
-    counts, bins = numpy.histogram(data, edges)
-    if cumulative:
-        counts = numpy.cumsum(counts)
-    counts = (counts.astype(float) / len(data)) * 100
-    if cumulative:
-        plt.plot(centres, counts, linewidth=3.0)
-    else:
-        width = (bins[1]-bins[0]) * .9
-        plt.bar(bins[:-1], counts, width=width)
-    
-    return bin_centres, bin_counts 
-
-
 def plot_extent_histogram(data, outfile, stats, bin_width=1, cumulative=False):
     """Plot an extent histogram"""
-      
-    edges = numpy.arange((0 - (bin_width / 2.0)), (360 + bin_width), bin_width) 
-    centres = numpy.arange(0, 360 + bin_width, bin_width)
-    counts, bins = numpy.histogram(data, edges)
-    if cumulative:
-        counts = numpy.cumsum(counts)
-    counts = (counts.astype(float) / len(data)) * 100
-    if cumulative:
-        plt.plot(centres, counts, linewidth=3.0)
-    else:
-        width = (bins[1]-bins[0]) * .9
-        plt.bar(bins[:-1], counts, width=width)
     
-    plt.xlim(edges[0], edges[-1])    
+    bin_counts, bin_centres, bin_edges = create_histogram(data, bin_width=bin_width, 
+                                                          cumulative=cumulative, 
+                                                          percentage=True)
+  
+    if cumulative:
+        plt.plot(bin_centres, bin_counts, linewidth=3.0)
+    else:
+        width = (bin_edges[1]-bin_edges[0]) * .9
+        plt.bar(bin_edges[:-1], bin_counts, width=width)
+    
+    plt.xlim(bin_edges[0], bin_edges[-1])    
     plt.xlabel('Extent (degrees longitude)')
     plt.ylabel('Frequency (% total days)')
     
@@ -341,28 +376,14 @@ def plot_seasonal_values(data, outfile,
     gio.write_metadata(outfile, extra_notes=stats)
 
 
-def basic_stats(data):
-    """Return basic statistics"""
-    
-    extent_list = data['extent'].tolist()
-    stats = []
-    stats.append('total number of days: ' + str(len(data['date'])))
-    stats.append('zero extent days: ' + str(extent_list.count(0.0)))
-    stats.append('360 extent days: ' + str(extent_list.count(360.0)))
-    stats.append('maximum extent: ' + str(data['extent'].max()) + ' degrees') 
-    mean_extent = data['extent'].mean()
-    stats.append('mean extent: ' + "%.2f" % round(mean_extent, 2) + ' degrees')
-
-    return stats
-    
-
 def main(inargs):
     """Run the program"""
    
     # Read data 
     indata = pandas.read_csv(inargs.infile, header=1)
     indata = add_duration(indata, inargs.event_extent)
-    
+    stats = basic_stats(indata, [], before_filtering=True)    
+
     # Apply filters
     selector = datetime_selector(indata['date'], inargs.season, inargs.start, inargs.end)
     if inargs.extent_filter:
@@ -376,9 +397,7 @@ def main(inargs):
 
     data = indata[selector]
     data.reset_index(drop=True, inplace=True)
-
-    # Print basic statistics to the screen
-    stats = basic_stats(data)
+    stats = basic_stats(data, stats, before_filtering=False)
     
     # Create optional outputs
     if inargs.date_list:    
@@ -388,7 +407,7 @@ def main(inargs):
         plot_extent_histogram(data['extent'], inargs.extent_histogram, stats, bin_width=inargs.extent_bin_width)
 
     if inargs.extent_cdf:
-        plot_extent_histogram(data['extent'], inargs.extent_cdf, stats, cumulative=True)
+        plot_extent_histogram(data['extent'], inargs.extent_cdf, stats, bin_width=inargs.extent_bin_width, cumulative=True)
 
     if inargs.duration_histogram:
         plot_duration_histogram(data['duration'], inargs.duration_histogram, stats)
