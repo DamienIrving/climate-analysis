@@ -148,8 +148,11 @@ def main(inargs):
         u_data = [indata_u.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_u else None
         v_data = [indata_v.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_v else None
         contour_data = [indata_contour.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_contour else None
-
-        title = '%s, %s' %(inargs.title, date_abbrev)
+        
+	if inargs.no_title:
+	    title = None
+	else:
+            title = 'Wave envelope, %s' %(date_abbrev)
 
         date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
 	assert re.search(date_pattern, inargs.ofile), \
@@ -242,8 +245,8 @@ example (vortex.earthsci.unimelb.edu.au):
     parser.add_argument("--ofile", type=str, default='test_envelope_1979-01-01.png', 
                         help="name of output file (include the date of one of the timesteps in YYYY-MM-DD format - it will be replaced in place)")
     
-    parser.add_argument("--title", type=str, default='Wave envelope',
-                        help="plot title - the date is added [default: Wave envelope]")
+    parser.add_argument("--no_title", action="store_true", default=False,
+                        help="switch for turning off the title")
     parser.add_argument("--ticks", type=float, nargs='*', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
                         help="List of tick marks to appear on the colour bar [default: auto]")
     parser.add_argument("--segments", type=str, nargs='*', default=None,
