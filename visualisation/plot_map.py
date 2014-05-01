@@ -511,8 +511,7 @@ def multiplot(indata,
     ofile_name = ofile if ofile else 'test.png'
     plt.savefig(ofile_name, dpi=dpi, transparent=transparent)
     plt.clf()
-    if file_info or extra_notes:
-        gio.write_metadata(ofile_name, file_info=file_info, extra_notes=extra_notes)
+    gio.write_metadata(ofile_name, file_info=file_info, extra_notes=extra_notes)
     
     del ticks
     del tick_marks
