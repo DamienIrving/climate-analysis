@@ -13,7 +13,7 @@ write_dates     -- Write a list of dates
 
 """
 
-import sys
+import os, sys
 from datetime import datetime
 from collections import defaultdict
 
