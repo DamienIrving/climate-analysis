@@ -115,8 +115,8 @@ def main(inargs):
         env_data = indata_env.data
 	np = None
 
-    # Plot every time step #
-   
+    # Wind barb settings #
+       
     if inargs.timescale == 'monthly':
 	keyval = 5
 	quiv_scale = 200
@@ -125,6 +125,17 @@ def main(inargs):
 	keyval = 10
 	quiv_scale = 300
 	quiv_width = 0.002
+
+    # Colourbar settings #
+    
+    if inargs.ticks:
+        ticks = inargs.ticks
+    elif inargs.timescale == 'daily':
+        ticks = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
+    else:
+        ticks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+    # Plot each timestep #
 
     for date in indata_env.data.getTime().asComponentTime():
         year, month, day = str(date).split(' ')[0].split('-')
@@ -164,7 +175,7 @@ def main(inargs):
                            draw_axis=True,
 		           delat=10, delon=30,
 		           contour=True,
-		           ticks=inargs.ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
+		           ticks=ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
         	           contour_data=contour_data, contour_ticks=inargs.contour_ticks,
 		           uwnd_data=u_data, vwnd_data=v_data, quiver_thin=9, key_value=keyval,
 		           quiver_scale=quiv_scale, quiver_width=quiv_width,
@@ -222,7 +233,7 @@ example (vortex.earthsci.unimelb.edu.au):
 
     parser.add_argument("env_file", type=str, help="envelope file")
     parser.add_argument("env_var", type=str, help="envelope variable")
-    parser.add_argument("timescale", type=str, choices=['daily', 'monthly'], 
+    parser.add_argument("timescale", type=str, choices=['daily', '30day-runmean', 'monthly'], 
                          help="timescale of the input data")
     
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
@@ -244,7 +255,7 @@ example (vortex.earthsci.unimelb.edu.au):
     
     parser.add_argument("--title", type=str, default='Wave envelope',
                         help="plot title - the date is added [default: Wave envelope]")
-    parser.add_argument("--ticks", type=float, nargs='*', default=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    parser.add_argument("--ticks", type=float, nargs='*', default=None,
                         help="List of tick marks to appear on the colour bar [default: auto]")
     parser.add_argument("--segments", type=str, nargs='*', default=None,
                         help="List of colours to appear on the colour bar")
