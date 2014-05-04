@@ -23,6 +23,7 @@ import numpy
 import cdms2
 import MV2
 
+import pdb
 
 def extract_data(inargs):
     """Extract input data"""
@@ -153,7 +154,7 @@ def main(inargs):
                 box_list.append([float(south_lat), float(north_lat), west_lon, east_lon, 'blue', 'solid'])
 	if inargs.search_region:
 	    south_lat, north_lat, west_lon, east_lon = inargs.search_region[0:4]
-            box_list.append([south_lat, north_lat, west_lon, east_lon, 'blue', 'dashed'])
+            box_list.append([south_lat, north_lat, west_lon, east_lon, 'green', 'dashed'])
 	    
         env_data_select = [env_data(time=(date_bounds[0], date_bounds[1]), squeeze=1),]
         u_data = [indata_u.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_u else None
@@ -188,9 +189,9 @@ def main(inargs):
 			   box_np=np,
         	           image_size=inargs.image_size)
         
-        inargs.ticks = inargs.ticks[0: -1]   # Fix for weird thing where it keeps appending to 
-	                                     # the end of the ticks list, presumably due to the 
-				             # extend = 'max' 
+        ticks = ticks[0: -1]   # Fix for weird thing where it keeps appending to 
+	                       # the end of the ticks list, presumably due to the 
+			       # extend = 'max' 
 
 
 if __name__ == '__main__':
