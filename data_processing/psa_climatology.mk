@@ -56,7 +56,7 @@ ${RWID_DIR}/figures/psa-monthly-totals-historgram_Merra_250hPa_${TSCALE_LABEL}-a
 
 ## Step 6c: Plot the seasonal values line graph
 ${RWID_DIR}/figures/psa-seasonal-values-line_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}-eventextent${EVENT_EXTENT}-duration${DURATION_MIN}-${DURATION_MAX}.png : ${RWID_DIR}/psa-stats_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv
-	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --event_extent ${EVENT_EXTENT} --duration_filter ${DURATION_MIN} ${DURATION_MAX} --seasonal_values_line $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --event_extent ${EVENT_EXTENT} --duration_filter ${DURATION_MIN} ${DURATION_MAX} --annual --seasonal_values_line $@
 
 ## Step 7: Plot the envelope
 ${RWID_DIR}/figures/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-vrot_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}.nc ${RWID_DIR}/psa-stats_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_${GRID_LABEL}-${NP_LABEL}-${LON_LABEL}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-vrot-ampmin${AMP_MIN}.csv ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_native.nc
