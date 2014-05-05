@@ -385,7 +385,8 @@ def main(inargs):
     stats = basic_stats(indata, [], before_filtering=True)    
 
     # Apply filters
-    selector = datetime_selector(indata['date'], inargs.season, inargs.start, inargs.end)
+    dt_selector = datetime_selector(indata['date'], inargs.season, inargs.start, inargs.end)
+    selector = dt_selector
     if inargs.extent_filter:
         min_extent_selection = indata['extent'] >= inargs.extent_filter[0]
         max_extent_selection = indata['extent'] <= inargs.extent_filter[1]
@@ -394,7 +395,7 @@ def main(inargs):
         min_duration_selection = indata['duration'] >= inargs.duration_filter[0]
         max_duration_selection = indata['duration'] <= inargs.duration_filter[1]
         selector = selector & min_duration_selection & max_duration_selection
-
+ 
     data = indata[selector]
     data.reset_index(drop=True, inplace=True)
     stats = basic_stats(data, stats, before_filtering=False)
@@ -413,12 +414,12 @@ def main(inargs):
         plot_duration_histogram(data['duration'], inargs.duration_histogram, stats)
 
     if inargs.monthly_totals_histogram:
-        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection)
+        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
         plot_monthly_totals(data, inargs.monthly_totals_histogram,
                             start_year, start_month, end_year, end_month, month_years, stats)
     
     if inargs.seasonal_values_line:
-        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selection)
+        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
         plot_seasonal_values(data, inargs.seasonal_values_line, 
 	                     start_year, start_month, end_year, end_month, month_years, stats,
 			     leg_loc=inargs.leg_loc, annual=inargs.annual)
