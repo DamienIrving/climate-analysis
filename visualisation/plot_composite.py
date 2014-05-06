@@ -34,31 +34,38 @@ except ImportError:
 
 # Define functions #
 
+def extract_data(file_list, variable):
+    """Extract input data"""
+
+    data = []
+    for infile in file_list:
+        temp_data = nio.InputData(infile, variable)
+	data.append(temp_data.data)
+    
+    return data
+    
+
 def main(inargs):
     """Run the program"""
         
-    ifile_list = []  #elements must be (fname, var)
-    stipple_list = []
-    for ifile in inargs.files:	
-        ifile_list.append((ifile, inargs.variable))
-	stipple_list.append((ifile, 'p'))
-    indata_list = pm.extract_data(ifile_list, region=inargs.region)
-    stipdata_list = pm.extract_data(stipple_list, region=inargs.region)
-    
-    if inargs.contour_files:
-        assert len(inargs.contour_files) == len(inargs.files)
-	contour_list = []
-        for ifile in inargs.contour_files:
-	    contour_list.append((ifile, inargs.contour_var))
-        contourdata_list = pm.extract_data(contour_list, region=inargs.region)
+    indata_list = extract_data(inargs.files, inargs.variable)
+    if inargs.stippling:
+        stipple_list = extract_data(inargs.files, 'p')
     else:
-        contourdata_list = None
+        stipple_list = None
 
-    if not inargs.units:
-        inargs.units = 'temperature anomaly (Celsius)'
+    if inargs.contour_files:
+        contour_list = extract_data(inargs.contour_files, inargs.contour_var)
+    else:
+        contour_list = None
+	
+    if inargs.dimensions:
+        dimensions = inargs.dimensions
+    else:
+        dimensions = pm.get_dimensions(len(indata_list))
 
     pm.multiplot(indata_list,
-                 dimensions=inargs.dimensions,
+                 dimensions=dimensions,
 		 region=inargs.region,
 		 ofile=inargs.ofile,
 		 units=inargs.units,
@@ -66,12 +73,12 @@ def main(inargs):
 		 draw_axis=True,
 		 delat=30, delon=30,
 		 contour=True,
-		 contour_data=contourdata_list, contour_ticks=inargs.contour_ticks,
-                 stipple_data=stipdata_list, stipple_threshold=0.05, stipple_size=1.0, stipple_thin=5,
+		 contour_data=contour_list, contour_ticks=inargs.contour_ticks,
+                 stipple_data=stipple_list, stipple_threshold=0.05, stipple_size=1.0, stipple_thin=5,
 		 ticks=inargs.ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
                  projection=inargs.projection, 
-                 extend='both',
-                 image_size=8)
+                 extend=inargs.extend,
+                 image_size=inargs.image_size)
 
 
 if __name__ == '__main__':
@@ -87,7 +94,6 @@ example (abyss.earthsci.unimelb.edu.au):
     --headings annual DJF MAM JJA SON
     --ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0
     --units temperature_anomaly_(Celsius)
-    
     --contour_var sf
     --contour_files
     sf-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-annual.nc
@@ -114,15 +120,9 @@ example (abyss.earthsci.unimelb.edu.au):
                         help="name of output file [default: test.png]")
     parser.add_argument("--dimensions", type=int, nargs=2, default=None, metavar=('ROWS', 'COLUMNS'), 
                         help="matrix dimensions [default: 1 row]")
+    parser.add_argument("--image_size", type=float, default=8, 
+                        help="size of image [default: 8]")
     
-    # Contour plot
-    parser.add_argument("--contour_var", type=str, default=None,
-                        help="Variable for the contour plot [default: None]")
-    parser.add_argument("--contour_files", type=str, nargs='*', default=None,
-                        help="Files for the contour plot [default: None]")
-    parser.add_argument("--contour_ticks", type=float, nargs='*', default=None,
-                        help="Ticks/levels for the contour plot [default: auto]")
-			
     # Colors
     parser.add_argument("--ticks", type=float, nargs='*', default=None,
                         help="List of tick marks to appear on the colour bar [default: auto]")
@@ -130,7 +130,9 @@ example (abyss.earthsci.unimelb.edu.au):
                         help="List of colours to appear on the colour bar")
     parser.add_argument("--palette", type=str, default='RdBu_r',
                         help="Colourbar name [default: RdBu_r]")
-
+    parser.add_argument("--extend", type=str, choices=('both', 'neither', 'min', 'max'), default='neither',
+                        help="selector for arrow points at either end of colourbar [default: 'neither']")
+			
     # Region/projection
     parser.add_argument("--projection", type=str, default='nsper', choices=['cyl', 'nsper', 'spstere'],
                         help="Map projection [default: nsper]")
@@ -142,6 +144,18 @@ example (abyss.earthsci.unimelb.edu.au):
                         help="List of headings corresponding to each of the input files [default = none]")
     parser.add_argument("--units", type=str, default=None, 
                         help="Units label")
+    
+    # Contour plot
+    parser.add_argument("--contour_var", type=str, default=None,
+                        help="Variable for the contour plot [default: None]")
+    parser.add_argument("--contour_files", type=str, nargs='*', default=None,
+                        help="Files for the contour plot [default: None]")
+    parser.add_argument("--contour_ticks", type=float, nargs='*', default=None,
+                        help="Ticks/levels for the contour plot [default: auto]")
+    
+    # Stippling			
+    parser.add_argument("--stippling", action="store_true", default=False,
+                        help="switch for plotting significance stippling [default: False]")
 
 
     args = parser.parse_args() 
