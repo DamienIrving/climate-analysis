@@ -5,18 +5,34 @@ Description:  Plots composite maps
 
 """
 
+# Import general Python modules #
+
 import os
 import sys
 import argparse
 
-vis_dir = os.path.join(os.environ['HOME'], 'phd', 'visualisation')
-sys.path.insert(0, vis_dir)
-import plot_map as pm
+# Import my modules #
 
-module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
-sys.path.insert(0, module_dir)
-import netcdf_io as nio
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
 
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+vis_dir = os.path.join(repo_dir, 'visualisation')
+sys.path.append(vis_dir)
+
+try:
+    import plot_map as pm
+    import netcdf_io as nio
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
+
+
+# Define functions #
 
 def main(inargs):
     """Run the program"""
@@ -116,7 +132,7 @@ example (abyss.earthsci.unimelb.edu.au):
                         help="Colourbar name [default: RdBu_r]")
 
     # Region/projection
-    parser.add_argument("--projection", type=str, default='nsper', choices=['cyl', 'nsper'],
+    parser.add_argument("--projection", type=str, default='nsper', choices=['cyl', 'nsper', 'spstere'],
                         help="Map projection [default: nsper]")
     parser.add_argument("--region", type=str, choices=nio.regions.keys(), default='sh-psa-extra',
                         help="Region over which plot the composite [default = sh-psa-extra]")
