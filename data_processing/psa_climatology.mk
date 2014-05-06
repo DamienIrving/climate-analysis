@@ -85,9 +85,6 @@ ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-anom-wrt-all_native.nc : ${PDATA_DI
 
 ## Optional extras ##
 
-# plot_envelope.py    --   plot the wave envelope with other variables overlayed
-# roim_stat.py        --   plot the event duration histogram
-# parse_dates.py      --   calculate some statistics from a list of dates (monthly totals, seasonal totals, etc)
 # plot_composite.py   --   plot a composite
 
 ## Unit testing ##
