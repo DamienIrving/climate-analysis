@@ -19,11 +19,11 @@ include zw3_climatology_config.mk
 all : ${TARGET}
 
 ## Step 1: Apply temporal averaging to the meridional wind data
-ifneq (${TSCALE_LABEL},daily)	
-	${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
-		cdo ${TSCALE} $< $@
-		ncatted -O -a axis,time,c,c,T $@
-endif
+#ifneq (${TSCALE_LABEL},daily)	
+#	${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
+#		cdo ${TSCALE} $< $@
+#		ncatted -O -a axis,time,c,c,T $@
+#endif
 
 ## Step 2: Regrid the meridional wind data
 ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc
@@ -70,11 +70,11 @@ ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-zonal-anom_native.nc : ${PDATA_DIR}
 
 ## Step 8: Calculate the composite mean envelope
 # Envelope
-{RWID_DIR}/env-zw3-composite-mean_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}_${COMPOSITE_PLACEHOLDER}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc ${RWID_DIR}/zw3-dates_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt 
+${RWID_DIR}/env-zw3-composite-mean_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}_${COMPOSITE_PLACEHOLDER}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc ${RWID_DIR}/zw3-dates_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt 
 	bash ${DATA_SCRIPT_DIR}/calc_composite.sh $< env $(word 2,$^) $@ ${COMPOSITE_TIMESCALE}
 
 # Zonal streamfunction anomaly
-{RWID_DIR}/sf-zonal-anom-zw3-composite-mean_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}_${COMPOSITE_PLACEHOLDER}.nc : ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-zonal-anom_native.nc ${RWID_DIR}/zw3-dates_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt 
+${RWID_DIR}/sf-zonal-anom-zw3-composite-mean_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}_${COMPOSITE_PLACEHOLDER}.nc : ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-zonal-anom_native.nc ${RWID_DIR}/zw3-dates_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt 
 	bash ${DATA_SCRIPT_DIR}/calc_composite.sh $< env $(word 2,$^) $@ ${COMPOSITE_TIMESCALE}
 
 

@@ -40,7 +40,7 @@ fi
 for time in ${times} ; do
     regex=s/[a-zA-Z]{3}.nc/${time}.nc/g
     new_outfile=`echo ${outfile} | sed -r ${regex}`
-    echo /usr/local/uvcdat/1.3.0/bin/cdat calc_composite.py ${infile} ${var} ${dates} ${new_outfile} --time 1979-01-01 2014-12-31 ${time}
+    /usr/local/uvcdat/1.3.0/bin/cdat calc_composite.py ${infile} ${invar} ${dates} ${new_outfile} --time 1979-01-01 2014-12-31 ${time}
 done
 
 
