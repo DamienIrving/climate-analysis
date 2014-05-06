@@ -41,13 +41,24 @@ import numpy
 import MV2
 import css
 
-import sys
-import os 
-module_dir = os.path.join(os.environ['HOME'], 'modules')
-sys.path.insert(0, module_dir)
-import netcdf_io as nio
+import sys, os 
 
-import pdb
+# Import my modules #
+
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
+
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+
+try:
+    import netcdf_io as nio
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
 
 
 ##########################################

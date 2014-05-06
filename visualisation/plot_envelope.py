@@ -5,25 +5,40 @@ Description:  Plot wave envelope and associated streamfunction anomalies
 
 """
 
-import os
-import sys
+# Import general Python modules #
+
+import os, sys
 import argparse
 import re
-
-module_dir = os.path.join(os.environ['HOME'], 'visualisation')
-sys.path.insert(0, module_dir)
-import plot_map
-
-module_dir2 = os.path.join(os.environ['HOME'], 'modules')
-sys.path.insert(0, module_dir2)
-import coordinate_rotation as rot
-import netcdf_io as nio
 
 import numpy
 import cdms2
 import MV2
 
-import pdb
+
+# Import my modules #
+
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
+
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+vis_dir = os.path.join(repo_dir, 'visualisation')
+sys.path.append(vis_dir)
+
+try:
+    import coordinate_rotation as rot
+    import netcdf_io as nio
+    import plot_map
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
+
+
+# Define functions #
 
 def extract_data(inargs):
     """Extract input data"""

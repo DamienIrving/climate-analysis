@@ -2,10 +2,6 @@
 Collection of commonly used functions for plotting 
 spatial data.
 
-To import:
-module_dir = os.path.join(os.environ['HOME'], 'visualisation')
-sys.path.insert(0, module_dir)
-
 Included functions: 
 extract_data    --  creates a list of netcdf_io.InputData instances 
 get_dimensions  --  determines dimensions for given number of input files
@@ -13,37 +9,48 @@ multiplot       --  plot a spatial map
 
 """
 
+# Import general Python modules #
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, shiftgrid
 
 import matplotlib.colors
-
 import numpy
 import math
-
 import cdms2
 import MV2
-
 import argparse
 import re
-import sys
-import os
+import sys, os
 from datetime import datetime
-
 import pylab
 
-module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
-sys.path.insert(0, module_dir)
-import netcdf_io as nio
-import general_io as gio
-import coordinate_rotation as crot
+# Import my modules #
 
-module_dir2 = os.path.join(os.environ['HOME'], 'phd', 'testing')
-sys.path.insert(0, module_dir2)
-import plot_coordinate_rotation as pcr
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
 
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+testing_dir = os.path.join(repo_dir, 'testing')
+sys.path.append(testing_dir)
+
+try:
+    import netcdf_io as nio
+    import general_io as gio
+    import coordinate_rotation as crot
+    import plot_coordinate_rotation as pcr
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
+
+
+# Define global variables #
 
 blue1, blue2, blue3, blue4, blue5 = ['#EAF4FF', '#DFEFFF', '#BFDFFF', '#95CAFF', '#55AAFF']
 blue6, blue7, blue8, blue9, blue10 = ['#0B85FF', '#006AD5', '#004080', '#002B55', '#001B35']
@@ -77,6 +84,8 @@ white = '#FFFFFF'
 
 units_dict = {'ms-1': '$m s^{-1}$'}
 
+
+# Define functions #
 
 def _decimal_places(diff):
     """Determine the decimal place rounding for a 

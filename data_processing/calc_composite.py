@@ -3,11 +3,9 @@ Filename:     calc_composite.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
 Description:  Calculates a composite
 
-Updates | By | Description
---------+----+------------
-18 March 2013 | Damien Irving | Initial version.
-
 """
+
+# Import general Python modules #
 
 import sys
 import os
@@ -19,11 +17,27 @@ from dateutil.relativedelta import relativedelta
 import MV2
 from scipy import stats
 
-module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
-sys.path.insert(0, module_dir)
-import general_io as gio
-import netcdf_io as nio
 
+# Import my modules #
+
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
+
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+
+try:
+    import general_io as gio
+    import netcdf_io as nio
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
+
+
+# Define functions #
 
 def calc_composite(data_included, data_excluded):
     """Calculate the composite"""

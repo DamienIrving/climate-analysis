@@ -6,8 +6,9 @@ Reference:    Zimin et al. 2003. Mon. Wea. Rev. 131, 1011-1017
 
 """
 
-import sys
-import os
+# Import general Python modules #
+
+import sys, os
 
 import argparse
 import numpy
@@ -15,15 +16,29 @@ import re
 
 import cdms2
 
-module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
-sys.path.insert(0, module_dir)
-import netcdf_io as nio
-import coordinate_rotation as crot
+# Import my modules #
 
-module_dir2 = os.path.join(os.environ['HOME'], 'phd', 'visualisation')
-sys.path.insert(0, module_dir2)
-import plot_map
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
 
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+vis_dir = os.path.join(repo_dir, 'visualisation')
+sys.path.append(vis_dir)
+
+try:
+    import netcdf_io as nio
+    import coordinate_rotation as crot
+    import plot_map
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
+
+
+# Define functions #
 
 def constants(inwave):
     """Define the constants required to perform the Fourier & Hilbert transforms"""

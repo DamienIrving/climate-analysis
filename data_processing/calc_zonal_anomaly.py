@@ -2,20 +2,35 @@
 Filename:     calc_zonal_anomaly.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
 Description:  Calculate the zonal anomaly (i.e. subtract the zonal mean at each timestep)
+
 """
 
-import os
-import sys
+# Import general Python modules #
 
+import os, sys
 import argparse
-
 import numpy
 import cdutil
 
-module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
-sys.path.insert(0, module_dir)
-import netcdf_io as nio
+# Import my modules #
 
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
+
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+
+try:
+    import netcdf_io as nio
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
+    
+    
+# Define fuctions #
 
 def calc_zonal_anomaly(indata):
     """Calculate zonal anomaly."""  

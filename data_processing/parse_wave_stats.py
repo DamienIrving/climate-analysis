@@ -1,3 +1,5 @@
+# Import general Python modules #
+
 import os, sys
 from collections import OrderedDict
 
@@ -17,19 +19,27 @@ from matplotlib.dates import date2num
 import calendar
 
 import argparse
-import pdb
+
+
+# Import my modules #
+
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
+
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
 
 try:
-    module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
-    sys.path.insert(0, module_dir)
     import general_io as gio
-except:
-    module_dir = os.path.join(os.environ['HOME'], 'Documents',
-                              'Professional', 'Scientific_computing',
-                              'git_repo', 'phd', 'modules')
-    sys.path.insert(0, module_dir)
-    import general_io as gio
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
 
+
+# Define functions #
 
 def add_duration(indata, extent_threshold):
     """Add a duration column to the input data, where an event is defined by

@@ -6,19 +6,34 @@ Description:  Calcuates statistics for wave envelope data
 
 """
 
-import sys
-import os
+# Import general Python modules #
 
+import sys, os
 import argparse
 import numpy
 import csv
 
-module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
-sys.path.insert(0, module_dir)
-import netcdf_io as nio
-import general_io as gio
-    
+# Import my modules #
 
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
+
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+
+try:
+    import general_io as gio
+    import netcdf_io as nio
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
+
+
+# Define functions #
+    
 def extent_stats(data_double, lons_double, threshold, lon_spacing):
     """Return key statistics regarding the extent"""
     

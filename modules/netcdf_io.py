@@ -30,7 +30,7 @@ InputData            -- Extract and subset data
 
 """
 
-__author__ = 'Damien Irving'
+## Import general Python modules ##
 
 import os
 import sys
@@ -55,9 +55,23 @@ cdms2.setNetcdfDeflateLevelFlag(0)
 import MV2
 import regrid2
 
-module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
-sys.path.insert(0, module_dir)
-import general_io as gio
+
+## Import my modules ##
+
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
+
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+
+try:
+    import general_io as gio
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
 
   
 ## Define regions ##
