@@ -17,6 +17,7 @@ from dateutil.relativedelta import relativedelta
 import MV2
 from scipy import stats
 
+import pdb
 
 # Import my modules #
 
@@ -111,7 +112,7 @@ def main(inargs):
     pval_atts = {'id': 'p',
                  'long_name': 'Two-tailed p-value',
                  'units': ' ',
-                 'history': """Standard independent two sample t-test comparing the data sample that meets the composite criteria to a sample containing the remaining data""",
+                 'history': """Standard independent two sample t-test comparing the data sample that meets the composite criteria (size=%s) to a sample containing the remaining data (size=%s)""" %(len(matching_dates), len(missing_dates)),
                  'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=False)'}
 
     outdata_list = [composite, p_val]
