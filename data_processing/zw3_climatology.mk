@@ -1,7 +1,7 @@
 # zw3_climatology.mk
 #
 # To execute:
-#   make -n -f zw3_climatology.mk  (-n is a dry run)
+#   make -n -B -f zw3_climatology.mk  (-n is a dry run) (-B is a force make)
 
 # Fix:
 #   At the moment the data processing (e.g. for the sf and calculation of the
