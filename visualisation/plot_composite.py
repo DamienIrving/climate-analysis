@@ -64,6 +64,14 @@ def main(inargs):
     else:
         dimensions = pm.get_dimensions(len(indata_list))
 
+    if inargs.raphael_boxes:
+        box1 = (-50, -45, 45, 60, 'blue', 'solid')
+	box2 = (-50, -45, 161, 171, 'blue', 'solid')
+	box3 = (-50, -45, 279, 289, 'blue', 'solid')
+	box_list = [box1, box2, box3]
+    else:
+        box_list = []
+ 
     pm.multiplot(indata_list,
                  dimensions=dimensions,
 		 region=inargs.region,
@@ -78,6 +86,7 @@ def main(inargs):
 		 ticks=inargs.ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
                  projection=inargs.projection, 
                  extend=inargs.extend,
+		 box=box_list,
                  image_size=inargs.image_size)
 
 
@@ -144,6 +153,8 @@ example (abyss.earthsci.unimelb.edu.au):
                         help="List of headings corresponding to each of the input files [default = none]")
     parser.add_argument("--units", type=str, default=None, 
                         help="Units label")
+    parser.add_argument("--raphael_boxes", action="store_true", default=False,
+                        help="switch for plotting boxes showing the ZW3 index [default: False]")
     
     # Contour plot
     parser.add_argument("--contour_var", type=str, default=None,
