@@ -11,6 +11,7 @@ import os
 import sys
 import argparse
 import re
+import pdb
 
 # Import my modules #
 
@@ -47,7 +48,11 @@ def extract_data(file_list, variable):
         temp_data = nio.InputData(infile, variable)
 	try:
 	    temp_history = temp_data.data.attributes['history']
-	    sample_sizes = re.findall(r'(size=[0-9]+)', temp_history)
+	    matches = re.findall(r'(size=[0-9]+)', temp_history)
+	    if matches:
+	        sample_sizes = map(lambda x: x.split('=')[1], matches)
+	    else:
+	        sample_sizes = None
 	except KeyError:
 	    sample_sizes = None
 	
@@ -60,11 +65,13 @@ def extract_data(file_list, variable):
 def main(inargs):
     """Run the program"""
         
-    indata_list, sample_list = extract_data(inargs.files, inargs.variable)
+    indata_list, temp = extract_data(inargs.files, inargs.variable)
+    stipple_list, sample_list = extract_data(inargs.files, 'p')
+    
     if inargs.stippling:
-        stipple_list, temp = extract_data(inargs.files, 'p')
+        stipdata_list = stipple_list
     else:
-        stipple_list = None
+        stipdata_list = None
 
     if inargs.contour_files:
         contour_list, temp = extract_data(inargs.contour_files, inargs.contour_var)
@@ -89,13 +96,13 @@ def main(inargs):
 	    assert len(inargs.headings) == len(sample_list), \
 	    'Number of headings (%s) and samples (%s) must be the same' %(len(inargs.headings), len(sample_list))
             heading_list = []
-	    for in in range(0, len(inargs.headings):
+	    for i in range(0, len(inargs.headings)):
 	        included_sample_size = sample_list[i][0]
-		excluded_sample_size = sample_list[i][0]
+		excluded_sample_size = sample_list[i][1]
 		total_size = float(included_sample_size) + float(excluded_sample_size)
-		heading_list.append(inargs.headings[i]+' ('+included_sample_size+'/'+str(total_size)+')') 
+		heading_list.append(inargs.headings[i]+' ('+included_sample_size+'/'+str(int(total_size))+')') 
         else:
-	    heading_list = inargs.headings
+	    heading_list = inargs.headings    
  
     pm.multiplot(indata_list,
                  dimensions=dimensions,
@@ -107,7 +114,7 @@ def main(inargs):
 		 delat=30, delon=30,
 		 contour=True,
 		 contour_data=contour_list, contour_ticks=inargs.contour_ticks,
-                 stipple_data=stipple_list, stipple_threshold=0.05, stipple_size=1.0, stipple_thin=5,
+                 stipple_data=stipdata_list, stipple_threshold=0.05, stipple_size=1.0, stipple_thin=5,
 		 ticks=inargs.ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
                  projection=inargs.projection, 
                  extend=inargs.extend,
