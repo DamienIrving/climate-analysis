@@ -20,7 +20,8 @@ Consistent with the CMIP convention (unless variable is not a CMIP one):
   * zg = geopotential height  
   * ua = eastward wind component  
   * va = northward wind component  
-  * psl = sea level pressure  
+  * psl = sea level pressure 
+  * sic = sea ice area fraction 
   * sftlf = land area fraction  
   * sftof = sea area fraction  
   * sf = streamfunction  
