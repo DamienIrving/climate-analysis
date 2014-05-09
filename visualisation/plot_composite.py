@@ -10,6 +10,7 @@ Description:  Plots composite maps
 import os
 import sys
 import argparse
+import re
 
 # Import my modules #
 
@@ -29,33 +30,44 @@ try:
     import plot_map as pm
     import netcdf_io as nio
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from somewhere within the phd git repo')
 
 
 # Define functions #
 
 def extract_data(file_list, variable):
-    """Extract input data"""
+    """Return lists of the data and corresponding composite sample sizes:
+    [size included, size excluded]
+    
+    """
 
-    data = []
+    data_list = []
+    sample_list = []
     for infile in file_list:
         temp_data = nio.InputData(infile, variable)
-	data.append(temp_data.data)
+	try:
+	    temp_history = temp_data.data.attributes['history']
+	    sample_sizes = re.findall(r'(size=[0-9]+)', temp_history)
+	except KeyError:
+	    sample_sizes = None
+	
+	sample_list.append(sample_sizes)
+	data_list.append(temp_data.data)
     
-    return data
+    return data_list, sample_list
     
 
 def main(inargs):
     """Run the program"""
         
-    indata_list = extract_data(inargs.files, inargs.variable)
+    indata_list, sample_list = extract_data(inargs.files, inargs.variable)
     if inargs.stippling:
-        stipple_list = extract_data(inargs.files, 'p')
+        stipple_list, temp = extract_data(inargs.files, 'p')
     else:
         stipple_list = None
 
     if inargs.contour_files:
-        contour_list = extract_data(inargs.contour_files, inargs.contour_var)
+        contour_list, temp = extract_data(inargs.contour_files, inargs.contour_var)
     else:
         contour_list = None
 	
@@ -72,12 +84,25 @@ def main(inargs):
     else:
         box_list = []
  
+    if inargs.headings:
+        if sample_list[0]:
+	    assert len(inargs.headings) == len(sample_list), \
+	    'Number of headings (%s) and samples (%s) must be the same' %(len(inargs.headings), len(sample_list))
+            heading_list = []
+	    for in in range(0, len(inargs.headings):
+	        included_sample_size = sample_list[i][0]
+		excluded_sample_size = sample_list[i][0]
+		total_size = float(included_sample_size) + float(excluded_sample_size)
+		heading_list.append(inargs.headings[i]+' ('+included_sample_size+'/'+str(total_size)+')') 
+        else:
+	    heading_list = inargs.headings
+ 
     pm.multiplot(indata_list,
                  dimensions=dimensions,
 		 region=inargs.region,
 		 ofile=inargs.ofile,
 		 units=inargs.units,
-		 img_headings=inargs.headings,
+		 img_headings=heading_list,
 		 draw_axis=True,
 		 delat=30, delon=30,
 		 contour=True,
