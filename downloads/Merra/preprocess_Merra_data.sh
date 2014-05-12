@@ -22,7 +22,7 @@ outfile=$3
 outvar=$4
 units=$5
 
-cdo sellonlatbox,0,359.9,-90,90 temp.nc ${outfile}
+cdo sellonlatbox,0,359.9,-90,90 ${infile} ${outfile}
 ncrename -O -v ${invar},${outvar} ${outfile}
 ncatted -O -a comments,${outvar},d,, ${outfile}
 ncatted -O -a units,${ourvar},c,c,"${units}" ${outfile}
