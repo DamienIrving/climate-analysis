@@ -1,6 +1,49 @@
+"""
+Filename:     calc_fourier_transform.py
+Author:       Damien Irving, d.irving@student.unimelb.edu.au
+
+"""
+
+# Import general Python modules
+
+import sys, os
+import argparse
 import numpy
-from matplotlib import pyplot as plt
 from scipy import fftpack
+import pdb
+
+# Import my modules #
+
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
+
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+vis_dir = os.path.join(repo_dir, 'visualisation')
+sys.path.append(vis_dir)
+
+try:
+    import netcdf_io as nio
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
+
+
+# Define functions #
+
+
+def filter_signal(signal, indep_var, min_freq, max_freq):
+    """Filter a signal by performing a Fourier Tranform and then
+    an inverse Fourier Transform for a selected range of frequencies"""
+    
+    sig_fft, sample_freq, freqs, power = fourier_transform(signal, indep_var)
+    filtered_signal = inverse_fourier_transform(sig_fft, sample_freq, min_freq=min_freq, max_freq=max_freq)
+    
+    return filtered_signal
+
 
 def fourier_transform(signal, indep_var):
     """Calculate the Fourier Transform.
@@ -22,6 +65,27 @@ def fourier_transform(signal, indep_var):
     freqs, power = sample_freq[pidxs], numpy.abs(sig_fft)[pidxs]
     
     return sig_fft, sample_freq, freqs, power
+
+
+def inverse_fourier_transform(sig_fft, sample_freq, min_freq=None, max_freq=None):
+    """Inverse Fourier Transform.
+    
+    Input arguments:
+        max_freq, min_freq   ->  Can filter to only include a certain
+                                 frequency range. 
+                                 
+    """
+    
+    if max_freq == min_freq and max_freq:
+        sig_fft[numpy.abs(sample_freq) != max_freq] = 0
+    
+    if max_freq:
+        sig_fft[numpy.abs(sample_freq) > max_freq] = 0
+    
+    if min_freq:
+        sig_fft[numpy.abs(sample_freq) < min_freq] = 0
+    
+    return fftpack.ifft(sig_fft)
 
 
 def plot_spectrum(freqs, power, window=20):
@@ -47,26 +111,85 @@ def plot_spectrum(freqs, power, window=20):
     plt.show()
 
 
-def inverse_fourier_transform(sig_fft, sample_freq, max_freq=None, min_freq=None):
-    """Inverse Fourier Transform.
+def main(inargs):
+    """Run the program."""
     
-    Input arguments:
-        max_freq, min_freq   ->  Can filter to only include a certain
-                                 frequency range.
-                                 (e.g. for wavenumber 4, freq is 0.25)
-    """
+    # Read input data #
     
-    if max_freq == min_freq and max_freq:
-        sig_fft[numpy.abs(sample_freq) != max_freq] = 0
-        print 'Frequencies equal'
+    indata = nio.InputData(inargs.infile, inargs.variable, 
+                           **nio.dict_filter(vars(inargs), ['time', 'latitude']))
     
-    if max_freq:
-        sig_fft[numpy.abs(sample_freq) > max_freq] = 0
-        print 'Setting max freq...'
+    assert indata.data.getOrder() == 'tyx', \
+    'This script only works if the input data has a time, latitude and longitude axis'
+     
+    # Perform the filtering #
     
-    if min_freq:
-        sig_fft[numpy.abs(sample_freq) < min_freq] = 0
-        print 'Setting min freq...'
+    if inargs.filter:
+        min_freq, max_freq = inargs.filter
+	filter_text = 'Fourier transform filtering with frequency range: %s to %s' %(min_freq, max_freq)
+    else:
+        min_freq = max_freq = None
+	filter_text = 'Fourier transform filtering with all frequencies retained'
     
-    return fftpack.ifft(sig_fft)
+    outdata = numpy.apply_along_axis(filter_signal, 2, indata.data, indata.data.getLongitude()[:], min_freq, max_freq)
     
+    # Write output file #
+
+    var_atts = {'id': indata.data.id,
+                'standard_name': 'Frequency filtered '+indata.data.long_name,
+                'long_name': 'Frequency filtered '+indata.data.long_name,
+                'units': indata.data.units,
+                'history': filter_text}
+
+    outdata_list = [outdata,]
+    outvar_atts_list = [var_atts,]
+    outvar_axes_list = [indata.data.getAxisList(),]
+
+    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
+                     indata.global_atts, 
+                     outdata_list,
+                     outvar_atts_list, 
+                     outvar_axes_list)
+
+
+if __name__ == '__main__':
+
+    extra_info =""" 
+example (vortex.earthsci.unimelb.edu.au):
+
+author:
+  Damien Irving, d.irving@student.unimelb.edu.au
+
+"""
+
+    description='Perform Fourier Transform along lines of constant latitude'
+    parser = argparse.ArgumentParser(description=description,
+                                     epilog=extra_info, 
+                                     argument_default=argparse.SUPPRESS,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+
+    parser.add_argument("infile", type=str, help="Input file name")
+    parser.add_argument("variable", type=str, help="Input file variable")
+    parser.add_argument("outfile", type=str, help="Output file name")
+			
+    # Input data options
+    parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
+                        help="Latitude range over which to perform Fourier Transform [default = entire]")
+    parser.add_argument("--longitude", type=float, nargs=2, metavar=('START', 'END'), default=None,
+                        help="Longitude range over which to perform Fourier Transform [default = entire]")
+    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
+                        help="Time period [default = entire]")
+
+    # Output options
+    parser.add_argument("--filter", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=None,
+                        help="Range of frequecies to retain in filtering [e.g. 3,3 would retain the wave that repeats 3 times over the domain")
+    parser.add_argument("--spectrum", action="store_true", default=False, 
+                        help="Switch for plotting the spectrum [default: False]")
+
+  
+    args = parser.parse_args()            
+
+    print 'Input files: ', args.infile
+    print 'Output file: ', args.outfile  
+
+    main(args)
