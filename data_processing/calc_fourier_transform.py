@@ -10,7 +10,7 @@ import sys, os
 import argparse
 import numpy
 from scipy import fftpack
-import pdb
+import matplotlib.pyplot as plt
 
 # Import my modules #
 
