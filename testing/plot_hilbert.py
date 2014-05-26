@@ -80,13 +80,17 @@ filtered_signal_all_wavenum2 = cft.inverse_fourier_transform(sig_fft, sample_fre
 plt.plot(time_vec, 2*filtered_signal_all_wavenum2, color='blue', linestyle='--', label='w2')
 
 filtered_signal_all_wavenum3 = cft.inverse_fourier_transform(sig_fft, sample_freq, min_freq=3, max_freq=3, exclude=None)
-plt.plot(time_vec, 2*filtered_signal_all_wavenum3, color='blue', linestyle='.', label='w3')
+plt.plot(time_vec, 2*filtered_signal_all_wavenum3, color='blue', linestyle=':', label='w3')
 
 filtered_signal_all_wavenum4 = cft.inverse_fourier_transform(sig_fft, sample_freq, min_freq=4, max_freq=4, exclude=None)
-plt.plot(time_vec, 2*filtered_signal_all_wavenum4, color='red', label='w4')
+plt.plot(time_vec, 2*filtered_signal_all_wavenum4, color='blue', linestyle='-.', label='w4')
 
 filtered_signal_all_wavenum24 = cft.inverse_fourier_transform(sig_fft, sample_freq, min_freq=2, max_freq=4, exclude=None)
 plt.plot(time_vec, 2*filtered_signal_all_wavenum24, color='orange', label='w234')
+
+sum_signals = filtered_signal_all_wavenum2 + filtered_signal_all_wavenum3 + filtered_signal_all_wavenum4
+plt.plot(time_vec, 2*filtered_signal_all_wavenum24, color='blue', label='sum')
+
 plt.legend()
 plt.savefig('scipy_w234_results.png')
 plt.clf()
