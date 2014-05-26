@@ -11,6 +11,7 @@ import argparse
 import numpy
 from scipy import fftpack
 import matplotlib.pyplot as plt
+from copy import deepcopy
 
 # Import my modules #
 
@@ -67,25 +68,40 @@ def fourier_transform(signal, indep_var):
     return sig_fft, sample_freq, freqs, power
 
 
-def inverse_fourier_transform(sig_fft, sample_freq, min_freq=None, max_freq=None):
+def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq=None, exclude=None):
     """Inverse Fourier Transform.
     
     Input arguments:
         max_freq, min_freq   ->  Can filter to only include a certain
                                  frequency range. 
+	exclude              ->  Can exclude either the 'positive' or 
+	                         'negative' half of the Fourier spectrum  
                                  
     """
     
+    assert exclude in ['positive', 'negative', None]
+    
+    coefs = deepcopy(coefficients)  # Deep copy to prevent side effects
+                                    # (shallow copy not sufficient for complex
+				    # things like numpy arrays)
+    
+    if exclude == 'positive':
+        coefs[sample_freq > 0] = 0
+    elif exclude == 'negative':
+        coefs[sample_freq < 0] = 0
+    
     if max_freq == min_freq and max_freq:
-        sig_fft[numpy.abs(sample_freq) != max_freq] = 0
+        coefs[numpy.abs(sample_freq) != max_freq] = 0
     
     if max_freq:
-        sig_fft[numpy.abs(sample_freq) > max_freq] = 0
+        coefs[numpy.abs(sample_freq) > max_freq] = 0
     
     if min_freq:
-        sig_fft[numpy.abs(sample_freq) < min_freq] = 0
+        coefs[numpy.abs(sample_freq) < min_freq] = 0
     
-    return fftpack.ifft(sig_fft)
+    result = fftpack.ifft(coefs)
+    
+    return result
 
 
 def plot_spectrum(freqs, power, window=20):
