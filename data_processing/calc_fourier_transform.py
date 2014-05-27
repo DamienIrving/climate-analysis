@@ -104,29 +104,6 @@ def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq
     return result
 
 
-def plot_spectrum(freqs, power, window=20):
-    """Plot power spectrum.
-    
-    Input arguments:
-        Window  -> There is an inset winow for the first 0:window frequencies
-    
-    """
-    
-    plt.figure()  
-    
-    # Outer plot
-    plt.plot(freqs, power)
-    plt.xlabel('Frequency [cycles / domain]')
-    plt.ylabel('power')
-    
-    # Inner plot
-    axes = plt.axes([0.3, 0.3, 0.5, 0.5])
-    plt.title('Peak frequency')
-    plt.plot(freqs[:window], power[:window])
-    plt.setp(axes, yticks=[])
-    plt.show()
-
-
 def main(inargs):
     """Run the program."""
     
@@ -199,8 +176,6 @@ author:
     # Output options
     parser.add_argument("--filter", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=None,
                         help="Range of frequecies to retain in filtering [e.g. 3,3 would retain the wave that repeats 3 times over the domain")
-    parser.add_argument("--spectrum", action="store_true", default=False, 
-                        help="Switch for plotting the spectrum [default: False]")
 
   
     args = parser.parse_args()            

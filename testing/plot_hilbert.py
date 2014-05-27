@@ -69,11 +69,33 @@ def data_signal(infile, var, lon, date):
     
     return numpy.array(xaxis), numpy.array(data)
     
+
+def plot_spectrum(freqs, power, window=20):
+    """Plot power spectrum.
     
-# Individual wavenumber plots
+    Input arguments:
+        Window  -> There is an inset winow for the first 0:window frequencies
+    
+    """
+    
+    plt.figure()  
+    
+    # Outer plot
+    plt.plot(freqs, power)
+    plt.xlabel('Frequency [cycles / domain]')
+    plt.ylabel('power')
+    
+    # Inner plot
+    axes = plt.axes([0.3, 0.3, 0.5, 0.5])
+    plt.title('Peak frequency')
+    plt.plot(freqs[:window], power[:window])
+    plt.setp(axes, yticks=[])
+    plt.savefig('power_spectrum.png')
+    plt.clf()
+
 
 def plot_wavenumbers(num_list, filtered_signal, xaxis):
-    """Plot the individual wavenumbers, including their positive and negative wavenumber bits"""
+    """Plot the individual wavenumbers, including their positive and negative wavenumber parts"""
     
     colors = ['blue', 'red', 'green', 'orange', 'pink', 'black', 'purple', 'brown', 'cyan', 'magenta']
     for wavenum in num_list:
@@ -86,53 +108,40 @@ def plot_wavenumbers(num_list, filtered_signal, xaxis):
     plt.clf()
 
 
-def plot_hilbert(num_list, filtered_signal, xaxis):
+def plot_hilbert(num_list, original_signal, filtered_signal, my_signal, xaxis):
     """Plot the Hilbert transform and key components of it"""
 
     for wavenum in num_list:
-        plt.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], color='0.5', linestyle='--', label='w'+str(wavenum))
+	color = 'orange' if wavenum in [2, 3, 4] else '0.5'
+        plt.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], color=color, linestyle='--')
 
-    plt.plot(time_vec, 2*filtered_signal[None, 2, 4], color='blue', label='exclude none')
-    plt.plot(time_vec, 2*filtered_signal['positive', 2, 4], color='blue', linestyle=':', label='exclude pos')
-    plt.plot(time_vec, 2*filtered_signal['negative', 2, 4], color='blue', linestyle='--', label='exclude neg')
+    plt.plot(xaxis, 2*filtered_signal['positive', num_list[0], num_list[-1]], color='black', linestyle='--', label='w'+str(num_list[0])+'-'+str(num_list[-1])+' signal')
+    plt.plot(xaxis, numpy.abs(2*filtered_signal['positive', num_list[0], num_list[-1]]), color='black', label='w'+str(num_list[0])+'-'+str(num_list[-1])+' envelope')
+    plt.plot(xaxis, 2*filtered_signal['positive', 2, 4], color='red', linestyle='--', label='w2-4 signal')
+    plt.plot(xaxis, numpy.abs(2*filtered_signal['positive', 2, 4]), color='red', label='w2-4 envelope')
+    plt.plot(xaxis, my_signal, color='cyan', linestyle=':', label='Glatt signal')
+    plt.plot(xaxis, original_signal, color='green', label='original signal')
 
-    plt.legend()
-    plt.savefig('scipy_w234_results.png')
+    print 'Signal vals:', 2*filtered_signal['positive', num_list[0], num_list[-1]][0:10]
+    print 'Envelope vals:', numpy.abs(2*filtered_signal['positive', num_list[0], num_list[-1]])[0:10]
+
+    plt.legend(loc=4)
+    plt.savefig('hilbert_transform.png')
     plt.clf()
 
-    # Plot amplitude
-    plt.plot(time_vec, sig, label='original', color='green')
-    plt.plot(time_vec, numpy.abs(2*filtered_signal['positive', 2, 4]), color='blue', label='pos amplitude w234')
-
-    sum_pos_signals = 2*filtered_signal['positive', 2, 2] + 2*filtered_signal['positive', 3, 3] + 2*filtered_signal['positive', 4, 4]
-    plt.plot(time_vec, sum_pos_signals, color='blue', linestyle=':', label='postive sum w234')
-
-    sum_all_signals = 2*filtered_signal[None, 2, 2] + 2*filtered_signal[None, 3, 3] + 2*filtered_signal[None, 4, 4]
-    plt.plot(time_vec, sum_all_signals, color='blue', linestyle='--', label='all sum w234')
-
-    plt.legend()
-    plt.savefig('scipy_w234_hilbert_results.png')
-    plt.clf()
-
-
-
-# : -. --
-#plt.plot(time_vec, 2*filtered_signal, color='orange', label='w234')
-#sum_signals = filtered_signal_all_wavenum2 + filtered_signal_all_wavenum3 + filtered_signal_all_wavenum4
 
 def main(inargs):
     """Run the program."""
     
     # Get the data
-    
-    if switch:
+    if inargs.simple:
         xaxis, sig = simple_signal()
     else:
-        xaxis, sig = data_signal(inargs.infile, inargs.var, inargs.longitude, inargs.date)
+        xaxis, sig = data_signal(inargs.infile, inargs.variable, inargs.longitude, inargs.date)
 
-    # Do the Hilbert transform (with the fast scipy routines)
-    
-    sig_fft, sample_freq, freqs, power = cft.fourier_transform(sig, xaxis)
+    # Do the Hilbert transform
+    my_signal = cenv.envelope(sig, inargs.wavenumbers[0], inargs.wavenumbers[-1])  #My method
+    sig_fft, sample_freq, freqs, power = cft.fourier_transform(sig, xaxis) # Scipy method
  
     filtered_signal = {}
     wavenum_list = range(inargs.wavenumbers[0], inargs.wavenumbers[-1] + 1)
@@ -143,25 +152,19 @@ def main(inargs):
 	                                                                                  min_freq=wave_min, max_freq=wave_max, 
 										          exclude=filt)
     
-    # Plot power spectrum
+    # Create plots
+    plot_spectrum(freqs, power, window=14)
+    plot_wavenumbers(wavenum_list, filtered_signal, xaxis)
+    plot_hilbert(wavenum_list, sig, filtered_signal, my_signal, xaxis)
     
-    # Plot using my Hilbert transform to confirm result
-    
-    my_result = cenv.envelope(sig, inargs.wavenumbers[0], inargs.wavenumbers[-1])
-    plt.plot(xaxis, my_result)
-    plt.plot(xaxis, sig)
-    plt.savefig('my_hilbert_transform.png')
-    plt.clf()
-    
-    
-
 
 if __name__ == '__main__':
 
     extra_info =""" 
 
 example:
-    ~/Downloads/Data/va_Merra_250hPa_30day-runmean-2002_r360x181.nc
+    /usr/local/uvcdat/1.4.0/bin/cdat plot_hilbert.py 
+    ~/Downloads/Data/va_Merra_250hPa_30day-runmean-2002_r360x181.nc va -50 2002-04-17
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
 
