@@ -12,6 +12,7 @@ import sys, os
 import argparse
 import numpy
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as font_manager
 import cdms2
 import pdb
 
@@ -70,7 +71,7 @@ def data_signal(infile, var, lon, date):
     return numpy.array(xaxis), numpy.array(data)
     
 
-def plot_spectrum(freqs, power, window=20):
+def plot_spectrum(freqs, power, tag=None, window=20):
     """Plot power spectrum.
     
     Input arguments:
@@ -90,11 +91,12 @@ def plot_spectrum(freqs, power, window=20):
     plt.title('Peak frequency')
     plt.plot(freqs[:window], power[:window])
     plt.setp(axes, yticks=[])
-    plt.savefig('power_spectrum.png')
+    outfile = 'power_spectrum_'+tag+'.png' if tag else 'power_spectrum.png'
+    plt.savefig(outfile)
     plt.clf()
 
 
-def plot_wavenumbers(num_list, filtered_signal, xaxis):
+def plot_wavenumbers(num_list, filtered_signal, xaxis, tag=None):
     """Plot the individual wavenumbers, including their positive and negative wavenumber parts"""
     
     colors = ['blue', 'red', 'green', 'orange', 'pink', 'black', 'purple', 'brown', 'cyan', 'magenta']
@@ -104,11 +106,12 @@ def plot_wavenumbers(num_list, filtered_signal, xaxis):
         plt.plot(xaxis, 2*filtered_signal['negative', wavenum, wavenum], color=colors[wavenum-1], linestyle='--')
 
     plt.legend()
-    plt.savefig('individual_wavenumbers.png')
+    outfile = 'individual_wavenumbers_'+tag+'.png' if tag else 'individual_wavenumbers.png'
+    plt.savefig(outfile)
     plt.clf()
 
 
-def plot_hilbert(num_list, original_signal, filtered_signal, my_signal, xaxis):
+def plot_hilbert(num_list, original_signal, filtered_signal, my_signal, xaxis, tag=None):
     """Plot the Hilbert transform and key components of it"""
 
     for wavenum in num_list:
@@ -125,8 +128,13 @@ def plot_hilbert(num_list, original_signal, filtered_signal, my_signal, xaxis):
     print 'Signal vals:', 2*filtered_signal['positive', num_list[0], num_list[-1]][0:10]
     print 'Envelope vals:', numpy.abs(2*filtered_signal['positive', num_list[0], num_list[-1]])[0:10]
 
-    plt.legend(loc=4)
-    plt.savefig('hilbert_transform.png')
+    if tag:
+        plt.title(tag.replace('_',' '))
+    font = font_manager.FontProperties(size='small')
+    plt.legend(loc=4, prop=font)
+    
+    outfile = 'hilbert_transform_'+tag+'.png' if tag else 'hilbert_transform.png'
+    plt.savefig(outfile)
     plt.clf()
 
 
@@ -153,9 +161,9 @@ def main(inargs):
 										          exclude=filt)
     
     # Create plots
-    plot_spectrum(freqs, power, window=14)
-    plot_wavenumbers(wavenum_list, filtered_signal, xaxis)
-    plot_hilbert(wavenum_list, sig, filtered_signal, my_signal, xaxis)
+    plot_spectrum(freqs, power, tag=inargs.tag, window=14)
+    plot_wavenumbers(wavenum_list, filtered_signal, xaxis, tag=inargs.tag)
+    plot_hilbert(wavenum_list, sig, filtered_signal, my_signal, xaxis, tag=inargs.tag)
     
 
 if __name__ == '__main__':
@@ -165,6 +173,11 @@ if __name__ == '__main__':
 example:
     /usr/local/uvcdat/1.4.0/bin/cdat plot_hilbert.py 
     ~/Downloads/Data/va_Merra_250hPa_30day-runmean-2002_r360x181.nc va -50 2002-04-17
+
+notes:
+   Interesting dates are 2002-01-15 (extent=180), 2002-01-23 (extent=150), 2002-02-13 (extent=100), 
+   2002-04-24 (extent=350), 2002-05-12 (extent=360), 2002-06-19 (extent=240)                     
+
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
 
@@ -180,7 +193,8 @@ author:
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("longitude", type=str, help="Longitude over which to extract the wave")
     parser.add_argument("date", type=str, help="Date for which to extract the wave")
-
+    parser.add_argument("tag", type=str, help="Tag for output files")
+    
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[1, 10],
                         help="Wavenumber range [default = (1, 10)]. The upper and lower values are included (i.e. default selection includes 1 and 10).")
     parser.add_argument("--simple", action="store_true", default=False,
