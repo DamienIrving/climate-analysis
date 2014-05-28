@@ -14,6 +14,8 @@ import numpy
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 import cdms2
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import pdb
 
 # Import my modules #
@@ -65,7 +67,7 @@ def simple_signal():
 
 def data_signal(infile, var, lon, date):
     fin = cdms2.open(infile)
-    data = fin(var, latitude=(float(lon) - 0.1, float(lon) + 0.1), time=(date, date), squeeze=1)
+    data = fin(var, latitude=(lon - 0.1, lon + 0.1), time=(date, date), squeeze=1)
     xaxis = data.getLongitude()[:]
     
     return numpy.array(xaxis), numpy.array(data)
@@ -125,9 +127,6 @@ def plot_hilbert(num_list, original_signal, filtered_signal, my_signal, xaxis, t
     plt.plot(xaxis, my_signal, color='cyan', linestyle=':', label='Glatt signal')
     plt.plot(xaxis, original_signal, color='green', label='original signal')
 
-    print 'Signal vals:', 2*filtered_signal['positive', num_list[0], num_list[-1]][0:10]
-    print 'Envelope vals:', numpy.abs(2*filtered_signal['positive', num_list[0], num_list[-1]])[0:10]
-
     if tag:
         plt.title(tag.replace('_',' '))
     font = font_manager.FontProperties(size='small')
@@ -140,30 +139,41 @@ def plot_hilbert(num_list, original_signal, filtered_signal, my_signal, xaxis, t
 
 def main(inargs):
     """Run the program."""
-    
-    # Get the data
-    if inargs.simple:
-        xaxis, sig = simple_signal()
-    else:
-        xaxis, sig = data_signal(inargs.infile, inargs.variable, inargs.longitude, inargs.date)
 
-    # Do the Hilbert transform
-    my_signal = cenv.envelope(sig, inargs.wavenumbers[0], inargs.wavenumbers[-1])  #My method
-    sig_fft, sample_freq, freqs, power = cft.fourier_transform(sig, xaxis) # Scipy method
- 
-    filtered_signal = {}
-    wavenum_list = range(inargs.wavenumbers[0], inargs.wavenumbers[-1] + 1)
-    for filt in [None, 'positive', 'negative']:
-        for wave_min in wavenum_list:
-            for wave_max in wavenum_list:
-	        filtered_signal[filt, wave_min, wave_max] = cft.inverse_fourier_transform(sig_fft, sample_freq, 
-	                                                                                  min_freq=wave_min, max_freq=wave_max, 
-										          exclude=filt)
-    
-    # Create plots
-    plot_spectrum(freqs, power, tag=inargs.tag, window=14)
-    plot_wavenumbers(wavenum_list, filtered_signal, xaxis, tag=inargs.tag)
-    plot_hilbert(wavenum_list, sig, filtered_signal, my_signal, xaxis, tag=inargs.tag)
+    for i in range(0, inargs.ndates):
+
+	# Get the data
+	if inargs.simple:
+            xaxis, sig = simple_signal()
+	    tag = inargs.tag if inargs.tag else 'simple'
+	else:
+            start = datetime.strptime(inargs.start_date, '%Y-%m-%d')
+	    dt = start + relativedelta(days=i)
+	    date = dt.strftime('%Y-%m-%d')
+	    xaxis, sig = data_signal(inargs.infile, inargs.variable, inargs.longitude, date)
+	    if inargs.tag:
+	        tag = inargs.tag
+	    else:
+	        hemisphere = 'S' if inargs.longitude < 0.0 else 'N'
+		tag = '%s_%s%s' %(date, str(int(abs(inargs.longitude))), hemisphere)       
+
+	# Do the Hilbert transform
+	my_signal = cenv.envelope(sig, inargs.wavenumbers[0], inargs.wavenumbers[-1])  #My method
+	sig_fft, sample_freq, freqs, power = cft.fourier_transform(sig, xaxis) # Scipy method
+
+	filtered_signal = {}
+	wavenum_list = range(inargs.wavenumbers[0], inargs.wavenumbers[-1] + 1)
+	for filt in [None, 'positive', 'negative']:
+            for wave_min in wavenum_list:
+        	for wave_max in wavenum_list:
+	            filtered_signal[filt, wave_min, wave_max] = cft.inverse_fourier_transform(sig_fft, sample_freq, 
+	                                                                                      min_freq=wave_min, max_freq=wave_max, 
+										              exclude=filt)
+
+	# Create plots
+	plot_spectrum(freqs, power, tag=tag, window=20)
+	#plot_wavenumbers(wavenum_list, filtered_signal, xaxis, tag=tag)
+	plot_hilbert(wavenum_list, sig, filtered_signal, my_signal, xaxis, tag=tag)
     
 
 if __name__ == '__main__':
@@ -191,10 +201,13 @@ author:
 
     parser.add_argument("infile", type=str, help="Input file name, containing the meridional wind")
     parser.add_argument("variable", type=str, help="Input file variable")
-    parser.add_argument("longitude", type=str, help="Longitude over which to extract the wave")
-    parser.add_argument("date", type=str, help="Date for which to extract the wave")
-    parser.add_argument("tag", type=str, help="Tag for output files")
+    parser.add_argument("longitude", type=float, help="Longitude over which to extract the wave")
+    parser.add_argument("start_date", type=str, help="Start date for which to extract the wave")
     
+    parser.add_argument("--ndates", type=int, default=1, 
+                        help="Number of dates (starting from start_date) to plot")
+    parser.add_argument("--tag", type=str, default=None, 
+                        help="Tag for output files {default is date then latitude")    
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[1, 10],
                         help="Wavenumber range [default = (1, 10)]. The upper and lower values are included (i.e. default selection includes 1 and 10).")
     parser.add_argument("--simple", action="store_true", default=False,
