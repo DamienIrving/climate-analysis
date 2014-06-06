@@ -12,6 +12,7 @@ import sys, os
 import argparse
 import numpy
 from windspharm.cdms import VectorWind
+import pdb
 
 # Import my modules #
 
@@ -123,23 +124,14 @@ var_atts['rossbywavesource2'] = {'id': 'rws2',
 def calc_quantity(uwnd, vwnd, quantity):
     """Calculates a single wind quantity using windspharm (ajdawson.github.com/windspharm/index.html)"""
     
-    uwnd = uwnd.squeeze()
-    vwnd = vwnd.squeeze()
     w = VectorWind(uwnd, vwnd)
-
-    # Compute the desired quantity. Also use the bundled tools to re-shape the 
-    # outputs to the 4D shape of the wind components as they were read off files.
     
     if quantity == 'rossbywavesource':
-	# Compute components of rossby wave source: absolute vorticity, divergence,
-	# irrotational (divergent) wind components, gradients of absolute vorticity.
-	
 	eta = w.absolutevorticity()
 	div = w.divergence()
 	uchi, vchi = w.irrotationalcomponent()
 	etax, etay = w.gradient(eta)
 
-	# Combine the components to form the Rossby wave source term
         data_out = {}
 	data_out['rws1'] = (-eta * div) / (1.e-11)
         data_out['rws2'] = (-(uchi * etax + vchi * etay)) / (1.e-11)
@@ -186,7 +178,6 @@ def calc_quantity(uwnd, vwnd, quantity):
 	
     else:
 	sys.exit('Wind quantity not recognised')
-
 
     return data_out
 
