@@ -1,13 +1,21 @@
-#!/bin/bash
+temp_dir=/mnt/meteo0/data/simmonds/dbirving/temp
+data_dir=/mnt/meteo0/data/simmonds/dbirving/Merra/data
+ufile=${data_dir}/ua_Merra_250hPa_daily_native.nc
+vfile=${data_dir}/va_Merra_250hPa_daily_native.nc
+rwsfile=${data_dir}/processed/rws_Merra_250hPa_daily_native.nc
 
-for year in {1979..1983} ; do
 
-/usr/local/uvcdat/1.2.0rc1/bin/cdat calc_wind_quantities.py absolutevorticitygradient \
-/work/dbirving/datasets/Merra/data/ua_Merra_250hPa_daily_native.nc ua \
-/work/dbirving/datasets/Merra/data/va_Merra_250hPa_daily_native.nc va \
-/work/dbirving/test_data/avrtgrad_Merra_250hPa_daily${year}_native.nc \
---time ${year}-01-01 $(( $year + 1 ))-01-01 \
---grid -90.0 73 2.5 0.0 144 2.5
-
+years=(1979 1984 1989 1994 1999 2004 2009)
+temp_files=()
+for year in "${years[@]}"; do
+    end=`expr $year + 4`
+    temp_file=${temp_dir}/temp-rws_${year}-${end}.nc
+    /usr/local/uvcdat/1.3.0/bin/cdat ~/phd/data_processing/calc_wind_quantities.py rossbywavesource $ufile ua $vfile va $rwsfile --time ${year}-01-01 ${end}-12-31 none 
+    temp_files+=(${temp_file})
 done
+
+cdo mergetime ${temp_files[@]} $outfile
+rm ${temp_files[@]}
+ncatted -O -a axis,time,c,c,T $outfile
+
 
