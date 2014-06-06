@@ -120,7 +120,7 @@ var_atts['rossbywavesource2'] = {'id': 'rws2',
     'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
 
 
-def calc_quantity(data_u, data_v, quantity):
+def calc_quantity(uwnd, vwnd, quantity):
     """Calculates a single wind quantity using windspharm (ajdawson.github.com/windspharm/index.html)"""
     
     uwnd = uwnd.squeeze()
@@ -210,7 +210,7 @@ def main(inargs):
     
     # Calculate the desired quantity #
     
-    data_out = calc_quantity(data_u, data_v, inargs.quantity)
+    data_out = calc_quantity(data_u.data, data_v.data, inargs.quantity)
 
     # Write output file #
 
