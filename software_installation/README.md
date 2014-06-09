@@ -13,7 +13,7 @@ other option is to install from the
 Here are the extra libraries that I install alongside UV-CDAT:  
 
 * `/usr/local/uvcdat/1.5.1/bin/pip install gitpython`
-* `/usr/local/uvcdat/1.5.1/bin/pip install ipython --update`  (because tefault is very old)
+* `/usr/local/uvcdat/1.5.1/bin/pip install ipython --upgrade`  (because tefault is very old)
 * `/usr/local/uvcdat/1.5.1/bin/pip install readline`  (if tab completion isn't working in IPython)
 * `/usr/local/uvcdat/1.5.1/bin/pip install pandas`
 
