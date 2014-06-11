@@ -9,7 +9,7 @@ CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/bin/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
 VIS_SCRIPT_DIR=~/phd/visualisation
-ENV_METHOD=bash ${DATA_SCRIPT_DIR}/calc_envelope.sh
+ENV_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh
 VROT_METHOD=bash ${DATA_SCRIPT_DIR}/calc_vwind_rotation.sh
 
 # Dataset
@@ -33,7 +33,7 @@ LON_SEARCH_MIN=225
 LON_SEARCH_MAX=335
 LON_SEARCH=--longitude ${LON_SEARCH_MIN} ${LON_SEARCH_MAX}
 LON_LABEL=lon${LON_SEARCH_MIN}E${LON_SEARCH_MAX}E
-WAVE_SEARCH=--wavenumbers 5 7
+WAVE_SEARCH=--filter 5 7 --outtype hilbert
 WAVE_LABEL=w567
 
 # Hovmoller diagram

@@ -4,7 +4,7 @@
 #
 
 function usage {
-    echo "USAGE: bash $0 infile invar outfile wavestart waveend lonopt lonstart lonend"
+    echo "USAGE: bash $0 infile invar outfile waveopt wavestart waveend lonopt lonstart lonend"
     echo "   infile:     Input file name"
     echo "   invar:      Input variable name"
     echo "   outfile:    Output file name"
