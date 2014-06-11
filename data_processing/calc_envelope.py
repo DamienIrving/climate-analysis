@@ -29,11 +29,14 @@ modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 vis_dir = os.path.join(repo_dir, 'visualisation')
 sys.path.append(vis_dir)
+data_dir = os.path.join(repo_dir, 'data_processing')
+sys.path.append(data_dir)
 
 try:
     import netcdf_io as nio
     import coordinate_rotation as crot
     import plot_map
+    import calc_fourier_transform as cft
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -124,7 +127,12 @@ def main(inargs):
     # Extract the wave envelope #
     
     kmin, kmax = inargs.wavenumbers
-    outdata = numpy.apply_along_axis(envelope, 2, data_filtered, kmin, kmax)
+    if inargs.method == 'original':
+        outdata = numpy.apply_along_axis(envelope, 2, data_filtered, kmin, kmax)
+    else:
+        sig_fft, sample_freq, freqs, power = cft.fourier_transform(data_filtered, indata.data.getLongitude()[:]) 
+        filtered_signal = cft.inverse_fourier_transform(sig_fft, sample_freq, min_freq=kmin, max_freq=kmax, exclude=None)
+        outdata = numpy.abs(filtered_signal)
     
     # Write output file #
 
@@ -180,6 +188,9 @@ author:
                         help="Longitude range over which to extract waves [default = entire]")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
+  
+    parser.add_argument("--method", type=str, choices=('original', 'scipy'), default='original',
+                        help="Method used to perform the Hilbert transform [default = original]")
   
     args = parser.parse_args()            
 

@@ -12,6 +12,7 @@ import numpy
 from scipy import fftpack
 import matplotlib.pyplot as plt
 from copy import deepcopy
+import pdb
 
 # Import my modules #
 
@@ -55,7 +56,7 @@ def fourier_transform(signal, indep_var):
     Output:
         sig_fft    ->  Coefficients obtained from the Fourier Transform
         freqs      ->  Wave frequency associated with each coefficient
-        power      ->  Power associated withe each frequency (i.e. abs(sig_fft))
+        power      ->  Power associated with each frequency (i.e. abs(sig_fft))
     
     """
     
