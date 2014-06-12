@@ -1,7 +1,4 @@
-#!/usr/bin/env cdat
-
 """
-GIT INFO: $Id$
 Filename:     calc_climate_index.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
 Description:  Calculates the selected climate index
@@ -9,21 +6,32 @@ Description:  Calculates the selected climate index
 Input:        List of netCDF files to plot
 Output:       Text file
 
-Updates | By | Description
---------+----+------------
-23 February 2012 | Damien Irving | Initial version.
-
 """
 
-import os
-import sys
+# Import general Python modules
 
+import sys, os
 import argparse
 import numpy
+import pdb
 
-module_dir = os.path.join(os.environ['HOME'], 'modules')
-sys.path.insert(0, module_dir)
-import netcdf_io as nio
+# Import my modules #
+
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
+
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+
+try:
+    import netcdf_io as nio
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
+
 
 
 def calc_monthly_climatology(base_timeseries, months):
@@ -108,6 +116,22 @@ def calc_reg_anomaly_timeseries(data_complete, data_base):
                          base_timeseries, data_complete.months())
 
     return anomaly_timeseries
+
+
+def calc_zw3(index, ifile, var_id, base_period):
+    """Calculate an index of the SH ZW3 pattern
+    
+    Method as per Raphael (2004)
+    
+    """
+
+    indata_zw31 = nio.InputData(ifile, var_id, region='zw31', spatave=True, runave=3)
+    cdutil.setTimeBoundsMonthly(indata_zw31.data)
+    test_jan = cdutil.JAN(indata_zw31.data)
+    pdb.set_trace()
+        
+    
+    
 
 
 def calc_sam(index, ifile, var_id, base_period):
