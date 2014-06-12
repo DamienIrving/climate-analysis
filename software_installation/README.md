@@ -7,10 +7,8 @@ The simplest option for installing [UV-CDAT](http://uvcdat.llnl.gov/) is to
 that best matches your operating system (for Mavricks the Darwin 10.8 installer works fine). 
 At the command line you then just enter the following:
 
-    ```
     cd /
     sudo tar xjvf UV-CDAT-[version number]-[your OS here].tar.bz2
-    ```
 
 On Mac OS X Mavricks, the installation will only work if you have gfortran, qt and xcode installed. The 
 [installation instuctions](http://uvcdat.llnl.gov/installing.html) are a little confusing 
