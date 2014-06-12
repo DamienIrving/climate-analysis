@@ -49,6 +49,8 @@ try:
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
+import pdb
+
 
 # Define global variables #
 
@@ -531,7 +533,7 @@ def _plot_box(bmap, box_list, np=None):
     """Add a box to the plot.
     
     Arguments:
-        box  ->  (south_lat, north_lat, west_lon, east_lon, color, style)
+        box  ->  (name, color, style)
     
     """
     styles = {}
@@ -539,14 +541,13 @@ def _plot_box(bmap, box_list, np=None):
     styles['solid'] = '-'
     
     for box in box_list: 
-	south_lat = float(box[0]) 
-	north_lat = float(box[1])
-	west_lon = float(box[2])
-	east_lon = float(box[3])
-	color = box[4]
-	style = box[5]
-        assert style in styles.keys()
-	
+	region, color, style = box
+	assert region in nio.regions.keys()
+	assert style in styles.keys()
+		
+	south_lat, north_lat = nio.regions[region][0][0: 2]
+        west_lon, east_lon = nio.regions[region][1][0: 2]
+        
 	# Adjust the longitude values as required
 	assert (0.0 <= east_lon <= 360) and  (0.0 <= west_lon <= 360), \
 	"""Longitude coordinates for the box must be 0 < lon < 360"""  
@@ -727,64 +728,6 @@ def _plot_search_paths(bmap, new_np, plot_lons, plot_lats, lon_start):
         x, y = bmap(rot_lons_adjust, rot_lats)
         shade = '0.5' if lat == 0.0 else '0.8'
 	bmap.plot(x, y, '-', color=shade)
-
-
-def _plot_enso(bmap, region_list, projection):
-    """Plot the desired ENSO regions."""
-   
-    E125, E145, E160, E165, E180 = [125, 145, 160, 165, 180]
-    if projection == 'cyl':
-	W180, W170, W150, W140, W120, W110, W90, W80, W70 = [180, 190, 210, 220, 240, 250, 270, 280, 290]
-    else:
-	W180, W170, W150, W140, W120, W110, W90, W80, W70 = [-180, -170, -150, -140, -120, -110, -90, -80, -70]
-    
-    for region in region_list:
-        assert region in ['IEMI', 'Nino12', 'Nino3', 'Nino34', 'Nino4']
-    
-    if 'IEMI' in region_list:
-	#IEMI-A
-	bmap.plot([W180, W140], [-10, -10], linestyle='-', color='0.5')   #bottom
-	bmap.plot([E165, E180], [-10, -10], linestyle='-', color='0.5')
-	bmap.plot([W180, W140], [10, 10], linestyle='-', color='0.5')     #top
-	bmap.plot([E165, E180], [10, 10], linestyle='-', color='0.5')	
-	bmap.plot([E165, E165], [-10, 10], linestyle='-', color='0.5')    #right
-	bmap.plot([W140, W140], [-10, 10], linestyle='-', color='0.5')    #left
-	#IEMI-B
-	bmap.plot([W70, W110], [-15, -15], linestyle='-', color='0.5')    #bottom
-	bmap.plot([W70, W110], [5, 5], linestyle='-', color='0.5')        #top
-	bmap.plot([W70, W70], [-15, 5], linestyle='-', color='0.5')       #right
-	bmap.plot([W110, W110], [-15, 5], linestyle='-', color='0.5')     #left
-	#IEMI-C
-	bmap.plot([E125, E145], [-10, -10], linestyle='-', color='0.5')   #bottom
-	bmap.plot([E125, E145], [20, 20], linestyle='-', color='0.5')     #top
-	bmap.plot([E125, E125], [-10, 20], linestyle='-', color='0.5')    #right
-	bmap.plot([E145, E145], [-10, 20], linestyle='-', color='0.5')    #left
-    
-    if 'Nino4' in region_list:
-	bmap.plot([E160, E180], [-5, -5], linestyle='--', color='green', lw=1)   #bottom
-	bmap.plot([W180, W150], [-5, -5], linestyle='--', color='green', lw=1)
-	bmap.plot([E160, E180], [5, 5], linestyle='--', color='green', lw=1)     #top
-	bmap.plot([W180, W150], [5, 5], linestyle='--', color='green', lw=1)
-	bmap.plot([E160, E160], [-5, 5], linestyle='--', color='green', lw=1)    #right
-	bmap.plot([W150, W150], [-5, 5], linestyle='--', color='green', lw=1)    #left
-
-    if 'Nino34' in region_list:
-	bmap.plot([W120, W170], [-5, -5], linestyle='-', color='orange', lw=1)  #bottom
-	bmap.plot([W120, W170], [5, 5], linestyle='-', color='orange', lw=1)    #top
-	bmap.plot([W120, W120], [-5, 5], linestyle='-', color='orange', lw=1)   #right
-	bmap.plot([W170, W170], [-5, 5], linestyle='-', color='orange', lw=1)   #left
-
-    if 'Nino3' in region_list:
-	bmap.plot([W90, W150], [-5, -5], linestyle='--', color='aqua', lw=1)     #bottom
-	bmap.plot([W90, W150], [5, 5], linestyle='--', color='aqua', lw=1)       #top
-	bmap.plot([W90, W90], [-5, 5], linestyle='--', color='aqua', lw=1)       #right
-	bmap.plot([W150, W150], [-5, 5], linestyle='--', color='aqua', lw=1)     #left
-
-    if 'Nino12' in region_list:
-	bmap.plot([W80, W90], [-10, -10], linestyle='--', color='0.5', lw=1)     #bottom
-	bmap.plot([W80, W90], [0, 0], linestyle='--', color='0.5', lw=1)         #top
-	bmap.plot([W80, W80], [-10, 0], linestyle='--', color='0.5', lw=1)       #right
-	bmap.plot([W90, W90], [-10, 0], linestyle='--', color='0.5', lw=1)       #left
 
 
 def _set_colourbar(data_dict, colourbar_colour, ticks, discrete_segments, extend):
@@ -1083,11 +1026,8 @@ improvements:
                         help="interval between zonal gridlines [default: 30]")
     parser.add_argument("--equator", action="store_true", 
                         help="switch for drawing an extra grid line marking the equator [default: False]")
-    parser.add_argument("--enso", type=str, nargs='*', 
-                        choices=('IEMI', 'Nino12', 'Nino3', 'Nino34', 'Nino4'),
-                        help="draw grid lines marking ENSO regions [default: None]")
-    parser.add_argument("--box", type=str, action='append', default=[], nargs=6,
-                        metavar=('SOUTH_LAT', 'NORTH_LAT', 'WEST_LON', 'EAST_LON', 'COLOUR', 'STYLE'),
+    parser.add_argument("--box", type=str, action='append', default=[], nargs=3,
+                        metavar=('NAME', 'COLOUR', 'STYLE'),
                         help="""draw a box [default: None] - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
     parser.add_argument("--box_np", type=float, nargs=2, metavar=('NP_LAT', 'NP_LON'),
                         help="rotate the box according to this north pole [default: None]")  

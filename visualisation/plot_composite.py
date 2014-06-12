@@ -84,9 +84,9 @@ def main(inargs):
         dimensions = pm.get_dimensions(len(indata_list))
 
     if inargs.raphael_boxes:
-        box1 = (-50, -45, 45, 60, 'blue', 'solid')
-	box2 = (-50, -45, 161, 171, 'blue', 'solid')
-	box3 = (-50, -45, 279, 289, 'blue', 'solid')
+        box1 = ('zw31', 'blue', 'solid')
+	box2 = ('zw32', 'blue', 'solid')
+	box3 = ('zw33', 'blue', 'solid')
 	box_list = [box1, box2, box3]
     else:
         box_list = []
