@@ -144,10 +144,11 @@ class InputData:
         grid      -- (startLat,nlat,deltaLat,
 	              startLon,nlon,deltaLon)
         runave    -- window size for the running average 
+	spatave   -- True (for returning average over all spatial dimensions)
 
-        The order of operations is as follows: subset data,
-        temporal aggregation (agg), running average (runave),
-        regrid (grid), convert units 
+        The order of operations is as follows: subset data, 
+	spatial averaging (spatave), temporal aggregation (agg), 
+	running average (runave), regrid (grid), convert units 
        		
         self.data has all the attributes and methods
 	of a typical cdms2 variable. For instance:
@@ -188,6 +189,10 @@ class InputData:
         data = _subset_data(infile, var_id, **subset_kwargs)        
        
         # Manipulate the subsetted data #  
+
+        if kwargs.has_key('spatave'):
+            ave_axes = data.getOrder().translate(None, 't')
+            data = cdutil.averager(data, axis=ave_axes, weights=['unweighted']*len(ave_axes))
 
 	if kwargs.has_key('agg'):
             quantity = kwargs['agg'][0]
