@@ -13,6 +13,8 @@ Output:       Text file
 import sys, os
 import argparse
 import numpy
+from cdo import *
+cdo = Cdo()
 import pdb
 
 # Import my modules #
@@ -123,17 +125,60 @@ def calc_zw3(index, ifile, var_id, base_period):
     
     Method as per Raphael (2004)
     
+    This function uses cdo instead of CDAT because the
+    cdutil library doesn't have routines for calculating 
+    the daily climatology or stdev.
+    
+    The running mean should have been applied to the input 
+    data beforehand.
+    
     """
 
-    indata_zw31 = nio.InputData(ifile, var_id, region='zw31', spatave=True, runave=3)
-    cdutil.setTimeBoundsMonthly(indata_zw31.data)
-    test_jan = cdutil.JAN(indata_zw31.data)
-    pdb.set_trace()
+    # Calulate the index
+
+    index = {}
+    for region in ['zw31', 'zw32', 'zw33']: 
+        south_lat, north_lat = nio.regions[region][0][0: 2]
+        west_lon, east_lon = nio.regions[region][1][0: 2]
+
+        indata_complete = nio.InputData(ifile, var_id, region=region, spatave=True) 
+        time_axis = indata_complete.data.getTime().asComponentTime()
+        timescale = nio._get_timescale(nio.get_datetime(time_axis[0:2]))
         
+	assert timescale in ['daily', 'monthly']
+	tscale_abbrev = 'day' if timescale == 'daily' else 'mon' 
+	
+	sub_operator_text = 'cdo y%ssub ' %(tscale_abbrev)
+	sub_operator_func = eval(sub_operator_text.replace(' ', '.', 1))
+	std_operator_text = 'cdo y%sstd ' %(tscale_abbrev)
+	std_operator_func = eval(std_operator_text.replace(' ', '.', 1))
+	avg_operator_text = ' -y%savg ' %(tscale_abbrev)
+	
+        selregion = "-sellonlatbox,%d,%d,%d,%d %s " (west_lon, east_lon, south_lat, north_lat, ifile)
+        fldmean = "-fldmean "+selregion
+
+        clim_cmd_entry = fldmean + avg_operator_text + fldmean
+        print clim_operator_text + clim_cmd_entry
+        clim = sub_operator_func(input=clim_cmd_entry, returnArray=var_id)
+
+        print std_operator_text + fldmean
+        std = std_operator_func(input=fldmean, returnArray=var_id)
+	
+	index[region] = (indata_complete.data - numpy.squeeze(clim)) / numpy.squeeze(std)
+
+    zw3_timeseries = (index['zw31'] + index['zw32'] + index['zw33']) / 3.0
+ 
+    # Define the output attributes
+    	
+    hx = 'Ref: Raphael (2004)'
+    attributes = {'id': 'zw3',
+                  'long_name': 'Zonal Wave 3 index Index',
+                  'units': '',
+                  'history': hx}
+
+    return zw3_timeseries, attributes, indata_complete
     
     
-
-
 def calc_sam(index, ifile, var_id, base_period):
     """Calculate an index of the Southern Annular Mode.
 
@@ -279,7 +324,8 @@ def main(inargs):
     function_for_index = {'NINO': calc_nino,
                           'NINO_new': calc_nino_new,
                           'IEMI': calc_iemi,
-                          'SAM': calc_sam}   
+                          'SAM': calc_sam,
+			  'ZW3': calc_zw3}   
     
     if inargs.index[0:4] == 'NINO':
         if inargs.index == 'NINOCT' or inargs.index == 'NINOWP':
@@ -341,7 +387,7 @@ planned enhancements:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     
     parser.add_argument("index", type=str, help="Index to calculate",
-                        choices=['NINO12', 'NINO3', 'NINO4', 'NINO34', 'NINOCT', 'NINOWP', 'IEMI', 'SAM'])
+                        choices=['NINO12', 'NINO3', 'NINO4', 'NINO34', 'NINOCT', 'NINOWP', 'IEMI', 'SAM', 'ZW3'])
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
