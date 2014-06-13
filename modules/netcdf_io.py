@@ -463,7 +463,7 @@ def get_datetime(datetime_list):
     return datetime_object_list
 
 
-def _get_timescale(times):
+def get_timescale(times):
     """Get the timescale.
     
     Arguments:
@@ -817,7 +817,7 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
         """time_period should be a list or tuple of length 2. e.g. ('1979-01-01', '1980-12-31')"""
 
     time_axis = data.getTime().asComponentTime()
-    input_timescale = _get_timescale(get_datetime(time_axis[0:2]))
+    input_timescale = get_timescale(get_datetime(time_axis[0:2]))
    
     # Set time bounds #
     

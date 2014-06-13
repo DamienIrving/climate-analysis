@@ -120,6 +120,26 @@ def calc_reg_anomaly_timeseries(data_complete, data_base):
     return anomaly_timeseries
 
 
+def map_std(stds, data, timescale):
+   """Takes the array of stardard deviations and map it
+   to the size of the data array (matching the correct month/day"""
+   
+   assert timescale in ['daily', 'monthly']
+   
+   times = data.getTime().asComponentTime()
+   dts = nio.get_datetime(times)
+   
+   if timescale == 'monthly':
+       months = map(lambda x: x.month, dts)
+       result = map(lambda x: stds[x-1], months)
+   elif timescale == 'daily':
+       pdb.set_trace()
+       day_of_year = map(lambda x: x.timetuple().tm_yday)
+       result = map(lambda x: stds[x-1], day_of_year)
+   
+   return result
+
+
 def calc_zw3(index, ifile, var_id, base_period):
     """Calculate an index of the SH ZW3 pattern
     
@@ -143,7 +163,7 @@ def calc_zw3(index, ifile, var_id, base_period):
 
         indata_complete = nio.InputData(ifile, var_id, region=region, spatave=True) 
         time_axis = indata_complete.data.getTime().asComponentTime()
-        timescale = nio._get_timescale(nio.get_datetime(time_axis[0:2]))
+        timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
         
 	assert timescale in ['daily', 'monthly']
 	tscale_abbrev = 'day' if timescale == 'daily' else 'mon' 
@@ -154,15 +174,18 @@ def calc_zw3(index, ifile, var_id, base_period):
 	std_operator_func = eval(std_operator_text.replace(' ', '.', 1))
 	avg_operator_text = ' -y%savg ' %(tscale_abbrev)
 	
-        selregion = "-sellonlatbox,%d,%d,%d,%d %s " (west_lon, east_lon, south_lat, north_lat, ifile)
+        selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, 
+	                                              south_lat, north_lat, 
+						      ifile)
         fldmean = "-fldmean "+selregion
 
         clim_cmd_entry = fldmean + avg_operator_text + fldmean
-        print clim_operator_text + clim_cmd_entry
+        print sub_operator_text + clim_cmd_entry
         clim = sub_operator_func(input=clim_cmd_entry, returnArray=var_id)
 
         print std_operator_text + fldmean
         std = std_operator_func(input=fldmean, returnArray=var_id)
+	std = map_std(std, indata_complete.data, timescale)
 	
 	index[region] = (indata_complete.data - numpy.squeeze(clim)) / numpy.squeeze(std)
 
@@ -170,13 +193,13 @@ def calc_zw3(index, ifile, var_id, base_period):
  
     # Define the output attributes
     	
-    hx = 'Ref: Raphael (2004)'
-    attributes = {'id': 'zw3',
-                  'long_name': 'Zonal Wave 3 index Index',
-                  'units': '',
-                  'history': hx}
+    hx = 'Ref: ZW3 index of Raphael (2004)'
+    var_atts = {'id': 'zw3',
+                'long_name': 'Zonal Wave 3 index Index',
+                'units': '',
+                'history': hx}
 
-    return zw3_timeseries, attributes, indata_complete
+    return zw3_timeseries, var_atts, indata_complete.global_atts, indata_complete
     
     
 def calc_sam(index, ifile, var_id, base_period):
@@ -210,12 +233,12 @@ def calc_sam(index, ifile, var_id, base_period):
 
     hx = 'Ref: Marshall (2003) and Gong & Wang (1999). Base period: %s to %s' %(base_period[0], 
                                                                                 base_period[1])
-    attributes = {'id': 'sam',
-                  'long_name': 'Southern Annular Mode Index',
-                  'units': '',
-                  'history': hx}
+    var_atts = {'id': 'sam',
+                'long_name': 'Southern Annular Mode Index',
+                'units': '',
+                'history': hx}
 
-    return sami_timeseries, attributes, indata_complete
+    return sami_timeseries, var_atts, indata_complete.global_atts, indata_complete
     
 
 def calc_iemi(index, ifile, var_id, base_period):
@@ -237,12 +260,12 @@ def calc_iemi(index, ifile, var_id, base_period):
 
     hx = 'Ref: Li et al 2010, Adv Atmos Sci, 27, 1210-20. Base period: %s to %s' %(base_period[0], 
                                                                                    base_period[1])
-    attributes = {'id': 'iemi',
-                  'long_name': 'Improved ENSO Modoki Index',
-                  'units': 'Celsius',
-                  'history': hx}
+    var_atts = {'id': 'iemi',
+                'long_name': 'Improved ENSO Modoki Index',
+                'units': 'Celsius',
+                'history': hx}
 
-    return iemi_timeseries, attributes, indata_complete
+    return iemi_timeseries, var_atts, indata_complete.global_atts, indata_complete
  
 
 def calc_nino(index, ifile, var_id, base_period):
@@ -265,12 +288,12 @@ def calc_nino(index, ifile, var_id, base_period):
                                                           indata_complete.maxlon,
                                                           base_period[0],
                                                           base_period[1])
-    attributes = {'id': 'nino'+index[4:],
-                  'long_name': 'nino'+index[4:]+' '+'index',
-                  'units': 'Celsius',
-                  'history': hx}
+    var_atts = {'id': 'nino'+index[4:],
+                'long_name': 'nino'+index[4:]+' '+'index',
+                'units': 'Celsius',
+                'history': hx}
     
-    return nino_timeseries, attributes, indata_complete
+    return nino_timeseries, var_atts, indata_complete.global_atts, indata_complete
     
 
 def calc_nino_new(index, ifile, var_id, base_period):
@@ -313,7 +336,7 @@ def calc_nino_new(index, ifile, var_id, base_period):
                   'units': 'Celsius',
                   'history': hx}
 
-    return nino_new_timeseries, attributes, indata_complete
+    return nino_new_timeseries, var_atts, indata_complete.global_atts, indata_complete
 
 
 def main(inargs):
@@ -337,20 +360,24 @@ def main(inargs):
 
     # Calculate the index #  
 
-    index_data, atts, indata = calc_index(inargs.index, 
-                                          inargs.infile, 
-                                          inargs.variable, 
-                                          inargs.base)
+    index_data, var_atts, global_atts, indata = calc_index(inargs.index, 
+                                                           inargs.infile, 
+                                                           inargs.variable, 
+                                                           inargs.base)
     
     # Write the outfile #
  
-    indata_list = [indata,]
     outdata_list = [index_data,]
-    outvar_atts_list = [atts,]
+    outvar_atts_list = [var_atts,]
     outvar_axes_list = [(indata.data.getTime(),),]
 
-    nio.write_netcdf(inargs.outfile, inargs.index, indata_list, 
-                     outdata_list, outvar_atts_list, outvar_axes_list)     
+    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
+                     global_atts,  
+                     outdata_list,
+                     outvar_atts_list, 
+                     outvar_axes_list)
+
+
 
         
 if __name__ == '__main__':
