@@ -118,7 +118,7 @@ def calc_reg_anomaly_timeseries(data_complete, data_base):
                          base_timeseries, data_complete.months())
 
     return anomaly_timeseries
-
+    
 
 def map_std(stds, data, timescale):
    """Takes the array of stardard deviations and map it
@@ -133,8 +133,7 @@ def map_std(stds, data, timescale):
        months = map(lambda x: x.month, dts)
        result = map(lambda x: stds[x-1], months)
    elif timescale == 'daily':
-       pdb.set_trace()
-       day_of_year = map(lambda x: x.timetuple().tm_yday)
+       day_of_year = map(nio.day_of_year_366, dts)
        result = map(lambda x: stds[x-1], day_of_year)
    
    return result
