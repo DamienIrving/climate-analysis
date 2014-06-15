@@ -149,7 +149,14 @@ def calc_zw3(index, ifile, var_id, base_period):
     the daily climatology or stdev.
     
     The running mean should have been applied to the input 
-    data beforehand.
+    data beforehand. Raphael (2004) uses a 3-month running 
+    mean.
+    
+    Input data that Raphael (2004) uses is the 500hPa 
+    geopotential height, the sea level pressure or
+    from 500hPa zonal anomalies which are constructed by 
+    removing the zonal mean of the geopotential height from
+    each grid point (preferred).
     
     """
 
