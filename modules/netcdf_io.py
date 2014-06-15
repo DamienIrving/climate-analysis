@@ -9,6 +9,7 @@ sys.path.insert(0, module_dir)
 Included functions:
 convert_units        -- Convert units
 coordinate_pairs     -- Produce all lat/lon pairs for a given grid
+day_of_year_366      -- Convert a datetime instance to a day of the year (all years assumed 366)
 dict_filter          -- Filter dictionary 
 get_datetime         -- Return datetime instances for list of dates/times
 hi_lo                -- Update highest and lowest value
@@ -407,7 +408,23 @@ def coordinate_pairs(lat_axis, lon_axis):
     lon_mesh, lat_mesh = numpy.meshgrid(lon_axis, lat_axis)  # This is the correct order
     
     return lat_mesh.flatten(), lon_mesh.flatten()
+
+
+def day_of_year_366(dt):
+    """Take a datetime instance (dt) and return the day of the year 
+    relative to a 366 day year.
     
+    e.g. Dec 31 in 2013 would be day 366, not day 365
+    """
+    
+    day_of_year = dt.timetuple().tm_yday
+    if calendar.isleap(dt.year) == False and dt.month > 2:
+        result = day_of_year + 1
+    else:
+        result = day_of_year
+
+    return result
+
 
 def _define_order(infile, var_id, template='tyxz'):
     """Take an input file and output the desired order,
