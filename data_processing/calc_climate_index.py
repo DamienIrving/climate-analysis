@@ -205,7 +205,7 @@ def calc_zw3(index, ifile, var_id, base_period):
                 'units': '',
                 'history': hx}
 
-    return zw3_timeseries, var_atts, indata_complete.global_atts, indata_complete
+    return zw3_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
     
     
 def calc_sam(index, ifile, var_id, base_period):
@@ -244,7 +244,7 @@ def calc_sam(index, ifile, var_id, base_period):
                 'units': '',
                 'history': hx}
 
-    return sami_timeseries, var_atts, indata_complete.global_atts, indata_complete
+    return sami_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
     
 
 def calc_iemi(index, ifile, var_id, base_period):
@@ -271,7 +271,7 @@ def calc_iemi(index, ifile, var_id, base_period):
                 'units': 'Celsius',
                 'history': hx}
 
-    return iemi_timeseries, var_atts, indata_complete.global_atts, indata_complete
+    return iemi_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
  
 
 def calc_nino(index, ifile, var_id, base_period):
@@ -299,7 +299,7 @@ def calc_nino(index, ifile, var_id, base_period):
                 'units': 'Celsius',
                 'history': hx}
     
-    return nino_timeseries, var_atts, indata_complete.global_atts, indata_complete
+    return nino_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
     
 
 def calc_nino_new(index, ifile, var_id, base_period):
@@ -342,7 +342,7 @@ def calc_nino_new(index, ifile, var_id, base_period):
                   'units': 'Celsius',
                   'history': hx}
 
-    return nino_new_timeseries, var_atts, indata_complete.global_atts, indata_complete
+    return nino_new_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
 
 
 def main(inargs):
@@ -366,16 +366,16 @@ def main(inargs):
 
     # Calculate the index #  
 
-    index_data, var_atts, global_atts, indata = calc_index(inargs.index, 
-                                                           inargs.infile, 
-                                                           inargs.variable, 
-                                                           inargs.base)
+    index_data, var_atts, global_atts, time_axis = calc_index(inargs.index, 
+                                                              inargs.infile, 
+                                                              inargs.variable, 
+                                                              inargs.base)
     
     # Write the outfile #
  
     outdata_list = [index_data,]
     outvar_atts_list = [var_atts,]
-    outvar_axes_list = [(indata.data.getTime(),),]
+    outvar_axes_list = [(time_axis,),]
 
     nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
                      global_atts,  
