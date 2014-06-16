@@ -174,26 +174,23 @@ def calc_zw3(index, ifile, var_id, base_period):
 	assert timescale in ['daily', 'monthly']
 	tscale_abbrev = 'day' if timescale == 'daily' else 'mon' 
 	
-	sub_operator_text = 'cdo y%ssub ' %(tscale_abbrev)
-	sub_operator_func = eval(sub_operator_text.replace(' ', '.', 1))
-	std_operator_text = 'cdo y%sstd ' %(tscale_abbrev)
-	std_operator_func = eval(std_operator_text.replace(' ', '.', 1))
-	avg_operator_text = ' -y%savg ' %(tscale_abbrev)
 	
-        selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, 
+	div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
+	div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
+	sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
+	avg_operator_text = ' -y%savg ' %(tscale_abbrev)
+	std_operator_text = ' -y%sstd ' %(tscale_abbrev)
+	
+	selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, 
 	                                              south_lat, north_lat, 
 						      ifile)
         fldmean = "-fldmean "+selregion
-
-        anom_cmd_entry = fldmean + avg_operator_text + fldmean
-        print sub_operator_text + anom_cmd_entry
-        anom = sub_operator_func(input=anom_cmd_entry, returnArray=var_id)
-
-        print std_operator_text + fldmean
-        std = std_operator_func(input=fldmean, returnArray=var_id)
-	std = map_std(std, indata_complete.data, timescale)
+        anomaly = sub_operator_text + fldmean + avg_operator_text + fldmean
+        std = std_operator_text + fldmean
 	
-	index[region] = numpy.squeeze(anom) / numpy.squeeze(std)
+	print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
+        result = div_operator_func(input=anomaly + std, returnArray=var_id)
+	index[region] = numpy.squeeze(result)
 
     zw3_timeseries = (index['zw31'] + index['zw32'] + index['zw33']) / 3.0
  
