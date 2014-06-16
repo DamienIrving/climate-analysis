@@ -161,7 +161,7 @@ def calc_zw3(index, ifile, var_id, base_period):
     """
 
     # Calulate the index
-
+    #pdb.set_trace()    
     index = {}
     for region in ['zw31', 'zw32', 'zw33']: 
         south_lat, north_lat = nio.regions[region][0][0: 2]
@@ -185,15 +185,15 @@ def calc_zw3(index, ifile, var_id, base_period):
 						      ifile)
         fldmean = "-fldmean "+selregion
 
-        clim_cmd_entry = fldmean + avg_operator_text + fldmean
-        print sub_operator_text + clim_cmd_entry
-        clim = sub_operator_func(input=clim_cmd_entry, returnArray=var_id)
+        anom_cmd_entry = fldmean + avg_operator_text + fldmean
+        print sub_operator_text + anom_cmd_entry
+        anom = sub_operator_func(input=anom_cmd_entry, returnArray=var_id)
 
         print std_operator_text + fldmean
         std = std_operator_func(input=fldmean, returnArray=var_id)
 	std = map_std(std, indata_complete.data, timescale)
 	
-	index[region] = (indata_complete.data - numpy.squeeze(clim)) / numpy.squeeze(std)
+	index[region] = numpy.squeeze(anom) / numpy.squeeze(std)
 
     zw3_timeseries = (index['zw31'] + index['zw32'] + index['zw33']) / 3.0
  
