@@ -41,13 +41,24 @@ except ImportError:
 # Define functions #
 
 def calc_composite(data_included, data_excluded):
-    """Calculate the composite"""
+    """Calculate the composite.
     
-    # Perform the t-test 
-    # To perform a Welch's t-test (two independent samples, unequal variances), need the 
-    # latest version of scipy in order to use the equal_var keyword argument
-	
-    t, p_vals = stats.ttest_ind(data_included, data_excluded, axis=0, equal_var=False) 
+    The approach for the significance test is to compare the mean of the included
+    data sample with that of the excluded data sample via an independent, two-sample,
+    parametric t-test (for details, see Wilks textbook). 
+    
+    If equal_var=False then it will perform a Welch's t-test, which is for samples
+    with unequal variance (early versions of scipy don't have this option). 
+    
+    FIXME: I need to account for autocorrelation in the data by calculating an effective
+    sample size (see Wilkes, p 147). I can get the autocorrelation using either
+    genutil.autocorrelation or the acf function in the statsmodels time series analysis
+    python library, however I can't see how to alter the sample size in stats.ttest_ind. 
+    
+    """
+    
+    t, p_vals = stats.ttest_ind(data_included, data_excluded, axis=0, equal_var=True) 
+    print 'WARNING: Significance test did not account for autocorrelation and is thus overconfident'
 
     # Perform necessary averaging #
 
