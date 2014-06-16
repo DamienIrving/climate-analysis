@@ -6,20 +6,12 @@ Description:  Plots timeseries
 Input:        List of netCDF files to plot
 Output:       An image in either bitmap (e.g. .png) or vector (e.g. .svg, .eps) format
 
-Updates | By | Description
---------+----+------------
-23 February 2012 | Damien Irving | Initial version.
-28 February 2013 | Damien Irving | Generalised beyond monthly data.
-
 """
 
-import os
-import sys
+# Import general Python modules
 
+import os, sys
 import argparse
-
-import cdms2 
-import genutil
 
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
@@ -32,9 +24,24 @@ import numpy
 import numpy.ma as ma
 import math
 
-module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
-sys.path.insert(0, module_dir)
-import netcdf_io as nio
+import pdb
+
+# Import my modules #
+
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'phd':
+        break
+
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+
+try:
+    import netcdf_io as nio
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the phd git repo')
 
 
 
