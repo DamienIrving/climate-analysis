@@ -47,8 +47,11 @@ def calc_composite(data_included, data_excluded):
     data sample with that of the excluded data sample via an independent, two-sample,
     parametric t-test (for details, see Wilks textbook). 
     
-    If equal_var=False then it will perform a Welch's t-test, which is for samples
-    with unequal variance (early versions of scipy don't have this option). 
+    FIXME: If equal_var=False then it will perform a Welch's t-test, which is for samples
+    with unequal variance (early versions of scipy don't have this option). To test whether
+    the variances are equal or not you use an F-test (i.e. do the test at each grid point and
+    then assign equal_var accordingly). If your data is close to normally distributed you can 
+    use the Barlett test (scipy.stats.bartlett), otherwise the Levene test (scipy.stats.levene).
     
     FIXME: I need to account for autocorrelation in the data by calculating an effective
     sample size (see Wilkes, p 147). I can get the autocorrelation using either
@@ -58,7 +61,7 @@ def calc_composite(data_included, data_excluded):
     """
     
     t, p_vals = stats.ttest_ind(data_included, data_excluded, axis=0, equal_var=True) 
-    print 'WARNING: Significance test did not account for autocorrelation and is thus overconfident'
+    print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident) and assumed equal variances'
 
     # Perform necessary averaging #
 
