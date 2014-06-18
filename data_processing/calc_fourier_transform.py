@@ -54,13 +54,25 @@ def apply_lon_filter(data, lon_bounds):
     return numpy.where(lon_axis_tiled > lon_max, 0.0, new_data)
 
 
-def power_spectrum(signal_fft, sample_freq):
-    """Calculate the power spectrum for a given Fourier Transform"""
+def spectrum(signal_fft, output='amplitude'):
+    """Calculate the amplitude or power (amplitude squared 
+    spectrum for a given Fourier Transform
     
-    pidxs = numpy.where(sample_freq > 0)
-    freqs, power = sample_freq[pidxs], numpy.abs(sig_fft)[pidxs]
+    The sample frequencies usually include both the positive
+    and negative frequencies (which are identical for real functions
+    and maybe other times as well), so when plotting the amplitude
+    you could just double the positive value??? 
     
-    return freqs, power
+    """
+    
+    assert output in ['amplitude', 'power']
+    
+    if output == 'amplitude':
+        result = numpy.abs(signal_fft)
+    elif output == 'power':
+        result = numpy.abs(signal_fft)**2
+    
+    return result
     
 
 def filter_signal(signal, indep_var, min_freq, max_freq):
@@ -77,7 +89,7 @@ def fourier_transform(signal, indep_var):
     """Calculate the Fourier Transform.
     
     Input arguments:
-        indep_var  ->  Independent variable (i.e. time axis or longitude axis)
+        indep_var  ->  Independent variable (i.e. 1 dimensional time axis or longitude axis)
     
     Output:
         sig_fft    ->  Coefficients obtained from the Fourier Transform
@@ -87,8 +99,9 @@ def fourier_transform(signal, indep_var):
     """
     
     spacing = indep_var[1] - indep_var[0]
-    sample_freq = fftpack.fftfreq(signal.size, d=spacing) * signal.size * spacing  # i.e. in units of cycles per length of domain
     sig_fft = fftpack.fft(signal)
+    sample_freq = fftpack.fftfreq(len(indep_var), d=spacing) * len(indep_var) * spacing  # i.e. in units of cycles per length of domain
+    sample_freq = numpy.resize(sample_freq, sig_fft.shape)
     
     return sig_fft, sample_freq
 
