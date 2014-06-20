@@ -36,7 +36,7 @@ def main(inargs):
     
     plt.figure() 
     # [1, 5, 10, 30, 90, 180]
-    for step in [1, 5]:
+    for step in [1, 5, 30,]:
         indata = nio.InputData(inargs.infile, inargs.variable, runave=step,
                                **nio.dict_filter(vars(inargs), ['time', 'latitude']))
     
@@ -48,7 +48,7 @@ def main(inargs):
         amp_spectrum_lat_mean = numpy.mean(amp_spectrum, axis=1)
         amp_spectrum_temp_lat_mean = numpy.mean(amp_spectrum_lat_mean, axis=0)
     
-        plt.plot(sample_freq[0, 0, 1:inargs.window+1], amp_spectrum_temp_lat_mean[0:inargs.window], label=str(step))  # Because I think a freq of 0 makes no sense
+        plt.plot(sample_freq[0, 0, 1:inargs.window+1], amp_spectrum_temp_lat_mean[1:inargs.window+1], label=str(step))  # Because I think a freq of 0 makes no sense
 
     plt.xlabel('Frequency [cycles / domain]')
     plt.ylabel('amplitude')
@@ -60,7 +60,10 @@ def main(inargs):
 if __name__ == '__main__':
 
     extra_info =""" 
-example (vortex.earthsci.unimelb.edu.au):
+example (irvingnix.earthsci.unimelb.edu.au):
+  /usr/local/uvcdat/1.5.1/bin/cdat plot_freq_spectra.py 
+  /home/dbirving/Downloads/Data/va_Merra_250hPa_30day-runmean-2002_r360x181.nc 
+  va test.png --latitude -70 -40
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
