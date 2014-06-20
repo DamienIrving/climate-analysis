@@ -11,7 +11,6 @@ import os, sys
 import numpy
 import argparse
 
-
 # Import my modules
 
 cwd = os.getcwd()
@@ -41,13 +40,13 @@ def main(inargs):
         indata = nio.InputData(inargs.infile, inargs.variable, runave=step,
                                **nio.dict_filter(vars(inargs), ['time', 'latitude']))
     
-	signal = indata.data
-	indep_var = signal.getLongitude()[:]
+        signal = indata.data
+        indep_var = signal.getLongitude()[:]
 
-	sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
-	amp_spectrum = cft.spectrum(sig_fft, output='amplitude')
-	amp_spectrum_lat_mean = numpy.mean(amp_spectrum, axis=1)
-	amp_spectrum_temp_lat_mean = numpy.mean(amp_spectrum_lat_mean, axis=0)
+        sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
+        amp_spectrum = cft.spectrum(sig_fft, output='amplitude')
+        amp_spectrum_lat_mean = numpy.mean(amp_spectrum, axis=1)
+        amp_spectrum_temp_lat_mean = numpy.mean(amp_spectrum_lat_mean, axis=0)
     
         plt.plot(sample_freq[0, 0, 1:inargs.window+1], amp_spectrum_temp_lat_mean[0:inargs.window], label=str(step))  # Because I think a freq of 0 makes no sense
 
