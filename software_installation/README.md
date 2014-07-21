@@ -39,6 +39,11 @@ UV-CDAT GUI:
 
 ## Iris
 
+### Anaconda
+
+The easiest way to install iris is alongside Anaconda:  
+`conda install -c https://conda.binstar.org/rsignell iris`
+
 ### Ubuntu 13.04
 
 1. Install the required dependencies. Following the [installation recipes](https://github.com/SciTools/installation-recipes) I installed the following using either `sudo apt-get install` or the Ubuntu Software Centre: 
