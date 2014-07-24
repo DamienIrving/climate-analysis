@@ -148,32 +148,33 @@ def calc_zw3(index, ifile, var_id, base_period):
     cdutil library doesn't have routines for calculating 
     the daily climatology or stdev.
     
-    The running mean should have been applied to the input 
-    data beforehand. Raphael (2004) uses a 3-month running 
-    mean.
+    The running mean (and zonal mean too - see below) should 
+    have been applied to the input data beforehand. Raphael 
+    (2004) uses a 3-month running mean.
     
     Input data that Raphael (2004) uses is the 500hPa 
     geopotential height, the sea level pressure or
     from 500hPa zonal anomalies which are constructed by 
     removing the zonal mean of the geopotential height from
-    each grid point (preferred).
+    each grid point (preferred). 
     
     """
 
-    # Calulate the index
-    #pdb.set_trace()    
+    # Determine the timescale
+
+    indata_complete = nio.InputData(ifile, var_id, region='small') 
+    time_axis = indata_complete.data.getTime().asComponentTime()
+    timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
+        
+    assert timescale in ['daily', 'monthly']
+    tscale_abbrev = 'day' if timescale == 'daily' else 'mon' 
+
+    # Calculate the index
+
     index = {}
     for region in ['zw31', 'zw32', 'zw33']: 
         south_lat, north_lat = nio.regions[region][0][0: 2]
         west_lon, east_lon = nio.regions[region][1][0: 2]
-
-        indata_complete = nio.InputData(ifile, var_id, region=region, spatave=True) 
-        time_axis = indata_complete.data.getTime().asComponentTime()
-        timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
-        
-	assert timescale in ['daily', 'monthly']
-	tscale_abbrev = 'day' if timescale == 'daily' else 'mon' 
-	
 	
 	div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
 	div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
