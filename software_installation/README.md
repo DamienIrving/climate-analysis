@@ -39,7 +39,7 @@ UV-CDAT GUI:
 
 ## Iris
 
-### Anaconda
+### Anaconda (i.e. any operating system)
 
 The easiest way to install iris is alongside Anaconda:  
 `conda install -c https://conda.binstar.org/rsignell iris`
@@ -73,3 +73,31 @@ The easiest way to install iris is alongside Anaconda:
 
 4. Ask questions at the [support forum](http://scitools.org.uk/iris/community.html) 
 
+## netCDF Operators (NCO)
+
+### Mac OS X (10.9 Mavricks)
+
+I didn't have any luck installing the most up-to-date binaries (provided as a tarball 
+`.tar.gz` at the [NCO website](http://nco.sourceforge.net/)) but at that site they provided
+some old DMG files that worked.
+
+
+## Climate Data Operators (CDO)
+
+### Mac OS X (10.9 Mavricks)
+
+On the [website](https://code.zmaw.de/projects/cdo) it says that CDO can be installed via 
+homebrew (`brew install cdo`) or macports (`port install cdo`). I tried both and neither 
+worked (both said they didn't know what CDO was). Annoyingly you can't have both macports
+and homebrew installed on your machine at the same time.
+
+I then tried to install from binaries (following [these](https://code.zmaw.de/projects/cdo/embedded/1.6.3/cdo.html#x1-50001.1.1)
+very useful instructions for dealing with binaries), however when I tried to run a cdo command 
+it said that the netCDF file format wasn't supported. I'd need to install the 
+[netCDF libraries](http://www.unidata.ucar.edu/downloads/netcdf/index.jsp) (which are also
+binaries) to remedy this problem, however when I tried to do that it told me:
+
+```configure: error: Can't find or link to the hdf5 library. Use --disable-netcdf-4, or see config.log for errors.```
+
+So I need to install hdf5 first (via binaries), then netCDF and hopefully CDO will work, but I 
+haven't tried this yet.
