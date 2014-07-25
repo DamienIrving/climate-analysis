@@ -77,6 +77,15 @@ The easiest way to install iris is alongside Anaconda:
 
 ### Mac OS X (10.9 Mavricks)
 
+#### Homebrew
+
+Using Homebrew (the MacOS X package manager) type:
+
+```brew tap homebrew/science```
+```brew install nco```
+
+#### Binaries
+
 I didn't have any luck installing the most up-to-date binaries (provided as a tarball 
 `.tar.gz` at the [NCO website](http://nco.sourceforge.net/)) but at that site they provided
 some old DMG files that worked.
@@ -86,10 +95,15 @@ some old DMG files that worked.
 
 ### Mac OS X (10.9 Mavricks)
 
+#### Homebrew
+
 On the [website](https://code.zmaw.de/projects/cdo) it says that CDO can be installed via 
-homebrew (`brew install cdo`) or macports (`port install cdo`). I tried both and neither 
-worked (both said they didn't know what CDO was). Annoyingly you can't have both macports
-and homebrew installed on your machine at the same time.
+homebrew (`brew install cdo`) or macports (`port install cdo`). Macports says that it doesn't
+know what cdo is, and so does homebrew unless you type `brew tap homebrew/science` first. 
+Annoyingly you can't have both macports and homebrew installed on your machine at the same time,
+so I've removed macports and am just using homebrew.
+
+#### Binaries
 
 I then tried to install from binaries (following [these](https://code.zmaw.de/projects/cdo/embedded/1.6.3/cdo.html#x1-50001.1.1)
 very useful instructions for dealing with binaries), however when I tried to run a cdo command 
@@ -99,5 +113,5 @@ binaries) to remedy this problem, however when I tried to do that it told me:
 
 ```configure: error: Can't find or link to the hdf5 library. Use --disable-netcdf-4, or see config.log for errors.```
 
-So I need to install hdf5 first (via binaries), then netCDF and hopefully CDO will work, but I 
-haven't tried this yet.
+So I'd need to install hdf5 first (via binaries), then netCDF and hopefully CDO will work, but I 
+haven't tried this.
