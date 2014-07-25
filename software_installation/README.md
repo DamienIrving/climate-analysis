@@ -81,7 +81,7 @@ The easiest way to install iris is alongside Anaconda:
 
 Using Homebrew (the MacOS X package manager) type:
 
-```brew tap homebrew/science```
+```brew tap homebrew/science```  
 ```brew install nco```
 
 #### Binaries
