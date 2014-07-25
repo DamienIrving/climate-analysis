@@ -7,7 +7,10 @@ days for a running mean of 1, 5, 30, 90, 180 days. Those images had three panels
 
 Notes:
 - I should extract the wave for w2-10
-- Pull out 5 years of data to foucs on the centre 3 (i.e. for the 180 day overlap).
+- Pull out 5 years of data to foucs on the centre 3 (i.e. for the 180 day overlap)
+- How can I pull out the phase information for each of the Fourier components? (I could
+  show that the others are random but when a large zonal extent is on, wave 1 and 3 stay 
+  in the same location)
 
 
 ## Wave envelope map
