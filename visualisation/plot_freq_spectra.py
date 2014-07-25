@@ -1,5 +1,5 @@
 """
-Filename:     calc_fourier_transform.py
+Filename:     plot_freq_spectra.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
 
 """
@@ -26,6 +26,7 @@ anal_dir = os.path.join(repo_dir, 'data_processing')
 sys.path.append(anal_dir)
 try:
     import netcdf_io as nio
+    import general_io as gio
     import calc_fourier_transform as cft
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
@@ -35,8 +36,7 @@ def main(inargs):
     """Run the program."""
     
     plt.figure() 
-    # [1, 5, 10, 30, 90, 180]
-    for step in [1, 5, 30,]:
+    for step in [1, 5, 10, 30, 90, 180]:
         indata = nio.InputData(inargs.infile, inargs.variable, runave=step,
                                **nio.dict_filter(vars(inargs), ['time', 'latitude']))
     
@@ -45,16 +45,29 @@ def main(inargs):
 
         sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
         amp_spectrum = cft.spectrum(sig_fft, output='amplitude')
-        amp_spectrum_lat_mean = numpy.mean(amp_spectrum, axis=1)
-        amp_spectrum_temp_lat_mean = numpy.mean(amp_spectrum_lat_mean, axis=0)
+	
+	if 'y' in indata.data.getOrder():
+            amp_spectrum_lat_mean = numpy.mean(amp_spectrum, axis=1)
+	    x = sample_freq[0, 0, 1:inargs.window+1]
+        else:
+	    amp_spectrum_lat_mean = amp_spectrum
+	    x = sample_freq[0, 1:inargs.window+1]
+	amp_spectrum_temp_lat_mean = numpy.mean(amp_spectrum_lat_mean, axis=0)
     
-        plt.plot(sample_freq[0, 0, 1:inargs.window+1], amp_spectrum_temp_lat_mean[1:inargs.window+1], label=str(step))  # Because I think a freq of 0 makes no sense
+	amp_mean = numpy.mean(amp_spectrum_temp_lat_mean[1:inargs.window+1])
+	amp_std = numpy.std(amp_spectrum_temp_lat_mean[1:inargs.window+1])
+	y = (amp_spectrum_temp_lat_mean[1:inargs.window+1] - amp_mean) / amp_std
+    
+        plt.plot(x, y, label=str(step), marker='o')  # Because I think a freq of 0 makes no sense
 
     plt.xlabel('Frequency [cycles / domain]')
-    plt.ylabel('amplitude')
+    plt.ylabel('normalised amplitude')
     plt.legend()
     
     plt.savefig(inargs.outfile)
+    plt.clf()
+    metadata = [[indata.fname, indata.id, indata.global_atts['history']],]
+    gio.write_metadata(inargs.outfile, file_info=metadata)
     
 
 if __name__ == '__main__':
@@ -87,7 +100,7 @@ author:
                         help="Time period [default = entire]")
 
     # Output options
-    parser.add_argument("--window", type=int, default=20,
+    parser.add_argument("--window", type=int, default=10,
                         help="upper limit on the frequencies included in the plot")
 
   
