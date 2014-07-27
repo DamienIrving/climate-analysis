@@ -7,8 +7,8 @@ The simplest option for installing [UV-CDAT](http://uvcdat.llnl.gov/) is to
 that best matches your operating system (for Mavricks the Darwin 10.8 installer works fine). 
 At the command line you then just enter the following:
 
-    cd /
-    sudo tar xjvf UV-CDAT-[version number]-[your OS here].tar.bz2
+    $ cd /
+    $ sudo tar xjvf UV-CDAT-[version number]-[your OS here].tar.bz2
 
 On Mac OS X Mavricks, the installation will only work if you have gfortran, qt and xcode installed. The 
 [installation instuctions](http://uvcdat.llnl.gov/installing.html) are a little confusing 
@@ -21,20 +21,20 @@ that you downloaded the UV-CDAT binary file.
 
 Here are the extra libraries that I install alongside UV-CDAT:  
 
-* `/usr/local/uvcdat/1.5.1/bin/pip install gitpython`
-* `/usr/local/uvcdat/1.5.1/bin/pip install ipython --upgrade`  (because tefault is very old)
-* `/usr/local/uvcdat/1.5.1/bin/pip install readline`  (if tab completion isn't working in IPython)
-* `/usr/local/uvcdat/1.5.1/bin/pip install pandas`
-* `/usr/local/uvcdat/1.5.1/bin/pip install cdo`
+* `$ /usr/local/uvcdat/1.5.1/bin/pip install gitpython`
+* `$ /usr/local/uvcdat/1.5.1/bin/pip install ipython --upgrade`  (because tefault is very old)
+* `$ /usr/local/uvcdat/1.5.1/bin/pip install readline`  (if tab completion isn't working in IPython)
+* `$ /usr/local/uvcdat/1.5.1/bin/pip install pandas`
+* `$ /usr/local/uvcdat/1.5.1/bin/pip install cdo`
 
 #### Where everything gets installed
 
 Here's what you'll typically enter at the command line to get access to python, ipython and the
 UV-CDAT GUI:
 
-* `/usr/local/uvcdat/1.5.1/bin/python` 
-* `/usr/local/uvcdat/1.5.1/Library/Frameworks/Python.framework/Versions/2.7/bin/ipython notebook &`
-* `/usr/local/uvcdat/1.5.1/bin/uvcdat`
+* `$ /usr/local/uvcdat/1.5.1/bin/python` 
+* `$ /usr/local/uvcdat/1.5.1/Library/Frameworks/Python.framework/Versions/2.7/bin/ipython notebook &`
+* `$ /usr/local/uvcdat/1.5.1/bin/uvcdat`
 
 
 ## Iris
@@ -42,7 +42,7 @@ UV-CDAT GUI:
 ### Anaconda (i.e. any operating system)
 
 The easiest way to install iris is alongside Anaconda:  
-`conda install -c https://conda.binstar.org/rsignell iris`
+`$ conda install -c https://conda.binstar.org/rsignell iris`
 
 ### Ubuntu 13.04
 
@@ -61,15 +61,15 @@ The easiest way to install iris is alongside Anaconda:
 
 3. Uppack and install these releases at the desired installation location (e.g. `/usr/local/`):
     
-        cd /usr/local/    
-        sudo tar -xzf ~/Downloads/cartopy-0.9.0.tar.gz
-        cd cartopy-0.9.0
-        python setup.py install
+        $ cd /usr/local/    
+        $ sudo tar -xzf ~/Downloads/cartopy-0.9.0.tar.gz
+        $ cd cartopy-0.9.0
+        $ python setup.py install
 
-        cd /usr/local/
-        sudo tar -xzf ~/Downloads/iris-1.5.1.tar.gz
-        cd iris-1.5.1
-        python setup.py install
+        $ cd /usr/local/
+        $ sudo tar -xzf ~/Downloads/iris-1.5.1.tar.gz
+        $ cd iris-1.5.1
+        $ python setup.py install
 
 4. Ask questions at the [support forum](http://scitools.org.uk/iris/community.html) 
 
@@ -81,8 +81,8 @@ The easiest way to install iris is alongside Anaconda:
 
 Using Homebrew (the MacOS X package manager) type:
 
-    brew tap homebrew/science  
-    brew install nco
+    $ brew tap homebrew/science  
+    $ brew install nco
 
 #### Binaries
 
@@ -110,10 +110,10 @@ When I ran `brew install cdo` for the first time, it told me:
 
 It doesn't let you run `sudo brew install cdo` either, so a number of online forums
 (e.g. [here](http://superuser.com/questions/751149/get-around-permission-errors) and
-[here](https://github.com/Homebrew/homebrew/issues/3930) suggest that you do the following:
+[here](https://github.com/Homebrew/homebrew/issues/3930)) suggest that you do the following:
 
-    sudo chmod g+w /usr/local
-    sudo chgrp staff /usr/local
+    $ sudo chmod g+w /usr/local
+    $ sudo chgrp staff /usr/local
 
 That seemed to work, however a number of simlinks failed because there were other directories
 that it didn't have write permissions to. Every time that happened the process stopped, I used
