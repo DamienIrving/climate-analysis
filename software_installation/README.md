@@ -81,8 +81,8 @@ The easiest way to install iris is alongside Anaconda:
 
 Using Homebrew (the MacOS X package manager) type:
 
-```brew tap homebrew/science```  
-```brew install nco```
+    brew tap homebrew/science  
+    brew install nco
 
 #### Binaries
 
@@ -102,6 +102,23 @@ homebrew (`brew install cdo`) or macports (`port install cdo`). Macports says th
 know what cdo is, and so does homebrew unless you type `brew tap homebrew/science` first. 
 Annoyingly you can't have both macports and homebrew installed on your machine at the same time,
 so I've removed macports and am just using homebrew.
+
+When I ran `brew install cdo` for the first time, it told me:
+
+    Error: Could not create /usr/local/Cellar
+    Check you have permission to write to /usr/local
+
+It doesn't let you run `sudo brew install cdo` either, so a number of online forums
+(e.g. [here](http://superuser.com/questions/751149/get-around-permission-errors) and
+[here](https://github.com/Homebrew/homebrew/issues/3930) suggest that you do the following:
+
+    sudo chmod g+w /usr/local
+    sudo chgrp staff /usr/local
+
+That seemed to work, however a number of simlinks failed because there were other directories
+that it didn't have write permissions to. Every time that happened the process stopped, I used
+`sudo chgrp staff` (and `sudo cdmod q+w` if need be) to fix the relevant permissions, and then
+started the process again with `brew install cdo` until finally the whole thing installed properly.
 
 #### Binaries
 
