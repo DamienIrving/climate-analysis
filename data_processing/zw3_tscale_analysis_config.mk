@@ -9,7 +9,7 @@ CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/bin/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
 VIS_SCRIPT_DIR=~/phd/visualisation
-ZONAL_ANOM_METHOD=${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
+ZONAL_ANOM_METHOD=bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
 
 # Dataset
 DATASET=Merra
