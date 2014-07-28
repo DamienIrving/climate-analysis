@@ -75,12 +75,12 @@ def spectrum(signal_fft, output='amplitude'):
     return result
     
 
-def filter_signal(signal, indep_var, min_freq, max_freq):
+def filter_signal(signal, indep_var, min_freq, max_freq, exclusion):
     """Filter a signal by performing a Fourier Tranform and then
     an inverse Fourier Transform for a selected range of frequencies"""
     
     sig_fft, sample_freq = fourier_transform(signal, indep_var)
-    filtered_signal = inverse_fourier_transform(sig_fft, sample_freq, min_freq=min_freq, max_freq=max_freq)
+    filtered_signal = inverse_fourier_transform(sig_fft, sample_freq, min_freq=min_freq, max_freq=max_freq, exclude=exclusion)
     
     return filtered_signal
 
@@ -106,14 +106,18 @@ def fourier_transform(signal, indep_var):
     return sig_fft, sample_freq
 
 
-def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq=None, exclude=None):
+def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq=None, exclude='negative'):
     """Inverse Fourier Transform.
     
     Input arguments:
         max_freq, min_freq   ->  Can filter to only include a certain
                                  frequency range. 
+				 (Note that this filtering keeps both the positive
+				 and negative half of the spectrum)
 	exclude              ->  Can exclude either the 'positive' or 
-	                         'negative' half of the Fourier spectrum  
+	                         'negative' half of the Fourier spectrum.
+				 (A Hilbert transform, for example, excludes the 
+				 negative part of the spectrum)
                                  
     """
     
@@ -161,8 +165,10 @@ def main(inargs):
     
     if inargs.outtype == 'filter':
         method = 'Fourier transform filtered'
+	exclusion = None
     elif inargs.outtype == 'hilbert':
-        method = 'Hiblert transformed'
+        method = 'Hilbert transformed'
+	exclusion = 'negative'
     
     if inargs.filter:
         min_freq, max_freq = inargs.filter
@@ -171,9 +177,9 @@ def main(inargs):
         min_freq = max_freq = None
 	filter_text = '%s with all frequencies retained' %(method)
     
-    outdata = numpy.apply_along_axis(filter_signal, -1, data_masked, indata.data.getLongitude()[:], min_freq, max_freq)
+    outdata = numpy.apply_along_axis(filter_signal, -1, data_masked, indata.data.getLongitude()[:], min_freq, max_freq, exclusion)
     if inargs.outtype == 'hilbert':
-        outdata = numpy.abs(outdata)
+        outdata = 2 * numpy.abs(outdata)
     
     
     # Write output file #
@@ -199,10 +205,16 @@ if __name__ == '__main__':
 
     extra_info =""" 
 example (vortex.earthsci.unimelb.edu.au):
-
+    /usr/local/uvcdat/1.5.1/bin/cdat calc_fourier_transform.py 
+    va_Merra_250hPa_30day-runmean-Jun2002_r360x181.nc va test.nc 
+    --filter 2 9 --outtype hilbert
 author:
-  Damien Irving, d.irving@student.unimelb.edu.au
-
+    Damien Irving, d.irving@student.unimelb.edu.au
+notes:
+    Note that the Hilbert transform excludes the negative half 
+    of the frequency spectrum and doubles the final amplitude. This does not
+    give the same result as if you simply retain the negative half.
+    
 """
 
     description='Perform Fourier Transform along lines of constant latitude'
