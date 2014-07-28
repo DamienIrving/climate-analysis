@@ -252,8 +252,7 @@ example (vortex.earthsci.unimelb.edu.au):
 
     parser.add_argument("env_file", type=str, help="envelope file")
     parser.add_argument("env_var", type=str, help="envelope variable")
-    parser.add_argument("timescale", type=str, choices=['daily', '30day-runmean', 'monthly'], 
-                         help="timescale of the input data")
+    parser.add_argument("timescale", type=str, help="timescale of the input data")
     
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")

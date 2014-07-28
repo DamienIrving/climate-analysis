@@ -31,13 +31,10 @@ modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 anal_dir = os.path.join(repo_dir, 'data_processing')
 sys.path.append(anal_dir)
-vis_dir = os.path.join(repo_dir, 'visualisation')
-sys.path.append(vis_dir)
 
 try:
     import netcdf_io as nio
     import calc_fourier_transform as cft
-    import calc_envelope as cenv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -158,8 +155,7 @@ def main(inargs):
 		tag = '%s_%s%s' %(date, str(int(abs(inargs.longitude))), hemisphere)       
 
 	# Do the Hilbert transform
-	my_signal = cenv.envelope(sig, inargs.wavenumbers[0], inargs.wavenumbers[-1])  #My method
-	sig_fft, sample_freq, freqs, power = cft.fourier_transform(sig, xaxis) # Scipy method
+	sig_fft, sample_freq = cft.fourier_transform(sig, xaxis)
 
 	filtered_signal = {}
 	wavenum_list = range(inargs.wavenumbers[0], inargs.wavenumbers[-1] + 1)
@@ -170,8 +166,12 @@ def main(inargs):
 	                                                                                      min_freq=wave_min, max_freq=wave_max, 
 										              exclude=filt)
 
+        # Get the amplitude spectra
+	amp_spectrum = cft.spectrum(sig_fft, output='amplitude')
+        freqs = sample_freq[0, 0, 1:wave_max+1]
+	
 	# Create plots
-	plot_spectrum(freqs, power, tag=tag, window=20)
+	plot_spectrum(freqs, amp_spectrum, tag=tag, window=10)
 	#plot_wavenumbers(wavenum_list, filtered_signal, xaxis, tag=tag)
 	plot_hilbert(wavenum_list, sig, filtered_signal, my_signal, xaxis, tag=tag)
     
