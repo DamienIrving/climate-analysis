@@ -1,6 +1,9 @@
 # Timescale analysis
 
-The overall aim is to reproduce the images I showed in a previous meeting with Ian, for 3-years of individual
+There are two parts to the timescale analysis. An objective part (using `plot_freq_spectrum.py` to calculate the average spectra over the entire time period) and a 
+visual part (which is detailed here). 
+
+The overall aim of the visual part is to reproduce the images I showed in a previous meeting with Ian, for 3-years of individual
 days for a running mean of 1, 5, 30, 90, 180 days. Those images had three panels:
 
 - A map of the wave envelope with zonal streamfunction anomaly over the top (/visualisation/plot_envelope.py)
@@ -8,7 +11,7 @@ days for a running mean of 1, 5, 30, 90, 180 days. Those images had three panels
 
 Notes:
 
-- I should extract the wave for w2-10
+- I should extract the wave for w2-9
 - Pull out 5 years of data to foucs on the centre 3 (i.e. for the 180 day overlap)
 - How can I pull out the phase information for each of the Fourier components? (I could show that the others are random but when a large zonal extent is on, wave 1 and 3 stay in the same location)
 
