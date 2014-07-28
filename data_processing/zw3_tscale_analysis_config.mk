@@ -19,8 +19,8 @@ PERIOD=seldate,2000-01-01,2004-12-31
 TSCALE_LABEL=30day-runmean-2000-2004
 
 # Envelope extraction
-WAVE_SEARCH=--filter 2 9 --outtype hilbert
-WAVE_LABEL=w29
+WAVE_SEARCH=--filter 2 4 --outtype hilbert
+WAVE_LABEL=w24
 
 # Plot envelope 
 PLOT_START=2002-04-16

@@ -47,7 +47,7 @@ ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-zonal_anom_native.nc : ${PDATA_DIR}
 
 ## Step 3: Plot the envelope
 ${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-zonal_anom_native.nc
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< env ${TSCALE_LABEL} --contour $(word 2,$^) sf --time ${PLOT_START} ${PLOT_END} none --projection spstere --ofile $@
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< va ${TSCALE_LABEL} --contour $(word 2,$^) sf --time ${PLOT_START} ${PLOT_END} none --projection spstere --ofile $@
 	
 
 ### Fourier transform visualisation ###
