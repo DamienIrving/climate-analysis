@@ -44,6 +44,13 @@ There are essentially 3 ways to install things (see this [blog post](https://liv
    `cd example`  
    `sudo python setup.py install -cython`  
 
+### Textwrangler
+
+
+* Change font size (zoom doesn't work): View => text display => show fonts
+* Replace tabs with spaces: Text => Detab
+* Block indentation: [command] and [ or ]
+ 
 
 ### CMIP tos data
 
