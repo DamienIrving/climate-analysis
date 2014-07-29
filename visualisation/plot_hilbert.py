@@ -70,7 +70,7 @@ def data_signal(infile, var, lon, date):
     return numpy.array(xaxis), numpy.array(data)
     
 
-def plot_spectrum(freqs, power, tag=None, window=20):
+def plot_spectrum(freqs, spectrum, tag=None, window=20):
     """Plot power spectrum.
     
     Input arguments:
@@ -80,16 +80,10 @@ def plot_spectrum(freqs, power, tag=None, window=20):
     
     plt.figure()  
     
-    # Outer plot
-    plt.plot(freqs, power)
+    plt.plot(freqs[:window], spectrum[:window], 'o')
     plt.xlabel('Frequency [cycles / domain]')
-    plt.ylabel('power')
-    
-    # Inner plot
-    axes = plt.axes([0.3, 0.3, 0.5, 0.5])
+    plt.ylabel('amplitude')
     plt.title('Peak frequency')
-    plt.plot(freqs[:window], power[:window])
-    plt.setp(axes, yticks=[])
     outfile = 'power_spectrum_'+tag+'.png' if tag else 'power_spectrum.png'
     plt.savefig(outfile)
     plt.clf()
@@ -110,18 +104,19 @@ def plot_wavenumbers(num_list, filtered_signal, xaxis, tag=None):
     plt.clf()
 
 
-def plot_hilbert(num_list, original_signal, filtered_signal, my_signal, xaxis, tag=None):
+def plot_hilbert(num_list, original_signal, filtered_signal, xaxis, tag=None):
     """Plot the Hilbert transform and key components of it"""
 
+    # Outer plot
+
     for wavenum in num_list:
-	color = 'orange' if wavenum in [2, 3, 4] else '0.5'
+        color = 'orange' if wavenum in [2, 3, 4] else '0.5'
         plt.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], color=color, linestyle='--')
 
     plt.plot(xaxis, 2*filtered_signal['positive', num_list[0], num_list[-1]], color='black', linestyle='--', label='w'+str(num_list[0])+'-'+str(num_list[-1])+' signal')
     plt.plot(xaxis, numpy.abs(2*filtered_signal['positive', num_list[0], num_list[-1]]), color='black', label='w'+str(num_list[0])+'-'+str(num_list[-1])+' envelope')
     plt.plot(xaxis, 2*filtered_signal['positive', 2, 4], color='red', linestyle='--', label='w2-4 signal')
     plt.plot(xaxis, numpy.abs(2*filtered_signal['positive', 2, 4]), color='red', label='w2-4 envelope')
-    plt.plot(xaxis, my_signal, color='cyan', linestyle=':', label='Glatt signal')
     plt.plot(xaxis, original_signal, color='green', label='original signal')
 
     if tag:
@@ -133,47 +128,54 @@ def plot_hilbert(num_list, original_signal, filtered_signal, my_signal, xaxis, t
     plt.savefig(outfile)
     plt.clf()
 
+    # Inner plot
+    
+    #axes = plt.axes([0.3, 0.3, 0.5, 0.5])
+    #plt.title('Peak frequency')
+    #plt.plot(freqs[:window], power[:window])
+    #plt.setp(axes, yticks=[])
+
 
 def main(inargs):
     """Run the program."""
 
     for i in range(0, inargs.ndates):
 
-	# Get the data
-	if inargs.simple:
+        # Get the data
+        if inargs.simple:
             xaxis, sig = simple_signal()
-	    tag = inargs.tag if inargs.tag else 'simple'
-	else:
+            tag = inargs.tag if inargs.tag else 'simple'
+        else:
             start = datetime.strptime(inargs.start_date, '%Y-%m-%d')
-	    dt = start + relativedelta(days=i)
-	    date = dt.strftime('%Y-%m-%d')
-	    xaxis, sig = data_signal(inargs.infile, inargs.variable, inargs.longitude, date)
-	    if inargs.tag:
-	        tag = inargs.tag
-	    else:
-	        hemisphere = 'S' if inargs.longitude < 0.0 else 'N'
-		tag = '%s_%s%s' %(date, str(int(abs(inargs.longitude))), hemisphere)       
+            dt = start + relativedelta(days=i)
+            date = dt.strftime('%Y-%m-%d')
+            xaxis, sig = data_signal(inargs.infile, inargs.variable, inargs.longitude, date)
+            if inargs.tag:
+                tag = inargs.tag
+            else:
+                hemisphere = 'S' if inargs.longitude < 0.0 else 'N'
+            tag = '%s_%s%s' %(date, str(int(abs(inargs.longitude))), hemisphere)       
 
-	# Do the Hilbert transform
-	sig_fft, sample_freq = cft.fourier_transform(sig, xaxis)
+        # Do the Hilbert transform
+        sig_fft, sample_freq = cft.fourier_transform(sig, xaxis)
 
-	filtered_signal = {}
-	wavenum_list = range(inargs.wavenumbers[0], inargs.wavenumbers[-1] + 1)
-	for filt in [None, 'positive', 'negative']:
+        filtered_signal = {}
+        wavenum_list = range(inargs.wavenumbers[0], inargs.wavenumbers[-1] + 1)
+        for filt in [None, 'positive', 'negative']:
             for wave_min in wavenum_list:
-        	for wave_max in wavenum_list:
-	            filtered_signal[filt, wave_min, wave_max] = cft.inverse_fourier_transform(sig_fft, sample_freq, 
-	                                                                                      min_freq=wave_min, max_freq=wave_max, 
-										              exclude=filt)
+                for wave_max in wavenum_list:
+                    filtered_signal[filt, wave_min, wave_max] = cft.inverse_fourier_transform(sig_fft, sample_freq, 
+                                                                                              min_freq=wave_min, max_freq=wave_max, 
+                                                                                              exclude=filt)
 
         # Get the amplitude spectra
-	amp_spectrum = cft.spectrum(sig_fft, output='amplitude')
-        freqs = sample_freq[0, 0, 1:wave_max+1]
-	
-	# Create plots
-	plot_spectrum(freqs, amp_spectrum, tag=tag, window=10)
-	#plot_wavenumbers(wavenum_list, filtered_signal, xaxis, tag=tag)
-	plot_hilbert(wavenum_list, sig, filtered_signal, my_signal, xaxis, tag=tag)
+        amp_spectrum = cft.spectrum(sig_fft, output='amplitude')
+        freqs = sample_freq[1:wave_max+1]
+    
+        # Create plots
+        plot_spectrum(freqs, amp_spectrum, tag=tag, window=10)
+        #plot_wavenumbers(wavenum_list, filtered_signal, xaxis, tag=tag)
+        plot_hilbert(wavenum_list, sig, filtered_signal, xaxis, tag=tag)
     
 
 if __name__ == '__main__':
