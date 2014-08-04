@@ -7,15 +7,17 @@ module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
 sys.path.insert(0, module_dir)
 
 Included functions:
-find_duplicates -- Find duplicates in a list
-read_dates      -- Read in a list of dates
-write_dates     -- Write a list of dates
+find_duplicates   -- Find duplicates in a list
+read_dates        -- Read in a list of dates
+set_outfile_date  -- Take an outfile name and replace existing date with new one
+write_dates       -- Write a list of dates
 
 """
 
 import os, sys
 from datetime import datetime
 from collections import defaultdict
+import re
 
 try:
     from git import Repo  #doesn't come standard with uvcdat install
@@ -68,6 +70,17 @@ def read_dates(infile):
     date_metadata = date_list.pop(0)
 
     return date_list, date_metadata
+
+
+def set_outfile_date(outfile, new_date):
+    """Take an outfile name and replace the existing date
+    (in YYYY-MM-DD format) with new_date"""
+    
+    date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
+    assert re.search(date_pattern, outfile), \
+    """Output file must contain the date of the final timestep in the format YYYY-MM-DD"""
+    
+    return re.sub(r'([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})', new_date, outfile)
 
 
 def write_dates(outfile, date_list):

@@ -33,6 +33,7 @@ sys.path.append(vis_dir)
 try:
     import coordinate_rotation as rot
     import netcdf_io as nio
+    import general_io as gio
     import plot_map
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
@@ -181,11 +182,8 @@ def main(inargs):
 	else:
             title = 'Wave envelope, %s' %(date_abbrev)
 
-        date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
-	assert re.search(date_pattern, inargs.ofile), \
-	"""Output file must contain the date of the final timestep in the format YYYY-MM-DD"""
-        ofile = re.sub(r'([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})', date_abbrev, inargs.ofile)
-
+        ofile = gio.set_outfile_date(inargs.ofile, date_abbrev)
+  
         plot_map.multiplot(env_data_select,
 		           ofile=ofile,
 		           title=title,
