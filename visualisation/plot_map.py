@@ -26,6 +26,7 @@ import re
 import sys, os
 from datetime import datetime
 import pylab
+import pdb
 
 # Import my modules #
 
@@ -42,14 +43,13 @@ testing_dir = os.path.join(repo_dir, 'testing')
 sys.path.append(testing_dir)
 
 try:
+    pdb.set_trace()
     import netcdf_io as nio
     import general_io as gio
     import coordinate_rotation as crot
     import plot_coordinate_rotation as pcr
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
-
-import pdb
 
 
 # Define global variables #

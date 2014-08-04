@@ -9,11 +9,10 @@ Description:  Plot wave envelope and associated streamfunction anomalies
 
 import os, sys
 import argparse
-import re
 
 import numpy
 import cdms2
-import MV2
+import pdb
 
 
 # Import my modules #
@@ -46,8 +45,6 @@ def extract_data(inargs):
 
     env_data = nio.InputData(inargs.env_file, inargs.env_var,
                              **nio.dict_filter(vars(inargs), ['time', 'region']))
-    env_times = env_data.data.getTime().asComponentTime()    
-
     opt_data = {}
     for opt in ['uwind', 'vwind', 'contour']:    
         try:
@@ -57,10 +54,6 @@ def extract_data(inargs):
         except AttributeError:
             opt_data[opt] = None
     
-#    if opt_data[opt]:
-#        assert opt_data[opt].data.getTime().asComponentTime() == env_times, \
-#        'Time axes must be the same for all input data'
-
     return env_data, opt_data['uwind'], opt_data['vwind'], opt_data['contour']
 
 
@@ -76,7 +69,6 @@ def restore_env(indata_env, rotation_details):
     lats, lons = nio.coordinate_pairs(lat_axis[:], lon_axis[:])
     grid = indata_env.data.getGrid()
 
-    
     new_np = rotation_details[0:2]
     pm_point = rotation_details[2:4]
     
@@ -104,107 +96,107 @@ def extract_extent(fname):
     extent_output = {}
     for line in lines[2:]:  #$ skip the header row
         data = line.split(',')
-	year, month, day = data[0].split('-')
-	date = (int(year), int(month), int(day))
-	start_lon = float(data[1])
-	end_lon = float(data[2])
+    year, month, day = data[0].split('-')
+    date = (int(year), int(month), int(day))
+    start_lon = float(data[1])
+    end_lon = float(data[2])
     
-        extent_output[date] = (start_lon, end_lon)
+    extent_output[date] = (start_lon, end_lon)
 
     return extent_output
 
 
-def main(inargs):
-    """Create the plot"""
+def plot_settings(timescale, user_ticks):
+    """Define the settings for the wind barbs and colourbar"""
 
-    # Read input data #
-    
-    indata_env, indata_u, indata_v, indata_contour = extract_data(inargs) 
-    if inargs.extent:
-        indata_extent = extract_extent(inargs.extent[0])
-
-    # Restore env data to standard lat/lon grid #
-
-    if inargs.rotation:
-        env_data = restore_env(indata_env, inargs.rotation)
-	np = inargs.rotation[0:2]
+    # Wind barbs
+    if timescale == 'monthly':
+        keyval = 5
+        quiv_scale = 200
+        quiv_width = 0.002
     else:
-        env_data = indata_env.data
-	np = None
+        keyval = 10
+        quiv_scale = 300
+        quiv_width = 0.002
 
-    # Wind barb settings #
-       
-    if inargs.timescale == 'monthly':
-	keyval = 5
-	quiv_scale = 200
-	quiv_width = 0.002
-    else:
-	keyval = 10
-	quiv_scale = 300
-	quiv_width = 0.002
-
-    # Colourbar settings #
-    
-    if inargs.ticks:
-        ticks = inargs.ticks
+    # Colourbar
+    if user_ticks:
+        ticks = user_ticks
     elif inargs.timescale == 'daily':
         ticks = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
     else:
         ticks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
-    # Plot each timestep #
+    return keyval, quiv_scale, quiv_width, ticks
 
+
+def main(inargs):
+    """Create the plot"""
+
+    # Read input data
+    indata_env, indata_u, indata_v, indata_contour = extract_data(inargs) 
+    if inargs.extent:
+        indata_extent = extract_extent(inargs.extent[0])
+
+    # Restore env data to standard lat/lon grid
+    if inargs.rotation:
+        env_data = restore_env(indata_env, inargs.rotation)
+        np = inargs.rotation[0:2]
+    else:
+        env_data = indata_env.data
+        np = None
+
+    # Plot settings
+    keyval, quiv_scale, quiv_width, ticks = plot_settings(inargs.timescale, inargs.ticks)      
+
+    # Plot each timestep
     for date in indata_env.data.getTime().asComponentTime():
-        year, month, day = str(date).split(' ')[0].split('-')
-	if inargs.timescale == 'monthly':
-	    date_abbrev = year+'-'+month
-	else:
-	    date_abbrev = year+'-'+month+'-'+day
-	    date_bounds = [date_abbrev+' 0:0:0.0', date_abbrev+' 23:59:0.0']
-	
-	box_list = []
-	if inargs.extent:
-	    west_lon, east_lon = indata_extent[(int(year), int(month), int(day))]
-	    if west_lon != east_lon:
-	        south_lat, north_lat = inargs.extent[1:]
-                box_list.append([float(south_lat), float(north_lat), west_lon, east_lon, 'blue', 'solid'])
-	if inargs.search_region:
-	    south_lat, north_lat, west_lon, east_lon = inargs.search_region[0:4]
-            box_list.append([south_lat, north_lat, west_lon, east_lon, 'green', 'dashed'])
-	    
+
+        date_bounds, date_abbrev = nio.get_cdms2_tbounds(date, inargs.timescale)
+    
         env_data_select = [env_data(time=(date_bounds[0], date_bounds[1]), squeeze=1),]
         u_data = [indata_u.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_u else None
         v_data = [indata_v.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_v else None
         contour_data = [indata_contour.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_contour else None
         
-	if inargs.no_title:
-	    title = None
-	else:
+        box_list = []
+        if inargs.extent:
+            west_lon, east_lon = indata_extent[(int(year), int(month), int(day))]
+            if west_lon != east_lon:
+                south_lat, north_lat = inargs.extent[1:]
+                box_list.append([float(south_lat), float(north_lat), west_lon, east_lon, 'blue', 'solid'])
+        if inargs.search_region:
+            south_lat, north_lat, west_lon, east_lon = inargs.search_region[0:4]
+            box_list.append([south_lat, north_lat, west_lon, east_lon, 'green', 'dashed'])
+        
+        if inargs.no_title:
+            title = None
+        else:
             title = 'Wave envelope, %s' %(date_abbrev)
 
         ofile = gio.set_outfile_date(inargs.ofile, date_abbrev)
-  
+
         plot_map.multiplot(env_data_select,
-		           ofile=ofile,
-		           title=title,
-			   region=inargs.region,
-		           units='$m s^{-1}$',
+                           ofile=ofile,
+                           title=title,
+                           region=inargs.region,
+                           units='$m s^{-1}$',
                            draw_axis=True,
-		           delat=10, delon=30,
-		           contour=True,
-		           ticks=ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
-        	           contour_data=contour_data, contour_ticks=inargs.contour_ticks,
-		           uwnd_data=u_data, vwnd_data=v_data, quiver_thin=9, key_value=keyval,
-		           quiver_scale=quiv_scale, quiver_width=quiv_width,
-        	           projection=inargs.projection, 
-        	           extend='max',
-			   box=box_list,
-			   box_np=np,
-        	           image_size=inargs.image_size)
-        
+                           delat=10, delon=30,
+                           contour=True,
+                           ticks=ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
+                           contour_data=contour_data, contour_ticks=inargs.contour_ticks,
+                           uwnd_data=u_data, vwnd_data=v_data, quiver_thin=9, key_value=keyval,
+                           quiver_scale=quiv_scale, quiver_width=quiv_width,
+                           projection=inargs.projection, 
+                           extend='max',
+                           box=box_list,
+                           box_np=np,
+                           image_size=inargs.image_size)
+
         ticks = ticks[0: -1]   # Fix for weird thing where it keeps appending to 
-	                       # the end of the ticks list, presumably due to the 
-			       # extend = 'max' 
+                               # the end of the ticks list, presumably due to the 
+                               # extend = 'max' 
 
 
 if __name__ == '__main__':

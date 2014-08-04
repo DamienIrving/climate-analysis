@@ -14,14 +14,14 @@ dict_filter          -- Filter dictionary
 get_datetime         -- Return datetime instances for list of dates/times
 hi_lo                -- Update highest and lowest value
 list_kwargs          -- List keyword arguments of a function
-match_dates          --
+match_dates          -- Take simple list of dates and match with corresponding more verbose list
 regrid_uniform       -- Regrid data to a uniform output grid
 running_average      -- Calculate running average
 scale_offset         -- Apply scaling and offset factors
+get_cdms2_tbounds    -- Get time bounds for cdms2 data extraction   
 single2list          -- Check if item is a list, then convert if not
 split_dt             -- Split a getTime().asComponentTime() date/time into year, month and day parts
-temporal_aggregation -- Create a temporal aggregate of 
-                        the input data (i.e. raw, climatology or anomaly)
+temporal_aggregation -- Create a temporal aggregate of the input data (i.e. raw, climatology or anomaly)
 time_axis_check      -- Check whether 2 time axes are the same
 write_netcdf         -- Write an output netCDF file
 xy_axis_check        -- Check whether 2 lat or lon axes are the same
@@ -455,6 +455,21 @@ def dict_filter(indict, key_list):
     
     return dict((key, value) for key, value in indict.iteritems() if key in key_list)
 
+
+def get_cdms2_tbounds(date, timescale):
+    """Return the appropriate time bounds and date abbreviation for 
+    a given timescale and single date extracted using getTime().asComponentTime()"""
+
+    year, month, day = str(date).split(' ')[0].split('-')
+    if inargs.timescale == 'monthly':
+        date_abbrev = year+'-'+month
+    else:
+        date_abbrev = year+'-'+month+'-'+day
+    
+    tbounds = [date_abbrev+' 0:0:0.0', date_abbrev+' 23:59:0.0']
+    
+    return tbounds, date_abbrev  
+    
 
 def get_datetime(datetime_list):
     """Return a datetime instance for a given list of dates/times.
