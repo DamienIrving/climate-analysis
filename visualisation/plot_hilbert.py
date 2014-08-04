@@ -43,7 +43,8 @@ except ImportError:
 
 def plot_hilbert(original_signal, filtered_signal, 
                  amp_spectrum, sample_freq,
-                 xaxis,  
+                 xaxis,
+                 ybounds,  
                  wmin, wmax,
                  outfile, title=None):
     """Plot the Hilbert transform and key components of it"""
@@ -68,6 +69,7 @@ def plot_hilbert(original_signal, filtered_signal,
 			   color='green', 
 			   label='original signal')
 
+    axes1.set_ylim(ybounds)
     if title:
         axes1.set_title(title)
     font = font_manager.FontProperties(size='small')
@@ -124,6 +126,7 @@ def main(inargs):
         plot_hilbert(data_selection, filtered_signal, 
                      amp_spectrum, sample_freq, 
                      xaxis, 
+                     inargs.ybounds,
                      wmin, wmax, 
                      outfile_name, title=None)
         metadata = [[indata.fname, indata.id, indata.global_atts['history']],]
@@ -166,6 +169,8 @@ author:
                         help="Number of dates (starting from start_date) to plot")    
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[2, 9],
                         help="Wavenumber range [default = (2, 9)]. The upper and lower values are included (i.e. default selection includes 2 and 9).")
+    parser.add_argument("--ybounds", type=float, nargs=2, metavar=('LOWER', 'UPPER'), default=[-20, 20],
+                        help="y-axis bounds [default = (-20, 20)")
   
     args = parser.parse_args()            
 
