@@ -16,6 +16,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap, shiftgrid
 
+import os, sys, pdb
 import matplotlib.colors
 import numpy
 import math
@@ -23,10 +24,9 @@ import cdms2
 import MV2
 import argparse
 import re
-import sys, os
 from datetime import datetime
 import pylab
-import pdb
+
 
 # Import my modules #
 
@@ -43,7 +43,6 @@ testing_dir = os.path.join(repo_dir, 'testing')
 sys.path.append(testing_dir)
 
 try:
-    pdb.set_trace()
     import netcdf_io as nio
     import general_io as gio
     import coordinate_rotation as crot

@@ -39,14 +39,13 @@ except ImportError:
     raise ImportError('Must run this script from within phd git repo')
 
 
-
 # Define functions #
 
 def plot_hilbert(original_signal, filtered_signal, 
                  amp_spectrum, sample_freq,
-		 xaxis,  
-		 wmin, wmax,
-		 outfile, title=None):
+                 xaxis,  
+                 wmin, wmax,
+                 outfile, title=None):
     """Plot the Hilbert transform and key components of it"""
 
     fig = plt.figure()
@@ -57,24 +56,23 @@ def plot_hilbert(original_signal, filtered_signal,
     # Outer plot
     for wavenum in range(1, 10):
         axes1.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], 
-	           color='0.5', linestyle='--')
+                   color='0.5', linestyle='--')
 
-    axes1.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], 
-               color='red', linestyle='--', 
-	       label='w'+str(wmin)+'-'+str(wmax)+' signal')
-    axes1.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), 
-               color='red', 
-	       label='w'+str(wmin)+'-'+str(wmax)+' envelope')
-    axes1.plot(xaxis, numpy.array(original_signal), 
-               color='green', 
-	       label='original signal')
+	axes1.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], 
+			   color='red', linestyle='--', 
+			   label='w'+str(wmin)+'-'+str(wmax)+' signal')
+	axes1.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), 
+			   color='red', 
+			   label='w'+str(wmin)+'-'+str(wmax)+' envelope')
+	axes1.plot(xaxis, numpy.array(original_signal), 
+			   color='green', 
+			   label='original signal')
 
     if title:
         axes1.set_title(title)
     font = font_manager.FontProperties(size='small')
     axes1.legend(loc=4, prop=font)
     
-
     # Inner plot    
     freqs = sample_freq[1:10]
     axes2.plot(sample_freq[1:10], amp_spectrum[1:10], '-o')
@@ -88,32 +86,25 @@ def plot_hilbert(original_signal, filtered_signal,
 
 
 def main(inargs):
-    """Run the program."""
-
+    """Plot each timestep."""
+    
+    indata = nio.InputData(inargs.env_file, inargs.env_var,
+                             **nio.dict_filter(vars(inargs), ['time', 'latitude']))
+    xaxis = indata.data.getLongitude()[:]
     wmin, wmax = inargs.wavenumbers
-    for i in range(0, inargs.ndates):
+    for date in indata.data.getTime().asComponentTime():
+        date_bounds, date_abbrev = nio.get_cdms2_tbounds(date, inargs.timescale)
+        data_selection = indata.data(time=(date_bounds[0], date_bounds[1]), squeeze=1)
         
-	# Date
-        start = datetime.strptime(inargs.start_date, '%Y-%m-%d')
-        dt = start + relativedelta(days=i)
-        date = dt.strftime('%Y-%m-%d')
-        
-	# Data
-	lat = inargs.latitude
-	indata = nio.InputData(inargs.infile, inargs.variable,
-                               latitude=(lat - 0.1, lat + 0.1), 
-			       time=(date, date))
-	xaxis = indata.data.getLongitude()[:]
-
         # Title (i.e. date and latitude info)
         hemisphere = 'S' if inargs.latitude < 0.0 else 'N'
         tag = '%s %s%s' %(date, str(int(abs(inargs.latitude))), hemisphere)       
 
         # Outfile
-	outfile_name = gio.set_outfile_date(inargs.ofile, date)
+        outfile_name = gio.set_outfile_date(inargs.ofile, date)
 
         # Hilbert transform
-        sig_fft, sample_freq = cft.fourier_transform(indata.data, xaxis)
+        sig_fft, sample_freq = cft.fourier_transform(data_selection, xaxis)
 
         # Individual Fourier components
         filtered_signal = {}
@@ -122,7 +113,7 @@ def main(inargs):
                 for wave_max in range(1, 10):
                     filtered_signal[filt, wave_min, wave_max] = cft.inverse_fourier_transform(sig_fft, sample_freq, 
                                                                                               min_freq=wave_min, 
-											      max_freq=wave_max, 
+                                                                                              max_freq=wave_max, 
                                                                                               exclude=filt)
 
         # Amplitude spectra
@@ -130,11 +121,11 @@ def main(inargs):
         freqs = sample_freq[1:wave_max+1]
     
         # Plot
-        plot_hilbert(indata.data, filtered_signal, 
-	             amp_spectrum, sample_freq, 
-		     xaxis, 
-		     wmin, wmax, 
-		     outfile_name, title=None)
+        plot_hilbert(data_selection, filtered_signal, 
+                     amp_spectrum, sample_freq, 
+                     xaxis, 
+                     wmin, wmax, 
+                     outfile_name, title=None)
         metadata = [[indata.fname, indata.id, indata.global_atts['history']],]
         gio.write_metadata(outfile_name, file_info=metadata)    
 
@@ -164,11 +155,13 @@ author:
 
     parser.add_argument("infile", type=str, help="Input file name, containing the meridional wind")
     parser.add_argument("variable", type=str, help="Input file variable")
-    parser.add_argument("latitude", type=float, help="Latitude over which to extract the wave")
-    parser.add_argument("start_date", type=str, help="Start date for which to extract the wave")
+    parser.add_argument("latitude", type=float, help="Single latitude over which to extract the wave")
+    parser.add_argument("timescale", type=str, help="timescale of the input data")
     parser.add_argument("ofile", type=str, 
                         help="name of output file (include the date of one of the timesteps in YYYY-MM-DD format - it will be replaced in place)")
     
+    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
+                        help="Time period [default = entire]")
     parser.add_argument("--ndates", type=int, default=1, 
                         help="Number of dates (starting from start_date) to plot")    
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[2, 9],

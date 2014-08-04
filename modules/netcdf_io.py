@@ -33,8 +33,7 @@ InputData            -- Extract and subset data
 
 ## Import general Python modules ##
 
-import os
-import sys
+import os, sys, pdb
 import re
 import copy
 
@@ -717,10 +716,10 @@ def split_dt(dt):
     return (int(year), int(month), int(day))
 
 
-def find_nearest(array,value):
+def find_nearest(array, value):
     """Find the closest array item to value"""
     
-    idx = (numpy.abs(array-value)).argmin()
+    idx = (numpy.abs(array - value)).argmin()
     return array[idx]
 
 
@@ -729,9 +728,9 @@ def _subset_data(infile, var_id, **kwargs):
     
     Valid kwargs (with examples)
     
-    latitude  -- (-30, 30)
+    latitude  -- (-30, 30) or 30
     level     -- (1000.)
-    longitude -- (120, 165)
+    longitude -- (120, 165) or 230
     region    -- aus
     time      -- ('1979-01-01', '2000-12-31', 'MONTH/SEASON'), 
 	          options: 'JAN', 'FEB', ..., 'DEC'
@@ -742,22 +741,17 @@ def _subset_data(infile, var_id, **kwargs):
     
     # Data are always squeezed
     kwargs['squeeze'] = 1
-    
+
     # Account for singular latitude or longitude selections
     for axis in ['latitude', 'longitude']:
-        selection = kwargs[axis]
-	if type(axis) == int or type(axis) == float:
-	    point_selection = True
-	elif type(axis) == list or type(axis) == tuple: 
-            point_selection = True if (len(axis) == 1) else False
-	else:
-	    point_selection = False
+        if axis in kwargs.keys():
+            if type(kwargs[axis]) == int or type(kwargs[axis]) == float:
+	        axis_vals = infile.getAxis(axis[0:3])[:]
+                nearest = find_nearest(axis_vals, kwargs[axis])
+                if kwargs[axis] != nearest:
+                    print "Selected %s not available, used %s instead" %(axis, str(nearest))
+                    kwargs[axis] = nearest
 	
-	if point_selection:
-	    find_nearest()
-	
-    
-    
     # Final selection (involves some messy time stuff)    	
     if kwargs.has_key('time'):
 	assert isinstance(kwargs['time'], (list, tuple)), \
