@@ -702,6 +702,13 @@ def split_dt(dt):
     return (int(year), int(month), int(day))
 
 
+def find_nearest(array,value):
+    """Find the closest array item to value"""
+    
+    idx = (numpy.abs(array-value)).argmin()
+    return array[idx]
+
+
 def _subset_data(infile, var_id, **kwargs):
     """Take a subset of the infile data
     
@@ -718,8 +725,25 @@ def _subset_data(infile, var_id, **kwargs):
 
     assert type(infile) == cdms2.dataset.CdmsFile      
     
+    # Data are always squeezed
     kwargs['squeeze'] = 1
-        	
+    
+    # Account for singular latitude or longitude selections
+    for axis in ['latitude', 'longitude']:
+        selection = kwargs[axis]
+	if type(axis) == int or type(axis) == float:
+	    point_selection = True
+	elif type(axis) == list or type(axis) == tuple: 
+            point_selection = True if (len(axis) == 1) else False
+	else:
+	    point_selection = False
+	
+	if point_selection:
+	    find_nearest()
+	
+    
+    
+    # Final selection (involves some messy time stuff)    	
     if kwargs.has_key('time'):
 	assert isinstance(kwargs['time'], (list, tuple)), \
 	'time selector must be a list or tuple'
