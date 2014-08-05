@@ -89,13 +89,25 @@ def main(inargs):
     xaxis = indata.data.getLongitude()[:]
     wmin, wmax = inargs.wavenumbers
     for date in indata.data.getTime().asComponentTime():
-        date_bounds, date_abbrev = nio.get_cdms2_tbounds(date, inargs.timescale)
+        date_bounds, date_abbrev = nio.get_cdms2_tbounds(date, inargs.timestep)
         data_selection = indata.data(time=(date_bounds[0], date_bounds[1]), squeeze=1)
         
         # Title (i.e. date and latitude info)
         hemisphere = 'S' if inargs.latitude < 0.0 else 'N'
-        tag = '%s %s%s' %(date, str(int(abs(inargs.latitude))), hemisphere)       
+        title = '%s %s%s' %(date_abbrev, str(int(abs(inargs.latitude))), hemisphere)       
 
+        # y-axis bounds
+        ybounds_dict={'01day-runmean': [-50, 50],
+                      '05day-runmean': [-40, 40],
+                      '30day-runmean': [-20, 20],
+                      '90day-runmean': [-10, 10]}
+        if inargs.ybounds:
+            ybounds = inargs.ybounds
+        elif inargs.timescale in ybounds_dict.keys():
+            ybounds = ybounds_dict[inargs.timescale]
+        else:
+            ybounds = None
+	
         # Outfile
         outfile_name = gio.set_outfile_date(inargs.ofile, date)
 
@@ -120,9 +132,9 @@ def main(inargs):
         plot_hilbert(data_selection, filtered_signal, 
                      amp_spectrum, sample_freq, 
                      xaxis, 
-                     inargs.ybounds,
+                     ybounds,
                      wmin, wmax, 
-                     outfile_name, title=None)
+                     outfile_name, title=title)
         metadata = [[indata.fname, indata.id, indata.global_atts['history']],]
         gio.write_metadata(outfile_name, file_info=metadata)    
 
@@ -132,12 +144,11 @@ if __name__ == '__main__':
     extra_info = """ 
 
 example:
-    /usr/local/uvcdat/1.4.0/bin/cdat plot_hilbert.py 
-    ~/Downloads/Data/va_Merra_250hPa_30day-runmean-2002_r360x181.nc va -50 2002-04-17
-
-notes:
-   Interesting dates are 2002-01-15 (extent=180), 2002-01-23 (extent=150), 2002-02-13 (extent=100), 
-   2002-04-24 (extent=350), 2002-05-12 (extent=360), 2002-06-19 (extent=240)                     
+    /usr/local/uvcdat/1.3.0/bin/cdat plot_hilbert.py 
+    va_Merra_250hPa_30day-runmean_r360x181.nc va 
+    -50 30day-runmean daily 
+    hilbert-va_Merra_250hPa_30day-runmean_r360x181-50S_2002-06-30.png 
+    --time 2002-06-01 2002-06-30 none
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -153,7 +164,8 @@ author:
     parser.add_argument("infile", type=str, help="Input file name, containing the meridional wind")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("latitude", type=float, help="Single latitude over which to extract the wave")
-    parser.add_argument("timescale", type=str, help="timescale of the input data")
+    parser.add_argument("timescale", type=str, help="timescale of the input data (e.g. 05day-runmean)")
+    parser.add_argument("timestep", type=str, help="distance between timesteps (e.g. daily, monthly)")
     parser.add_argument("ofile", type=str, 
                         help="name of output file (include the date of one of the timesteps in YYYY-MM-DD format - it will be replaced in place)")
     
@@ -161,8 +173,8 @@ author:
                         help="Time period [default = entire]")
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[2, 9],
                         help="Wavenumber range [default = (2, 9)]. The upper and lower values are included (i.e. default selection includes 2 and 9).")
-    parser.add_argument("--ybounds", type=float, nargs=2, metavar=('LOWER', 'UPPER'), default=[-20, 20],
-                        help="y-axis bounds [default = (-20, 20)")
+    parser.add_argument("--ybounds", type=float, nargs=2, metavar=('LOWER', 'UPPER'), default=None,
+                        help="y-axis bounds (there are defaults set for each timescale)")
   
     args = parser.parse_args()            
 

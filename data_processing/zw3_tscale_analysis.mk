@@ -55,7 +55,7 @@ ${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_
 # Step 4: Plot the transform
 
 ${FIG_DIR}/hilbert/${TSCALE_LABEL_SHORT}/hilbert-va_Merra_250hPa_${TSCALE_LABEL_SHORT}_${GRID}-${LAT_LABEL}_${PLOT_END}.png : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL_LONG}_${GRID}.nc
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< va ${LAT} ${TSTEP} $@ --time ${PLOT_START} ${PLOT_END} none --ybounds -${YRANGE} ${YRANGE}
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< va ${LAT} ${TSCALE_LABEL_SHORT} ${TSTEP} $@ --time ${PLOT_START} ${PLOT_END} none
 
 
 
