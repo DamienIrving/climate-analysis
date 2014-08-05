@@ -5,8 +5,8 @@
 #
 # The overall aim of the visual part is to reproduce the images I showed in a previous meeting with Ian, for 3-years of 
 # individual days for a running mean of 1, 5, 30, 90, 180 days. Those images had three panels:
-#  - A map of the wave envelope with zonal streamfunction anomaly over the top (/visualisation/plot_envelope.py)
-#  - One map of the power spectrum and the other of each component of the Fourier Transform (/testing/plot_hilbert.py)
+#  - A map of the wave envelope with zonal streamfunction anomaly over the top (plot_envelope.py)
+#  - One map of the power spectrum and the other of each component of the Fourier Transform (plot_hilbert.py)
 #
 # To execute:
 #   make -n -B -f zw3_tscale_analysis.mk  (-n is a dry run) (-B is a force make)
@@ -19,7 +19,7 @@ include zw3_tscale_analysis_config.mk
 ## Phony target
 all : ${TARGET}
 
-### Wave envelope map ###
+### Wave envelope map (plot_envelope.py) ###
 
 ## Step 1a: Apply temporal averaging to the meridional wind data (for a limited time period)
 ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
@@ -50,6 +50,12 @@ ${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}_${
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< va ${TSCALE_LABEL} --contour $(word 2,$^) sf --time ${PLOT_START} ${PLOT_END} none --projection spstere --ofile $@
 	
 
-### Fourier transform visualisation ###
+### Fourier transform visualisation (plot_hilbert.py) ###
+
+# Step 4: Plot the transform
+
+${RWID_DIR}/figures/hilbert-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${LAT_LABEL}_${PLOT_END}.png : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< va ${LAT} ${TSTEP} $@ --time ${PLOT_START} ${PLOT_END} none --ybounds -${YRANGE} ${YRANGE}
+
 
 

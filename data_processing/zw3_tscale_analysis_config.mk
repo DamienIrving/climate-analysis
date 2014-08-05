@@ -19,12 +19,19 @@ PERIOD=seldate,2000-01-01,2004-12-31
 TSCALE_LABEL=30day-runmean-2000-2004
 
 # Envelope extraction
-WAVE_SEARCH=--filter 2 4 --outtype hilbert
-WAVE_LABEL=w24
+WAVE_SEARCH=--filter 2 9 --outtype hilbert
+WAVE_LABEL=w29
 
 # Plot envelope 
-PLOT_START=2002-04-16
-PLOT_END=2002-04-17
+PLOT_START=2002-06-01
+PLOT_END=2002-06-30
+
+# Plot fourier transform
+LAT=-50
+LAT_LABEL=50S
+TSTEP=daily
+YRANGE=25
 
 # Target
-TARGET=${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png
+#TARGET=${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png
+TARGET=${RWID_DIR}/figures/hilbert-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${LAT_LABEL}_${PLOT_END}.png
