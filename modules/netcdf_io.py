@@ -460,7 +460,7 @@ def get_cdms2_tbounds(date, timescale):
     a given timescale and single date extracted using getTime().asComponentTime()"""
 
     year, month, day = str(date).split(' ')[0].split('-')
-    if inargs.timescale == 'monthly':
+    if timescale == 'monthly':
         date_abbrev = year+'-'+month
     else:
         date_abbrev = year+'-'+month+'-'+day
@@ -746,7 +746,10 @@ def _subset_data(infile, var_id, **kwargs):
     for axis in ['latitude', 'longitude']:
         if axis in kwargs.keys():
             if type(kwargs[axis]) == int or type(kwargs[axis]) == float:
-	        axis_vals = infile.getAxis(axis[0:3])[:]
+	        try:
+                    axis_vals = infile.getAxis(axis)[:]
+                except TypeError:
+                    axis_vals = infile.getAxis(axis[0:3])[:]
                 nearest = find_nearest(axis_vals, kwargs[axis])
                 if kwargs[axis] != nearest:
                     print "Selected %s not available, used %s instead" %(axis, str(nearest))

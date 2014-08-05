@@ -14,8 +14,9 @@ write_dates       -- Write a list of dates
 
 """
 
-import os, sys
+import os, sys, pdb
 from datetime import datetime
+from dateutil import parser
 from collections import defaultdict
 import re
 
@@ -35,8 +36,6 @@ except ImportError:
 #  was under version control directly ##
 #repo_dir = os.path.abspath(os.path.dirname(__file__))
 #MODULE_HASH = Repo(repo_dir).head.commit.hexsha
-
-
 
 
 
@@ -75,12 +74,14 @@ def read_dates(infile):
 def set_outfile_date(outfile, new_date):
     """Take an outfile name and replace the existing date
     (in YYYY-MM-DD format) with new_date"""
+
+    new_dt = parser.parse(str(new_date))
     
     date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
     assert re.search(date_pattern, outfile), \
     """Output file must contain the date of the final timestep in the format YYYY-MM-DD"""
     
-    return re.sub(r'([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})', new_date, outfile)
+    return re.sub(r'([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})', new_dt.strftime("%Y-%m-%d"), outfile)
 
 
 def write_dates(outfile, date_list):

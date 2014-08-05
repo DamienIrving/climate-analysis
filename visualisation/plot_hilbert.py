@@ -59,15 +59,9 @@ def plot_hilbert(original_signal, filtered_signal,
         axes1.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], 
                    color='0.5', linestyle='--')
 
-	axes1.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], 
-			   color='red', linestyle='--', 
-			   label='w'+str(wmin)+'-'+str(wmax)+' signal')
-	axes1.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), 
-			   color='red', 
-			   label='w'+str(wmin)+'-'+str(wmax)+' envelope')
-	axes1.plot(xaxis, numpy.array(original_signal), 
-			   color='green', 
-			   label='original signal')
+    axes1.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], color='red', linestyle='--', label='w'+str(wmin)+'-'+str(wmax)+' signal')
+    axes1.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='red', label='w'+str(wmin)+'-'+str(wmax)+' envelope')
+    axes1.plot(xaxis, numpy.array(original_signal), color='green', label='original signal')
 
     axes1.set_ylim(ybounds)
     if title:
@@ -90,7 +84,7 @@ def plot_hilbert(original_signal, filtered_signal,
 def main(inargs):
     """Plot each timestep."""
     
-    indata = nio.InputData(inargs.env_file, inargs.env_var,
+    indata = nio.InputData(inargs.infile, inargs.variable,
                              **nio.dict_filter(vars(inargs), ['time', 'latitude']))
     xaxis = indata.data.getLongitude()[:]
     wmin, wmax = inargs.wavenumbers
@@ -165,8 +159,6 @@ author:
     
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
-    parser.add_argument("--ndates", type=int, default=1, 
-                        help="Number of dates (starting from start_date) to plot")    
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[2, 9],
                         help="Wavenumber range [default = (2, 9)]. The upper and lower values are included (i.e. default selection includes 2 and 9).")
     parser.add_argument("--ybounds", type=float, nargs=2, metavar=('LOWER', 'UPPER'), default=[-20, 20],
