@@ -22,17 +22,17 @@ all : ${TARGET}
 ### Wave envelope map (plot_envelope.py) ###
 
 ## Step 1a: Apply temporal averaging to the meridional wind data (for a limited time period)
-${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
+${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL-LONG}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
 	cdo ${TSCALE} -${PERIOD} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 1b: Regrid the meridional wind data
-${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc
+${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL_LONG}_${GRID}.nc : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL_LONG}_native.nc
 	cdo remapcon2,${GRID} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 1c: Extract the wave envelope
-${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc
+${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL_LONG}_${GRID}.nc : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL_LONG}_${GRID}.nc
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_fourier_transform.py $< va $@ ${WAVE_SEARCH}
 
 ## Step 2a: Calculate the streamfunction zonal anomaly
@@ -41,20 +41,20 @@ ${PDATA_DIR}/sf_Merra_250hPa_daily-zonal-anom_native.nc : ${PDATA_DIR}/sf_Merra_
 	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 2b: Apply temporal averaging to the zonal streamfunction data (for a limited time period)
-${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-zonal_anom_native.nc : ${PDATA_DIR}/sf_Merra_250hPa_daily-zonal-anom_native.nc
+${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL_LONG}-zonal_anom_native.nc : ${PDATA_DIR}/sf_Merra_250hPa_daily-zonal-anom_native.nc
 	cdo ${TSCALE} -${PERIOD} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 3: Plot the envelope
-${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-zonal_anom_native.nc
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< va ${TSCALE_LABEL} --contour $(word 2,$^) sf --time ${PLOT_START} ${PLOT_END} none --projection spstere --ofile $@
+${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL_SHORT}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL_LONG}_${GRID}.nc ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL_LONG}-zonal_anom_native.nc
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< va ${TSCALE_LABEL_SHORT} --contour $(word 2,$^) sf --time ${PLOT_START} ${PLOT_END} none --projection spstere --ofile $@
 	
 
 ### Fourier transform visualisation (plot_hilbert.py) ###
 
 # Step 4: Plot the transform
 
-${RWID_DIR}/figures/hilbert-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${LAT_LABEL}_${PLOT_END}.png : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc
+${FIG_DIR}/hilbert/${TSCALE_LABEL_SHORT}/hilbert-va_Merra_250hPa_${TSCALE_LABEL_SHORT}_${GRID}-${LAT_LABEL}_${PLOT_END}.png : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL-LONG}_${GRID}.nc
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< va ${LAT} ${TSTEP} $@ --time ${PLOT_START} ${PLOT_END} none --ybounds -${YRANGE} ${YRANGE}
 
 

@@ -122,7 +122,7 @@ def plot_settings(timescale, user_ticks):
     # Colourbar
     if user_ticks:
         ticks = user_ticks
-    elif inargs.timescale == 'daily':
+    elif timescale == 'daily':
         ticks = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24]
     else:
         ticks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
