@@ -81,6 +81,36 @@ def plot_hilbert(original_signal, filtered_signal,
     plt.clf()
 
 
+def set_ybounds(timescale, timestep, user_bounds):
+    """Define the y-axis bounds.
+    
+    If user_bounds is None (i.e. the user didn't supply the bounds),
+    then the decision is based on the timescale and timestep.
+    
+    timescale  -->   e.g. 30day-runmean
+    timestep   -->   e.g. daily, monthly
+
+    """
+
+    ybounds_tscale_dict={'01day-runmean': [-50, 50],
+                         '05day-runmean': [-40, 40],
+                         '30day-runmean': [-20, 20],
+                         '90day-runmean': [-10, 10]}
+    ybounds_tstep_dict = {'daily': ybounds_tscale_dict['01day-runmean'],
+                          'monthly': ybounds_tscale_dict['30day-runmean']}
+
+    if user_bounds:
+        ybounds = user_bounds
+    elif timescale in ybounds_tscale_dict.keys():
+        ybounds = ybounds_tscale_dict[timescale]
+    elif timestep in ybounds_tstep_dict.keys():
+        ybounds = ybounds_tstep_dict[timestep]
+    else:
+        ybounds = None
+
+    return ybounds
+
+
 def main(inargs):
     """Plot each timestep."""
     
@@ -97,16 +127,7 @@ def main(inargs):
         title = '%s %s%s' %(date_abbrev, str(int(abs(inargs.latitude))), hemisphere)       
 
         # y-axis bounds
-        ybounds_dict={'01day-runmean': [-50, 50],
-                      '05day-runmean': [-40, 40],
-                      '30day-runmean': [-20, 20],
-                      '90day-runmean': [-10, 10]}
-        if inargs.ybounds:
-            ybounds = inargs.ybounds
-        elif inargs.timescale in ybounds_dict.keys():
-            ybounds = ybounds_dict[inargs.timescale]
-        else:
-            ybounds = None
+        ybounds = set_ybounds(inargs.timescale, inargs.timestep, inargs.ybounds)
 	
         # Outfile
         outfile_name = gio.set_outfile_date(inargs.ofile, date)
@@ -146,8 +167,9 @@ if __name__ == '__main__':
 example:
     /usr/local/uvcdat/1.3.0/bin/cdat plot_hilbert.py 
     va_Merra_250hPa_30day-runmean_r360x181.nc va 
-    -50 30day-runmean daily 
+    -50 daily 
     hilbert-va_Merra_250hPa_30day-runmean_r360x181-50S_2002-06-30.png 
+    --timescale 30day-runmean
     --time 2002-06-01 2002-06-30 none
 
 author:
@@ -164,11 +186,12 @@ author:
     parser.add_argument("infile", type=str, help="Input file name, containing the meridional wind")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("latitude", type=float, help="Single latitude over which to extract the wave")
-    parser.add_argument("timescale", type=str, help="timescale of the input data (e.g. 05day-runmean)")
     parser.add_argument("timestep", type=str, help="distance between timesteps (e.g. daily, monthly)")
     parser.add_argument("ofile", type=str, 
                         help="name of output file (include the date of one of the timesteps in YYYY-MM-DD format - it will be replaced in place)")
     
+    parser.add_argument("--timescale", type=str, default=None, 
+                        help="timescale of the input data (e.g. 05day-runmean) - use this when timescale differs from timestep")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[2, 9],
