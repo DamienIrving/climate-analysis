@@ -115,7 +115,14 @@ def main(inargs):
     """Plot each timestep."""
     
     indata = nio.InputData(inargs.infile, inargs.variable,
-                             **nio.dict_filter(vars(inargs), ['time', 'latitude']))
+                           **nio.dict_filter(vars(inargs), ['time', 'latitude']))
+    
+    lat_target = (str(inargs.latitude[0]) + str(inargs.latitude[1])) / 2.0
+    lat_select = nio.find_nearest(indata.data.getLatitude()[:], lat_target)
+    data_mermean = cdutil.averager(indata.data, axis='y')
+    data_single_lat = indata.data(latitude=lat_select)
+    #### CONVERT TO THESE DATA NAMES AND ADD MERMEAN ENV TO PLOT ####
+    
     xaxis = indata.data.getLongitude()[:]
     wmin, wmax = inargs.wavenumbers
     for date in indata.data.getTime().asComponentTime():
@@ -166,9 +173,9 @@ if __name__ == '__main__':
 
 example:
     /usr/local/uvcdat/1.3.0/bin/cdat plot_hilbert.py 
-    va_Merra_250hPa_30day-runmean_r360x181.nc va 
-    -50 daily 
+    va_Merra_250hPa_30day-runmean_r360x181.nc va daily 
     hilbert-va_Merra_250hPa_30day-runmean_r360x181-50S_2002-06-30.png 
+    --latitude -70 -40
     --timescale 30day-runmean
     --time 2002-06-01 2002-06-30 none
 
@@ -185,11 +192,12 @@ author:
 
     parser.add_argument("infile", type=str, help="Input file name, containing the meridional wind")
     parser.add_argument("variable", type=str, help="Input file variable")
-    parser.add_argument("latitude", type=float, help="Single latitude over which to extract the wave")
     parser.add_argument("timestep", type=str, help="distance between timesteps (e.g. daily, monthly)")
     parser.add_argument("ofile", type=str, 
                         help="name of output file (include the date of one of the timesteps in YYYY-MM-DD format - it will be replaced in place)")
-    
+
+    parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
+                        help="Latitude range over which to extract waves [default = entire]")    
     parser.add_argument("--timescale", type=str, default=None, 
                         help="timescale of the input data (e.g. 05day-runmean) - use this when timescale differs from timestep")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
