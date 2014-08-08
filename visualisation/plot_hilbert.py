@@ -7,15 +7,14 @@ Description:  Produce a number of plots for testing and
 
 # Import general Python modules #
 
-import sys, os
+import sys, os, pdb
 import argparse
 import numpy
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
-import cdms2
+import cdms2, cdutil
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import pdb
 
 # Import my modules #
 
@@ -43,9 +42,11 @@ except ImportError:
 
 def plot_hilbert(original_signal, filtered_signal, 
                  amp_spectrum, sample_freq,
+                 env_mermax,
                  xaxis,
                  ybounds,  
                  wmin, wmax,
+                 lat_single_tag, lat_range_tag,
                  outfile, title=None):
     """Plot the Hilbert transform and key components of it"""
 
@@ -55,13 +56,27 @@ def plot_hilbert(original_signal, filtered_signal,
     axes2 = fig.add_axes([0.11, 0.11, 0.18, 0.115]) # inset axes
     
     # Outer plot
+
+    #original signal, single lat
+    tag = 'original signal, %s' %(lat_single_tag)
+    axes1.plot(xaxis, numpy.array(original_signal), color='green', label=tag)
+
+    #individual wavenumber components, for single lat
     for wavenum in range(1, 10):
         axes1.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], 
                    color='0.5', linestyle='--')
-
-    axes1.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], color='red', linestyle='--', label='w'+str(wmin)+'-'+str(wmax)+' signal')
-    axes1.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='red', label='w'+str(wmin)+'-'+str(wmax)+' envelope')
-    axes1.plot(xaxis, numpy.array(original_signal), color='green', label='original signal')
+    
+    #full reconstructed signal, single lat
+    tag = 'wave %s-%s signal, %s'  %(str(wmin), str(wmax), lat_single_tag)
+    axes1.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], color='orange', linestyle='--', label=tag)
+    
+    #full reconstructed envelope, single lat
+    tag = 'wave %s-%s envelope, %s'  %(str(wmin), str(wmax), lat_single_tag)
+    axes1.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='orange', label=tag)
+    
+    #meridional maximum reconstructed envelope, over full lat range
+    tag = 'mermax envelope, %s'  %(lat_range_tag)
+    axes1.plot(xaxis, numpy.array(env_mermax), color='red', label=tag)
 
     axes1.set_ylim(ybounds)
     if title:
@@ -111,27 +126,34 @@ def set_ybounds(timescale, timestep, user_bounds):
     return ybounds
 
 
+def get_hemisphere(lat):
+    """For a given latitude, return N or S"""
+
+    if lat < 0.0:
+        return 'S'
+    else:
+        return 'N' 
+
+
 def main(inargs):
     """Plot each timestep."""
     
     indata = nio.InputData(inargs.infile, inargs.variable,
                            **nio.dict_filter(vars(inargs), ['time', 'latitude']))
     
-    lat_target = (str(inargs.latitude[0]) + str(inargs.latitude[1])) / 2.0
-    lat_select = nio.find_nearest(indata.data.getLatitude()[:], lat_target)
-    data_mermean = cdutil.averager(indata.data, axis='y')
-    data_single_lat = indata.data(latitude=lat_select)
-    #### CONVERT TO THESE DATA NAMES AND ADD MERMEAN ENV TO PLOT ####
-    
+    lat_target = (inargs.latitude[0] + inargs.latitude[1]) / 2.0
+    lat_selection = nio.find_nearest(indata.data.getLatitude()[:], lat_target)
     xaxis = indata.data.getLongitude()[:]
     wmin, wmax = inargs.wavenumbers
     for date in indata.data.getTime().asComponentTime():
         date_bounds, date_abbrev = nio.get_cdms2_tbounds(date, inargs.timestep)
         data_selection = indata.data(time=(date_bounds[0], date_bounds[1]), squeeze=1)
+        data_selection_lat = data_selection(latitude=lat_selection, squeeze=1)        
         
         # Title (i.e. date and latitude info)
-        hemisphere = 'S' if inargs.latitude < 0.0 else 'N'
-        title = '%s %s%s' %(date_abbrev, str(int(abs(inargs.latitude))), hemisphere)       
+        lat_single_tag = '%s%s' %(str(abs(lat_selection)), get_hemisphere(lat_selection))       
+        lat_range_tag = '%s%s-%s%s' %(str(abs(inargs.latitude[0])), get_hemisphere(inargs.latitude[0]), 
+                                      str(abs(inargs.latitude[1])), get_hemisphere(inargs.latitude[1])) 
 
         # y-axis bounds
         ybounds = set_ybounds(inargs.timescale, inargs.timestep, inargs.ybounds)
@@ -139,10 +161,10 @@ def main(inargs):
         # Outfile
         outfile_name = gio.set_outfile_date(inargs.ofile, date)
 
-        # Hilbert transform
-        sig_fft, sample_freq = cft.fourier_transform(data_selection, xaxis)
+        # Fourier transform, single lat
+        sig_fft, sample_freq = cft.fourier_transform(data_selection_lat, xaxis)
 
-        # Individual Fourier components
+        # Individual Fourier components, single lat
         filtered_signal = {}
         for filt in [None, 'positive', 'negative']:
             for wave_min in range(1, 10):
@@ -155,14 +177,24 @@ def main(inargs):
         # Amplitude spectra
         amp_spectrum = cft.spectrum(sig_fft, output='amplitude')
         freqs = sample_freq[1:wave_max+1]
-    
+
+        # Meridional maximum envelope
+        lat_index = data_selection.getOrder().index('y')
+        lon_index = data_selection.getOrder().index('x')
+        exclusion = 'negative'
+        env = numpy.apply_along_axis(cft.filter_signal, lon_index, data_selection, xaxis, wmin, wmax, exclusion)
+        env = 2 * numpy.abs(env)
+        env_mermax = numpy.amax(env, axis=lat_index)
+      
         # Plot
-        plot_hilbert(data_selection, filtered_signal, 
+        plot_hilbert(data_selection_lat, filtered_signal, 
                      amp_spectrum, sample_freq, 
+                     env_mermax,
                      xaxis, 
                      ybounds,
                      wmin, wmax, 
-                     outfile_name, title=title)
+                     lat_single_tag, lat_range_tag,
+                     outfile_name, title=date_abbrev)
         metadata = [[indata.fname, indata.id, indata.global_atts['history']],]
         gio.write_metadata(outfile_name, file_info=metadata)    
 
