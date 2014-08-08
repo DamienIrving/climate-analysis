@@ -22,7 +22,7 @@ all : ${TARGET}
 ### Wave envelope map (plot_envelope.py) ###
 
 ## Step 1a: Apply temporal averaging to the meridional wind data (for a limited time period)
-${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL-LONG}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
+${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL_LONG}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
 	cdo ${TSCALE} -${PERIOD} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
