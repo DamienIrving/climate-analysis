@@ -16,10 +16,10 @@ ZONAL_ANOM_METHOD=bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
 DATASET=Merra
 GRID=r360x181
 TSTEP=daily
-TSCALE=runmean,30
+TSCALE=runmean,90
 PERIOD=seldate,2000-01-01,2004-12-31
-TSCALE_LABEL_LONG=30day-runmean-2000-2004
-TSCALE_LABEL_SHORT=30day-runmean
+TSCALE_LABEL_LONG=90day-runmean-2000-2004
+TSCALE_LABEL_SHORT=90day-runmean
 
 # Envelope extraction
 WAVE_SEARCH=--filter 2 9 --outtype hilbert
@@ -34,5 +34,5 @@ LAT_RANGE=-70 -40
 LAT_LABEL=55S
 
 # Target
-#TARGET=${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL_SHORT}_${GRID}_${PLOT_END}.png
-TARGET=${FIG_DIR}/hilbert/${TSCALE_LABEL_SHORT}/hilbert-va_Merra_250hPa_${TSCALE_LABEL_SHORT}_${GRID}-${LAT_LABEL}_${PLOT_END}.png
+TARGET=${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL_SHORT}_${GRID}_${PLOT_END}.png
+#TARGET=${FIG_DIR}/hilbert/${TSCALE_LABEL_SHORT}/hilbert-va_Merra_250hPa_${TSCALE_LABEL_SHORT}_${GRID}-${LAT_LABEL}_${PLOT_END}.png

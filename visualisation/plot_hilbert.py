@@ -110,7 +110,7 @@ def set_ybounds(timescale, timestep, user_bounds):
     ybounds_tscale_dict={'01day-runmean': [-50, 50],
                          '05day-runmean': [-40, 40],
                          '30day-runmean': [-20, 20],
-                         '90day-runmean': [-10, 10]}
+                         '90day-runmean': [-15, 15]}
     ybounds_tstep_dict = {'daily': ybounds_tscale_dict['01day-runmean'],
                           'monthly': ybounds_tscale_dict['30day-runmean']}
 

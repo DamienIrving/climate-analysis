@@ -127,10 +127,10 @@ def plot_settings(timescale, timestep, user_ticks):
         quiv_width = 0.002
 
     # Colourbar
-    ticks_tscale_dict = {'01day-runmean': numpy.arange(0, 26, 2),
-                         '05day-runmean': numpy.arange(0, 26, 2),
+    ticks_tscale_dict = {'01day-runmean': numpy.arange(0, 50, 4),
+                         '05day-runmean': numpy.arange(0, 30, 2),
                          '30day-runmean': numpy.arange(0, 19.5, 1.5),
-                         '90day-runmean': numpy.arange(0, 19.5, 1.5)}
+                         '90day-runmean': numpy.arange(0, 14, 1)}
     ticks_tstep_dict = {'daily': ticks_tscale_dict['01day-runmean'],
                         'monthly': ticks_tscale_dict['30day-runmean']}
 
