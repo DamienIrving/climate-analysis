@@ -10,7 +10,10 @@
 #
 # To execute:
 #   make -n -B -f zw3_tscale_analysis.mk  (-n is a dry run) (-B is a force make)
-
+#
+# Notes:
+#  - To thin data use "ncks -d time,0,,1 infile.nc ofile.nc" (this one starts at 0 index and picks every timestep)  
+#
 
 ### Define marcos ###
 
