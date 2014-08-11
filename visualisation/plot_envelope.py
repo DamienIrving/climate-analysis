@@ -127,12 +127,13 @@ def plot_settings(timescale, timestep, user_ticks):
         quiv_width = 0.002
 
     # Colourbar
-    ticks_tscale_dict = {'01day-runmean': numpy.arange(0, 50, 4),
-                         '05day-runmean': numpy.arange(0, 30, 2),
-                         '30day-runmean': numpy.arange(0, 19.5, 1.5),
-                         '90day-runmean': numpy.arange(0, 14, 1)}
-    ticks_tstep_dict = {'daily': ticks_tscale_dict['01day-runmean'],
-                        'monthly': ticks_tscale_dict['30day-runmean']}
+    ticks_tscale_dict = {'001day-runmean': numpy.arange(0, 50, 4),
+                         '005day-runmean': numpy.arange(0, 30, 2),
+                         '030day-runmean': numpy.arange(0, 19.5, 1.5),
+                         '090day-runmean': numpy.arange(0, 14, 1),
+			 '180day-runmean': numpy.arange(0, 12, 1)}
+    ticks_tstep_dict = {'daily': ticks_tscale_dict['001day-runmean'],
+                        'monthly': ticks_tscale_dict['030day-runmean']}
 
     if user_ticks:
         ticks = user_ticks
@@ -222,7 +223,7 @@ example (vortex.earthsci.unimelb.edu.au):
     /usr/local/uvcdat/1.3.0/bin/cdat plot_envelope.py 
     /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/env-w234-va_Merra_250hPa_30day-runmean_r360x181.nc 
     env daily
-    --timescale 30day-runmean 
+    --timescale 030day-runmean 
     --extent /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/zw3-stats_Merra_250hPa_30day-runmean_r360x181-mermax-lat70S40S_env-w234-va-ampmin7.csv -70 -40 
     --contour /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/sf_Merra_250hPa_30day-runmean-zonal-anom_native.nc sf 
     --time 2003-01-01 2003-12-31 none 
@@ -262,7 +263,7 @@ example (vortex.earthsci.unimelb.edu.au):
     parser.add_argument("timestep", type=str, help="distance between timesteps (e.g. daily, monthly)")
     
     parser.add_argument("--timescale", type=str, default=None, 
-                        help="timescale of the input data (e.g. 05day-runmean) - use this when timescale differs from timestep")
+                        help="timescale of the input data (e.g. 005day-runmean) - use this when timescale differs from timestep")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
     parser.add_argument("--region", type=str, choices=nio.regions.keys(), default='world-dateline',

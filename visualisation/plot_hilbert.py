@@ -107,12 +107,13 @@ def set_ybounds(timescale, timestep, user_bounds):
 
     """
 
-    ybounds_tscale_dict={'01day-runmean': [-50, 50],
-                         '05day-runmean': [-40, 40],
-                         '30day-runmean': [-20, 20],
-                         '90day-runmean': [-15, 15]}
-    ybounds_tstep_dict = {'daily': ybounds_tscale_dict['01day-runmean'],
-                          'monthly': ybounds_tscale_dict['30day-runmean']}
+    ybounds_tscale_dict={'001day-runmean': [-50, 50],
+                         '005day-runmean': [-40, 40],
+                         '030day-runmean': [-20, 20],
+                         '090day-runmean': [-15, 15],
+			 '180day-runmean': [-12, 12]}
+    ybounds_tstep_dict = {'daily': ybounds_tscale_dict['001day-runmean'],
+                          'monthly': ybounds_tscale_dict['030day-runmean']}
 
     if user_bounds:
         ybounds = user_bounds
@@ -208,7 +209,7 @@ example:
     va_Merra_250hPa_30day-runmean_r360x181.nc va daily 
     hilbert-va_Merra_250hPa_30day-runmean_r360x181-50S_2002-06-30.png 
     --latitude -70 -40
-    --timescale 30day-runmean
+    --timescale 030day-runmean
     --time 2002-06-01 2002-06-30 none
 
 author:
@@ -231,7 +232,7 @@ author:
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
                         help="Latitude range over which to extract waves [default = entire]")    
     parser.add_argument("--timescale", type=str, default=None, 
-                        help="timescale of the input data (e.g. 05day-runmean) - use this when timescale differs from timestep")
+                        help="timescale of the input data (e.g. 005day-runmean) - use this when timescale differs from timestep")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[2, 9],
