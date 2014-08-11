@@ -145,7 +145,7 @@ def main(inargs):
     lat_selection = nio.find_nearest(indata.data.getLatitude()[:], lat_target)
     xaxis = indata.data.getLongitude()[:]
     wmin, wmax = inargs.wavenumbers
-    for date in indata.data.getTime().asComponentTime():
+    for date in indata.data.getTime().asComponentTime()[::inargs.stride]:
         date_bounds, date_abbrev = nio.get_cdms2_tbounds(date, inargs.timestep)
         data_selection = indata.data(time=(date_bounds[0], date_bounds[1]), squeeze=1)
         data_selection_lat = data_selection(latitude=lat_selection, squeeze=1)        
@@ -238,6 +238,8 @@ author:
                         help="Wavenumber range [default = (2, 9)]. The upper and lower values are included (i.e. default selection includes 2 and 9).")
     parser.add_argument("--ybounds", type=float, nargs=2, metavar=('LOWER', 'UPPER'), default=None,
                         help="y-axis bounds (there are defaults set for each timescale)")
+    parser.add_argument("--stride", type=int, default=1,
+                        help="Stride for dates to plot (e.g. 3 would plot every third timestep)")
   
     args = parser.parse_args()            
 

@@ -50,7 +50,7 @@ ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL_LONG}-zonal_anom_native.nc : ${PDATA
 
 ## Step 3: Plot the envelope
 ${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL_SHORT}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL_LONG}_${GRID}.nc ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL_LONG}-zonal_anom_native.nc
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< va ${TSTEP} --contour $(word 2,$^) sf --timescale ${TSCALE_LABEL_SHORT} --time ${PLOT_START} ${PLOT_END} none --projection spstere --ofile $@
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< va ${TSTEP} --contour $(word 2,$^) sf --timescale ${TSCALE_LABEL_SHORT} --time ${PLOT_START} ${PLOT_END} none --projection spstere --stride ${STRIDE} --ofile $@
 	
 
 ### Fourier transform visualisation (plot_hilbert.py) ###
@@ -58,7 +58,7 @@ ${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_
 # Step 4: Plot the transform
 
 ${FIG_DIR}/hilbert/${TSCALE_LABEL_SHORT}/hilbert-va_Merra_250hPa_${TSCALE_LABEL_SHORT}_${GRID}-${LAT_LABEL}_${PLOT_END}.png : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL_LONG}_${GRID}.nc
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< va ${TSTEP} $@ --timescale ${TSCALE_LABEL_SHORT} --time ${PLOT_START} ${PLOT_END} none --latitude ${LAT_RANGE}
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< va ${TSTEP} $@ --timescale ${TSCALE_LABEL_SHORT} --time ${PLOT_START} ${PLOT_END} none --latitude ${LAT_RANGE} --stride ${STRIDE}
 
 
 

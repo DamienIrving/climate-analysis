@@ -24,14 +24,14 @@ TSCALE_LABEL_SHORT=90day-runmean
 # Envelope extraction
 WAVE_SEARCH=--filter 2 9 --outtype hilbert
 WAVE_LABEL=w29
-
-# Plot envelope 
-PLOT_START=2002-01-01
-PLOT_END=2002-12-31
-
-# Plot fourier transform
 LAT_RANGE=-70 -40
 LAT_LABEL=55S
+
+# Ploting 
+PLOT_START=2002-01-01
+PLOT_END=2003-12-31
+STRIDE=2
+
 
 # Target
 TARGET=${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL_SHORT}_${GRID}_${PLOT_END}.png

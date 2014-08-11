@@ -166,7 +166,7 @@ def main(inargs):
     keyval, quiv_scale, quiv_width, ticks = plot_settings(inargs.timescale, inargs.timestep, inargs.ticks)      
 
     # Plot each timestep
-    for date in indata_env.data.getTime().asComponentTime():
+    for date in indata_env.data.getTime().asComponentTime()[::inargs.stride]:
 
         date_bounds, date_abbrev = nio.get_cdms2_tbounds(date, inargs.timescale)
     
@@ -267,6 +267,8 @@ example (vortex.earthsci.unimelb.edu.au):
                         help="Time period [default = entire]")
     parser.add_argument("--region", type=str, choices=nio.regions.keys(), default='world-dateline',
                         help="name of region to plot [default: world-dateline]")
+    parser.add_argument("--stride", type=int, default=1,
+                        help="Stride for dates to plot (e.g. 3 would plot every third timestep)")
 
     parser.add_argument("--rotation", type=float, nargs=4, metavar=('NP_LAT', 'NP_LON', 'PM_LAT', 'PM_LON'), default=None,
                         help="Details of the rotation that has been applied to the envelope data") 
