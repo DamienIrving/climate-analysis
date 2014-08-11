@@ -18,8 +18,8 @@ GRID=r360x181
 TSTEP=daily
 TSCALE=runmean,90
 PERIOD=seldate,2000-01-01,2004-12-31
-TSCALE_LABEL_LONG=90day-runmean-2000-2004
-TSCALE_LABEL_SHORT=90day-runmean
+TSCALE_LABEL_LONG=090day-runmean-2000-2004
+TSCALE_LABEL_SHORT=090day-runmean
 
 # Envelope extraction
 WAVE_SEARCH=--filter 2 9 --outtype hilbert
