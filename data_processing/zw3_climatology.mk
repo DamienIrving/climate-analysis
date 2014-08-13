@@ -8,15 +8,13 @@
 #   running mean) doesn't do all the way back to the original files.
 
 
-### Define marcos ###
-
+## Define marcos ##
 include zw3_climatology_config.mk
-
-
-### Core zonal wave 3 climatology process ###
 
 ## Phony target
 all : ${TARGET}
+
+### Calculate the wave envelope ###
 
 ## Step 1: Apply temporal averaging to the meridional wind data
 ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
@@ -28,9 +26,21 @@ ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_Merra_
 	cdo remapcon2,${GRID} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-## Step 3: Extract the wave envelope
+## Step 3: Extract the wave envelope (for the entire globe)
 ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc
 	${ENV_METHOD} $< va $@ ${WAVE_SEARCH}
+
+## Step 4: Normalise the wave envelope (for the entire globe)
+${RWID_DIR}/nenv-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc
+    cdo -ydaydiv -ydaysub $< -ydayavg $< -ydaystd $< $@
+    
+
+### Generate the database of interesting results ###
+#    - Average meridional max nenv, nenv extent/coverage <= calc_wave_stats.py
+#    - Phase and amplitude of each Fourier component (for a selected latitude band or range)  <= calc_fft_stats.py (or just calc_fourier_transform.py itself)
+#    - Raphael ZW3 index <= calc_index.py
+
+
 
 ## Step 4: Calculate the hovmoller diagram
 ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc
@@ -40,6 +50,11 @@ ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METH
 ## Step 5: Calculate the wave statistics
 ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< env ${AMP_MIN} $@ 
+
+
+### Use the database to do interesting things ### 
+#    - Date lists for composites   <= parse_wave_stats.py 
+#    - Plots of key stats    <= parse_wave_stats.py
 
 ## Step 6: Generate list of dates for use in composite creation
 ${RWID_DIR}/zw3-dates_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt : ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
@@ -56,6 +71,10 @@ ${RWID_DIR}/figures/zw3-monthly-totals-histogram_Merra_250hPa_${TSCALE_LABEL}_${
 ## Step 6c: Plot the seasonal values line graph
 ${RWID_DIR}/figures/zw3-seasonal-values-line_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.png : ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
 	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --seasonal_values_line $@ --annual
+
+
+###   ###
+
 
 ## Step 7: Plot the envelope
 ${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv ${PDATA_DIR}/sf_Merra_250hPa_${TSCALE_LABEL}-zonal-anom_native.nc

@@ -10,22 +10,21 @@ PYTHON=/usr/bin/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
 VIS_SCRIPT_DIR=~/phd/visualisation
 ENV_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh   
-#${CDAT} ${DATA_SCRIPT_DIR}/calc_envelope.py
 ZONAL_ANOM_METHOD=${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
 
 # Dataset
 DATASET=Merra
 GRID=r360x181
 TSCALE=runmean,30
-TSCALE_LABEL=30day-runmean
+TSCALE_LABEL=030day-runmean
 
 # Envelope extraction
 MER_METHOD=mermax
 LAT_SEARCH_MIN=-70
 LAT_SEARCH_MAX=-40
 LAT_LABEL=lat70S40S
-WAVE_SEARCH=--filter 2 4 --outtype hilbert
-WAVE_LABEL=w234
+WAVE_SEARCH=--filter 2 9 --outtype hilbert
+WAVE_LABEL=w29
 
 # Extent statistics
 AMP_MIN=7
