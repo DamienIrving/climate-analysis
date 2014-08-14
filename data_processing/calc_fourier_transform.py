@@ -214,6 +214,9 @@ notes:
     Note that the Hilbert transform excludes the negative half 
     of the frequency spectrum and doubles the final amplitude. This does not
     give the same result as if you simply retain the negative half.
+references:
+    http://docs.scipy.org/doc/numpy/reference/routines.fft.html
+    http://gribblelab.org/scicomp/09_Signals_sampling_filtering.html
     
 """
 
