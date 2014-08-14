@@ -16,27 +16,32 @@ all : ${TARGET}
 
 ### Calculate the wave envelope ###
 
-## Step 1: Apply temporal averaging to the meridional wind data
+## Step 1: Apply temporal averaging to the meridional wind data ##
+
 ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
 	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-## Step 2: Regrid the meridional wind data
+## Step 2: Regrid the meridional wind data ##
+
 ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc
 	cdo remapcon2,${GRID} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-## Step 3: Extract the wave envelope (for the entire globe)
+## Step 3: Extract the wave envelope (for the entire globe) ##
+
 ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc
 	${ENV_METHOD} $< va $@ ${WAVE_SEARCH}
 
-## Step 4: Normalise the wave envelope (for the entire globe)
+## Step 4: Normalise the wave envelope (for the entire globe) ##
+
 ${RWID_DIR}/nenv-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc
 	cdo -ydaydiv -ydaysub $< -ydayavg $< -ydaystd $< $@
 	ncatted -O -a axis,time,c,c,T $@
 	ncrename -O -v env,nenv $@
     
-## Step 5: Calculate the hovmoller diagram
+## Step 5: Calculate the hovmoller diagram ##
+
 ${RWID_DIR}/nenv-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${RWID_DIR}/nenv-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}.nc
 	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
 	ncatted -O -a axis,time,c,c,T $@
@@ -48,16 +53,27 @@ ${RWID_DIR}/nenv-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_MET
 #    - Raphael ZW3 index <= calc_index.py
 
 
-## Step 1: Calculate the wave statistics (average nenv, extent/coverage of nenv)
+## Step 1: Calculate the wave statistics (average nenv, extent/coverage of nenv) ##
+
 ${RWID_DIR}/zw3-stats_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv : ${RWID_DIR}/nenv-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< nenv ${AMP_MIN} $@ 
 
-## Step 3: Calculate the ZW3 index of Raphael (2004)
-????
 
 
-${RWID_DIR}/zw3-zg_Merra_250hPa_${TSCALE_LABEL}_native.nc: ${PDATA_DIR}/va_Merra_250hPa_${TSCALE_LABEL}_native.nc
+
+## Step 3: Calculate the ZW3 index of Raphael (2004) ## 
+
+${PDATA_DIR}/zg_Merra_500hPa_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/zg_Merra_500hPa_daily_native.nc
+	cdo ${TSCALE} $< $@
+	ncatted -O -a axis,time,c,c,T $@
+
+${PDATA_DIR}/zg_Merra_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc : ${PDATA_DIR}/zg_Merra_500hPa_${TSCALE_LABEL}_native.nc       
+	${ZONAL_ANOM_METHOD} $< zg $@
+	ncatted -O -a axis,time,c,c,T $@
+
+${RWID_DIR}/zw3-zg_Merra_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc : ${PDATA_DIR}/zg_Merra_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< va $@
+
 
 ### Use the database to do interesting things ### 
 #    - Date lists for composites   <= parse_wave_stats.py 
