@@ -6,12 +6,12 @@ Author:       Damien Irving, d.irving@student.unimelb.edu.au
 
 # Import general Python modules
 
-import sys, os
+import sys, os, pdb
 import argparse
 import numpy
 from scipy import fftpack
+from scipy import signal
 from copy import deepcopy
-import pdb
 
 # Import my modules #
 
@@ -146,6 +146,14 @@ def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq
     return result
 
 
+def get_coefficients(data, min_freq, max_freq):
+    """Return the magnitude and phase coefficient for each frequency [min_freq, max_freq], 
+    where the phase is represented by the location of the first local maxima along the longitude axis"""
+
+    signal.argrelextrema(x, numpy.greater) # this takes an axis option
+
+ 
+
 def main(inargs):
     """Run the program."""
     
@@ -241,8 +249,8 @@ references:
     # Output options
     parser.add_argument("--filter", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=None,
                         help="Range of frequecies to retain in filtering [e.g. 3,3 would retain the wave that repeats 3 times over the domain")
-    parser.add_argument("--outtype", type=str, default='filter', choices=('filter', 'hilbert'),
-                        help="The output can be a filtered signal or a hilbert transform")
+    parser.add_argument("--outtype", type=str, default='filter', choices=('filter', 'hilbert', 'coefficients'),
+                        help="The output can be a filtered signal, hilbert transform or the magnitude and phase coefficients for each frequency")
 
   
     args = parser.parse_args()            
