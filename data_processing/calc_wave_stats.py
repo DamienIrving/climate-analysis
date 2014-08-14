@@ -58,29 +58,13 @@ def extent_stats(data_double, lons_double, threshold, lon_spacing):
     return start_lon, end_lon, extent
 
 
-def amp_stats(data_double, lons_double, start_lon, end_lon):
-    """Return key statistics regarding the amplitude"""
+def amp_stats(data):
+    """Return key statistics regarding the amplitude of the wave 
+    envelope across the entire zonal domain"""
     
-    if start_lon == end_lon:
-        amp_mean, amp_max, amp_max_lon = 0.0, 0.0, 0.0
-    else:
-	start_index = numpy.where(lons_double == start_lon)[0][0]
-	end_indexes = numpy.where(lons_double == end_lon)[0]
-	assert len(end_indexes) == 2, \
-	'There should be two matches in lons_double'
-	if end_indexes[0] > start_index:
-	    end_index = end_indexes[0]
-	else:
-	    end_index = end_indexes[1]
-
-	data_selection = data_double[start_index: end_index + 1]
-
-	amp_mean = numpy.mean(data_selection)
-	amp_max = numpy.max(data_selection)
-	amp_max_index = numpy.where(data_double == amp_max)[0][0]
-	amp_max_lon = lons_double[amp_max_index]
+    amp_mean = numpy.mean(data)
     
-    return amp_mean, amp_max, amp_max_lon
+    return amp_mean
 
 	
 def main(inargs):
@@ -113,14 +97,14 @@ def main(inargs):
     with open(inargs.outfile, 'wb') as ofile:
         output = csv.writer(ofile, delimiter=',')
 	output.writerow(['# '+time_stamp])
-        output.writerow(['date', 'start-lon', 'end-lon', 'extent', 'amp-mean', 'amp-max', 'amp-max-lon'])
+        output.writerow(['date', 'amp-mean', 'start-lon', 'end-lon', 'extent'])
         for i in range(0, ntime):
+            amp_mean = amp_stats(indata.data[i, :])
             start_lon, end_lon, extent = extent_stats(data_double[i, :], lons_double, inargs.threshold, lon_spacing)
-            amp_mean, amp_max, amp_max_lon = amp_stats(data_double[i, :], lons_double, start_lon, end_lon)
-            
+              
 	    # Write result to file
-	    date = str(times[i]).split(' ')[0]
-            output.writerow([date, start_lon, end_lon, extent, amp_mean, amp_max, amp_max_lon])
+	    date = gio.standard_datetime(times[i])
+            output.writerow([date, amp_mean, start_lon, end_lon, extent])
  
 
 if __name__ == '__main__':

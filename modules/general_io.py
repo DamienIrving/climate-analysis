@@ -10,6 +10,7 @@ Included functions:
 find_duplicates   -- Find duplicates in a list
 read_dates        -- Read in a list of dates
 set_outfile_date  -- Take an outfile name and replace existing date with new one
+standard_datetime -- Convert any arbitrary date/time to standard format: YYYY-MM-DD
 write_dates       -- Write a list of dates
 
 """
@@ -93,6 +94,15 @@ def write_dates(outfile, date_list):
     for date in date_list:
         fout.write(date+'\n')
     fout.close()
+
+
+def standard_datetime(dt):
+    """Take any arbitrarty date/time and convert to the standard
+    I use for all outputs: YYYY-MM-DD"""
+
+    new_dt = parser.parse(str(dt))
+
+    return new_dt.strftime("%Y-%m-%d")
 
 
 def write_metadata(ofile, file_info=None, extra_notes=None):
