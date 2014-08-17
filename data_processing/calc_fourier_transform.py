@@ -112,12 +112,12 @@ def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq
     Input arguments:
         max_freq, min_freq   ->  Can filter to only include a certain
                                  frequency range. 
-				 (Note that this filtering keeps both the positive
-				 and negative half of the spectrum)
-	exclude              ->  Can exclude either the 'positive' or 
-	                         'negative' half of the Fourier spectrum.
-				 (A Hilbert transform, for example, excludes the 
-				 negative part of the spectrum)
+                                 (Note that this filtering keeps both the positive
+                                 and negative half of the spectrum)
+        exclude              ->  Can exclude either the 'positive' or 
+                                 'negative' half of the Fourier spectrum.
+                                 (A Hilbert transform, for example, excludes the 
+                                 negative part of the spectrum)
                                  
     """
     
@@ -125,7 +125,7 @@ def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq
     
     coefs = deepcopy(coefficients)  # Deep copy to prevent side effects
                                     # (shallow copy not sufficient for complex
-				    # things like numpy arrays)
+                    # things like numpy arrays)
     
     if exclude == 'positive':
         coefs[sample_freq > 0] = 0
@@ -152,7 +152,22 @@ def get_coefficients(data, min_freq, max_freq):
 
     signal.argrelextrema(x, numpy.greater) # this takes an axis option
 
- 
+    #method = 'Fourier transform filtered'
+    #exclusion = None
+
+
+def hilbert_transform(min_freq, max_freq):
+    """Perform the Hilbert transform"""
+    
+    exclusion = 'negative'
+    outdata = numpy.apply_along_axis(filter_signal, -1, 
+                                     data_masked, 
+                                     indata.data.getLongitude()[:], 
+                                     min_freq, max_freq, 
+                                     exclusion)
+    outdata = 2 * numpy.abs(outdata)
+    #method = 'Hilbert transformed'
+
 
 def main(inargs):
     """Run the program."""
@@ -163,32 +178,25 @@ def main(inargs):
                            **nio.dict_filter(vars(inargs), ['time', 'latitude']))
     
     assert indata.data.getOrder()[-1] == 'x', \
-    'This is setup to perform the fourier transform along the longitude axis'
+    'This script is setup to perform the fourier transform along the longitude axis'
     
     # Apply longitude filter (i.e. set unwanted longitudes to zero) #
     
     data_masked = apply_lon_mask(indata.data, inargs.longitude) if inargs.longitude else indata.data
     
-    # Perform the filtering #
-    
-    if inargs.outtype == 'filter':
-        method = 'Fourier transform filtered'
-	exclusion = None
-    elif inargs.outtype == 'hilbert':
-        method = 'Hilbert transformed'
-	exclusion = 'negative'
+    # Perform task
     
     if inargs.filter:
         min_freq, max_freq = inargs.filter
-	filter_text = '%s with frequency range: %s to %s' %(method, min_freq, max_freq)
+        filter_text = '%s with frequency range: %s to %s' %(method, min_freq, max_freq)
     else:
         min_freq = max_freq = None
-	filter_text = '%s with all frequencies retained' %(method)
+        filter_text = '%s with all frequencies retained' %(method)
     
-    outdata = numpy.apply_along_axis(filter_signal, -1, data_masked, indata.data.getLongitude()[:], min_freq, max_freq, exclusion)
-    if inargs.outtype == 'hilbert':
-        outdata = 2 * numpy.abs(outdata)
-    
+    if inargs.outtype == 'coefficients':
+        get_coefficients()
+    elif inargs.outtype == 'hilbert':
+        hilbert_transform()
     
     # Write output file #
 
@@ -237,7 +245,7 @@ references:
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
-			
+            
     # Input data options
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
                         help="Latitude range over which to perform Fourier Transform [default = entire]")
@@ -249,8 +257,8 @@ references:
     # Output options
     parser.add_argument("--filter", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=None,
                         help="Range of frequecies to retain in filtering [e.g. 3,3 would retain the wave that repeats 3 times over the domain")
-    parser.add_argument("--outtype", type=str, default='filter', choices=('filter', 'hilbert', 'coefficients'),
-                        help="The output can be a filtered signal, hilbert transform or the magnitude and phase coefficients for each frequency")
+    parser.add_argument("--outtype", type=str, default='hilbert', choices=('hilbert', 'coefficients'),
+                        help="The output can be a hilbert transform or the magnitude and phase coefficients for each frequency")
 
   
     args = parser.parse_args()            
