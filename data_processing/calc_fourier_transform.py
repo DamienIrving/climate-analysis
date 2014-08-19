@@ -186,7 +186,7 @@ def get_coefficient_atts(orig_data, min_freq, max_freq):
 
     """
     
-    method = 'Fourier transform filtered'
+    method = 'filtered'
     outvar_atts_list = []
     outvar_axes_list = []
     for freq in range(min_freq, max_freq + 1):
@@ -274,6 +274,7 @@ def main(inargs):
     data_masked = apply_lon_mask(indata.data, inargs.longitude) if inargs.longitude else indata.data
     
     # Perform task #
+    min_freq, max_freq = inargs.filter
     if inargs.outtype == 'coefficients':
         outdata_list = get_coefficients(data_masked, indata.data.getLongitude()[:], min_freq, max_freq)
         outvar_atts_list, outvar_axes_list = get_coefficient_atts(indata.data, min_freq, max_freq)
