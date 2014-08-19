@@ -146,34 +146,124 @@ def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq
     return result
 
 
-def get_coefficients(data, min_freq, max_freq):
-    """Return the magnitude and phase coefficient for each frequency [min_freq, max_freq], 
-    where the phase is represented by the location of the first local maxima along the longitude axis"""
-
-    signal.argrelextrema(x, numpy.greater) # this takes an axis option
-
-    #method = 'Fourier transform filtered'
-    #exclusion = None
+def first_localmax_index(data):
+    localmax_indexes = signal.argrelextrema(data, numpy.greater)
+    
+    return localmax_indexes[0][0]
 
 
-def hilbert_transform(min_freq, max_freq):
-    """Perform the Hilbert transform"""
+def get_coefficients(data, lon_axis, min_freq, max_freq):
+    """Return the magnitude and phase coefficient for each frequency in the range [min_freq, max_freq].
+
+    Output:
+      - A list: [mag_min_freq, phase_min_freq, ... mag_max_freq, phase_max_freq]
+      - The phase is represented by the location of the first local maxima along the longitude axis
+    
+    """
+
+    outdata_list = [] 
+    exclusion = None
+    for freq in range(min_freq, max_freq + 1):
+        filtered_signal = numpy.apply_along_axis(filter_signal, -1, 
+                                                 data, lon_axis, 
+                                                 min_freq, max_freq, 
+                                                 exclusion)
+        localmax_vals = numpy.max(filtered_signal, axis=-1)
+        localmax_indexes = numpy.apply_along_axis(first_localmax_index, -1, filtered_signal)
+        localmax_lons = map(lambda x: lon_axis[x], localmax_indexes)
+        
+        outdata_list.append(localmax_vals)
+        outdata_list.append(localmax_lons)
+
+    return outdata_list
+
+
+def get_coefficient_atts(orig_data, min_freq, max_freq):
+    """Get the attributes for the coefficient output file
+
+    Output:
+      - A list: [mag-atts_min-freq, phase-atts_min-freq, ... mag-atts_max-freq, mag-phase_max-freq] 
+
+    """
+    
+    method = 'Fourier transform filtered'
+    outvar_atts_list = []
+    outvar_axes_list = []
+    for freq in range(min_freq, max_freq + 1):
+        filter_text = get_filter_text(method, freq, freq)
+        mag_atts = {'id': 'wave'+str(freq)+'_amp',
+                    'standard_name': 'Amplitude of '+method+' '+orig_data.long_name,
+                    'long_name': 'Amplitude of '+method+' '+orig_data.long_name,
+                    'units': orig_data.units,
+                    'history': filter_text}
+        outvar_atts_list.append(mag_atts)
+        outvar_axes_list.append(orig_data.getAxisList()[:-1])
+        
+        phase_atts = {'id': 'wave'+str(freq)+'_phase',
+                      'standard_name': 'First local maxima of '+method+' '+orig_data.long_name,
+                      'long_name': 'First local maxima of '+method+' '+orig_data.long_name,
+                      'units': orig_data.getLongitude().units,
+                      'history': filter_text}
+        outvar_atts_list.append(phase_atts)    
+        outvar_axes_list.append(orig_data.getAxisList()[:-1])
+
+    return outvar_atts_list, outvar_axes_list
+
+
+def hilbert_transform(data, lon_axis, min_freq, max_freq, out_type=None):
+    """Perform the Hilbert transform.
+
+    There is the option of placing the output array in a list of length 1
+    (this is useful in some cases)
+
+    """
     
     exclusion = 'negative'
     outdata = numpy.apply_along_axis(filter_signal, -1, 
-                                     data_masked, 
-                                     indata.data.getLongitude()[:], 
+                                     data, lon_axis, 
                                      min_freq, max_freq, 
                                      exclusion)
     outdata = 2 * numpy.abs(outdata)
-    #method = 'Hilbert transformed'
+
+    if out_type == list:
+        return [outdata,]
+    else:
+        return outdata
+
+
+def get_hilbert_atts(orig_data, min_freq, max_freq):
+    """Get the attributes for the output Hilbert transform file"""
+   
+    method = 'Hilbert transformed'
+    filter_text = get_filter_text(method, min_freq, max_freq)
+    var_atts = {'id': orig_data.id,
+                'standard_name': method+' '+orig_data.long_name,
+                'long_name': method+' '+orig_data.long_name,
+                'units': orig_data.units,
+                'history': filter_text}
+
+    outvar_atts_list = [var_atts,]
+    outvar_axes_list = [orig_data.getAxisList(),]
+
+    return outvar_atts_list, outvar_axes_list
+
+
+def get_filter_text(method, min_freq, max_freq):
+    """Get the history attribute text according to the analysis
+    method and frequency range"""
+
+    if min_freq and max_freq:
+        filter_text = '%s with frequency range: %s to %s' %(method, min_freq, max_freq)
+    else:
+        filter_text = '%s with all frequencies retained' %(method)
+
+    return filter_text
 
 
 def main(inargs):
     """Run the program."""
     
     # Read input data #
-    
     indata = nio.InputData(inargs.infile, inargs.variable, 
                            **nio.dict_filter(vars(inargs), ['time', 'latitude']))
     
@@ -181,35 +271,17 @@ def main(inargs):
     'This script is setup to perform the fourier transform along the longitude axis'
     
     # Apply longitude filter (i.e. set unwanted longitudes to zero) #
-    
     data_masked = apply_lon_mask(indata.data, inargs.longitude) if inargs.longitude else indata.data
     
-    # Perform task
-    
-    if inargs.filter:
-        min_freq, max_freq = inargs.filter
-        filter_text = '%s with frequency range: %s to %s' %(method, min_freq, max_freq)
-    else:
-        min_freq = max_freq = None
-        filter_text = '%s with all frequencies retained' %(method)
-    
+    # Perform task #
     if inargs.outtype == 'coefficients':
-        get_coefficients()
+        outdata_list = get_coefficients(data_masked, indata.data.getLongitude()[:], min_freq, max_freq)
+        outvar_atts_list, outvar_axes_list = get_coefficient_atts(indata.data, min_freq, max_freq)
     elif inargs.outtype == 'hilbert':
-        hilbert_transform()
-    
+        outdata_list = hilbert_transform(data_masked, indata.data.getLongitude()[:], min_freq, max_freq, out_type=list)
+        outvar_atts_list, outvar_axes_list = get_hilbert_atts(indata.data, min_freq, max_freq)
+
     # Write output file #
-
-    var_atts = {'id': indata.data.id,
-                'standard_name': method+' '+indata.data.long_name,
-                'long_name': method+' '+indata.data.long_name,
-                'units': indata.data.units,
-                'history': filter_text}
-
-    outdata_list = [outdata,]
-    outvar_atts_list = [var_atts,]
-    outvar_axes_list = [indata.data.getAxisList(),]
-
     nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
                      indata.global_atts, 
                      outdata_list,
