@@ -29,8 +29,7 @@ outvar=$4
 
 cdo sellonlatbox,0,359.9,-90,90  -divc,9.80665 -daymean ${infile} ${outfile}   # Divude by standard gravity to go from geopotential to geopotential height
 ncrename -O -v ${invar},${outvar} ${outfile}
-ncatted -O -a units,${outvar},c,c,"m" ${outfile}
-ncatted -O -a standard_name,${outvar},c,c,"geopotential height" ${outfile}
-ncatted -O -a long_name,${outvar},c,c,"geopotential height at 500hPa" ${outfile}
+ncatted -O -a units,${outvar},m,c,"m" ${outfile}
+ncatted -O -a standard_name,${outvar},m,c,"geopotential height" ${outfile}
+ncatted -O -a long_name,${outvar},m,c,"geopotential height at 500hPa" ${outfile}
 ncatted -O -a axis,time,c,c,T ${outfile}
-
