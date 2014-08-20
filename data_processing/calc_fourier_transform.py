@@ -147,8 +147,8 @@ def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq
 
 
 def first_localmax_index(data):
-    localmax_indexes = signal.argrelextrema(data, numpy.greater)
-    
+    localmax_indexes = signal.argrelextrema(data, numpy.greater, mode='wrap')
+
     return localmax_indexes[0][0]
 
 
@@ -166,7 +166,7 @@ def get_coefficients(data, lon_axis, min_freq, max_freq):
     for freq in range(min_freq, max_freq + 1):
         filtered_signal = numpy.apply_along_axis(filter_signal, -1, 
                                                  data, lon_axis, 
-                                                 min_freq, max_freq, 
+                                                 freq, freq, 
                                                  exclusion)
         localmax_vals = numpy.max(filtered_signal, axis=-1)
         localmax_indexes = numpy.apply_along_axis(first_localmax_index, -1, filtered_signal)
