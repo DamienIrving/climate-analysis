@@ -12,13 +12,13 @@ function usage {
     echo "   wavestart:  Beginning of wavenumber range"
     echo "   waveend:    End of wavenumber range"
     echo "   typeopt:    Type --outtype so compatable with makefile"
-    echo "   type:       Type of analysis [filter or hilbert]"
+    echo "   type:       Type of analysis [coefficients or hilbert]"
     echo "   lonopt:     Type --longitude so compatable with makefile"
     echo "   lonstart:   Start longitude search"
-    echo "   lonend:   Start longitude for new grid"
+    echo "   lonend:     End longitude for new grid"
     echo "   (the longitude selection is optional)"
-    echo "   e.g. bash $0 vrot_Merra_250hPa_daily-anom-wrt-all_y181x360-np20N260E.nc vrot env-w567-vrot_Merra_250hPa_daily-anom-wrt-all_y181x360-np20N260E.nc --filter 5 7 --type hilbert --longitude 225 335 "
-    echo "   e.g. bash $0 va_Merra_250hPa_daily-anom-wrt-all_y181x360.nc va env-w234-va_Merra_250hPa_daily-anom-wrt-all_y181x360.nc --filter 2 4 --type hilbert"
+    echo "   e.g. bash $0 vrot_Merra_250hPa_daily-anom-wrt-all_y181x360-np20N260E.nc vrot env-w567-vrot_Merra_250hPa_daily-anom-wrt-all_y181x360-np20N260E.nc --filter 5 7 --outtype hilbert --longitude 225 335 "
+    echo "   e.g. bash $0 va_Merra_250hPa_daily-anom-wrt-all_y181x360.nc va env-w234-va_Merra_250hPa_daily-anom-wrt-all_y181x360.nc --filter 2 4 --outtype hilbert"
     exit 1
 }
 
