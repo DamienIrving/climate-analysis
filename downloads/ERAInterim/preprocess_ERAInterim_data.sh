@@ -27,9 +27,17 @@ invar=$2
 outfile=$3
 outvar=$4
 
-cdo sellonlatbox,0,359.9,-90,90  -divc,9.80665 -daymean ${infile} ${outfile}   # Divude by standard gravity to go from geopotential to geopotential height
+if [[ "${outvar}" = "zg" ]] ; then
+    cdo invertlat -sellonlatbox,0,359.9,-90,90  -divc,9.80665 -daymean ${infile} ${outfile}   # Divude by standard gravity to go from geopotential to geopotential height
+else
+    cdo invertlat -sellonlatbox,0,359.9,-90,90 -daymean ${infile} ${outfile} 
+fi
+
 ncrename -O -v ${invar},${outvar} ${outfile}
-ncatted -O -a units,${outvar},m,c,"m" ${outfile}
-ncatted -O -a standard_name,${outvar},m,c,"geopotential height" ${outfile}
-ncatted -O -a long_name,${outvar},m,c,"geopotential height at 500hPa" ${outfile}
 ncatted -O -a axis,time,c,c,T ${outfile}
+
+if [[ "${outvar}" = "zg" ]] ; then
+    ncatted -O -a units,${outvar},m,c,"m" ${outfile}
+    ncatted -O -a standard_name,${outvar},m,c,"geopotential height" ${outfile}
+    ncatted -O -a long_name,${outvar},m,c,"geopotential height at 500hPa" ${outfile}
+fi
