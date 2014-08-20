@@ -8,7 +8,7 @@ Description:  Calcuates statistics for wave envelope data
 
 # Import general Python modules #
 
-import sys, os
+import sys, os, pdb
 import argparse
 import numpy
 import csv
@@ -35,7 +35,12 @@ except ImportError:
 # Define functions #
     
 def extent_stats(data_double, lons_double, threshold, lon_spacing):
-    """Return key statistics regarding the extent"""
+    """Return key statistics regarding the extent
+
+    NOTE: An inprovement on the extent statistic might be a simple count 
+    of the number of grid cells exceeding the threshold value
+
+    """
     
     lons_filtered = lons_double[data_double > threshold]
     if len(lons_filtered) == 0:
@@ -66,34 +71,58 @@ def amp_stats(data):
     
     return amp_mean
 
-	
+
+def get_lons(data):
+    """Check that the longitude axis has uniform spacing, then return that axis."""
+
+    lons = data.getLongitude()[:]
+
+    lon_spacing = numpy.unique(numpy.diff(lons))
+    assert len(lon_spacing) == 1, \
+    'Must be a uniformly spaced longitude axis' 
+
+    return lons
+
+
+def calc_threshold(data, threshold_str):
+    """Provide a default threshold for use in determining the extent of the waveform"""
+
+    if 'pct' in threshold_str:
+        pct = float(re.sub('pct', '', threshold_str))
+        threshold_float = numpy.percentile(data, pct)
+    else:
+        threshold_float = float(threshold_str)    
+
+    return threshold_float
+
+
 def main(inargs):
     """Run the program."""
 
     # Read data and check inputs #
 
-    indata = nio.InputData(inargs.infile, inargs.variable, 
+    indata = nio.InputData(inargs.infile, inargs.var, 
                            **nio.dict_filter(vars(inargs), ['time',]))
+			       
+    assert indata_env.data.getOrder() == 'tx', \
+    'Input data must be time, longitude'
     
-    assert indata.data.getOrder() == 'tx', \
-    'Data must be time, longitude'
-    
-    times = indata.data.getTime().asComponentTime()
-    lons = indata.data.getLongitude()[:]
-    lon_spacing = numpy.unique(numpy.diff(lons))
-    
-    assert len(lon_spacing) == 1, \
-    'Must be a uniformly spaced longitude axis' 
+    times = indata.getTime().asComponentTime()
+    lons = get_lons(indata.data)
     
     # Duplicate input data to cater for extents that straddle the Greenwich meridian #
     
     data_double = numpy.append(indata.data, indata.data, axis=1)
     lons_double = numpy.append(lons, lons)
     
+    # Calculate threshold if one is not given
+
+    threshold = calc_threshold(indata.data, inargs.threshold)
+
     # Loop through every timestep, writing the statistics to file # 
     
     time_stamp = gio.get_timestamp()
-    ntime = indata.data.shape[0] 
+    ntime = len(times) 
     with open(inargs.outfile, 'wb') as ofile:
         output = csv.writer(ofile, delimiter=',')
 	output.writerow(['# '+time_stamp])
@@ -112,9 +141,8 @@ if __name__ == '__main__':
     extra_info =""" 
 example (vortex.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.3.0/bin/cdat calc_wave_stats.py 
-  /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/env-w234-va_Merra_250hPa_30day-runmean_r360x181-hov-lat70S40S.nc 
-  env 7 
-  /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/zw3-stats_Merra_250hPa_30day-runmean_r360x181-hov-lat70S40S_env-w234-va-threshold7.csv
+  env-w234-va_Merra_250hPa_30day-runmean_r360x181-hov-lat70S40S.nc env 
+  zw3-stats_Merra_250hPa_30day-runmean_r360x181-hov-lat70S40S_env-w234-va-threshold7.csv
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -127,13 +155,14 @@ author:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infile", type=str, help="Input file name")
-    parser.add_argument("variable", type=str, help="Input file variable")
-    parser.add_argument("threshold", type=float, help="Threshold for inclusion as a wave")
+    parser.add_argument("infile", type=str, help="Input wave envelope file")
+    parser.add_argument("var", type=str, help="Input wave envelope variable")
     parser.add_argument("outfile", type=str, help="Output file name")
 
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
+    parser.add_argument("--threshold", type=str, default='75pct',
+                        help="Threshold used in extent calculation. Enter a raw number or a percentile [default = 75pct]")
     
     args = parser.parse_args()            
 

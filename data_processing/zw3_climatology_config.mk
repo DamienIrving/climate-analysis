@@ -9,8 +9,8 @@ CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/bin/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
 VIS_SCRIPT_DIR=~/phd/visualisation
-FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.py
-#FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh   
+FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh
+#FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.py   
 ZONAL_ANOM_METHOD=${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
 
 # Dataset
@@ -33,7 +33,7 @@ COE_SEARCH=--filter 1 9 --outtype coefficients
 COE_WAVE_LABEL=w19
 
 # Extent statistics
-AMP_MIN=7
+THRESH=75pct
 EXTENT_MIN=300
 EXTENT_MAX=360
 

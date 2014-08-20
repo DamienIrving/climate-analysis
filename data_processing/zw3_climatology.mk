@@ -57,16 +57,16 @@ ${RWID_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID
 
 ## Step 1: Calculate the wave statistics (average env & nenv, extent/coverage of nenv) ##
 
-${RWID_DIR}/zw3-stats_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${ENV_WAVE_LABEL}-va-ampmin${AMP_MIN}.csv : ${RWID_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< nenv ${AMP_MIN} $@ 
+${RWID_DIR}/env-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${RWID_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< env $@ --threshold ${THRESH}
 
-### Another spot for env??
+${RWID_DIR}/nenv-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${RWID_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< nenv $@ --threshold ${THRESH}
 
 ## Step 2: Calculate the phase and amplitude of each Fourier component ##
 
 ${RWID_DIR}/fourier-${COE_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	${FOURIER_METHOD} $< va $@ ${COE_SEARCH}
-
 
 ## Step 3: Calculate the ZW3 index of Raphael (2004) ## 
 
