@@ -52,10 +52,10 @@ ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}
 ## Step 1: Calculate the wave statistics (average env & nenv, extent/coverage of nenv) ##
 
 ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< env $@ --threshold ${THRESH}
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< va $@ --threshold ${THRESH}
 
 ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< nenv $@ --threshold ${THRESH}
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< va $@ --threshold ${THRESH}
 
 ## Step 2: Calculate the phase and amplitude of each Fourier component ##
 

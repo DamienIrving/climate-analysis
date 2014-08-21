@@ -49,7 +49,7 @@ if [ ! -f $infile ] ; then
 fi
 
 
-years=(1979 1984 1989 1994 1999 2004 2009)
+years=(1979 1984 1989 1994 1999 2004 2009 2014)
 temp_files=()
 for year in "${years[@]}"; do
     end=`expr $year + 4`
