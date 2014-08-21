@@ -67,11 +67,11 @@ def get_zw3(infile):
 def get_env(infile, normalised=False):
     """Extract wave envelope stats and output to pandas DataFrame"""
     
-    data = pandas.read_csv(infile, header=1, index_col=0)
-    
-    if normalised:
-        # rename columns or else join won't work later
+    df = pandas.read_csv(infile, header=1, index_col=0)
+    tag = 'nenv' if normalised else 'env' 
+    df.rename(columns=lambda x: tag+'_'+x, inplace=True)
 
+    # change index values in place using gio.standard_datetime()
 
 
 def main(inargs):
