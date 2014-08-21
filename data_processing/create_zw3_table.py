@@ -34,8 +34,6 @@ except ImportError:
 
 # Define functions #
 
-
-
 def get_fourier(infile):
     """Extract Fourier coefficient data and output to a pandas DataFrame"""
     
@@ -70,8 +68,9 @@ def get_env(infile, normalised=False):
     df = pandas.read_csv(infile, header=1, index_col=0)
     tag = 'nenv' if normalised else 'env' 
     df.rename(columns=lambda x: tag+'_'+x, inplace=True)
-
-    # change index values in place using gio.standard_datetime()
+    df.rename(index=lambda x: gio.standard_datetime(x), inplace=True)
+    
+    return df
 
 
 def main(inargs):
