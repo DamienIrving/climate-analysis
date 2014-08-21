@@ -10,7 +10,7 @@ PYTHON=/usr/local/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
 FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh
 #FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.py   
-ZONAL_ANOM_METHOD=${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
+ZONAL_ANOM_METHOD=bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
 
 # Dataset
 DATASET=ERAInterim
