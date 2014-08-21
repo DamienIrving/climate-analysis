@@ -36,7 +36,6 @@ ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-
 ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	cdo -ydaydiv -ydaysub $< -ydayavg $< -ydaystd $< $@
 	ncatted -O -a axis,time,c,c,T $@
-	ncrename -O -v env,nenv $@
 
 ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
