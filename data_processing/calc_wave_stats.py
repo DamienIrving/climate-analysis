@@ -12,6 +12,7 @@ import sys, os, pdb
 import argparse
 import numpy
 import csv
+import re
 
 # Import my modules #
 
@@ -34,7 +35,7 @@ except ImportError:
 
 # Define functions #
     
-def extent_stats(data_double, lons_double, threshold, lon_spacing):
+def extent_stats(data_double, lons_double, threshold, lons_spacing):
     """Return key statistics regarding the extent
 
     NOTE: An inprovement on the extent statistic might be a simple count 
@@ -50,7 +51,7 @@ def extent_stats(data_double, lons_double, threshold, lon_spacing):
     else: 
         diffs = numpy.diff(lons_filtered)
         diffs_corrected = numpy.where(diffs < 0, diffs + 360, diffs)
-        extent_list = numpy.split(lons_filtered, numpy.where(diffs_corrected > lon_spacing)[0] + 1)
+        extent_list = numpy.split(lons_filtered, numpy.where(diffs_corrected > lons_spacing)[0] + 1)
         
         lengths = map(len, extent_list)
         max_length = max(lengths)
@@ -58,7 +59,7 @@ def extent_stats(data_double, lons_double, threshold, lon_spacing):
         result = extent_list[max_index]
         start_lon = result[0]
         end_lon = result[-1]
-        extent = len(result) * lon_spacing[0]
+        extent = len(result) * lons_spacing[0]
     
     return start_lon, end_lon, extent
 
@@ -77,11 +78,11 @@ def get_lons(data):
 
     lons = data.getLongitude()[:]
 
-    lon_spacing = numpy.unique(numpy.diff(lons))
-    assert len(lon_spacing) == 1, \
+    lons_spacing = numpy.unique(numpy.diff(lons))
+    assert len(lons_spacing) == 1, \
     'Must be a uniformly spaced longitude axis' 
 
-    return lons
+    return lons, lons_spacing
 
 
 def calc_threshold(data, threshold_str):
@@ -104,11 +105,11 @@ def main(inargs):
     indata = nio.InputData(inargs.infile, inargs.var, 
                            **nio.dict_filter(vars(inargs), ['time',]))
 			       
-    assert indata_env.data.getOrder() == 'tx', \
+    assert indata.data.getOrder() == 'tx', \
     'Input data must be time, longitude'
     
-    times = indata.getTime().asComponentTime()
-    lons = get_lons(indata.data)
+    times = indata.data.getTime().asComponentTime()
+    lons, lons_spacing = get_lons(indata.data)
     
     # Duplicate input data to cater for extents that straddle the Greenwich meridian #
     
@@ -129,7 +130,7 @@ def main(inargs):
         output.writerow(['date', 'amp-mean', 'start-lon', 'end-lon', 'extent'])
         for i in range(0, ntime):
             amp_mean = amp_stats(indata.data[i, :])
-            start_lon, end_lon, extent = extent_stats(data_double[i, :], lons_double, inargs.threshold, lon_spacing)
+            start_lon, end_lon, extent = extent_stats(data_double[i, :], lons_double, inargs.threshold, lons_spacing)
               
 	    # Write result to file
 	    date = gio.standard_datetime(times[i])
