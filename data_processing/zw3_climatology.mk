@@ -3,9 +3,9 @@
 # To execute:
 #   make -n -B -f zw3_climatology.mk  (-n is a dry run) (-B is a force make)
 
-# Fix:
-#   At the moment the data processing (e.g. for the sf and calculation of the
-#   running mean) doesn't do all the way back to the original files.
+# Pre-processing:
+#   The regirdding (if required) needs to be done beforehand 
+#   (probably using cdo remapcon2,r360x181 in.nc out.nc)
 
 
 ## Define marcos ##
@@ -18,38 +18,32 @@ all : ${TARGET}
 
 ## Step 1: Apply temporal averaging to the meridional wind data ##
 
-${PDATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/va_${DATASET}_${LEVEL}_daily_native.nc
+${PDATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/va_${DATASET}_${LEVEL}_daily_${GRID}.nc
 	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-## Step 2: Regrid the meridional wind data ##
+## Step 2: Extract the wave envelope (for the entire globe) and collapse the meridional dimension ##
 
-${PDATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc
-	cdo remapcon2,${GRID} $< $@
-	ncatted -O -a axis,time,c,c,T $@
-
-## Step 3: Extract the wave envelope (for the entire globe) and collapse the meridional dimension ##
-
-${RWID_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	${FOURIER_METHOD} $< va $@ ${ENV_SEARCH}
 
-${RWID_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${RWID_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-## Step 4: Normalise the wave envelope (for the entire globe) and collapse the meridional dimension ##
+## Step 3: Normalise the wave envelope (for the entire globe) and collapse the meridional dimension ##
 
-${RWID_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${RWID_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	cdo -ydaydiv -ydaysub $< -ydayavg $< -ydaystd $< $@
 	ncatted -O -a axis,time,c,c,T $@
 	ncrename -O -v env,nenv $@
 
-${RWID_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${RWID_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 
-### Generate the database of interesting results ###
+### Generate the table/database of interesting results ###
 #    - Average meridional max of env and nenv, env and nenv extent/coverage <= calc_wave_stats.py
 #    - Phase and amplitude of each Fourier component (for a selected latitude band or range)  <= calc_fourier_transform.py
 #    - Raphael ZW3 index <= calc_index.py
@@ -57,15 +51,15 @@ ${RWID_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID
 
 ## Step 1: Calculate the wave statistics (average env & nenv, extent/coverage of nenv) ##
 
-${RWID_DIR}/env-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${RWID_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
+${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< env $@ --threshold ${THRESH}
 
-${RWID_DIR}/nenv-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${RWID_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
+${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< nenv $@ --threshold ${THRESH}
 
 ## Step 2: Calculate the phase and amplitude of each Fourier component ##
 
-${RWID_DIR}/fourier-${COE_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${ZW3_DIR}/fourier-${COE_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	${FOURIER_METHOD} $< va $@ ${COE_SEARCH}
 
 ## Step 3: Calculate the ZW3 index of Raphael (2004) ## 
@@ -78,81 +72,10 @@ ${PDATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc : ${PDATA
 	${ZONAL_ANOM_METHOD} $< zg $@
 	ncatted -O -a axis,time,c,c,T $@
 
-${RWID_DIR}/zw3-zg_${DATASET}_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc : ${PDATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc
+${ZW3_DIR}/zw3-zg_${DATASET}_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc : ${PDATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< va $@
 
 # Step 4: Put it all in a common table/database
 
-
-
-
-
-### Use the database to do interesting things ### 
-#    - Date lists for composites   <= parse_wave_stats.py 
-#    - Plots of key stats    <= parse_wave_stats.py
-
-## Step 6: Generate list of dates for use in composite creation
-${RWID_DIR}/zw3-dates_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt : ${RWID_DIR}/zw3-stats_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --date_list $@
-
-## Step 6a: Plot the extent histogram
-${RWID_DIR}/figures/zw3-extent-histogram_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.png : ${RWID_DIR}/zw3-stats_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --extent_histogram $@
-
-## Step 6b: Plot the monthly totals histogram
-${RWID_DIR}/figures/zw3-monthly-totals-histogram_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.png : ${RWID_DIR}/zw3-stats_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --monthly_totals_histogram $@
-
-## Step 6c: Plot the seasonal values line graph
-${RWID_DIR}/figures/zw3-seasonal-values-line_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.png : ${RWID_DIR}/zw3-stats_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --seasonal_values_line $@ --annual
-
-
-###   ###
-
-
-## Step 7: Plot the envelope
-${RWID_DIR}/figures/env-${WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc ${RWID_DIR}/zw3-stats_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv ${PDATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}-zonal-anom_native.nc
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< env ${TSCALE_LABEL} --extent $(word 2,$^) ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --contour $(word 3,$^) sf --time ${PLOT_START} ${PLOT_END} none --projection spstere --ofile $@
-
-## Step 7a: Calculate the streamfunction zonal anomaly
-${PDATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}-zonal-anom_native.nc : ${PDATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc       
-	${ZONAL_ANOM_METHOD} $< sf $@
-	ncatted -O -a axis,time,c,c,T $@
-
-## Step 8: Calculate composites
-# Envelope
-${RWID_DIR}/env-zw3-composite-mean_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}_${COMPOSITE_PLACEHOLDER}.nc : ${RWID_DIR}/env-${WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc ${RWID_DIR}/zw3-dates_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt 
-	bash ${DATA_SCRIPT_DIR}/calc_composite.sh $< env $(word 2,$^) $@ ${COMPOSITE_TIMESCALE}
-
-# Zonal streamfunction anomaly
-${RWID_DIR}/sf-zonal-anom-zw3-composite-mean_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}_${COMPOSITE_PLACEHOLDER}.nc : ${PDATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}-zonal-anom_native.nc ${RWID_DIR}/zw3-dates_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt 
-	bash ${DATA_SCRIPT_DIR}/calc_composite.sh $< sf $(word 2,$^) $@ ${COMPOSITE_TIMESCALE}
-
-# Sea ice anomaly
-${PDATA_DIR}/sic_${DATASET}_surface_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/sic_${DATASET}_surface_daily_native.nc
-	cdo ${TSCALE} $< $@
-	ncatted -O -a axis,time,c,c,T $@
-
-${PDATA_DIR}/sic_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc : ${PDATA_DIR}/sic_${DATASET}_surface_${TSCALE_LABEL}_native.nc
-	cdo ydaysub $< -ydayavg $< $@
-	ncatted -O -a axis,time,c,c,T $@
-
-${RWID_DIR}/sic-anom-zw3-composite-mean_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}_${COMPOSITE_PLACEHOLDER}.nc : ${PDATA_DIR}/sic_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc ${RWID_DIR}/zw3-dates_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt 
-	bash ${DATA_SCRIPT_DIR}/calc_composite.sh $< sic $(word 2,$^) $@ ${COMPOSITE_TIMESCALE}
-
-# Surface temperature anomaly
-${PDATA_DIR}/tas_${DATASET}_surface_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/tas_${DATASET}_surface_daily_native.nc
-	cdo ${TSCALE} $< $@
-	ncatted -O -a axis,time,c,c,T $@
-
-${PDATA_DIR}/tas_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc : ${PDATA_DIR}/tas_${DATASET}_surface_${TSCALE_LABEL}_native.nc
-	cdo ydaysub $< -ydayavg $< $@
-	ncatted -O -a axis,time,c,c,T $@
-
-${RWID_DIR}/tas-anom-zw3-composite-mean_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}_${COMPOSITE_PLACEHOLDER}.nc : ${PDATA_DIR}/tas_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc ${RWID_DIR}/zw3-dates_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt 
-	bash ${DATA_SCRIPT_DIR}/calc_composite.sh $< tas $(word 2,$^) $@ ${COMPOSITE_TIMESCALE}
-
-## Optional extras ##
-
-# plot_composite.py   --   plot a composite
+zw3-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv ${ZW3_DIR}/zw3-zg_${DATASET}_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc ${ZW3_DIR}/fourier-${COE_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+	${PYTHON} ${DATA_SCRIPT_DIR}/create_zw3_table.py $(word 1,$^) $(word 2,$^) $(word 3,$^) $(word 4,$^) $@

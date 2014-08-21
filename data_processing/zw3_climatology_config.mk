@@ -4,21 +4,20 @@
 DATA_HOME=/mnt/meteo0/data/simmonds/dbirving/${DATASET}
 DATA_DIR=${DATA_HOME}/data
 PDATA_DIR=${DATA_HOME}/data/processed
-RWID_DIR=${PDATA_DIR}/rwid/zw3
+ZW3_DIR=${PDATA_DIR}/zw3
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/bin/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
-VIS_SCRIPT_DIR=~/phd/visualisation
 FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh
 #FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.py   
 ZONAL_ANOM_METHOD=${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
 
 # Dataset
-DATASET=Merra
-LEVEL=250hPa
-GRID=r360x181
-TSCALE=runmean,30
-TSCALE_LABEL=030day-runmean
+DATASET=ERAInterim
+LEVEL=500hPa
+GRID=native
+TSCALE=runmean,90
+TSCALE_LABEL=090day-runmean
 
 # Envelope extraction
 MER_METHOD=mermax
@@ -34,16 +33,6 @@ COE_WAVE_LABEL=w19
 
 # Extent statistics
 THRESH=75pct
-EXTENT_MIN=300
-EXTENT_MAX=360
-
-# Plot envelope 
-PLOT_START=2001-01-01
-PLOT_END=2003-12-31
-
-# Composite
-COMPOSITE_TIMESCALE=monthly
-COMPOSITE_PLACEHOLDER=JAN
 
 # Target
-TARGET=${RWID_DIR}/figures/env-${WAVE_LABEL}-va_Merra_250hPa_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png
+TARGET=zw3-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv
