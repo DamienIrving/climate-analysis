@@ -130,7 +130,7 @@ def main(inargs):
         output.writerow(['date', 'amp-mean', 'start-lon', 'end-lon', 'extent'])
         for i in range(0, ntime):
             amp_mean = amp_stats(indata.data[i, :])
-            start_lon, end_lon, extent = extent_stats(data_double[i, :], lons_double, inargs.threshold, lons_spacing)
+            start_lon, end_lon, extent = extent_stats(data_double[i, :], lons_double, threshold, lons_spacing)
               
 	    # Write result to file
 	    date = gio.standard_datetime(times[i])
