@@ -11,7 +11,7 @@ Description:  Takes all the ZW3 climatology results and puts
 import sys, os, pdb
 import argparse
 import numpy, pandas
-import cdms2
+import netCDF4
 
 # Import my modules #
 
@@ -27,7 +27,6 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
-    import netcdf_io as nio
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -37,16 +36,20 @@ except ImportError:
 def get_fourier(infile):
     """Extract Fourier coefficient data and output to a pandas DataFrame"""
     
-    fin = cdms2.open(infile)
-    var_list = fin.listvariables()
-    time_axis = fin.getAxis('time').asComponentTime()
-    fin.close()
+    fin = netCDF4.Dataset(infile)
+   
+    var_list = fin.variables.keys()
+    var_list = map(str, var_list)
     
-    output = pandas.DataFrame(index=map(gio.standard_datetime, time_index))
+    units = fin.variables['time'].units
+    calendar = fin.variables['time'].calendar
+    time_axis = netCDF4.num2date(fin.variables['time'], units=units, calendar=calendar)
+
+    output = pandas.DataFrame(index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis))
     
     for var in var_list:
-        indata = nio.InputData(infile, var)
-	output[var] = indata.data
+        if not var[0:3] in ['lat', 'lon', 'tim']
+            output[var] = fin.variables[var][:]
 
     return output
 
@@ -54,10 +57,15 @@ def get_fourier(infile):
 def get_zw3(infile):
     """Extract ZW3 index and output to a pandas DataFrame"""
 
-    indata = nio.InputData(infile, 'zw3')
-    time_axis = indata.data.getTime().asComponentTime()
+    fin = netCDF4.dataset(infile)
     
-    output = pandas.DataFrame(indata.data, index=map(gio.standard_datetime, time_index))
+    units = fin.variables['time'].units
+    calendar = fin.variables['time'].calendar
+    time_axis = netCDF4.num2date(fin.variables['time'], units=units, calendar=calendar)
+
+    data = fin.variables['zw3'][:]
+
+    output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis))
 
     return output
     
@@ -96,6 +104,10 @@ example (vortex.earthsci.unimelb.edu.au):
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
+
+note:
+  Written to use netCDF4 instead of cdms2 because pandas can't be 
+  installed alongside UV-CDAT on vortex
 
 """
 
