@@ -84,7 +84,7 @@ def get_zw3(infile):
 
     data = fin.variables['zw3'][:]
 
-    output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis))
+    output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis), columns=['ZW3_index'])
 
     return output
     
