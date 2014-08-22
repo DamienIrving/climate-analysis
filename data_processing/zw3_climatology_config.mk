@@ -6,7 +6,7 @@ DATA_DIR=${DATA_HOME}/data
 PDATA_DIR=${DATA_HOME}/data/processed
 ZW3_DIR=${PDATA_DIR}/zw3
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
-PYTHON=/usr/local/anaconda/bin/python
+PYTHON=/usr/bin/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
 FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh
 #FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.py   
@@ -35,4 +35,4 @@ COE_WAVE_LABEL=w19
 THRESH=75pct
 
 # Target
-TARGET=zw3-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv
+TARGET=${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-va-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv

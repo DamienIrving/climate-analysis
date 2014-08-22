@@ -33,23 +33,42 @@ except ImportError:
 
 # Define functions #
 
-def get_fourier(infile):
+
+def find_nearest(array, value):
+    """Find the closest array item to value"""
+    
+    idx = (numpy.abs(array - value)).argmin()
+    return array[idx]
+
+
+
+
+def get_fourier(infile, lat_requested):
     """Extract Fourier coefficient data and output to a pandas DataFrame"""
     
     fin = netCDF4.Dataset(infile)
    
+    # Variable list
     var_list = fin.variables.keys()
     var_list = map(str, var_list)
     
+    # Time axis
     units = fin.variables['time'].units
     calendar = fin.variables['time'].calendar
     time_axis = netCDF4.num2date(fin.variables['time'], units=units, calendar=calendar)
 
+    # Latitude axis
+    lat_axis = fin.variables['latitude'][:]
+    lat_index = (numpy.abs(lat_axis - lat_requested)).argmin()
+    lat_selected = lat_axis[lat_index]
+    if lat_selected != lat_requested:
+        print "Selecting the closest latitude to %s, which is %s" %(str(lat_requested), str(lat_selected))
+
+    # Output DataFrame
     output = pandas.DataFrame(index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis))
-    
     for var in var_list:
-        if not var[0:3] in ['lat', 'lon', 'tim']
-            output[var] = fin.variables[var][:]
+        if not var[0:3].lower() in ['lat', 'lon', 'tim']:
+	    output[var] = fin.variables[var][:, lat_index]
 
     return output
 
@@ -57,7 +76,7 @@ def get_fourier(infile):
 def get_zw3(infile):
     """Extract ZW3 index and output to a pandas DataFrame"""
 
-    fin = netCDF4.dataset(infile)
+    fin = netCDF4.Dataset(infile)
     
     units = fin.variables['time'].units
     calendar = fin.variables['time'].calendar
@@ -86,7 +105,7 @@ def main(inargs):
 
     # Read data and check inputs #
     
-    fourier_DataFrame = get_fourier(inargs.fourier_file)
+    fourier_DataFrame = get_fourier(inargs.fourier_file, inargs.latitude)
     zw3_DataFrame = get_zw3(inargs.zw3_file)
     env_DataFrame = get_env(inargs.env_file, normalised=False)
     nenv_DataFrame = get_env(inargs.nenv_file, normalised=True)
@@ -123,11 +142,11 @@ note:
     parser.add_argument("fourier_file", type=str, help="Input Fourier coefficients file")
     
     parser.add_argument("outfile", type=str, help="Output file name")
+    
+    parser.add_argument("--latitude", type=float, default=-55,
+                        help="Latitude to select from the fourier file")                    
 
     
-    args = parser.parse_args()            
-
-    print 'Input file: ', args.infile
-    print 'Output file: ', args.outfile  
+    args = parser.parse_args()             
     
     main(args)    
