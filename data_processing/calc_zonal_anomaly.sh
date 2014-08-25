@@ -39,6 +39,6 @@ for year in "${years[@]}"; do
     temp_files+=(${temp_file})
 done
 
-cdo mergetime ${temp_files[@]} $outfile
+cdo -O mergetime ${temp_files[@]} $outfile
 rm ${temp_files[@]}
 ncatted -O -a axis,time,c,c,T $outfile
