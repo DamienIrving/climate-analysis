@@ -10,7 +10,7 @@ Output:       An image in either bitmap (e.g. .png) or vector (e.g. .svg, .eps) 
 
 # Import general Python modules
 
-import os, sys
+import os, sys, pdb
 import argparse
 
 import matplotlib.pyplot as plt
@@ -24,7 +24,6 @@ import numpy
 import numpy.ma as ma
 import math
 
-import pdb
 
 # Import my modules #
 
@@ -448,7 +447,7 @@ def sort_files(file_list, set_name, time_freq):
     """Place input files into dict.
 
     positional arguments:
-      file_list -- list of 
+      file_list -- list of ('FILENAME', 'VAR', 'WINDOW', 'TAG') items
       set_name  -- can be primary or secondary
 
     output:
