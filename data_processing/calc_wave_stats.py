@@ -63,7 +63,7 @@ def extent_stats(data_double, lons_double, threshold, lons_spacing):
     return start_lon, end_lon, extent
 
 
-def extent_atts(orig_data, statistic, threshold, outvar_atts_list, outvar_axes_list):
+def extent_atts(orig_data, statistic, threshold, outvar_atts_list):
     """Get the attributes for the extent statistics"""
 
     assert statistic in ['extent', 'start_lon', 'end_lon']
@@ -74,8 +74,7 @@ def extent_atts(orig_data, statistic, threshold, outvar_atts_list, outvar_axes_l
                 'units': orig_data.getLongitude().units,
                 'history': orig_data.history}
 
-    outvar_atts_list.append([var_atts,])
-    outvar_axes_list.append([orig_data.getAxisList(),])
+    outvar_atts_list.append(var_atts)
 
 
 def amp_stats(data):
@@ -87,7 +86,7 @@ def amp_stats(data):
     return amp_mean
 
 
-def amp_atts(orig_data, outvar_atts_list, outvar_axes_list):
+def amp_atts(orig_data, outvar_atts_list):
     """Get the attributes for the wave amplitude statistic"""
    
     text = 'Zonal mean of the meridional maximum ' 
@@ -97,8 +96,7 @@ def amp_atts(orig_data, outvar_atts_list, outvar_axes_list):
                 'units': orig_data.units,
                 'history': orig_data.history}
 
-    outvar_atts_list.append([var_atts,])
-    outvar_axes_list.append([orig_data.getAxisList(),])
+    outvar_atts_list.append(var_atts)
 
 
 def get_lons(data):
@@ -154,7 +152,7 @@ def main(inargs):
     extent_data = []    
     start_lon_data = []
     end_lon_data = []
-    for i in range(0, ntime):
+    for i in range(0, len(times)):
         amp_mean = amp_stats(indata.data[i, :])
         start_lon, end_lon, extent = extent_stats(data_double[i, :], lons_double, threshold, lons_spacing)
 
@@ -166,11 +164,16 @@ def main(inargs):
     # Write output file #
 
     outvar_atts_list = [] 
+    amp_atts(indata.data, outvar_atts_list)
+    extent_atts(indata.data, 'extent', inargs.threshold, outvar_atts_list)
+    extent_atts(indata.data, 'start_lon', inargs.threshold, outvar_atts_list)
+    extent_atts(indata.data, 'end_lon', inargs.threshold, outvar_atts_list)    
+
+    outdata_list = [amp_mean_data, extent_data, start_lon_data, end_lon_data] 
+    
     outvar_axes_list = []
-    amp_atts(indata.data, outvar_atts_list, outvar_axes_list)
-    extent_atts(indata.data, 'extent', inargs.threshold, outvar_atts_list, outvar_axes_list)
-    extent_atts(indata.data, 'start_lon', inargs.threshold, outvar_atts_list, outvar_axes_list)
-    extent_atts(indata.data, 'end_lon', inargs.threshold, outvar_atts_list, outvar_axes_list)    
+    for item in outdata_list: 
+        outvar_axes_list.append([indata.data.getTime(),])
 
     nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
                      indata.global_atts, 
