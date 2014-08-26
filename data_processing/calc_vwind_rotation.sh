@@ -57,7 +57,7 @@ if [ ! -f $vfile ] ; then
 fi
 
 
-years=(1979 1984 1989 1994 1999 2004 2009)
+years=(1979 1984 1989 1994 1999 2004 2009 2014)
 temp_files=()
 for year in "${years[@]}"; do
     end=`expr $year + 4`
@@ -66,6 +66,6 @@ for year in "${years[@]}"; do
     temp_files+=(${temp_file})
 done
 
-cdo mergetime ${temp_files[@]} $outfile
+cdo -O mergetime ${temp_files[@]} $outfile
 rm ${temp_files[@]}
 ncatted -O -a axis,time,c,c,T $outfile
