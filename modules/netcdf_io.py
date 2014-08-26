@@ -15,6 +15,7 @@ get_datetime         -- Return datetime instances for list of dates/times
 hi_lo                -- Update highest and lowest value
 list_kwargs          -- List keyword arguments of a function
 match_dates          -- Take simple list of dates and match with corresponding more verbose list
+normalise_data       -- Normalise data ((x - mean) / std) along the time axis
 regrid_uniform       -- Regrid data to a uniform output grid
 running_average      -- Calculate running average
 scale_offset         -- Apply scaling and offset factors
@@ -120,7 +121,7 @@ regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
 class InputData:
     """Extract and subset data."""
 
-    def __init__(self, fname, var_id, convert=False, **kwargs):
+    def __init__(self, fname, var_id, convert=False, normalise=False, **kwargs):
 	"""Extract desired data from an input file.
 	
 	Keyword arguments (with examples):
@@ -146,10 +147,12 @@ class InputData:
 	              startLon,nlon,deltaLon)
         runave    -- window size for the running average 
 	spatave   -- True (for returning average over all spatial dimensions)
+	normalise -- True (normalise data along the time axis)
 
         The order of operations is as follows: subset data, 
 	spatial averaging (spatave), temporal aggregation (agg), 
-	running average (runave), regrid (grid), convert units 
+	running average (runave), regrid (grid), convert units, 
+	normalise 
        		
         self.data has all the attributes and methods
 	of a typical cdms2 variable. For instance:
@@ -210,6 +213,9 @@ class InputData:
 
         if convert:
 	    data = convert_units(data)
+
+        if normalise:
+            data = normalise_data(data, sub_mean=True)
 
         # Set object attributes #
         
@@ -640,12 +646,12 @@ def normalise_data(indata, sub_mean=False):
     assert isinstance(indata, cdms2.tvariable.TransientVariable)
     
     if sub_mean:
-        mean = cdutil.averager(indata, axis='t')
+        mean = cdutil.averager(indata, axis='t', weights='unweighted')
 	data = indata - mean
     else:
         data = indata
 
-    std = genutil.statistics.std(indata, axis=0)
+    std = genutil.statistics.std(indata, axis='t')
     
     return data / std 
 

@@ -443,7 +443,7 @@ def runave_time_correction(xaxis, time_freq):
     return rrule(eval(time_freq), dtstart=round_datetime(xaxis[0], time_freq), count=len(xaxis))
 
 
-def sort_files(file_list, set_name, time_freq):
+def sort_files(file_list, set_name, time_freq, normalise):
     """Place input files into dict.
 
     positional arguments:
@@ -464,7 +464,7 @@ def sort_files(file_list, set_name, time_freq):
 	for item in file_list:
             key = tuple(item[0:3])
             window = int(item[2])
-            out_dict[key] = nio.InputData(item[0], item[1], runave=window)
+            out_dict[key] = nio.InputData(item[0], item[1], runave=window, normalise=normalise)
             out_dict[key].tag = item[3]
             out_dict[key].window = window
             out_dict[key].set = set_name
@@ -502,8 +502,8 @@ def main(inargs):
 
     # Extract and sort data - unique identifier is the (filename, variable) pair #
 
-    pdata_dict, pplot_order = sort_files(inargs.primary, 'primary', inargs.freq)
-    sdata_dict, splot_order = sort_files(inargs.secondary, 'secondary', inargs.freq)
+    pdata_dict, pplot_order = sort_files(inargs.primary, 'primary', inargs.freq, inargs.normalise)
+    sdata_dict, splot_order = sort_files(inargs.secondary, 'secondary', inargs.freq, inargs.normalise)
     
     psdata_dict = dict(pdata_dict.items() + sdata_dict.items()) if sdata_dict else pdata_dict
     psplot_order = (pplot_order + splot_order) if splot_order else pplot_order
@@ -512,7 +512,7 @@ def main(inargs):
         edata_dict = {}
 	for item in inargs.error:
             key = item[2:5]
-            edata_dict[key] = nio.InputData(item[0], item[1], runave=psdata_dict[key].window)
+            edata_dict[key] = nio.InputData(item[0], item[1], runave=psdata_dict[key].window, normalise=inargs.normalise)
             edata_dict[key].tag = None
             edata_dict[key].set = 'error'
             edata_dict[key].datetimes =  runave_time_correction(edata_dict[key].datetime_axis()[:], inargs.freq)
@@ -599,6 +599,9 @@ improvements:
                         help="Error file name, variable, parent file name, parent variable [default: None]")
     parser.add_argument("--outfile", type=str,
                         help="Name of output file [default: None]")
+
+    parser.add_argument("--normalise", action="store_true", default=False,
+                        help="switch for normalising all input data [default: False]")
 
     parser.add_argument("--nrows", type=int, default=1,
                         help="Number of rows (long time axes can be split onto numerous rows [default: %(default)s]")
