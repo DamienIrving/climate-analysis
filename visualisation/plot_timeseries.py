@@ -551,10 +551,17 @@ legend options:
   location:   1 upper right, 2 upper left, 3 lower left, 4 lower_right, 5 right, 6 center left, 
 	      7 center right, 8 lower center, 9 upper center, 10 center, None no legend 
 
-examples (abyss.earthsci.unimelb.edu.au):
-  /usr/local/uvcdat/1.2.0rc1/bin/cdat plot_timeseries.py MONTHLY
-  /work/dbirving/processed/indices/data/ts_Merra_surface_NINO34_monthly_native-ocean.nc nino34 Nino34 1
-
+examples (vortex.earthsci.unimelb.edu.au):
+  /usr/local/uvcdat/1.3.0/bin/python plot_timeseries.py DAILY 
+  /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/processed/zw3/zw3-zg_ERAInterim_500hPa_090day-runmean-zonal-anom_native.nc 
+  zw3 1 zw3 
+  --xmin 2010-01-01 --xmax 2012-12-31 
+  --outfile test.png 
+  --secondary /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/processed/zw3/nenv-w29-va-stats-threshold75pct_ERAInterim_500hPa_090day-runmean_native-mermax-lat70S40S.nc 
+  amp_mean 1 nenv 
+  --sline - 
+  --ploc 3 --sloc 4
+  
 note:
   The expected measure of error is the standard deviation (twice the standard deviation either side
   of the central estimate is plotted).
