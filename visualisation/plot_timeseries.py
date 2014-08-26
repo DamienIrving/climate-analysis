@@ -325,10 +325,9 @@ def reconfig_to_datetime(all_files, datetime_axis, time_freq, nrows=1):
 	    for i in xrange(nfill):
 	        ydata = numpy.insert(ydata, 0, missval)
 	else:
-	    count = 0
-	    while not orig_dtaxis[count] in datetime_axis[:]:
-	        count = count + 1
-	    ydata = ydata[count:]
+	    ystart = orig_dtaxis[:].index(datetime_axis[0])
+	    ydata = ydata[ystart:]
+	    orig_dtaxis = orig_dtaxis[ystart:]
 		 
         # Check the end point of original xaxis against the new datetime_axis #
 	
@@ -337,10 +336,8 @@ def reconfig_to_datetime(all_files, datetime_axis, time_freq, nrows=1):
 	    for i in xrange(nfill):
 	        ydata = numpy.append(ydata, missval)
         else:
-	    count = -1
-	    while not orig_dtaxis[count] in datetime_axis[:]:
-	        count = count - 1
-	    ydata = ydata[:count+1]
+	    yend = orig_dtaxis[:].index(datetime_axis[-1]) + 1
+            ydata = ydata[:yend]
 
         # Update the minimum and maximum value #
 
@@ -410,7 +407,9 @@ def set_datetime_axis(all_files, time_freq, nrows=1, xmax=datetime.datetime.max,
     
     if not isinstance(xmin, datetime.datetime):
         xmin = nio.get_datetime([xmin,])[0]
-	
+
+    assert xmax > xmin
+
     # Find highest and lowest datetimes from the input file #
 
     max_datetime = datetime.datetime.min
@@ -435,6 +434,7 @@ def set_datetime_axis(all_files, time_freq, nrows=1, xmax=datetime.datetime.max,
         xaxis = rrule(eval(time_freq), count=(xaxis.count() + 1), dtstart=min_datetime)    
         
     return xaxis
+
 
 def runave_time_correction(xaxis, time_freq):
     """Resets time axis, because genutil.filters.runningaverage()
