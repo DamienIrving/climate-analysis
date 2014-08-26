@@ -33,14 +33,21 @@ except ImportError:
 
 # Define functions #
 
+def get_time_axis(time_variable):
+    """Get the time axis using the netCDF4 module"""
+
+    units = time_variable.units
+    calendar = time_variable.calendar
+    time_axis = netCDF4.num2date(time_variable, units=units, calendar=calendar)        
+    
+    return time_axis
+
 
 def find_nearest(array, value):
     """Find the closest array item to value"""
     
     idx = (numpy.abs(array - value)).argmin()
     return array[idx]
-
-
 
 
 def get_fourier(infile, lat_requested):
@@ -53,9 +60,7 @@ def get_fourier(infile, lat_requested):
     var_list = map(str, var_list)
     
     # Time axis
-    units = fin.variables['time'].units
-    calendar = fin.variables['time'].calendar
-    time_axis = netCDF4.num2date(fin.variables['time'], units=units, calendar=calendar)
+    time_axis = get_time_axis(fin.variables['time'])
 
     # Latitude axis
     lat_axis = fin.variables['latitude'][:]
@@ -77,10 +82,7 @@ def get_zw3(infile):
     """Extract ZW3 index and output to a pandas DataFrame"""
 
     fin = netCDF4.Dataset(infile)
-    
-    units = fin.variables['time'].units
-    calendar = fin.variables['time'].calendar
-    time_axis = netCDF4.num2date(fin.variables['time'], units=units, calendar=calendar)
+    time_axis = get_time_axis(fin.variables['time'])
 
     data = fin.variables['zw3'][:]
 
@@ -91,13 +93,20 @@ def get_zw3(infile):
     
 def get_env(infile, normalised=False):
     """Extract wave envelope stats and output to pandas DataFrame"""
-    
-    df = pandas.read_csv(infile, header=1, index_col=0)
-    tag = 'nenv' if normalised else 'env' 
-    df.rename(columns=lambda x: tag+'_'+x, inplace=True)
-    df.rename(index=lambda x: gio.standard_datetime(x), inplace=True)
-    
-    return df
+
+    fin = netCDF4.Dataset(infile)
+    time_axis = get_time_axis(fin.variables['time'])
+
+    data = numpy.zeros((len(time_axis), 4))
+    tag = 'nenv' if normalised else 'env'
+    headers = [] 
+    for i, var in enumerate(['amp_mean', 'extent', 'start_lon', 'end_lon']):
+        data[:, i] = fin.variables[var][:]
+        headers.append(tag+'_'+var)
+
+    output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis), columns=headers)
+
+    return output
 
 
 def main(inargs):
