@@ -39,6 +39,7 @@ sys.path.append(modules_dir)
 
 try:
     import netcdf_io as nio
+    import general_io as gio
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -278,6 +279,7 @@ def generate_plot(xaxis, yaxis_data, yaxis_error, file_order,
     
     if outfile:
         plt.savefig(outfile)
+	gio.write_metadata(outfile)
     else:
         print 'showing...'
         plt.show()
