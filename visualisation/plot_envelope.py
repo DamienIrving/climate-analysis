@@ -131,7 +131,7 @@ def plot_settings(timescale, timestep, user_ticks):
                          '005day-runmean': numpy.arange(0, 30, 2),
                          '030day-runmean': numpy.arange(0, 19.5, 1.5),
                          '090day-runmean': numpy.arange(0, 14, 1),
-			 '180day-runmean': numpy.arange(0, 12, 1)}
+                         '180day-runmean': numpy.arange(0, 12, 1)}
     ticks_tstep_dict = {'daily': ticks_tscale_dict['001day-runmean'],
                         'monthly': ticks_tscale_dict['030day-runmean']}
 
@@ -166,6 +166,15 @@ def main(inargs):
     # Plot settings
     keyval, quiv_scale, quiv_width, ticks = plot_settings(inargs.timescale, inargs.timestep, inargs.ticks)      
 
+    # Initialise any boxes that need to be plotted
+    box_list = []
+    if inargs.search_region:
+        south_lat, north_lat, west_lon, east_lon = inargs.search_region[0:4]
+        box_list.append([south_lat, north_lat, west_lon, east_lon, 'green', 'dashed'])
+    if inargs.raphael:
+        for region in ['zw31', 'zw32', 'zw33']:
+            box_list.append([region, 'purple', 'solid'])            
+
     # Plot each timestep
     for date in indata_env.data.getTime().asComponentTime()[::inargs.stride]:
 
@@ -176,15 +185,11 @@ def main(inargs):
         v_data = [indata_v.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_v else None
         contour_data = [indata_contour.data(time=(date_bounds[0], date_bounds[1]), squeeze=1),] if indata_contour else None
         
-        box_list = []
         if inargs.extent:
             west_lon, east_lon = indata_extent[(int(year), int(month), int(day))]
             if west_lon != east_lon:
                 south_lat, north_lat = inargs.extent[1:]
                 box_list.append([float(south_lat), float(north_lat), west_lon, east_lon, 'blue', 'solid'])
-        if inargs.search_region:
-            south_lat, north_lat, west_lon, east_lon = inargs.search_region[0:4]
-            box_list.append([south_lat, north_lat, west_lon, east_lon, 'green', 'dashed'])
         
         if inargs.no_title:
             title = None
@@ -282,27 +287,31 @@ example (vortex.earthsci.unimelb.edu.au):
                         help="file and variable for contour lines")
     parser.add_argument("--ofile", type=str, default='test_envelope_1979-01-01.png', 
                         help="name of output file (include the date of one of the timesteps in YYYY-MM-DD format - it will be replaced in place)")
-
-    parser.add_argument("--no_title", action="store_true", default=False,
-                        help="switch for turning off the title")
+                        
     parser.add_argument("--ticks", type=float, nargs='*', default=None,
                         help="List of tick marks to appear on the colour bar [default: auto]")
+    parser.add_argument("--contour_ticks", type=float, nargs='*', default=15, 
+                        help="list of tick marks for the contours, or just the number of contour lines")
     parser.add_argument("--segments", type=str, nargs='*', default=None,
                         help="List of colours to appear on the colour bar")
     parser.add_argument("--palette", type=str, default='Oranges',
                         help="Colourbar name [default: Organges]")
+
+    parser.add_argument("--no_title", action="store_true", default=False,
+                        help="switch for turning off the title")
     parser.add_argument("--projection", type=str, default='cyl', choices=['cyl', 'nsper', 'spstere'],
                         help="Map projection [default: nsper]")
     parser.add_argument("--image_size", type=float, default=9, 
                         help="size of image [default: 9]")
-    parser.add_argument("--contour_ticks", type=float, nargs='*', default=15, 
-                        help="list of tick marks for the contours, or just the number of contour lines")
+
     parser.add_argument("--search_region", type=float, nargs=4, default=None,
                         metavar=('SOUTH_LAT', 'NORTH_LAT', 'WEST_LON', 'EAST_LON'),
                         help="draw an outline of the search region [default: None]")
     parser.add_argument("--extent", type=str, default=None, nargs=3, metavar=('FILE', 'LAT_MIN', 'LAT_MAX'),
                         help='File with the extent information (so extent box can be plotted) for each timestep, search lat1, lat2')
-    
+    parser.add_argument("--raphael", action="store_true", default=False, 
+                        help="switch for drawing in the regions used in the Raphael2004 ZW3 index [default: False]")
+                        
     args = parser.parse_args() 
 
     main(args)
