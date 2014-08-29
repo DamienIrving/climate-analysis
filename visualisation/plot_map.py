@@ -284,7 +284,7 @@ def multiplot(indata,
       equator              --  Flag for drawing a special gridline for the equator
       enso                 --  List of ENSO regions plot gridlines for (can be IEMI or any Nino indices)
       search_paths         --  Draw the search paths for the specified north pole
-      box                  --  Draw a box
+      box                  --  List of boxes. Each element can be (name, style, colour) or (south_lat, north_lat, west_lon, east_lon, style, colour)
       bax_np               --  Rotate the box according the this specified north pole location
       contour              --  Flag for creating a contour colourmap (otherwise each grid point value is
                                plotted with no smoothing
@@ -532,7 +532,8 @@ def _plot_box(bmap, box_list, np=None):
     """Add a box to the plot.
     
     Arguments:
-        box  ->  (name, color, style)
+        box  ->  (name, color, style)  OR
+                 (south_lat, north_lat, west_lon, east_lon, color, style)
     
     """
     styles = {}
@@ -540,12 +541,16 @@ def _plot_box(bmap, box_list, np=None):
     styles['solid'] = '-'
     
     for box in box_list: 
-	region, color, style = box
-	assert region in nio.regions.keys()
-	assert style in styles.keys()
-		
-	south_lat, north_lat = nio.regions[region][0][0: 2]
-        west_lon, east_lon = nio.regions[region][1][0: 2]
+        assert len(box) == 3 or len(box) == 6
+	if len(box) == 3:
+            region, color, style = box
+	    assert region in nio.regions.keys()
+	    south_lat, north_lat = nio.regions[region][0][0: 2]
+            west_lon, east_lon = nio.regions[region][1][0: 2]
+        else:
+            south_lat, north_lat, west_lon, east_lon, color, style = box
+        
+        assert style in styles.keys()
         
 	# Adjust the longitude values as required
 	assert (0.0 <= east_lon <= 360) and  (0.0 <= west_lon <= 360), \
@@ -1025,9 +1030,8 @@ improvements:
                         help="interval between zonal gridlines [default: 30]")
     parser.add_argument("--equator", action="store_true", 
                         help="switch for drawing an extra grid line marking the equator [default: False]")
-    parser.add_argument("--box", type=str, action='append', default=[], nargs=3,
-                        metavar=('NAME', 'COLOUR', 'STYLE'),
-                        help="""draw a box [default: None] - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
+    parser.add_argument("--box", type=str, action='append', default=[], nargs='*',
+                        help="""draw a box [default: None] - (NAME, STYLE, COLOUR) or (SOUTH_LAT, NORTH_LAT, WEST_LON, EAST_LON, STYLE, COLOUR) - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
     parser.add_argument("--box_np", type=float, nargs=2, metavar=('NP_LAT', 'NP_LON'),
                         help="rotate the box according to this north pole [default: None]")  
     parser.add_argument("--image_size", type=float, 
