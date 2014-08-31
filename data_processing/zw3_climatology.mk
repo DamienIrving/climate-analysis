@@ -63,12 +63,12 @@ ${ZW3_DIR}/fourier-${COE_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GR
 
 ## Step 3: Calculate the ZW3 index of Raphael (2004) ## 
 
-${PDATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/zg_${DATASET}_500hPa_daily_native.nc
-	cdo ${TSCALE} $< $@
+${PDATA_DIR}/zg_${DATASET}_500hPa_daily-zonal-anom_native.nc : ${PDATA_DIR}/zg_${DATASET}_500hPa_daily_native.nc       
+	${ZONAL_ANOM_METHOD} $< zg $@
 	ncatted -O -a axis,time,c,c,T $@
 
-${PDATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc : ${PDATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native.nc       
-	${ZONAL_ANOM_METHOD} $< zg $@
+${PDATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc : ${PDATA_DIR}/zg_${DATASET}_500hPa_daily-zonal-anom_native.nc
+	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 ${ZW3_DIR}/zw3-zg_${DATASET}_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc : ${PDATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}-zonal-anom_native.nc
