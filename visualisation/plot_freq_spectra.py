@@ -32,18 +32,14 @@ try:
     import calc_fourier_transform as cft
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
-    
 
-def set_title(lat_bounds, time_bounds):
+
+colors = ['blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'magenta', 'purple', 'brown', 'black']    
+
+def set_title(lat, time_bounds):
     """Set the title for the plot""" 
 
-    start_lat, end_lat = lat_bounds
-    if start_lat == end_lat:
-        lat_label = str(start_lat)
-    else:
-        lat_label = '%s to %s' %(str(start_lat), str(end_lat))
-
-    title = 'Ave spectra, %s to %s, lat: %s' %(str(time_bounds[0]), str(time_bounds[1]), lat_label) 
+    title = 'Ave spectra, %s to %s, lat: %s' %(str(time_bounds[0]), str(time_bounds[1]), str(lat)) 
 
     return title
 
@@ -101,7 +97,7 @@ def main(inargs):
     else:
         runmean_windows = [1]
     
-    for step in runmean_windows:
+    for index, step in enumerate(runmean_windows):
         if inargs.time:
             inargs.time = adjust_time_bounds(inargs.infile, inargs.time, step)
         
@@ -126,7 +122,7 @@ def main(inargs):
 	amp_std = numpy.std(amp_spectrum_temp_lat_mean[1:inargs.window+1])
 	y = (amp_spectrum_temp_lat_mean[1:inargs.window+1] - amp_mean) / amp_std
     
-        plt.plot(x, y, label=str(step), marker='o')  # Because I think a freq of 0 makes no sense
+        plt.plot(x, y, label=str(step), marker='o', color=colors[index])  # Because I think a freq of 0 makes no sense
 
     plt.xlabel('Frequency [cycles / domain]')
     plt.ylabel('normalised amplitude')
@@ -146,9 +142,9 @@ example (vortex.earthsci.unimelb.edu.au):
   /usr/local/uvcdat/1.3.0/bin/cdat plot_freq_spectra.py 
   /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/va_Merra_250hPa_daily_r360x181.nc va 
   /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/figures/tscale_anal/amp-spectra-va_Merra_250hPa_daily-2000-2009_r360x181-55S.png 
-  --time 2000-01-01 2009-12-31 
-  --runmean 1 5 30 90 180 365 
-  --latitude -55 -55
+  --time 1990-01-01 2009-12-31 
+  --runmean 1 5 10 15 30 60 90 180 365 
+  --latitude -55
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -166,16 +162,16 @@ author:
     argparser.add_argument("outfile", type=str, help="Output file name")
 			
     # Input data options
-    argparser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
-                        help="Latitude range over which to perform the Fourier Transform [default = entire]")
+    argparser.add_argument("--latitude", type=float,
+                           help="Latitude over which to perform the Fourier Transform [default = entire]")
     argparser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
-                        help="Time period [default = entire]")
+                           help="Time period [default = entire]")
 
     # Output options
     argparser.add_argument("--window", type=int, default=10,
-                        help="upper limit on the frequencies included in the plot")
+                           help="upper limit on the frequencies included in the plot")
     argparser.add_argument("--runmean", type=int, nargs='*',
-                        help="running mean windows to include (e.g. 1 5 30 90 180)")
+                           help="running mean windows to include (e.g. 1 5 30 90 180)")
   
     args = argparser.parse_args()            
 
