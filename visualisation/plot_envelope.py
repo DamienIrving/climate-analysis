@@ -130,7 +130,7 @@ def plot_settings(timescale, timestep, user_ticks):
     ticks_tscale_dict = {'001day-runmean': numpy.arange(0, 50, 4),
                          '005day-runmean': numpy.arange(0, 30, 2),
                          '030day-runmean': numpy.arange(0, 19.5, 1.5),
-                         '090day-runmean': numpy.arange(0, 14, 1),
+                         '090day-runmean': numpy.arange(0, 12, 1),
                          '180day-runmean': numpy.arange(0, 12, 1)}
     ticks_tstep_dict = {'daily': ticks_tscale_dict['001day-runmean'],
                         'monthly': ticks_tscale_dict['030day-runmean']}
