@@ -39,12 +39,12 @@ ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily-zonal-anom_native.nc : ${P
 	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 2b: Apply temporal averaging to the zonal contour data (for a limited time period)
-${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}-zonal_anom_native.nc : ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily-zonal-anom_native.nc
+${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}-zonal-anom_native.nc : ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily-zonal-anom_native.nc
 	cdo ${TSCALE} -${PERIOD} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 3: Plot the envelope
-${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-va-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_SHORT}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}-zonal_anom_native.nc
+${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-va-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_SHORT}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}-zonal-anom_native.nc
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< va ${TSTEP} --contour $(word 2,$^) ${CONTOUR_VAR} --timescale ${TSCALE_LABEL_SHORT} --time ${PLOT_START} ${PLOT_END} none --projection spstere --stride ${STRIDE} --raphael --ofile $@
 	
 
