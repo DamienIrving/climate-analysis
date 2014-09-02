@@ -14,7 +14,7 @@ all : ${TARGET}
 
 ## Plot the envelope ##
 
-# Step 1: Calculate the contour zonal anomaly                                               sf_ERAInterim_500hPa_daily_native.nc
+# Step 1: Calculate the contour zonal anomaly
 ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily-zonal-anom_native.nc : ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native.nc       
 	${ZONAL_ANOM_METHOD} $< ${CONTOUR_VAR} $@
 	ncatted -O -a axis,time,c,c,T $@
