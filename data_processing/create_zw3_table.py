@@ -50,7 +50,7 @@ def find_nearest(array, value):
     return array[idx]
 
 
-def get_fourier(infile, lat_requested):
+def get_fourier(infile, lat_range):
     """Extract Fourier coefficient data and output to a pandas DataFrame"""
     
     fin = netCDF4.Dataset(infile)
@@ -64,16 +64,25 @@ def get_fourier(infile, lat_requested):
 
     # Latitude axis
     lat_axis = fin.variables['latitude'][:]
-    lat_index = (numpy.abs(lat_axis - lat_requested)).argmin()
-    lat_selected = lat_axis[lat_index]
-    if lat_selected != lat_requested:
-        print "Selecting the closest latitude to %s, which is %s" %(str(lat_requested), str(lat_selected))
+    ave_lat = (lat_range[0] + lat_range[1]) / 2.0
+    
+    lat_min_index = (numpy.abs(lat_axis - lat_range[0])).argmin()
+    lat_middle_index = (numpy.abs(lat_axis - ave_lat)).argmin()
+    lat_max_index = (numpy.abs(lat_axis - lat_range[1])).argmin()
+   
+    for index_pair in [(lat_min_index, lat_range[0]), (lat_middle_index, ave_lat), (lat_max_index, lat_range[1])]:
+        index, lat_requested = index_pair
+        lat_selected = lat_axis[index]
+        if lat_selected != lat_requested:
+            print "Selecting the closest latitude to %s, which is %s" %(str(lat_requested), str(lat_selected))
 
     # Output DataFrame
     output = pandas.DataFrame(index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis))
     for var in var_list:
         if not var[0:3].lower() in ['lat', 'lon', 'tim']:
-	    output[var] = fin.variables[var][:, lat_index]
+	    output[var+'_middle'] = fin.variables[var][:, lat_middle_index]
+            if not 'phase' in var:
+                output[var+'_max'] = numpy.max(fin.variables[var][:, lat_min_index:(lat_max_index+1)])
 
     return output
 
@@ -114,14 +123,14 @@ def main(inargs):
 
     # Read data and check inputs #
     
-    fourier_DataFrame = get_fourier(inargs.fourier_file, inargs.latitude)
+    fourier_DataFrame = get_fourier(inargs.fourier_file, inargs.lat_range)
     zw3_DataFrame = get_zw3(inargs.zw3_file)
     env_DataFrame = get_env(inargs.env_file, normalised=False)
     nenv_DataFrame = get_env(inargs.nenv_file, normalised=True)
     
     output = fourier_DataFrame.join([zw3_DataFrame, env_DataFrame, nenv_DataFrame])
-    metadata = gio.get_timestamp()
-    output.to_csv(inargs.outfile)  # At the moment you can't write metadata headers with to_csv, hence metadata hasn't been used
+    output.to_csv(inargs.outfile, float_format='%0.2f')  
+    gio.write_metadata(inargs.outfile)  # You can't write metadata headers with to_csv, hence the need for a separate metadata file
 
 
 if __name__ == '__main__':
@@ -152,8 +161,8 @@ note:
     
     parser.add_argument("outfile", type=str, help="Output file name")
     
-    parser.add_argument("--latitude", type=float, default=-55,
-                        help="Latitude to select from the fourier file")                    
+    parser.add_argument("--lat_range", type=float, default=[-70, -40],
+                        help="Latitude range to select from the fourier file")                    
 
     
     args = parser.parse_args()             
