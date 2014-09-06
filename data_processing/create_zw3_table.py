@@ -80,9 +80,9 @@ def get_fourier(infile, lat_range):
     output = pandas.DataFrame(index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis))
     for var in var_list:
         if not var[0:3].lower() in ['lat', 'lon', 'tim']:
-	    output[var+'_middle'] = fin.variables[var][:, lat_middle_index]
+            output[var+'_middle'] = fin.variables[var][:, lat_middle_index]
             if not 'phase' in var:
-                output[var+'_max'] = numpy.max(fin.variables[var][:, lat_min_index:(lat_max_index+1)])
+                output[var+'_max'] = numpy.max(fin.variables[var][:, lat_min_index:(lat_max_index+1)], axis=-1)
 
     return output
 
