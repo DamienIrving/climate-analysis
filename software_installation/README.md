@@ -42,7 +42,18 @@ UV-CDAT GUI:
 ### Anaconda (i.e. any operating system)
 
 The easiest way to install iris is alongside Anaconda:  
-`$ conda install -c https://conda.binstar.org/rsignell iris`
+`$ conda install -c https://conda.binstar.org/rsignell iris`  
+
+If you try and `import iris` now you'll get the following error message:  
+    
+    OSError: [UT_OPEN_DEFAULT] Failed to open UDUNITS-2 XML unit database : "No such file or directory"
+    
+This can be fixed by finding the `udunits2.xml` file that comes with anaconda and 
+setting the following shell variable to it:
+
+    $ export UDUNITS2_XML_PATH=/Users/damienirving/anaconda/pkgs/udunits2-2.2.11-0/share/udunits/udunits2.xml
+
+Restart your Python session and iris will now import successfully.
 
 ### Ubuntu 13.04
 
