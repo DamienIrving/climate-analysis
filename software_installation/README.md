@@ -49,11 +49,22 @@ If you try and `import iris` now you'll get the following error message:
     OSError: [UT_OPEN_DEFAULT] Failed to open UDUNITS-2 XML unit database : "No such file or directory"
     
 This can be fixed by finding the `udunits2.xml` file that comes with anaconda and 
-setting the following shell variable to it:
+setting the following shell variable to it (it's a good idea to put this command in your
+`.bash_profile` file):
 
     $ export UDUNITS2_XML_PATH=/Users/damienirving/anaconda/pkgs/udunits2-2.2.11-0/share/udunits/udunits2.xml
 
 Restart your Python session and iris will now import successfully.
+
+For older versions of catropy there will also be an error if you try and plot coastlines
+(due to a change in the URL for the maps). All I had to do was change line 264 of
+`/Users/damienirving/anaconda/lib/python2.7/site-packages/cartopy/io/shapereader.py` to the
+following (see the details [here](https://github.com/SciTools/cartopy/issues/469)): 
+
+    _NE_URL_TEMPLATE = ('http://www.naturalearthdata.com/'
+                        'http//www.naturalearthdata.com/download/{resolution}'
+                        '/{category}/ne_{resolution}_{name}.zip')
+
 
 ### Ubuntu 13.04
 
