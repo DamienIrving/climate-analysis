@@ -1,6 +1,6 @@
 # Import general Python modules #
 
-import os, sys
+import os, sys, re
 from collections import OrderedDict
 
 import operator
@@ -41,17 +41,17 @@ except ImportError:
 
 # Define functions #
 
-def add_duration(indata, extent_threshold):
-    """Add a duration column to the input data, where an event is defined by
-    the number of consecutive timesteps greater than the extent_threshold.
+def add_duration(DataFrame, metric, metric_threshold):
+    """Add a duration column to the input DataFrame, where an event is defined by
+    the number of consecutive timesteps greater than the metric_threshold.
     
     Note that every timestep is assigned a duration value equal to the number of
     days in the entire event.
     
     """
     
-    indata['event'] = indata['extent'].map(lambda x: x > extent_threshold)
-    event_list = indata['event'].tolist()
+    DataFrame['event'] = DataFrame[metric].map(lambda x: x > metric_threshold)
+    event_list = DataFrame['event'].tolist()
     grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(event_list)]
 
     duration = []
@@ -62,9 +62,9 @@ def add_duration(indata, extent_threshold):
             data = [0] * event[1]
         duration.append(data)
 
-    indata['duration'] = reduce(operator.add, duration)  
+    DataFrame['duration'] = reduce(operator.add, duration)  
 
-    return indata  
+    return DataFrame  
     
 
 def basic_stats(data, stats, before_filtering=True):
@@ -122,23 +122,23 @@ def calc_seasonal_values(monthly_values, month_years):
     
     months = {'DJF': [12, 1, 2], 'MAM': [3, 4, 5],
               'JJA': [6, 7, 8], 'SON': [9, 10, 11],
-	      'annual': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
+              'annual': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]}
     
     seasonal_values = {}
     for season in months.keys():
         seasonal_values[season] = []
-	
+    
     year_lists = {}
     for season, months in months.iteritems():    
         years = get_intersection(month_years, months)
-	for year in years:
-	    season_total = 0
-	    for month in months:
-	        index = month_years[month].index(year)
-		month_total = monthly_values[month][index]
-	        season_total = season_total + month_total
-            seasonal_values[season].append(season_total)
-	year_lists[season] = years
+    for year in years:
+        season_total = 0
+        for month in months:
+            index = month_years[month].index(year)
+            month_total = monthly_values[month][index]
+            season_total = season_total + month_total
+        seasonal_values[season].append(season_total)
+    year_lists[season] = years
 
     return seasonal_values, year_lists
 
@@ -215,12 +215,12 @@ def datetime_selector(times_str, season=None, start=None, end=None):
     if start:
         datetime_start = datetime.strptime(start, '%Y-%m-%d')
         start_selection = times_dt >= datetime_start  
-	combined_selection = combined_selection & start_selection
+        combined_selection = combined_selection & start_selection
     
     if end:
         datetime_end = datetime.strptime(end, '%Y-%m-%d')
         end_selection = times_dt <= datetime_end
-	combined_selection = combined_selection & end_selection
+        combined_selection = combined_selection & end_selection
     
     return combined_selection
 
@@ -333,11 +333,11 @@ def plot_monthly_totals(data, outfile, start_year, start_month, end_year, end_mo
     monthly_pct = numpy.zeros(12)
     for i in range(0, 12):
         ndays = calendar.mdays[i+1] * len(month_years[i+1])
-	if i == 1:
-	    start = start_year if start_month <= 2 else start_year + 1
-	    end = end_year if end_month >= 2 else end_year - 1
-	    nleap = calendar.leapdays(start, end)
-	    ndays = ndays + nleap
+    if i == 1:
+        start = start_year if start_month <= 2 else start_year + 1
+        end = end_year if end_month >= 2 else end_year - 1
+        nleap = calendar.leapdays(start, end)
+        ndays = ndays + nleap
         monthly_pct[i] = (monthly_totals[i+1] / float(ndays)) * 100     
 
     ind = numpy.arange(12)    # the x locations for the bars
@@ -353,7 +353,7 @@ def plot_monthly_totals(data, outfile, start_year, start_month, end_year, end_mo
 
 def plot_seasonal_values(data, outfile, 
                          start_year, start_month, end_year, end_month, month_years, stats,
-			 leg_loc=7, annual=False):
+                        leg_loc=7, annual=False):
     """Plot a line graph showing the seasonal values for each year"""
     
     for month, years in month_years.iteritems():
@@ -366,7 +366,7 @@ def plot_seasonal_values(data, outfile,
 
     colors = {'DJF': 'red', 'MAM': 'orange',
              'JJA': 'blue', 'SON': 'green',
-	     'annual': 'black'}
+             'annual': 'black'}
     
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
@@ -375,7 +375,7 @@ def plot_seasonal_values(data, outfile,
     if annual:
         season_list.append('annual')
     for season in season_list:
-	ax.plot(years[season], seasonal_values[season], color=colors[season], lw=2.0, label=season)       
+        ax.plot(years[season], seasonal_values[season], color=colors[season], lw=2.0, label=season)       
 
     ax.set_xlim(start_year, end_year)
     ax.set_xlabel('year')
@@ -386,18 +386,31 @@ def plot_seasonal_values(data, outfile,
     gio.write_metadata(outfile, extra_notes=stats)
 
 
+def get_threshold(DataFrame, column, threshold_str):
+    """Turn the user input threshold into a numeric threshold"""
+    
+    if 'pct' in threshold_str:
+        value = float(re.sub('pct', '', threshold_str))
+        threshold_float = numpy.percentile(DataFrame[column], value)
+    else:
+        threshold_float = float(threshold_str)
+    
+    return threshold_float
+     
+
 def main(inargs):
     """Run the program"""
    
     # Read data 
-    indata = pandas.read_csv(inargs.infile, header=1)
-    indata = add_duration(indata, inargs.event_extent)
+    indata = pandas.read_csv(inargs.infile, index_col=0)
+    metric_threshold = get_threshold(indata, inargs.metric, inargs.metric_filter) 
+    indata = add_duration(indata, inargs.metric, metric_threshold)
     stats = basic_stats(indata, [], before_filtering=True)    
 
     # Apply filters
     dt_selector = datetime_selector(indata['date'], inargs.season, inargs.start, inargs.end)
     selector = dt_selector
-    if inargs.extent_filter:
+    if inargs.metric_filter:
         min_extent_selection = indata['extent'] >= inargs.extent_filter[0]
         max_extent_selection = indata['extent'] <= inargs.extent_filter[1]
         selector = selector & min_extent_selection & max_extent_selection 
@@ -431,8 +444,8 @@ def main(inargs):
     if inargs.seasonal_values_line:
         start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
         plot_seasonal_values(data, inargs.seasonal_values_line, 
-	                     start_year, start_month, end_year, end_month, month_years, stats,
-			     leg_loc=inargs.leg_loc, annual=inargs.annual)
+                             start_year, start_month, end_year, end_month, month_years, stats,
+                             leg_loc=inargs.leg_loc, annual=inargs.annual)
     
 
 if __name__ == '__main__':
@@ -442,7 +455,6 @@ example:
   
 note:
     This script assumes daily input data.
-    Nice addition would be a duration filter.
     At the moment season selection will mess with the duration statistics
     (i.e. cut events short)
     
@@ -458,44 +470,36 @@ author:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     # Required arguments
-    parser.add_argument("infile", type=str, help="Input file name")
+    parser.add_argument("infile", type=str, help="Input file name - it is the .csv output of create_zw3_table.py")
+    parser.add_argument("metric", type=str, help="Name of the input file metric to be used")
     
     # Time filters
     parser.add_argument("--start", type=str, help="Time start filter (e.g. 1979-02-31)", default=None)
-    parser.add_argument("--end", type=str, help="Time end filter (e.g. 1979-02-31)", default=None)
+    parser.add_argument("--end", type=str, help="Time end filter (e.g. 2012-12-31)", default=None)
     parser.add_argument("--season", type=str, choices=('DJF', 'MAM', 'JJA', 'SON'), default=None,
                         help="Season selector [default = all]")
     
     # Other filters
-    parser.add_argument("--event_extent", type=float, default=100.0, 
-                        help="Minimum extent that will be included as an event")
-    parser.add_argument("--extent_filter", type=float, nargs=2, default=None, metavar=('MIN', 'MAX'),
-                        help="Zonal extent filter - only extents equal to or within these bounds are included") 
+    parser.add_argument("--metric_filter", type=str, default='90pct', 
+                        help="Minimum metric value that will be included as an event. Can be percentile (e.g. 90pct) or raw value.")
     parser.add_argument("--duration_filter", type=float, nargs=2, default=None, metavar=('MIN', 'MAX'),
                         help="Duration filter - only events of length equal to or within these bounds are included")
                         
     # Optional outputs
-    parser.add_argument("--extent_histogram", type=str, default=None, 
-                        help="Name of output file for a histogram of the extent")
-    parser.add_argument("--extent_cdf", type=str, default=None, 
-                        help="Name of output file for a cumulative distribution function of the extent")
     parser.add_argument("--duration_histogram", type=str, default=None, 
                         help="Name of output file for a histogram of the duration")
     parser.add_argument("--monthly_totals_histogram", type=str, default=None,
-                        help="Name of the output file for a histogram of the monthly totals")
+                        help="Name of the output file for a histogram of the monthly totals of days that survived the filtering")
     parser.add_argument("--seasonal_values_line", type=str, default=None,
                         help="Name of the output file for a line graph of the seasonal counts")
     parser.add_argument("--date_list", type=str, default=None, 
-                        help="Name of output file for list of filtered dates")		
+                        help="Name of output file for list of filtered dates")      
 
+    # Plot options
     parser.add_argument("--leg_loc", type=int, default=0,
                         help="Location of legend for line graph [default = 0 = top right] (7 = centre right)")
     parser.add_argument("--annual", action="store_true", default=False,
                         help="switch for including the annual season in the seasonal values plot [default: False]")
-
-    # Plot options
-    parser.add_argument("--extent_bin_width", type=float, default=10,
-                        help="Width of the bins for the extent historgram")
 
     args = parser.parse_args()            
     main(args)
