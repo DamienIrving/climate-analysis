@@ -7,14 +7,15 @@ Included functions:
 
 # Import general Python modules #
 
-import iris
-import datetime
-from iris.time import PartialDateTime
+import os, sys, pdb, re
+import argparse
 
-import matplotlib.pyplot as plt
+import iris
+from iris.time import PartialDateTime
 import iris.plot as iplt
 import iris.quickplot as qplt
 
+import matplotlib.pyplot as plt
 import matplotlib.cm as mpl_cm
 
 import cartopy
@@ -42,12 +43,27 @@ except ImportError:
 
 # Define functions
 
-def 
+def get_time_constraint(start, end):
+    """Set the time constraint"""
+    
+    date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
+    assert re.search(date_pattern, start) or start == None
+    assert re.search(date_pattern, end) or end == None
+    
+    if not start and not end:
+        time_constraint = iris.Constraint()
+    elif (start and not end) or (start == end):
+        year, month, day = start.split('-')    
+        time_constraint = iris.Constraint(time=iris.time.PartialDateTime(year=year, month=month, day=day))
+    elif end and not start:
+        year, month, day = end.split('-')    
+        time_constraint = iris.Constraint(time=iris.time.PartialDateTime(year=year, month=month, day=day))
+    else:  
+        start_year, start_month, start_day = start.split('-') 
+        end_year, end_month, end_day = end.split('-')
+        time_constraint = iris.Constraint(time=lambda t: PartialDateTime(year=start_year, month=start_month, day=start_day) <= t <= PartialDateTime(year=start_year, month=start_month, day=start_day))
 
-
-
-
-
+    return time_constraint
 
 
 def _main(inargs):
@@ -56,13 +72,11 @@ def _main(inargs):
     # Extract data #
     
     time_constraint = get_time_constraint(inargs.start, inargs.end)
-    
-    time_constraint = iris.Constraint(time=lambda t: PartialDateTime(year=1989, month=3) <= t <= PartialDateTime(year=1989, month=5))
     lat_constraint = iris.Constraint(latitude=lambda y: y <= 0.0)
 
     with iris.FUTURE.context(cell_datetime_objects=True):
-        u_cube = iris.load_cube(ufile, 'eastward_wind' & time_constraint & lat_constraint)
-        v_cube = iris.load_cube(vfile, 'northward_wind' & time_constraint & lat_constraint)
+        u_cube = iris.load_cube(inargs.u_file, inargs.u_var & time_constraint & lat_constraint)
+        v_cube = iris.load_cube(inargs.u_file, inargs.u_var & time_constraint & lat_constraint)
 
     u_temporal_mean = u_cube.collapsed('time', iris.analysis.MEAN)  
     v_temporal_mean = v_cube.collapsed('time', iris.analysis.MEAN)
@@ -77,7 +91,6 @@ def _main(inargs):
 
     ## Select the map projection
     ax = plt.axes(projection=ccrs.SouthPolarStereo())
-   #ax = plt.axes(projection=ccrs.PlateCarree())
    
     ax.set_extent((x.min(), x.max(), y.min(), -30.0), crs=ccrs.PlateCarree())
     
@@ -92,12 +105,12 @@ def _main(inargs):
     ax.streamplot(x, y, u, v, transform=ccrs.PlateCarree(), linewidth=2, density=2, color=magnitude)
 
     # Wind vectors
-   #ax.quiver(x, y, u, v, transform=ccrs.PlateCarree(), regrid_shape=40) 
+    #ax.quiver(x, y, u, v, transform=ccrs.PlateCarree(), regrid_shape=40) 
 
     # Contour
     #qplt.contourf(u_temporal_mean)
 
-    plt.show()
+    plt.savefig(inargs.ofile)
 
 
 if __name__ == '__main__':
@@ -118,15 +131,15 @@ improvements:
     parser.add_argument("u_var", type=str, help="standard_name for the zonal wind")
     parser.add_argument("v_file", type=str, help="input file name for the meridional wind")
     parser.add_argument("v_var", type=str, help="standard_name for the meridional wind")
-    parser.add_argument("zg_file", type=str, help="input file name for the geopoential height")
-    parser.add_argument("zg_var", type=str, help="standard_name for the geopotential height")
+#    parser.add_argument("zg_file", type=str, help="input file name for the geopoential height")
+#    parser.add_argument("zg_var", type=str, help="standard_name for the geopotential height")
 
     parser.add_argument("--start", type=str, default=None,
                         help="start date in YYYY-MM-DD format [default = None])")
     parser.add_argument("--end", type=str, default=None,
                         help="end date in YYY-MM-DD format [default = None], let START=END for single time step (can be None)")
  
-    parser.add_argument("--ofile", type=str, 
+    parser.add_argument("--ofile", type=str, default='test.png',
                         help="name of output file [default: test.png]")
 
     
@@ -148,4 +161,4 @@ improvements:
 
     args = parser.parse_args()              
 
-    _main(args)
+    main(args)
