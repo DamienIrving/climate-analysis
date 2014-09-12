@@ -41,32 +41,33 @@ try:
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
+
 # Define functions
 
 def get_time_constraint(start, end):
     """Set the time constraint"""
     
     date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
-    assert re.search(date_pattern, start) or start == None
-    assert re.search(date_pattern, end) or end == None
+    assert re.search(date_pattern, start) or start == ''
+    assert re.search(date_pattern, end) or end == ''
     
     if not start and not end:
         time_constraint = iris.Constraint()
     elif (start and not end) or (start == end):
         year, month, day = start.split('-')    
-        time_constraint = iris.Constraint(time=iris.time.PartialDateTime(year=year, month=month, day=day))
+        time_constraint = iris.Constraint(time=iris.time.PartialDateTime(year=int(year), month=int(month), day=int(day)))
     elif end and not start:
         year, month, day = end.split('-')    
-        time_constraint = iris.Constraint(time=iris.time.PartialDateTime(year=year, month=month, day=day))
+        time_constraint = iris.Constraint(time=iris.time.PartialDateTime(year=int(year), month=int(month), day=int(day)))
     else:  
         start_year, start_month, start_day = start.split('-') 
         end_year, end_month, end_day = end.split('-')
-        time_constraint = iris.Constraint(time=lambda t: PartialDateTime(year=start_year, month=start_month, day=start_day) <= t <= PartialDateTime(year=start_year, month=start_month, day=start_day))
+        time_constraint = iris.Constraint(time=lambda t: PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)) <= t <= PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)))
 
     return time_constraint
 
 
-def _main(inargs):
+def main(inargs):
     """Run program."""
 
     # Extract data #
@@ -76,16 +77,22 @@ def _main(inargs):
 
     with iris.FUTURE.context(cell_datetime_objects=True):
         u_cube = iris.load_cube(inargs.u_file, inargs.u_var & time_constraint & lat_constraint)
-        v_cube = iris.load_cube(inargs.u_file, inargs.u_var & time_constraint & lat_constraint)
+        v_cube = iris.load_cube(inargs.v_file, inargs.v_var & time_constraint & lat_constraint)
+        zg_cube = iris.load_cube(inargs.zg_file, inargs.zg_var & time_constraint & lat_constraint)
 
-    u_temporal_mean = u_cube.collapsed('time', iris.analysis.MEAN)  
-    v_temporal_mean = v_cube.collapsed('time', iris.analysis.MEAN)
-
+    ntimes = len(u_cube.coords('time')[0].points)
+    if ntimes > 1:
+        print 'Averaging over the %s time points' %(str(ntimes))
+        u_cube = u_cube.collapsed('time', iris.analysis.MEAN)  
+        v_cube = v_cube.collapsed('time', iris.analysis.MEAN)
+        zg_cube = zg_cube.collapsed('time', iris.analysis.MEAN)
+    
     ## Define the data
-    x = u_temporal_mean.coords('longitude')[0].points
-    y = u_temporal_mean.coords('latitude')[0].points
-    u = u_temporal_mean.data
-    v = v_temporal_mean.data
+    x = u_cube.coords('longitude')[0].points
+    y = u_cube.coords('latitude')[0].points
+    u = u_cube.data
+    v = v_cube.data
+    zg = zg_cube.data
 
     plt.figure(figsize=(8, 10))
 
@@ -108,7 +115,7 @@ def _main(inargs):
     #ax.quiver(x, y, u, v, transform=ccrs.PlateCarree(), regrid_shape=40) 
 
     # Contour
-    #qplt.contourf(u_temporal_mean)
+    qplt.contour(zg, colors='k')
 
     plt.savefig(inargs.ofile)
 
@@ -131,12 +138,12 @@ improvements:
     parser.add_argument("u_var", type=str, help="standard_name for the zonal wind")
     parser.add_argument("v_file", type=str, help="input file name for the meridional wind")
     parser.add_argument("v_var", type=str, help="standard_name for the meridional wind")
-#    parser.add_argument("zg_file", type=str, help="input file name for the geopoential height")
-#    parser.add_argument("zg_var", type=str, help="standard_name for the geopotential height")
+    parser.add_argument("zg_file", type=str, help="input file name for the geopoential height zonal anomaly")
+    parser.add_argument("zg_var", type=str, help="standard_name for the geopotential height zonal anomaly")
 
-    parser.add_argument("--start", type=str, default=None,
+    parser.add_argument("--start", type=str, default='',
                         help="start date in YYYY-MM-DD format [default = None])")
-    parser.add_argument("--end", type=str, default=None,
+    parser.add_argument("--end", type=str, default='',
                         help="end date in YYY-MM-DD format [default = None], let START=END for single time step (can be None)")
  
     parser.add_argument("--ofile", type=str, default='test.png',
