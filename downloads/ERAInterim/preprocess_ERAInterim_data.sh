@@ -38,6 +38,6 @@ ncatted -O -a axis,time,c,c,T ${outfile}
 
 if [[ "${outvar}" = "zg" ]] ; then
     ncatted -O -a units,${outvar},m,c,"m" ${outfile}
-    ncatted -O -a standard_name,${outvar},m,c,"geopotential height" ${outfile}
+    ncatted -O -a standard_name,${outvar},m,c,"geopotential_height" ${outfile}
     ncatted -O -a long_name,${outvar},m,c,"geopotential height at 500hPa" ${outfile}
 fi
