@@ -39,7 +39,7 @@ UV-CDAT GUI:
 
 ## Iris
 
-### Anaconda (i.e. any operating system)
+### Anaconda
 
 The easiest way to install iris is alongside Anaconda:  
 `$ conda install -c https://conda.binstar.org/rsignell iris`  
@@ -64,6 +64,14 @@ following (see the details [here](https://github.com/SciTools/cartopy/issues/469
     _NE_URL_TEMPLATE = ('http://www.naturalearthdata.com/'
                         'http//www.naturalearthdata.com/download/{resolution}'
                         '/{category}/ne_{resolution}_{name}.zip')
+
+#### Mac
+
+This works with no edits required:  
+
+    $ sudo conda install -c https://conda.binstar.org/jklymak iris
+
+But there is no mac binstar for cdat-lite
 
 
 ### Ubuntu 13.04
