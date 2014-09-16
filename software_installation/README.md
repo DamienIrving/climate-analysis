@@ -48,13 +48,10 @@ Installed:
 
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson cdat-lite`
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson windspharm`
+* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson eofs`
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/rsignell iris` (installs cartopy too)
 * `$ sudo /usr/local/anaconda/bin/pip install gitpython`
 * `$ sudo /usr/local/anaconda/bin/pip install cdo`
-
-Outstanding (i.e. things I still need to install or can't):
-
-* eofs
 
 (note that soon the latest iris and cartopy binstar files will be stored [here](https://binstar.org/scitools))
 
@@ -138,9 +135,9 @@ Installed:
 
 Outstanding (i.e. things I still need to install or can't):  
 
-* windspharm (no able to produce a binstar - see [this disucssion](https://github.com/ajdawson/windspharm/issues/39))
+* windspharm (not able to produce a binstar - see [this disucssion](https://github.com/ajdawson/windspharm/issues/39))
 * cdat-lite (currently no binstar and pip doesn't work)
-* eofs
+* eofs (no binstar at this point - not sure whether it is possible to make one or not)
 
 (note that soon the latest iris and cartopy binstar files will be stored [here](https://binstar.org/scitools))
 
