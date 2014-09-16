@@ -45,13 +45,15 @@ The Ubuntu Software Centre has CDO, which is the equivalent to `apt-get install 
 ##### Additional libraries
 
 Installed:
+
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson cdat-lite`
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson windspharm`
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/rsignell iris` (installs cartopy too)
 * `$ sudo /usr/local/anaconda/bin/pip install gitpython`
 * `$ sudo /usr/local/anaconda/bin/pip install cdo`
 
-Outstanding (i.e. things I still need to install or can't):  
+Outstanding (i.e. things I still need to install or can't):
+
 * eofs
 
 (note that soon the latest iris and cartopy binstar files will be stored [here](https://binstar.org/scitools))
@@ -130,10 +132,12 @@ haven't tried this.
 ##### Additional libraries
 
 Installed:  
+
 * `$ /users/damienirving/anaconda/bin/conda install -c https://conda.binstar.org/jklymak iris` (installs cartopy too)
 * `$ /usr/local/anaconda/bin/pip install gitpython`
 
 Outstanding (i.e. things I still need to install or can't):  
+
 * windspharm (no able to produce a binstar - see [this disucssion](https://github.com/ajdawson/windspharm/issues/39))
 * cdat-lite (currently no binstar and pip doesn't work)
 * eofs
