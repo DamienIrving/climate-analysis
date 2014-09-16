@@ -1,3 +1,5 @@
+# Software Installation
+
 My preferred setup is as follows:
 
 * Simple manipulation of netCDF files: [NCO](http://nco.sourceforge.net/)
@@ -16,65 +18,71 @@ My preferred setup is as follows:
 This is easy to setup on a linux machine, but more difficult on a Mac (and near on impossible on a
 windows machine I would imagine, although I haven't tried)
 
-My philosophy on installing Python libraries is to first install Anaconda. It iss a free scientific Python
+My approach for installing Python libraries is to first install Anaconda. It is a free scientific Python
 distribution that comes with most of the libraries you'd ever need. For installing extra libraries alongside
 Anaconda, I first search [Binstar](https://binstar.org/) to see if `conda` can be used (conda is the library 
 installer that comes with Anaconda). If a binstar isn't available, then I use the generic python package
 installer (pip). This approach avoids the need to install things myself from binaries or source code, which
 is a nightmare and in most cases doesn't work.
 
-# Ubuntu (i.e. Linux)
+## Ubuntu (i.e. Linux)
 
-## NCO
+### NCO
 
 The Ubuntu Software Centre has NCO, which is the equivalent to `apt-get install nco` at the command line.
 
-## CDO
+### CDO
 
 The Ubuntu Software Centre has CDO, which is the equivalent to `apt-get install cdo` at the command line.
 
-## Anaconda
+### Anaconda
 
-[Downloaded](http://continuum.io/downloads) and ran their Linux-64bit installer 
+[Downloaded](http://continuum.io/downloads) and ran their Linux-64bit installer. This can be updated via:
 
-### Additional libraries
+    $ sudo /usr/local/anaconda/bin/conda update conda
+    $ sudo /usr/local/anaconda/bin/conda update anaconda
 
-* `$ /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson cdat-lite`
-* `$ /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson windspharm`
-* `$ /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/rsignell iris` (installs cartopy too)
+##### Additional libraries
 
-* `$ /usr/local/anaconda/bin/pip install gitpython`
-* `$ /usr/local/anaconda/bin/pip install cdo`
+Installed:
+* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson cdat-lite`
+* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson windspharm`
+* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/rsignell iris` (installs cartopy too)
+* `$ sudo /usr/local/anaconda/bin/pip install gitpython`
+* `$ sudo /usr/local/anaconda/bin/pip install cdo`
+
+Outstanding (i.e. things I still need to install or can't):  
+* eofs
 
 (note that soon the latest iris and cartopy binstar files will be stored [here](https://binstar.org/scitools))
 
-## UV-CDAT
+### UV-CDAT
 
 Installed from binaries (which involves installing a whole heap of dependencies) following the 
 instructions [here](https://github.com/UV-CDAT/uvcdat/wiki/Installation-on-Ubuntu)
 
 
-# Mac OS X (10.9 Mavricks)
+## Mac OS X (10.9 Mavricks)
 
-## NCO
+### NCO
 
-### Homebrew
+##### Homebrew
 
 Using Homebrew (the Mac OS X package manager) type:
 
     $ brew tap homebrew/science  
     $ brew install nco
 
-### Binaries
+##### Binaries
 
 I didn't have any luck installing the most up-to-date binaries (provided as a tarball 
 `.tar.gz` at the [NCO website](http://nco.sourceforge.net/)) but at that site they provided
 some old DMG files that worked.
 
 
-## CDO
+### CDO
 
-### Homebrew
+##### Homebrew
 
 On the [website](https://code.zmaw.de/projects/cdo) it says that CDO can be installed via 
 homebrew (`brew install cdo`) or macports (`port install cdo`). Macports says that it doesn't
@@ -99,7 +107,7 @@ that it didn't have write permissions to. Every time that happened the process s
 `sudo chgrp staff` (and `sudo cdmod q+w` if need be) to fix the relevant permissions, and then
 started the process again with `brew install cdo` until finally the whole thing installed properly.
 
-### Binaries
+##### Binaries
 
 I then tried to install from binaries (following [these](https://code.zmaw.de/projects/cdo/embedded/1.6.3/cdo.html#x1-50001.1.1)
 very useful instructions for dealing with binaries), however when I tried to run a cdo command 
@@ -112,22 +120,27 @@ binaries) to remedy this problem, however when I tried to do that it told me:
 So I'd need to install hdf5 first (via binaries), then netCDF and hopefully CDO will work, but I 
 haven't tried this.
 
-## Anaconda
+### Anaconda
 
-[Downloaded](http://continuum.io/downloads) and ran their Mac installer 
+[Downloaded](http://continuum.io/downloads) and ran their Mac installer. This can be updated via:
 
-### Additional libraries
+    $ sudo /users/damienirving/anaconda/bin/conda update conda
+    $ sudo /users/damienirving/anaconda/bin/conda update anaconda
 
-* `$ /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/jklymak iris` (installs cartopy too)
+##### Additional libraries
 
+Installed:  
+* `$ /users/damienirving/anaconda/bin/conda install -c https://conda.binstar.org/jklymak iris` (installs cartopy too)
 * `$ /usr/local/anaconda/bin/pip install gitpython`
 
+Outstanding (i.e. things I still need to install or can't):  
+* windspharm (no able to produce a binstar - see [this disucssion](https://github.com/ajdawson/windspharm/issues/39))
+* cdat-lite (currently no binstar and pip doesn't work)
+* eofs
 
 (note that soon the latest iris and cartopy binstar files will be stored [here](https://binstar.org/scitools))
 
-There is currently no binstar installer for cdat-lite or windspharm - see [this disucssion](https://github.com/ajdawson/windspharm/issues/39) regarding windspharm.
-
-## UV-CDAT
+### UV-CDAT
 
 The simplest option for installing [UV-CDAT](http://uvcdat.llnl.gov/) is to 
 [download](http://sourceforge.net/projects/cdat/files/Releases/UV-CDAT/1.5/) the binary file 
@@ -145,12 +158,12 @@ slightly different), however you can get xcode from the app store, while there a
 for qt and gfortran at the same [place](http://sourceforge.net/projects/cdat/files/Releases/UV-CDAT/1.5/) 
 that you downloaded the UV-CDAT binary file.
 
-### Extra packages & uodates 
+##### Extra packages & uodates 
 
 * `$ /usr/local/uvcdat/1.5.1/bin/pip install ipython --upgrade`  (because tefault is very old)
 * `$ /usr/local/uvcdat/1.5.1/bin/pip install readline`  (if tab completion isn't working in IPython)
 
-### Where everything gets installed
+##### Where everything gets installed
 
 Here's what you'll typically enter at the command line to get access to python, ipython and the
 UV-CDAT GUI:
