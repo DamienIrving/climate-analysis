@@ -1,6 +1,6 @@
 # Import general Python modules #
 
-import os, sys, re
+import os, sys, re, pdb
 from collections import OrderedDict
 
 import operator
@@ -49,9 +49,9 @@ def add_duration(DataFrame, metric, metric_threshold):
     days in the entire event.
     
     """
-    
-    DataFrame['event'] = DataFrame[metric].map(lambda x: x > metric_threshold)
-    event_list = DataFrame['event'].tolist()
+
+    events = DataFrame[metric].map(lambda x: x > metric_threshold)
+    event_list = events.tolist()
     grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(event_list)]
 
     duration = []
@@ -62,13 +62,14 @@ def add_duration(DataFrame, metric, metric_threshold):
             data = [0] * event[1]
         duration.append(data)
 
-    DataFrame['duration'] = reduce(operator.add, duration)  
+    DataFrame['duration'] = reduce(operator.add, duration)
+    DataFrame['extent'] = events
 
     return DataFrame  
     
 
-def basic_stats(data, stats, before_filtering=True):
-    """Return basic statistics."""
+def basic_stats(DataFrame, stats, before_filtering=True):
+    """Return basic statistics (for printing to the screen)"""
     
     if before_filtering:
         stats.append('# Before filtering')     
@@ -76,9 +77,9 @@ def basic_stats(data, stats, before_filtering=True):
         stats.append(' ') 
         stats.append('# After filtering')
              
-    stats.append('total number of days: ' + str(len(data['date'])))
-    stats = extent_stats(data['extent'].tolist(), stats)
-    stats = duration_stats(data['duration'].tolist(), stats)
+    stats.append('total number of days: ' + str(len(DataFrame['duration'])))
+    stats = extent_stats(DataFrame['extent'].tolist(), stats)
+    stats = duration_stats(DataFrame['duration'].tolist(), stats)
 
     return stats
 
@@ -205,6 +206,8 @@ def datetime_selector(times_str, season=None, start=None, end=None):
     month_selection['JJA'] = (6, 7, 8)
     month_selection['SON'] = (9, 10, 11)
 
+    pdb.set_trace()
+
     combined_selection = times_dt != None  #Initialise with all true
 
     if season:
@@ -277,7 +280,19 @@ def get_intersection(dictionary, key_list):
         result.intersection_update(dictionary[key])
 
     return list(result)
+
+
+def get_threshold(DataFrame, column, threshold_str):
+    """Turn the user input threshold into a numeric threshold"""
     
+    if 'pct' in threshold_str:
+        value = float(re.sub('pct', '', threshold_str))
+        threshold_float = numpy.percentile(DataFrame[column], value)
+    else:
+        threshold_float = float(threshold_str)
+    
+    return threshold_float
+
 
 def get_years(date_list):
     """Return a list of integer years"""
@@ -384,18 +399,6 @@ def plot_seasonal_values(data, outfile,
 
     plt.savefig(outfile)
     gio.write_metadata(outfile, extra_notes=stats)
-
-
-def get_threshold(DataFrame, column, threshold_str):
-    """Turn the user input threshold into a numeric threshold"""
-    
-    if 'pct' in threshold_str:
-        value = float(re.sub('pct', '', threshold_str))
-        threshold_float = numpy.percentile(DataFrame[column], value)
-    else:
-        threshold_float = float(threshold_str)
-    
-    return threshold_float
      
 
 def main(inargs):
@@ -408,7 +411,7 @@ def main(inargs):
     stats = basic_stats(indata, [], before_filtering=True)    
 
     # Apply filters
-    dt_selector = datetime_selector(indata['date'], inargs.season, inargs.start, inargs.end)
+    dt_selector = datetime_selector(indata.index, inargs.season, inargs.start, inargs.end)
     selector = dt_selector
     if inargs.metric_filter:
         min_extent_selection = indata['extent'] >= inargs.extent_filter[0]
@@ -452,7 +455,7 @@ if __name__ == '__main__':
 
     extra_info =""" 
 example:
-  
+  env_amp_mean
 note:
     This script assumes daily input data.
     At the moment season selection will mess with the duration statistics
@@ -471,7 +474,7 @@ author:
 
     # Required arguments
     parser.add_argument("infile", type=str, help="Input file name - it is the .csv output of create_zw3_table.py")
-    parser.add_argument("metric", type=str, help="Name of the input file metric to be used")
+    parser.add_argument("metric", type=str, help="Name of the input file metric to be used for determining extent, duration, monthly totals, etc")
     
     # Time filters
     parser.add_argument("--start", type=str, help="Time start filter (e.g. 1979-02-31)", default=None)
