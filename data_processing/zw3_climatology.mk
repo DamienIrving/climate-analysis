@@ -20,14 +20,14 @@ all : ${TARGET}
 ## Step 1: Apply temporal averaging to the meridional wind data ##
 
 #v-wind
-${PDATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_daily_${GRID}.nc
+${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_daily_${GRID}.nc
 	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 
 ## Step 2: Extract the wave envelope (for the entire globe) and collapse the meridional dimension ##
 
-${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	${FOURIER_METHOD} $< ${VAR} $@ ${ENV_SEARCH}
 
 ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
@@ -62,20 +62,20 @@ ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${L
 
 ## Step 2: Calculate the phase and amplitude of each Fourier component ##
 
-${ZW3_DIR}/fourier-${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${PDATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${ZW3_DIR}/fourier-${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	${FOURIER_METHOD} $< ${VAR} $@ ${COE_SEARCH}
 
 ## Step 3: Calculate the ZW3 index of Raphael (2004) ## 
 
-${PDATA_DIR}/zg_${DATASET}_500hPa_daily_native-zonal-anom.nc : ${DATA_DIR}/zg_${DATASET}_500hPa_daily_native.nc       
+${DATA_DIR}/zg_${DATASET}_500hPa_daily_native-zonal-anom.nc : ${DATA_DIR}/zg_${DATASET}_500hPa_daily_native.nc       
 	${ZONAL_ANOM_METHOD} $< zg $@
 	ncatted -O -a axis,time,c,c,T $@
 
-${PDATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc : ${PDATA_DIR}/zg_${DATASET}_500hPa_daily_native-zonal-anom.nc
+${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc : ${DATA_DIR}/zg_${DATASET}_500hPa_daily_native-zonal-anom.nc
 	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-${ZW3_DIR}/zw3-zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc : ${PDATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc
+${ZW3_DIR}/zw3-zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc : ${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
 
 # Step 4: Put it all in a common table/database

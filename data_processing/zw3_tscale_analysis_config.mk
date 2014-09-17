@@ -3,8 +3,7 @@
 # System configuration
 DATA_HOME=/mnt/meteo0/data/simmonds/dbirving/${DATASET}
 DATA_DIR=${DATA_HOME}/data
-PDATA_DIR=${DATA_HOME}/data/processed
-RWID_DIR=${PDATA_DIR}/zw3
+RWID_DIR=${DATA_DIR}/zw3
 FIG_DIR=${RWID_DIR}/figures/tscale_anal
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/bin/anaconda/bin/python

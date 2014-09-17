@@ -25,26 +25,26 @@ all : ${TARGET}
 ### Wave envelope map (plot_envelope.py) ###
 
 ## Step 1a: Apply temporal averaging to the meridional wind data (for a limited time period)
-${PDATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_daily_${GRID}.nc
+${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_daily_${GRID}.nc
 	cdo ${TSCALE} -${PERIOD} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 1b: Extract the wave envelope
-${RWID_DIR}/env-${WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc : ${PDATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc
+${RWID_DIR}/env-${WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_fourier_transform.py $< ${VAR} $@ ${WAVE_SEARCH}
 
 ## Step 2a: Calculate the contour zonal anomaly
-${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc : ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native.nc       
+${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc : ${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native.nc       
 	${ZONAL_ANOM_METHOD} $< ${CONTOUR_VAR} $@
 	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 2b: Apply temporal averaging to the zonal contour data (for a limited time period)
-${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_native-zonal-anom.nc : ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc
+${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_native-zonal-anom.nc : ${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc
 	cdo ${TSCALE} -${PERIOD} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 3: Plot the envelope
-${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_SHORT}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_native-zonal-anom.nc
+${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_SHORT}_${GRID}_${PLOT_END}.png : ${RWID_DIR}/env-${WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc ${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_native-zonal-anom.nc
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< ${VAR} ${TSTEP} --contour $(word 2,$^) ${CONTOUR_VAR} --timescale ${TSCALE_LABEL_SHORT} --time ${PLOT_START} ${PLOT_END} none --projection spstere --stride ${STRIDE} --raphael --ofile $@
 	
 
@@ -52,7 +52,7 @@ ${FIG_DIR}/env/${TSCALE_LABEL_SHORT}/env-${WAVE_LABEL}-${VAR}-${CONTOUR_VAR}_${D
 
 # Step 4: Plot the transform
 
-${FIG_DIR}/hilbert/${TSCALE_LABEL_SHORT}/hilbert-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_SHORT}_${GRID}-${LAT_LABEL}_${PLOT_END}.png : ${PDATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc
+${FIG_DIR}/hilbert/${TSCALE_LABEL_SHORT}/hilbert-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_SHORT}_${GRID}-${LAT_LABEL}_${PLOT_END}.png : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL_LONG}_${GRID}.nc
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< ${VAR} ${TSTEP} $@ --timescale ${TSCALE_LABEL_SHORT} --time ${PLOT_START} ${PLOT_END} none --latitude ${LAT_RANGE} --stride ${STRIDE}
 
 

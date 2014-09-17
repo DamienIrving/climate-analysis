@@ -3,8 +3,7 @@
 # System configuration
 DATA_HOME=/mnt/meteo0/data/simmonds/dbirving/${DATASET}
 DATA_DIR=${DATA_HOME}/data
-PDATA_DIR=${DATA_HOME}/data/processed
-ZW3_DIR=${PDATA_DIR}/zw3
+ZW3_DIR=${DATA_DIR}/zw3
 MAP_DIR=${ZW3_DIR}/figures/maps
 INDEX_DIR=${ZW3_DIR}/figures/indexes
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
@@ -19,10 +18,10 @@ ZONAL_ANOM_METHOD=bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
 ## Climatology
 
 # Dataset
-VAR=va
+VAR=zg
 DATASET=ERAInterim
 LEVEL=500hPa
-GRID=native
+GRID=native-zonal-anom
 TSTEP=daily
 TSCALE=runmean,30
 TSCALE_LABEL=030day-runmean
