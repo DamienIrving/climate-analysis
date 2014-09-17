@@ -92,7 +92,6 @@ def main(inargs):
     y = u_cube.coords('latitude')[0].points
     u = u_cube.data
     v = v_cube.data
-    zg = zg_cube.data
 
     plt.figure(figsize=(8, 10))
 
@@ -115,9 +114,10 @@ def main(inargs):
     #ax.quiver(x, y, u, v, transform=ccrs.PlateCarree(), regrid_shape=40) 
 
     # Contour
-    qplt.contour(zg, colors='k')
+    qplt.contour(zg_cube, colors='0.3', linewidths=2)
 
     plt.savefig(inargs.ofile)
+    gio.write_metadata(inargs.ofile)
 
 
 if __name__ == '__main__':
@@ -148,22 +148,6 @@ improvements:
  
     parser.add_argument("--ofile", type=str, default='test.png',
                         help="name of output file [default: test.png]")
-
-    
-    parser.add_argument("--quiver_type", type=str, choices=('wind', 'waf'),
-                        help="type of quiver being plotted [defualt: wind]")
-    parser.add_argument("--quiver_thin", type=int, 
-                        help="thinning factor for plotting quivers [defualt: 1]")
-    parser.add_argument("--key_value", type=float, 
-                        help="size of the wind quiver in the key (plot is not scaled to this) [defualt: 1]")
-    parser.add_argument("--quiver_scale", type=float, 
-                        help="data units per arrow length unit (smaller value means longer arrow) [defualt: 170]")
-    parser.add_argument("--quiver_width", type=float,
-                        help="shaft width in arrow units [default: 0.0015, i.e. 0.0015 times the width of the plot]")
-    parser.add_argument("--quiver_headwidth", type=float,
-                        help="head width as multiple of shaft width [default: 3.5]")
-    parser.add_argument("--quiver_headlength", type=float, 
-                        help="head length as multiple of shaft width [default: 4.0]")
 
 
     args = parser.parse_args()              
