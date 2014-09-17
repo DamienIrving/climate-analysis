@@ -15,32 +15,32 @@ all : ${TARGET}
 ## Plot the envelope ##
 
 # Step 1: Calculate the contour zonal anomaly
-${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily-zonal-anom_native.nc : ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native.nc       
+${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc : ${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native.nc       
 	${ZONAL_ANOM_METHOD} $< ${CONTOUR_VAR} $@
 	ncatted -O -a axis,time,c,c,T $@
 
 # Step 2: Apply temporal averaging to the zonal contour data
-${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-zonal-anom_native.nc : ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily-zonal-anom_native.nc
+${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc : ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc
 	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 # Step 3: Plot the envelope
-${MAP_DIR}/env/${TSCALE_LABEL}/env-${ENV_WAVE_LABEL}-va-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-zonal-anom_native.nc
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< va ${TSTEP} --contour $(word 2,$^) ${CONTOUR_VAR} --timescale ${TSCALE_LABEL} --time ${PLOT_START} ${PLOT_END} none --projection spstere --stride ${STRIDE} --raphael --ofile $@
+${MAP_DIR}/env/${TSCALE_LABEL}/env-${ENV_WAVE_LABEL}-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc ${PDATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< ${VAR} ${TSTEP} --contour $(word 2,$^) ${CONTOUR_VAR} --timescale ${TSCALE_LABEL} --time ${PLOT_START} ${PLOT_END} none --projection spstere --stride ${STRIDE} --raphael --ofile $@
 
 
 ## Plot the Hilbert transform ##
 
-# Step 1: Calculate the running mean of the meridional wind data
+# Step 1: Calculate the running mean
 
-${PDATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/va_${DATASET}_${LEVEL}_daily_native.nc
+${PDATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_daily_native.nc
 	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 # Step 2: Plot the Hilbert transform
 
-${INDEX_DIR}/hilbert/${TSCALE_LABEL}/hilbert-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${LAT_LABEL}_${PLOT_END}.png : ${PDATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< va ${TSTEP} $@ --timescale ${TSCALE_LABEL} --time ${PLOT_START} ${PLOT_END} none --latitude ${LAT_RANGE} --stride ${STRIDE}
+${INDEX_DIR}/hilbert/${TSCALE_LABEL}/hilbert-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${LAT_LABEL}_${PLOT_END}.png : ${PDATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< ${VAR} ${TSTEP} $@ --timescale ${TSCALE_LABEL} --time ${PLOT_START} ${PLOT_END} none --latitude ${LAT_RANGE} --stride ${STRIDE}
 
 
 
