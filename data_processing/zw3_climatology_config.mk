@@ -19,12 +19,13 @@ ZONAL_ANOM_METHOD=bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
 ## Climatology
 
 # Dataset
+VAR=va
 DATASET=ERAInterim
 LEVEL=500hPa
 GRID=native
 TSTEP=daily
-TSCALE=runmean,90
-TSCALE_LABEL=090day-runmean
+TSCALE=runmean,30
+TSCALE_LABEL=030day-runmean
 
 # Envelope extraction
 MER_METHOD=mermax
@@ -54,4 +55,4 @@ STRIDE=5
 
 
 ## Target
-TARGET=${INDEX_DIR}/hilbert/${TSCALE_LABEL}/hilbert-${ENV_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${LAT_LABEL}_${PLOT_END}.png
+TARGET=${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv
