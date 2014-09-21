@@ -22,7 +22,7 @@ My approach for installing Python libraries is to first install Anaconda. It is 
 distribution that comes with most of the libraries you'd ever need. For installing extra libraries alongside
 Anaconda, I first search [Binstar](https://binstar.org/) to see if `conda` can be used (conda is the library 
 installer that comes with Anaconda). If a binstar isn't available, then I use the generic python package
-installer (pip). This approach avoids the need to install things myself from binaries or source code, which
+installer (`pip` or `easy_install`). This approach avoids the need to install things myself from binaries or source code, which
 is a nightmare and in most cases doesn't work.
 
 ## Ubuntu (i.e. Linux)
@@ -135,9 +135,8 @@ Installed:
 
 Outstanding (i.e. things I still need to install or can't):  
 
-* windspharm (not able to produce a binstar - see [this disucssion](https://github.com/ajdawson/windspharm/issues/39))
-* cdat-lite (currently no binstar and pip doesn't work)
-* eofs (no binstar at this point - not sure whether it is possible to make one or not)
+* windspharm & eofs (not able to produce a binstar - see [this disucssion](https://github.com/ajdawson/windspharm/issues/39))
+* cdat-lite (currently no binstar, not available with pip, easy_install fails due to missing dependencies)
 
 (note that soon the latest iris and cartopy binstar files will be stored [here](https://binstar.org/scitools))
 
