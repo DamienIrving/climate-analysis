@@ -105,7 +105,7 @@ def extract_extent(fname):
     return extent_output
 
 
-def plot_settings(timescale, timestep, user_ticks):
+def plot_settings(timescale, timestep, variable, user_ticks):
     """Define the settings for the wind barbs and colourbar.
     
     If user_ticks is None (i.e. the user didn't supply the ticks),
@@ -127,20 +127,22 @@ def plot_settings(timescale, timestep, user_ticks):
         quiv_width = 0.002
 
     # Colourbar
-    ticks_tscale_dict = {'001day-runmean': numpy.arange(0, 50, 4),
-                         '005day-runmean': numpy.arange(0, 30, 2),
-                         '030day-runmean': numpy.arange(0, 19.5, 1.5),
-                         '090day-runmean': numpy.arange(0, 12, 1),
-                         '180day-runmean': numpy.arange(0, 12, 1)}
-    ticks_tstep_dict = {'daily': ticks_tscale_dict['001day-runmean'],
-                        'monthly': ticks_tscale_dict['030day-runmean']}
+    ticks_tscale_dict = {('va', '001day-runmean'): numpy.arange(0, 50, 4),
+                         ('va', '005day-runmean'): numpy.arange(0, 30, 2),
+                         ('va', '030day-runmean'): numpy.arange(0, 19.5, 1.5),
+                         ('va', '090day-runmean'): numpy.arange(0, 12, 1),
+                         ('va', '180day-runmean'): numpy.arange(0, 12, 1),
+                         ('zg', '030day-runmean'): numpy.arange(0, 275, 25)}
+    ticks_tstep_dict = {('va', 'daily'): ticks_tscale_dict[('va', '001day-runmean')],
+                        ('va', 'monthly'): ticks_tscale_dict[('va', '030day-runmean')],
+                        ('zg', 'monthly'): ticks_tscale_dict[('zg', '030day-runmean')]}
 
     if user_ticks:
         ticks = user_ticks
-    elif timescale in ticks_tscale_dict.keys():
-        ticks = list(ticks_tscale_dict[timescale])
-    elif timestep in ticks_tstep_dict.keys():
-        ticks = list(ticks_tstep_dict[timestep])
+    elif (variable in map(lambda x:x[0], ticks_tscale_dict.keys())) and (timescale in map(lambda x:x[1], ticks_tscale_dict.keys())):
+        ticks = list(ticks_tscale_dict[(variable, timescale)])
+    elif (variable in map(lambda x:x[0], ticks_tstep_dict.keys())) and (timestep in map(lambda x:x[1], ticks_tstep_dict.keys())):
+        ticks = list(ticks_tstep_dict[(variable, timestep)])
     else:
         ticks = None
 
@@ -164,7 +166,7 @@ def main(inargs):
         np = None
 
     # Plot settings
-    keyval, quiv_scale, quiv_width, ticks = plot_settings(inargs.timescale, inargs.timestep, inargs.ticks)      
+    keyval, quiv_scale, quiv_width, ticks = plot_settings(inargs.timescale, inargs.timestep, inargs.env_var, inargs.ticks)      
 
     # Initialise any boxes that need to be plotted
     box_list = []
@@ -216,9 +218,10 @@ def main(inargs):
                            box_np=np,
                            image_size=inargs.image_size)
 
-        ticks = ticks[0: -1]   # Fix for weird thing where it keeps appending to 
-                               # the end of the ticks list, presumably due to the 
-                               # extend = 'max' 
+        if ticks:
+            ticks = ticks[0: -1]   # Fix for weird thing where it keeps appending to 
+                                   # the end of the ticks list, presumably due to the 
+                                   # extend = 'max' 
 
 
 if __name__ == '__main__':
