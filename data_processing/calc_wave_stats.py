@@ -81,16 +81,17 @@ def amp_stats(data):
     """Return key statistics regarding the amplitude of the wave 
     envelope across the entire zonal domain"""
     
-    amp_mean = numpy.mean(data)
+    amp_mean = numpy.mean(numpy.array(data))
+    amp_median = numpy.median(numpy.array(data))
     
-    return amp_mean
+    return amp_mean, amp_median
 
 
-def amp_atts(orig_data, outvar_atts_list):
+def amp_atts(orig_data, stat, outvar_atts_list):
     """Get the attributes for the wave amplitude statistic"""
    
-    text = 'Zonal mean of the meridional maximum ' 
-    var_atts = {'id': 'amp_mean',
+    text = 'Zonal %s of the meridional maximum ' %(stat)
+    var_atts = {'id': 'amp_'+stat,
                 'standard_name': text+orig_data.long_name,
                 'long_name': text+orig_data.long_name,
                 'units': orig_data.units,
@@ -149,14 +150,15 @@ def main(inargs):
     # Loop through every timestep, writing the statistics to relevant variables # 
     
     amp_mean_data = []
+    amp_median_data = []
     extent_data = []    
     start_lon_data = []
     end_lon_data = []
     for i in range(0, len(times)):
-        amp_mean = amp_stats(indata.data[i, :])
+        amp_mean, amp_median = amp_stats(indata.data[i, :])
         start_lon, end_lon, extent = extent_stats(data_double[i, :], lons_double, threshold, lons_spacing)
-
         amp_mean_data.append(amp_mean)
+        amp_median_data.append(amp_median)
         extent_data.append(extent)
         start_lon_data.append(start_lon)
         end_lon_data.append(end_lon)
@@ -164,12 +166,13 @@ def main(inargs):
     # Write output file #
 
     outvar_atts_list = [] 
-    amp_atts(indata.data, outvar_atts_list)
+    amp_atts(indata.data, 'mean', outvar_atts_list)
+    amp_atts(indata.data, 'median', outvar_atts_list)
     extent_atts(indata.data, 'extent', inargs.threshold, outvar_atts_list)
     extent_atts(indata.data, 'start_lon', inargs.threshold, outvar_atts_list)
     extent_atts(indata.data, 'end_lon', inargs.threshold, outvar_atts_list)    
 
-    outdata_list = [amp_mean_data, extent_data, start_lon_data, end_lon_data] 
+    outdata_list = [amp_mean_data, amp_median_data, extent_data, start_lon_data, end_lon_data] 
     
     outvar_axes_list = []
     for item in outdata_list: 

@@ -106,10 +106,12 @@ def get_env(infile, normalised=False):
     fin = netCDF4.Dataset(infile)
     time_axis = get_time_axis(fin.variables['time'])
 
-    data = numpy.zeros((len(time_axis), 4))
+    var_list = ['amp_mean', 'amp_median', 'extent', 'start_lon', 'end_lon']
+
+    data = numpy.zeros((len(time_axis), len(var_list)))
     tag = 'nenv' if normalised else 'env'
     headers = [] 
-    for i, var in enumerate(['amp_mean', 'extent', 'start_lon', 'end_lon']):
+    for i, var in enumerate(var_list):
         data[:, i] = fin.variables[var][:]
         headers.append(tag+'_'+var)
 
