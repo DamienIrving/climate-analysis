@@ -130,6 +130,9 @@ def main(inargs):
     if inargs.zg_file:
         qplt.contour(zg_cube, colors='0.3', linewidths=2)
 
+    if inargs.title:
+        plt.title(inargs.title.replace('_',' '))
+
     plt.savefig(inargs.ofile)
     gio.write_metadata(inargs.ofile)
 
@@ -167,6 +170,9 @@ improvements:
  
     parser.add_argument("--ofile", type=str, default='test.png',
                         help="name of output file [default: test.png]")
+
+    parser.add_argument("--title", type=str, default=None,
+                        help="plot title [default: None]")
 
 
     args = parser.parse_args()              
