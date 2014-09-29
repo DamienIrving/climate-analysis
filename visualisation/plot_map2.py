@@ -67,6 +67,18 @@ def get_time_constraint(start, end):
     return time_constraint
 
 
+def collapse_time(cube, ntimes, timestep):
+    """Select the desired timestep from the time axis"""
+
+    if timestep:
+        new_cube = cube[timestep, :, :]
+    else:
+        print 'Averaging over the %s time points' %(str(ntimes))
+        new_cube = cube.collapsed('time', iris.analysis.MEAN)
+
+    return new_cube  
+
+
 def main(inargs):
     """Run program."""
 
@@ -78,14 +90,15 @@ def main(inargs):
     with iris.FUTURE.context(cell_datetime_objects=True):
         u_cube = iris.load_cube(inargs.u_file, inargs.u_var & time_constraint & lat_constraint)
         v_cube = iris.load_cube(inargs.v_file, inargs.v_var & time_constraint & lat_constraint)
-        zg_cube = iris.load_cube(inargs.zg_file, inargs.zg_var & time_constraint & lat_constraint)
+        if inargs.zg_file:
+            zg_cube = iris.load_cube(inargs.zg_file, inargs.zg_var & time_constraint & lat_constraint)
 
     ntimes = len(u_cube.coords('time')[0].points)
     if ntimes > 1:
-        print 'Averaging over the %s time points' %(str(ntimes))
-        u_cube = u_cube.collapsed('time', iris.analysis.MEAN)  
-        v_cube = v_cube.collapsed('time', iris.analysis.MEAN)
-        zg_cube = zg_cube.collapsed('time', iris.analysis.MEAN)
+        u_cube = collapse_time(u_cube, ntimes, inargs.timestep)
+        v_cube = collapse_time(v_cube, ntimes, inargs.timestep)
+        if inargs.zg_file:
+            zg_cube = collapse_time(zg_cube, ntimes, inargs.timestep)
     
     ## Define the data
     x = u_cube.coords('longitude')[0].points
@@ -114,7 +127,8 @@ def main(inargs):
     #ax.quiver(x, y, u, v, transform=ccrs.PlateCarree(), regrid_shape=40) 
 
     # Contour
-    qplt.contour(zg_cube, colors='0.3', linewidths=2)
+    if inargs.zg_file:
+        qplt.contour(zg_cube, colors='0.3', linewidths=2)
 
     plt.savefig(inargs.ofile)
     gio.write_metadata(inargs.ofile)
@@ -138,13 +152,18 @@ improvements:
     parser.add_argument("u_var", type=str, help="standard_name for the zonal wind")
     parser.add_argument("v_file", type=str, help="input file name for the meridional wind")
     parser.add_argument("v_var", type=str, help="standard_name for the meridional wind")
-    parser.add_argument("zg_file", type=str, help="input file name for the geopoential height zonal anomaly")
-    parser.add_argument("zg_var", type=str, help="standard_name for the geopotential height zonal anomaly")
+
+    parser.add_argument("--zg_file", type=str, default=None, 
+                        help="input file name for the geopoential height zonal anomaly")
+    parser.add_argument("--zg_var", type=str, default=None,
+                        help="standard_name for the geopotential height zonal anomaly")
 
     parser.add_argument("--start", type=str, default='',
                         help="start date in YYYY-MM-DD format [default = None])")
     parser.add_argument("--end", type=str, default='',
                         help="end date in YYY-MM-DD format [default = None], let START=END for single time step (can be None)")
+    parser.add_argument("--timestep", type=int, default=None,
+                        help="By default multiple timesteps are averaged. This option allows the specification of a particular timestep")
  
     parser.add_argument("--ofile", type=str, default='test.png',
                         help="name of output file [default: test.png]")
