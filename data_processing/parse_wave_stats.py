@@ -63,7 +63,7 @@ def add_duration(DataFrame, metric, metric_threshold):
         duration.append(data)
 
     DataFrame['duration'] = reduce(operator.add, duration)
-    DataFrame['extent'] = events
+    DataFrame['event'] = events
 
     return DataFrame  
     
@@ -76,9 +76,8 @@ def basic_stats(DataFrame, stats, before_filtering=True):
     else:
         stats.append(' ') 
         stats.append('# After filtering')
-             
+         
     stats.append('total number of days: ' + str(len(DataFrame['duration'])))
-    stats = extent_stats(DataFrame['extent'].tolist(), stats)
     stats = duration_stats(DataFrame['duration'].tolist(), stats)
 
     return stats
@@ -206,9 +205,7 @@ def datetime_selector(times_str, season=None, start=None, end=None):
     month_selection['JJA'] = (6, 7, 8)
     month_selection['SON'] = (9, 10, 11)
 
-    pdb.set_trace()
-
-    combined_selection = times_dt != None  #Initialise with all true
+    combined_selection = numpy.ones(len(times_dt), dtype=bool)  #Initialise with all true
 
     if season:
         months = times_dt.map(lambda x: x.month)
@@ -229,7 +226,7 @@ def datetime_selector(times_str, season=None, start=None, end=None):
 
 
 def duration_stats(duration_list, stats_list):
-    """Append some extent data to a list of statistics"""
+    """Append some duration data to a list of statistics"""
 
     bin_counts, bin_centres, bin_edges = create_histogram(duration_list, duration=True)
     nevents = sum(bin_counts[1:]) if bin_centres[0] == 0.0 else sum(bin_counts)
@@ -237,18 +234,6 @@ def duration_stats(duration_list, stats_list):
     stats_list.append('maximum duration: ' + str(numpy.max(duration_list))) 
     stats_list.append('mean duration: ' + "%.2f" % round(numpy.mean(duration_list), 2))
     stats_list.append('median duration: ' + "%.2f" % round(numpy.median(duration_list), 2))
-
-    return stats_list
-
-
-def extent_stats(extent_list, stats_list):
-    """Append some extent data to a list of statistics"""
-
-    stats_list.append('zero extent days: ' + str(extent_list.count(0.0)))
-    stats_list.append('360 extent days: ' + str(extent_list.count(360.0)))
-    stats_list.append('maximum extent: ' + str(numpy.max(extent_list)) + ' degrees') 
-    stats_list.append('mean extent: ' + "%.2f" % round(numpy.mean(extent_list), 2) + ' degrees')
-    stats_list.append('median extent: ' + "%.2f" % round(numpy.median(extent_list), 2) + ' degrees')
 
     return stats_list
 
@@ -314,27 +299,6 @@ def plot_duration_histogram(data, outfile, stats):
     plt.xlim(bin_edges[0], bin_edges[-1])    
     plt.xlabel('Duration (days)')
     plt.ylabel('Frequency')
-    
-    plt.savefig(outfile)
-    gio.write_metadata(outfile, extra_notes=stats)
-
-
-def plot_extent_histogram(data, outfile, stats, bin_width=1, cumulative=False):
-    """Plot an extent histogram"""
-    
-    bin_counts, bin_centres, bin_edges = create_histogram(data, bin_width=bin_width, 
-                                                          cumulative=cumulative, 
-                                                          percentage=True)
-  
-    if cumulative:
-        plt.plot(bin_centres, bin_counts, linewidth=3.0)
-    else:
-        width = (bin_edges[1]-bin_edges[0]) * .9
-        plt.bar(bin_edges[:-1], bin_counts, width=width)
-    
-    plt.xlim(bin_edges[0], bin_edges[-1])    
-    plt.xlabel('Extent (degrees longitude)')
-    plt.ylabel('Frequency (% total days)')
     
     plt.savefig(outfile)
     gio.write_metadata(outfile, extra_notes=stats)
@@ -413,28 +377,21 @@ def main(inargs):
     # Apply filters
     dt_selector = datetime_selector(indata.index, inargs.season, inargs.start, inargs.end)
     selector = dt_selector
-    if inargs.metric_filter:
-        min_extent_selection = indata['extent'] >= inargs.extent_filter[0]
-        max_extent_selection = indata['extent'] <= inargs.extent_filter[1]
-        selector = selector & min_extent_selection & max_extent_selection 
+    
+    metric_selection = indata[inargs.metric] >= metric_threshold
+    selector = selector & metric_selection 
+    
     if inargs.duration_filter:
         min_duration_selection = indata['duration'] >= inargs.duration_filter[0]
         max_duration_selection = indata['duration'] <= inargs.duration_filter[1]
         selector = selector & min_duration_selection & max_duration_selection
  
     data = indata[selector]
-    data.reset_index(drop=True, inplace=True)
     stats = basic_stats(data, stats, before_filtering=False)
-    
+
     # Create optional outputs
-    if inargs.date_list:    
-        gio.write_dates(inargs.date_list, data['date'].tolist())
-
-    if inargs.extent_histogram:
-        plot_extent_histogram(data['extent'], inargs.extent_histogram, stats, bin_width=inargs.extent_bin_width)
-
-    if inargs.extent_cdf:
-        plot_extent_histogram(data['extent'], inargs.extent_cdf, stats, bin_width=inargs.extent_bin_width, cumulative=True)
+    if inargs.date_list:   
+        gio.write_dates(inargs.date_list, data.index.tolist())
 
     if inargs.duration_histogram:
         plot_duration_histogram(data['duration'], inargs.duration_histogram, stats)
@@ -474,7 +431,7 @@ author:
 
     # Required arguments
     parser.add_argument("infile", type=str, help="Input file name - it is the .csv output of create_zw3_table.py")
-    parser.add_argument("metric", type=str, help="Name of the input file metric to be used for determining extent, duration, monthly totals, etc")
+    parser.add_argument("metric", type=str, help="Name of the input file metric to be used")
     
     # Time filters
     parser.add_argument("--start", type=str, help="Time start filter (e.g. 1979-02-31)", default=None)
