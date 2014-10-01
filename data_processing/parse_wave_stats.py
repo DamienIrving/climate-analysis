@@ -131,14 +131,14 @@ def calc_seasonal_values(monthly_values, month_years):
     year_lists = {}
     for season, months in months.iteritems():    
         years = get_intersection(month_years, months)
-    for year in years:
-        season_total = 0
-        for month in months:
-            index = month_years[month].index(year)
-            month_total = monthly_values[month][index]
-            season_total = season_total + month_total
-        seasonal_values[season].append(season_total)
-    year_lists[season] = years
+        for year in years:
+            season_total = 0
+            for month in months:
+                index = month_years[month].index(year)
+                month_total = monthly_values[month][index]
+                season_total = season_total + month_total
+            seasonal_values[season].append(season_total)
+        year_lists[season] = years
 
     return seasonal_values, year_lists
 
@@ -246,7 +246,7 @@ def get_date_bounds(indata, dt_selection):
     """
         
     temp_data = indata[dt_selection]
-    date_list = temp_data['date'].tolist()
+    date_list = temp_data.index.tolist()
     
     start_date = datetime.strptime(date_list[0], '%Y-%m-%d')
     end_date = datetime.strptime(date_list[-1], '%Y-%m-%d')
@@ -306,17 +306,17 @@ def plot_duration_histogram(data, outfile, stats):
 
 def plot_monthly_totals(data, outfile, start_year, start_month, end_year, end_month, month_years, stats):
     """Plot a bar chart showing the totals for each month"""
-    
-    date_list = data['date'].tolist()
+
+    date_list = data.index.tolist()
     monthly_totals, monthly_values = bin_dates(date_list, start_year, start_month, end_year, end_month)
     monthly_pct = numpy.zeros(12)
     for i in range(0, 12):
         ndays = calendar.mdays[i+1] * len(month_years[i+1])
-    if i == 1:
-        start = start_year if start_month <= 2 else start_year + 1
-        end = end_year if end_month >= 2 else end_year - 1
-        nleap = calendar.leapdays(start, end)
-        ndays = ndays + nleap
+        if i == 1:
+            start = start_year if start_month <= 2 else start_year + 1
+            end = end_year if end_month >= 2 else end_year - 1
+            nleap = calendar.leapdays(start, end)
+            ndays = ndays + nleap
         monthly_pct[i] = (monthly_totals[i+1] / float(ndays)) * 100     
 
     ind = numpy.arange(12)    # the x locations for the bars
@@ -339,7 +339,7 @@ def plot_seasonal_values(data, outfile,
         assert len(years) > 1, \
         """Must have more than one year of data for each season or plot_seasonal_values() won't work""" 
 
-    date_list = data['date'].tolist()
+    date_list = data.index.tolist()
     monthly_totals, monthly_values = bin_dates(date_list, start_year, start_month, end_year, end_month)
     seasonal_values, years = calc_seasonal_values(monthly_values, month_years)
 
@@ -349,7 +349,7 @@ def plot_seasonal_values(data, outfile,
     
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
-    
+
     season_list = ['DJF', 'MAM', 'JJA', 'SON']
     if annual:
         season_list.append('annual')
