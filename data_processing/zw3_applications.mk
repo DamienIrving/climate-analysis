@@ -43,29 +43,26 @@ ${INDEX_DIR}/hilbert/${TSCALE_LABEL}/hilbert-${ENV_WAVE_LABEL}-${VAR}_${DATASET}
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< ${VAR} ${TSTEP} $@ --timescale ${TSCALE_LABEL} --time ${PLOT_START} ${PLOT_END} none --latitude ${LAT_RANGE} --stride ${STRIDE}
 
 
+## Plot the climatological stats ##
 
+# Step 1: Plot the monthly totals histogram
 
+${INDEX_DIR}/clim/${METRIC}-monthly-totals_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.png : ${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv 
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --monthly_totals_histogram $@
 
-## Use the database to do interesting things ### 
-#    - Date lists for composites   <= parse_wave_stats.py 
-#    - Plots of key stats    <= parse_wave_stats.py
-#
-## Step 6: Generate list of dates for use in composite creation
+# Step 2: Plot the seaonal values line graph
+
+${INDEX_DIR}/clim/${METRIC}-seasonal-values_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.png : ${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv 
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --seasonal_values_line $@
+
+## Composites
+
+## Step 1: Generate list of dates for use in composite creation
 #${RWID_DIR}/zw3-dates_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt : #${RWID_DIR}/zw3-stats_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
 #	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --date_list $@
 #
-## Step 6a: Plot the extent histogram
-#${RWID_DIR}/figures/zw3-extent-histogram_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.png : #${RWID_DIR}/zw3-stats_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-#	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --extent_histogram $@
 #
-## Step 6b: Plot the monthly totals histogram
-#${RWID_DIR}/figures/zw3-monthly-totals-histogram_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.png : #${RWID_DIR}/zw3-stats_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-#	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --monthly_totals_histogram $@
-#
-## Step 6c: Plot the seasonal values line graph
-#${RWID_DIR}/figures/zw3-seasonal-values-line_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.png : #${RWID_DIR}/zw3-stats_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-#	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --seasonal_values_line $@ --annual
-#
+
 ###  ###
 #
 ## Step 8: Calculate composites

@@ -18,10 +18,10 @@ ZONAL_ANOM_METHOD=bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
 ## Climatology
 
 # Dataset
-VAR=zg
+VAR=va
 DATASET=ERAInterim
 LEVEL=500hPa
-GRID=native-zonal-anom
+GRID=native
 TSTEP=daily
 TSCALE=runmean,30
 TSCALE_LABEL=030day-runmean
@@ -47,11 +47,14 @@ THRESH=75pct
 ## Applications
 
 # Plot envelope 
-PLOT_START=1979-01-01
-PLOT_END=2013-12-31
+PLOT_START=2002-01-01
+PLOT_END=2005-12-31
 CONTOUR_VAR=zg
-STRIDE=5
+STRIDE=2
+
+# Climatology
+METRIC=env_amp_median
 
 
 ## Target
-TARGET=${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv
+TARGET=${INDEX_DIR}/clim/${METRIC}-seasonal-values_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.png
