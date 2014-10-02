@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Steps required before using this script:
-# 1. Download the 6 hourly data from http://apps.ecmwf.int/datasets/data/interim_full_daily/?levtype=pl,
+# 1. Download the 6 hourly data from http://apps.ecmwf.int/datasets/data/interim_full_daily/?levtype=pl in 5 year chunks,
 # 2. Use "ncpdq -P upk in.nc out.nc" to unpack the data 
 #    (removes add_offset and scale_factor according to unpacked = add_offset + (packed_val * scale_factor))
 # 3. Merge all the files into one using cdo mergetime  
@@ -40,4 +40,6 @@ if [[ "${outvar}" = "zg" ]] ; then
     ncatted -O -a units,${outvar},m,c,"m" ${outfile}
     ncatted -O -a standard_name,${outvar},m,c,"geopotential_height" ${outfile}
     ncatted -O -a long_name,${outvar},m,c,"geopotential height at 500hPa" ${outfile}
+elif [[ "${outvar}" = "tas" ]] ; then
+    ncatted -O -a standard_name,${outvar},c,c,"surface_air_temperature" ${outfile}
 fi
