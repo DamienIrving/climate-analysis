@@ -53,8 +53,8 @@ def find_nearest(array, value):
 def get_fourier(infile, lat_range):
     """Extract Fourier coefficient data and output to a pandas DataFrame"""
     
-    fin = netCDF4.Dataset(infile)
-   
+    fin = netCDF4.Dataset(infile)   
+
     # Variable list
     var_list = fin.variables.keys()
     var_list = map(str, var_list)
@@ -84,7 +84,7 @@ def get_fourier(infile, lat_range):
             if not 'phase' in var:
                 output[var+'_max'] = numpy.max(fin.variables[var][:, lat_min_index:(lat_max_index+1)], axis=-1)
 
-    return output
+    return output, fin.history
 
 
 def get_zw3(infile):
@@ -97,7 +97,7 @@ def get_zw3(infile):
 
     output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis), columns=['ZW3_index'])
 
-    return output
+    return output, fin.history
     
     
 def get_env(infile, normalised=False):
@@ -117,7 +117,7 @@ def get_env(infile, normalised=False):
 
     output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis), columns=headers)
 
-    return output
+    return output, fin.history
 
 
 def main(inargs):
@@ -125,14 +125,19 @@ def main(inargs):
 
     # Read data and check inputs #
     
-    fourier_DataFrame = get_fourier(inargs.fourier_file, inargs.lat_range)
-    zw3_DataFrame = get_zw3(inargs.zw3_file)
-    env_DataFrame = get_env(inargs.env_file, normalised=False)
-    nenv_DataFrame = get_env(inargs.nenv_file, normalised=True)
+    fourier_DataFrame, fourier_history = get_fourier(inargs.fourier_file, inargs.lat_range)
+    zw3_DataFrame, zw3_history = get_zw3(inargs.zw3_file)
+    env_DataFrame, env_history = get_env(inargs.env_file, normalised=False)
+    nenv_DataFrame, nenv_history = get_env(inargs.nenv_file, normalised=True)
     
     output = fourier_DataFrame.join([zw3_DataFrame, env_DataFrame, nenv_DataFrame])
-    output.to_csv(inargs.outfile, float_format='%0.2f')  
-    gio.write_metadata(inargs.outfile)  # You can't write metadata headers with to_csv, hence the need for a separate metadata file
+    output.to_csv(inargs.outfile, float_format='%0.2f')
+
+    metadata = [(inargs.fourier_file, fourier_history),
+                (inargs.zw3_file, zw3_history),
+                (inargs.env_file, env_history),
+                (inargs.nenv_file, nenv_history)]
+    gio.write_metadata(inargs.outfile, file_info=metadata)  # You can't write metadata headers with to_csv, hence the need for a separate metadata file
 
 
 if __name__ == '__main__':

@@ -196,7 +196,7 @@ def main(inargs):
                      wmin, wmax, 
                      lat_single_tag, lat_range_tag,
                      outfile_name, title=date_abbrev)
-        metadata = [[indata.fname, indata.id, indata.global_atts['history']],]
+        metadata = [[indata.fname, indata.global_atts['history']],]
         gio.write_metadata(outfile_name, file_info=metadata)    
 
 

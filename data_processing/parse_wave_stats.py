@@ -288,7 +288,7 @@ def get_years(date_list):
     return numpy.arange(start_year, end_year + 1, 1)
 
 
-def plot_duration_histogram(data, outfile, stats):
+def plot_duration_histogram(data, outfile, metadata):
     """Plot a duration histogram"""
 
     bin_counts, bin_centres, bin_edges = create_histogram(data, duration=True)
@@ -301,10 +301,10 @@ def plot_duration_histogram(data, outfile, stats):
     plt.ylabel('Frequency')
     
     plt.savefig(outfile)
-    gio.write_metadata(outfile, extra_notes=stats)
+    gio.write_metadata(outfile, file_info=metadata)
 
 
-def plot_monthly_totals(data, outfile, start_year, start_month, end_year, end_month, month_years, stats):
+def plot_monthly_totals(data, outfile, start_year, start_month, end_year, end_month, month_years, metadata):
     """Plot a bar chart showing the totals for each month"""
 
     date_list = data.index.tolist()
@@ -327,12 +327,12 @@ def plot_monthly_totals(data, outfile, start_year, start_month, end_year, end_mo
     plt.xticks(ind+width/2., calendar.month_abbr[1:])
 
     plt.savefig(outfile)
-    gio.write_metadata(outfile, extra_notes=stats)
+    gio.write_metadata(outfile, file_info=metadata)
 
 
 def plot_seasonal_values(data, outfile, 
-                         start_year, start_month, end_year, end_month, month_years, stats,
-                        leg_loc=7, annual=False):
+                         start_year, start_month, end_year, end_month, month_years, metadata,
+                         leg_loc=7, annual=False):
     """Plot a line graph showing the seasonal values for each year"""
     
     for month, years in month_years.iteritems():
@@ -362,7 +362,8 @@ def plot_seasonal_values(data, outfile,
     ax.legend(loc=leg_loc, fontsize='small', ncol=5)
 
     plt.savefig(outfile)
-    gio.write_metadata(outfile, extra_notes=stats)
+
+    gio.write_metadata(outfile, file_info=metadata)
      
 
 def main(inargs):
@@ -387,24 +388,37 @@ def main(inargs):
         selector = selector & min_duration_selection & max_duration_selection
  
     data = indata[selector]
+
+    # Print basic stats to screen
     stats = basic_stats(data, stats, before_filtering=False)
+
+    for line in stats:
+        print line
+
+    # Get the metadata
+    met_file = inargs.infile.replace(".csv", ".met")
+    with open(met_file, 'r') as content_file:
+        metadata = content_file.read()
+
+    metadata_list = [(inargs.infile, metadata),]
 
     # Create optional outputs
     if inargs.date_list:   
         gio.write_dates(inargs.date_list, data.index.tolist())
+        gio.write_metadata(inargs.date_list, file_info=metadata_list)
 
     if inargs.duration_histogram:
-        plot_duration_histogram(data['duration'], inargs.duration_histogram, stats)
+        plot_duration_histogram(data['duration'], inargs.duration_histogram, metadata_list)
 
     if inargs.monthly_totals_histogram:
         start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
         plot_monthly_totals(data, inargs.monthly_totals_histogram,
-                            start_year, start_month, end_year, end_month, month_years, stats)
+                            start_year, start_month, end_year, end_month, month_years, metadata_list)
     
     if inargs.seasonal_values_line:
         start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
         plot_seasonal_values(data, inargs.seasonal_values_line, 
-                             start_year, start_month, end_year, end_month, month_years, stats,
+                             start_year, start_month, end_year, end_month, month_years, metadata_list,
                              leg_loc=inargs.leg_loc, annual=inargs.annual)
     
 

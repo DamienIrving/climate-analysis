@@ -135,7 +135,7 @@ def extract_data(file_list, region='world-dateline', convert=False):
 	     indata = nio.InputData(fname, var, region=region, convert=convert)
        
         data = indata.data
-	metadata = [indata.fname, indata.id, indata.global_atts['history']]
+	metadata = [indata.fname, indata.global_atts['history']]
        
         #Data must be two dimensional 
         if (re.match('^t', data.getOrder())):

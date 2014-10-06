@@ -110,7 +110,7 @@ def write_metadata(ofile, file_info=None, extra_notes=None):
     
     Arguments:
       ofile        --  name of output image file
-      file_info    --  list of file info lists: ['fname', 'var_id', 'global atts history']
+      file_info    --  list of file info lists: ['fname', 'global atts history']
       extra_notes  --  list containing character strings of extra information (output is one list item per line)
       
     """
@@ -133,8 +133,8 @@ def write_metadata(ofile, file_info=None, extra_notes=None):
     if file_info:
         fout.write('\n')
         for ifile in file_info:
-	    fname, var_id, history = ifile
-	    fout.write('Input file: %s, %s \n \n' %(fname, var_id))
+	    fname, history = ifile
+	    fout.write('Input file: %s \n \n' %(fname))
 	    fout.write('History: %s \n \n' %(history))
     	
     fout.close()
