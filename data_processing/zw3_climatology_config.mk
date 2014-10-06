@@ -7,7 +7,7 @@ ZW3_DIR=${DATA_DIR}/zw3
 MAP_DIR=${ZW3_DIR}/figures/maps
 INDEX_DIR=${ZW3_DIR}/figures/indexes
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
-PYTHON=/usr/bin/anaconda/bin/python
+PYTHON=/usr/local/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
 VIS_SCRIPT_DIR=~/phd/visualisation
 FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh
@@ -57,4 +57,4 @@ METRIC=env_amp_median
 
 
 ## Target
-TARGET=${INDEX_DIR}/clim/${METRIC}-seasonal-values_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.png
+TARGET=${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv
