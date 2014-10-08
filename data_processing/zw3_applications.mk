@@ -47,21 +47,23 @@ ${INDEX_DIR}/hilbert/${TSCALE_LABEL}/hilbert-${ENV_WAVE_LABEL}-${VAR}_${DATASET}
 
 # Step 1: Plot the monthly totals histogram
 
-${INDEX_DIR}/clim/${METRIC}-monthly-totals_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.png : ${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv 
-	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --monthly_totals_histogram $@
+${INDEX_DIR}/clim/${METRIC}-monthly-totals_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}-filter${METRIC_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png : ${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv 
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --monthly_totals_histogram $@ --metric_filter ${METRIC_THRESH}
 
 # Step 2: Plot the seaonal values line graph
 
-${INDEX_DIR}/clim/${METRIC}-seasonal-values_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.png : ${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv 
-	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --seasonal_values_line $@
+${INDEX_DIR}/clim/${METRIC}-seasonal-values_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}-filter${METRIC_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png : ${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv 
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --seasonal_values_line $@ --metric_filter ${METRIC_THRESH}
 
 ## Composites
 
 ## Step 1: Generate list of dates for use in composite creation
-#${RWID_DIR}/zw3-dates_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}-extentmin${EXTENT_MIN}-${EXTENT_MAX}.txt : #${RWID_DIR}/zw3-stats_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}_env-${WAVE_LABEL}-va-ampmin${AMP_MIN}.csv
-#	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< --extent_filter ${EXTENT_MIN} ${EXTENT_MAX} --date_list $@
-#
-#
+${RWID_DIR}/${INDEX_DIR}/clim/${METRIC}-date-list_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}-filter${METRIC_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.txt : ${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --date_list $@ --metric_filter ${METRIC_THRESH}
+
+## Step 2: Calculate the composite file
+#: ${RWID_DIR}/${INDEX_DIR}/clim/${METRIC}-date-list_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}-filter${METRIC_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.txt
+#	bash ${DATA_SCRIPT_DIR}/calc_composite.sh $< env $(word 2,$^) $@ ${COMPOSITE_TIMESCALE}
 
 ###  ###
 #

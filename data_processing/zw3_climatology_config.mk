@@ -41,7 +41,7 @@ LAT_RANGE=-70 -40
 LAT_LABEL=55S
 
 # Extent statistics
-THRESH=75pct
+EXTENT_THRESH=75pct
 
 
 ## Applications
@@ -54,7 +54,8 @@ STRIDE=2
 
 # Climatology
 METRIC=env_amp_median
+METRIC_THRESH=90pct
 
 
 ## Target
-TARGET=${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-threshold${THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv
+TARGET=${RWID_DIR}/${INDEX_DIR}/clim/${METRIC}-date-list_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}-filter${METRIC_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.txt
