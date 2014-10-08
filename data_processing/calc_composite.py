@@ -138,37 +138,43 @@ def get_composite(data, var, long_name, units, season):
 def main(inargs):
     """Run the program."""
     
-    # Prepate input data #
+    # Initialise output #
 
-    indata = nio.InputData(inargs.infile, inargs.var, 
-                           **nio.dict_filter(vars(inargs), ['time', 'region']))
+    outdata_list = []
+    outvar_atts_list = []
+    outvar_axes_list = []
 
-    # Filter data #
+    if inargs.time:
+        start_date, end_date = inargs.time
+    else:
+        start_date = end_date = 'none'
 
-    data_included, data_excluded, date_metadata = filter_dates(indata.data, inargs.date_file, inargs.offset)
+    for season in inargs.seasons:
 
-    # Calculate composite #
+	# Prepate input data #
 
-    try:
-        selector = inargs.time[2]
-	season = selector if selector.lower() != 'none' else 'annual'
-    except AttributeError or IndexError:
-        season = 'annual'
+	indata = nio.InputData(inargs.infile, inargs.var, time=(start_date, end_date, season))
 
-    composite, composite_atts = get_composite(data_included, inargs.var, 
-                                              indata.data.long_name, indata.data.units,
-                                              season)
-    outdata_list = [composite,]
-    outvar_atts_list = [composite_atts,]
-    outvar_axes_list = [composite.getAxisList(),]
+	# Filter data #
 
-    # Perform significance test # 
-    
-    if data_excluded:
-        pval, pval_atts = get_significance(data_included, data_excluded)
-        outdata_list.append(pval)
-        outvar_atts_list.append(pval_atts)
-        outvar_axes_list.append(composite.getAxisList())	
+	data_included, data_excluded, date_metadata = filter_dates(indata.data, inargs.date_file, inargs.offset)
+
+	# Calculate composite # 
+
+	composite, composite_atts = get_composite(data_included, inargs.var, 
+                                        	  indata.data.long_name, indata.data.units,
+                                        	  season)
+	outdata_list.append(composite)
+	outvar_atts_list.append(composite_atts)
+	outvar_axes_list.append(composite.getAxisList())
+
+	# Perform significance test # 
+
+	if data_excluded:
+            pval, pval_atts = get_significance(data_included, data_excluded)
+            outdata_list.append(pval)
+            outvar_atts_list.append(pval_atts)
+            outvar_axes_list.append(composite.getAxisList())	
 
 
     # Write the output file #
@@ -210,10 +216,10 @@ author:
     parser.add_argument("var", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    parser.add_argument("--region", type=str, choices=nio.regions.keys(),
-                        help="Region over which to calculate the composite [default: entire]")
-    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period over which to calculate the composite [default = entire]")
+    parser.add_argument("--seasons", type=str, nargs='*', default=('DJF', 'MAM', 'JJA', 'SON', 'annual'),
+                        help="Seasons for which to output a composite [default = DJF, MAM, JJA, SON, annual]")
 
     parser.add_argument("--date_file", type=str, default=None, 
                         help="List of dates to be included in composite")
