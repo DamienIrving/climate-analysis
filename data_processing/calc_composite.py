@@ -75,6 +75,7 @@ def get_significance(data_included, data_excluded, matching_dates, missing_dates
     print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident) and assumed equal variances'
 
     pval_atts = {'id': 'p',
+                 'standard_name': 'p_value',
                  'long_name': 'Two-tailed p-value',
                  'units': ' ',
                  'history': """Standard independent two sample t-test comparing the data sample that meets the composite criteria (size=%s) to a sample containing the remaining data (size=%s)""" %(len(matching_dates), len(missing_dates)),
@@ -120,13 +121,14 @@ def filter_dates(data, date_file, offset):
     return data_included, data_excluded, date_metadata, matching_dates, missing_dates
 
 
-def get_composite(data, var, long_name, units, season):
+def get_composite(data, var, long_name, standard_name, units, season):
     """Calculate the composite and it's attributes (using the desired var, long_name
     units and season"""
 
     composite_mean = MV2.average(data, axis=0)
 
     composite_atts = {'id': var,
+                      'standard_name': standard_name,
                       'long_name': long_name,
                       'units': units,
                       'history': 'Composite mean for %s season' %(season)}
@@ -151,8 +153,9 @@ def main(inargs):
     for season in inargs.seasons:
 
 	# Prepate input data #
-
-	indata = nio.InputData(inargs.infile, inargs.var, time=(start_date, end_date, season))
+        
+        selector = 'none' if season == 'annual' else season
+	indata = nio.InputData(inargs.infile, inargs.var, time=(start_date, end_date, selector),  **nio.dict_filter(vars(inargs), ['region']))
 
 	# Filter data #
 
@@ -161,7 +164,7 @@ def main(inargs):
 	# Calculate composite # 
 
 	composite, composite_atts = get_composite(data_included, inargs.var, 
-                                        	  indata.data.long_name, indata.data.units,
+                                        	  indata.data.long_name, indata.data.standard_name, indata.data.units,
                                         	  season)
 	outdata_list.append(composite)
 	outvar_atts_list.append(composite_atts)
@@ -177,7 +180,7 @@ def main(inargs):
 
 
     # Write the output file #
- 
+
     if date_metadata:
         indata.global_atts['history'] = '%s \n%s' %(date_metadata, indata.global_atts['history'])
     else:
@@ -193,12 +196,15 @@ def main(inargs):
 if __name__ == '__main__':
 
     extra_info =""" 
-example (abyss.earthsci.unimelb.edu.au):
-  cdat calc_composite.py /usr/local/uvcdat/1.3.0/bin/cdat calc_composite.py 
-  /mnt/meteo0/data/simmonds/dbirving/Merra/data/tas_Merra_surface_daily-anom-wrt-1979-2012_native.nc tas 
-  /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va.txt 
-  /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/stats/hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-annual.nc 
-  --time 1979-01-01 2012-12-31 none
+example (vortex.earthsci.unimelb.edu.au):
+  /usr/local/anaconda/bin/python calc_composite.py 
+  /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/tas_ERAInterim_surface_030day-runmean_native.nc tas 
+  /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw3/figures/composites/test.nc 
+  --date_file /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw3/figures/composites/env_amp_median-date-list_zw3-w19-va-stats-extent75pct-filter90pct_ERAInterim_500hPa_030day-runmean_native-mermax.txt 
+  --region small --time 1980-01-01 1982-01-01
+
+fixme:
+  The time selector is broken (it fails once it gets to SON)
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -222,6 +228,8 @@ author:
                         help="Time period over which to calculate the composite [default = entire]")
     parser.add_argument("--seasons", type=str, nargs='*', default=('DJF', 'MAM', 'JJA', 'SON', 'annual'),
                         help="Seasons for which to output a composite [default = DJF, MAM, JJA, SON, annual]")
+    parser.add_argument("--region", type=str, choices=nio.regions.keys(),
+                        help="Region over which to calculate the composite [default: entire]")
 
     parser.add_argument("--offset", type=int, default=None,
                         help="Number of days to offset the input dates by (from date_file) [default = None]")
