@@ -7,9 +7,9 @@ Description:  Calculates a composite
 
 # Import general Python modules #
 
-import sys
-import os
+import sys, os, pdb
 import argparse
+import numpy
 
 import datetime
 from dateutil.relativedelta import relativedelta
@@ -17,7 +17,6 @@ from dateutil.relativedelta import relativedelta
 import MV2
 from scipy import stats
 
-import pdb
 
 # Import my modules #
 
@@ -40,7 +39,7 @@ except ImportError:
 
 # Define functions #
 
-def get_significance(data_included, data_excluded):
+def get_significance(data_included, data_excluded, matching_dates, missing_dates):
     """Calculate the composite.
     
     The approach for the significance test is to compare the mean of the included
@@ -105,7 +104,7 @@ def filter_dates(data, date_file, offset):
 
     if not date_file:
         data_included = data
-        data_excluded = None
+        data_excluded = numpy.array([])
         date_metadata = None
     else:
         date_list, date_metadata = gio.read_dates(date_file)
@@ -118,7 +117,7 @@ def filter_dates(data, date_file, offset):
         data_included = nio.temporal_extract(data, matching_dates, indexes=False)
         data_excluded = nio.temporal_extract(data, missing_dates, indexes=False)
 
-    return data_included, data_excluded, date_metadata
+    return data_included, data_excluded, date_metadata, matching_dates, missing_dates
 
 
 def get_composite(data, var, long_name, units, season):
@@ -157,7 +156,7 @@ def main(inargs):
 
 	# Filter data #
 
-	data_included, data_excluded, date_metadata = filter_dates(indata.data, inargs.date_file, inargs.offset)
+	data_included, data_excluded, date_metadata, matching_dates, missing_dates = filter_dates(indata.data, inargs.date_file, inargs.offset)
 
 	# Calculate composite # 
 
@@ -170,8 +169,8 @@ def main(inargs):
 
 	# Perform significance test # 
 
-	if data_excluded:
-            pval, pval_atts = get_significance(data_included, data_excluded)
+	if data_excluded.any():
+            pval, pval_atts = get_significance(data_included, data_excluded, matching_dates, missing_dates)
             outdata_list.append(pval)
             outvar_atts_list.append(pval_atts)
             outvar_axes_list.append(composite.getAxisList())	
@@ -214,8 +213,10 @@ author:
 
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("var", type=str, help="Input file variable")
-    parser.add_argument("date_file", type=str, help="File containing dates to be included in composite")
     parser.add_argument("outfile", type=str, help="Output file name")
+
+    parser.add_argument("--date_file", type=str, default=None, 
+                        help="File containing dates to be included in composite")
 
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=None,
                         help="Time period over which to calculate the composite [default = entire]")

@@ -70,7 +70,7 @@ ${DATA_DIR}/${COMP_VAR}_${DATASET}_surface_${TSCALE_LABEL}_${GRID}.nc : ${DATA_D
 
 # Calculate composite
 ${COMP_DIR}/tas-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.nc : ${DATA_DIR}/${COMP_VAR}_${DATASET}_surface_${TSCALE_LABEL}_${GRID}.nc  ${COMP_DIR}/dates_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.txt 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< tas $(word 2,$^) $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< tas $@ --date_file $(word 2,$^) 
 
 ###  ###
 #
