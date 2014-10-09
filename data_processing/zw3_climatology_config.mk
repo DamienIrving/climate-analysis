@@ -6,6 +6,7 @@ DATA_DIR=${DATA_HOME}/data
 ZW3_DIR=${DATA_DIR}/zw3
 MAP_DIR=${ZW3_DIR}/figures/maps
 INDEX_DIR=${ZW3_DIR}/figures/indexes
+COMP_DIR=${ZW3_DIR}/figures/composites
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/local/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
@@ -58,4 +59,4 @@ METRIC_THRESH=90pct
 
 
 ## Target
-TARGET=${RWID_DIR}/${INDEX_DIR}/clim/${METRIC}-date-list_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}-filter${METRIC_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.txt
+TARGET=${INDEX_DIR}/clim/${METRIC}-seasonal-values_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}-filter${METRIC_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
