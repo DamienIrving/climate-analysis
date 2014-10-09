@@ -57,6 +57,9 @@ STRIDE=2
 METRIC=env_amp_median
 METRIC_THRESH=90pct
 
+# Composite
+COMP_VAR=tas
+
 
 ## Target
 TARGET=${INDEX_DIR}/clim/${METRIC}-seasonal-values_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}-filter${METRIC_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png

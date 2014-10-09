@@ -100,7 +100,7 @@ def get_zw3(infile):
     return output, fin.history
     
     
-def get_env(infile, normalised=False):
+def get_env(infile):
     """Extract wave envelope stats and output to pandas DataFrame"""
 
     fin = netCDF4.Dataset(infile)
@@ -109,7 +109,7 @@ def get_env(infile, normalised=False):
     var_list = ['amp_mean', 'amp_median', 'extent', 'start_lon', 'end_lon']
 
     data = numpy.zeros((len(time_axis), len(var_list)))
-    tag = 'nenv' if normalised else 'env'
+    tag = 'env'
     headers = [] 
     for i, var in enumerate(var_list):
         data[:, i] = fin.variables[var][:]
@@ -127,16 +127,14 @@ def main(inargs):
     
     fourier_DataFrame, fourier_history = get_fourier(inargs.fourier_file, inargs.lat_range)
     zw3_DataFrame, zw3_history = get_zw3(inargs.zw3_file)
-    env_DataFrame, env_history = get_env(inargs.env_file, normalised=False)
-    nenv_DataFrame, nenv_history = get_env(inargs.nenv_file, normalised=True)
+    env_DataFrame, env_history = get_env(inargs.env_file)
     
     output = fourier_DataFrame.join([zw3_DataFrame, env_DataFrame, nenv_DataFrame])
     output.to_csv(inargs.outfile, float_format='%0.2f')
 
     metadata = [(inargs.fourier_file, fourier_history),
                 (inargs.zw3_file, zw3_history),
-                (inargs.env_file, env_history),
-                (inargs.nenv_file, nenv_history)]
+                (inargs.env_file, env_history)]
     gio.write_metadata(inargs.outfile, file_info=metadata)  # You can't write metadata headers with to_csv, hence the need for a separate metadata file
 
 
@@ -162,7 +160,6 @@ note:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("env_file", type=str, help="Input wave envelope stats file")
-    parser.add_argument("nenv_file", type=str, help="Input normalised wave envelope stats file")
     parser.add_argument("zw3_file", type=str, help="Input ZW3 index (Raphael, 2004) file")
     parser.add_argument("fourier_file", type=str, help="Input Fourier coefficients file")
     

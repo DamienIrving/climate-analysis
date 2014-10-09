@@ -27,21 +27,10 @@ ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/
 
 ## Step 2: Extract the wave envelope (for the entire globe) and collapse the meridional dimension ##
 
-${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	${FOURIER_METHOD} $< ${VAR} $@ ${ENV_SEARCH}
 
-${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
-	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
-	ncatted -O -a axis,time,c,c,T $@
-
-
-## Step 3: Normalise the wave envelope (for the entire globe) and collapse the meridional dimension ##
-
-${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
-	cdo -ydaydiv -ydaysub $< -ydayavg $< -ydaystd $< $@
-	ncatted -O -a axis,time,c,c,T $@
-
-${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : $${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
@@ -52,17 +41,14 @@ ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${G
 #    - Raphael ZW3 index <= calc_index.py
 
 
-## Step 1: Calculate the wave statistics (average env & nenv, extent/coverage of nenv) ##
+## Step 1: Calculate the wave statistics (average, extent/coverage) ##
 
-${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< ${VAR} $@ --threshold ${EXTENT_THRESH}
-
-${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
+${ZW3_DIR}/wavestats_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< ${VAR} $@ --threshold ${EXTENT_THRESH}
 
 ## Step 2: Calculate the phase and amplitude of each Fourier component ##
 
-${ZW3_DIR}/fourier-${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${ZW3_DIR}/fourier_zw3_${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 	${FOURIER_METHOD} $< ${VAR} $@ ${COE_SEARCH}
 
 ## Step 3: Calculate the ZW3 index of Raphael (2004) ## 
@@ -75,10 +61,10 @@ ${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc : ${DATA_D
 	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-${ZW3_DIR}/zw3-zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc : ${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc
+${ZW3_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc : ${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
 
 # Step 4: Put it all in a common table/database
 
-${ZW3_DIR}/zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${ZW3_DIR}/env-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc ${ZW3_DIR}/nenv-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc ${ZW3_DIR}/zw3-zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc ${ZW3_DIR}/fourier-${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
-	${PYTHON} ${DATA_SCRIPT_DIR}/create_zw3_table.py $(word 1,$^) $(word 2,$^) $(word 3,$^) $(word 4,$^) $@
+${ZW3_DIR}/table_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${ZW3_DIR}/wavestats_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc ${ZW3_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc ${ZW3_DIR}/fourier_zw3_${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+	${PYTHON} ${DATA_SCRIPT_DIR}/create_zw3_table.py $(word 1,$^) $(word 2,$^) $(word 3,$^) $@
