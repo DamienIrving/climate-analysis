@@ -3,19 +3,12 @@
 ## Directory syntax
 
 * `~/<dataset>/downloads`: A temporary dumping ground for downloaded files.  
-* `~/<dataset>/data/`: For data files that have only undergone minimal cosmetic 
-changes since download (e.g. alterations of attributes to achieve CF compliance
-or a change of units, but no averaging or other manipulation of the data).  
-* `~/<dataset>/data/processed/`: For data files that have undergone only one or two
-steps of standard processing (e.g. an anomaly timeseries or derived variable like
-the streamfunction.  
-* `~/<dataset>/data/processsed/stats/`: Statistics like eof analysis
-* `~/<dataset>/data/processsed/rwid/`: Files relating to rossby wave identification
-
+* `~/<dataset>/data`: For data files I want to keep and use. To move from downloads to data
+they must have undergone pre-processing 
 
 ## Standard variable abbreviations
 
-* `gz`: Geopotential height
+* `zg`: Geopotential height
 * `psl`: Sea level pressure
 * `sf`: Streamfunction
 * `ua`: Eastward wind velocity
@@ -67,8 +60,15 @@ Examples:
 `tas_Merra_250hPa_daily-anom-wrt-all-SON-composite-mean_y181x360-np20N260E-hov-env-w567-vrot_lon225E335E-lat10S10N_absolute14_mariebyrdland-va-below-neg5.nc` #calc_composite
 
 
+### ZW3 analysis
 
+tas-composite  env_amp_median-date-list  zw3-w19-va-stats-extent75pct-filter90pct   ERAInterim   500hPa   030day-runmean   native-mermax   .ext
 
+tas-composite  env-amp-median   date-list  zw3-w19-va-extent75pct-filter90pct   ERAInterim   500hPa   030day-runmean   native-mermax   .ext
 
-
-
+* `<composite>`: `<variable>-composite`
+* `<metric>`
+* `<file_type>`
+* `<filters>`: `<analysis_category>-<wavenumbers>-<orig_var>-<filter1>-<filter2>-...-<filterN>
+  * analysis category can be `zw3` or `psa`
+  
