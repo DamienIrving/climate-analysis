@@ -38,7 +38,7 @@ def get_time_axis(time_variable):
 
     units = time_variable.units
     calendar = time_variable.calendar
-    time_axis = netCDF4.num2date(time_variable, units=units, calendar=calendar)        
+    time_axis = netCDF4.num2date(time_variable[:], units=units, calendar=calendar)        
     
     return time_axis
 
@@ -58,7 +58,7 @@ def get_fourier(infile, lat_range):
     # Variable list
     var_list = fin.variables.keys()
     var_list = map(str, var_list)
-    
+
     # Time axis
     time_axis = get_time_axis(fin.variables['time'])
 
