@@ -24,51 +24,29 @@ they must have undergone pre-processing
 
 Sub-categories:  
 
-* `<time>`: `<tscale>-<aggregation>-<season>`
-* `<spatial>`: `<grid>-<region>`
+* `<time>`: `<tstep>-<aggregation>-<season>`
+* `<spatial>`: `<grid>-<region>-<bounds>-<np>`
 
-Region names are defined in `netcdf_io.py` and the grid is either `native` or
-something like `y181x360`, which desribes the number of latitude (181) and 
-longitude (360) points (in this case it is a 1 by 1 degree horizontal grid.
+Where:  
+
+* `<tstep>`: `daily`, `monthly`
+* `<aggregation>`: `030day-runmean`, `anom-wrt-1979-2011`, `anom-wrt-all`
+* `<season>`: `JJA`, `MJJASO`
+* `<grid>`: `native` or something like `y181x360`, which describes the number of latitude (181) and longitude (360) points (in this case it is a 1 by 1 degree horizontal grid).
+* `<region>`: Region names are defined in `netcdf_io.py`
+* `<bounds>`: e.g. `lon225E335E-lat10S10N` or `mermax`, `zonal-anom` 
+* `<np>`: North pole location, e.g. `np20N260E`
 
 Examples include:  
-`psl_Merra_surface_daily_y181x360.nc`  
-`eof-sf_Merra_250hPa_monthly-anom-wrt-1979-2011-JJA_native-sh.nc`  
+`psl_Merra_surface_daily_y181x360.nc` 
 
-### Files generated specifically for Rossby wave identification
+### More complex file names
 
-The files in `~/<dataset>/data/processsed/rwid/` go all the way from simple wave extraction, 
-to hovmoller diagrams, and filtered composites.  
+`<inside>_<project>_<filters>_<prev-var>_<dataset>_<level>_<time>_<spatial>.nc` 
 
-`<var>_<dataset>_<level>_<time>_<spatial>_<searchbounds>_<clip>_<filter>.nc`
+Sub-categories:
 
-Sub-categories:  
+* `<inside>`: The variable inside the file. e.g. `tas-composite`, `datelist`
+* `<project>`: `zw3` or `psa`
+* `<filters>`: e.g. `w19`, 
 
-* `<time>`: `<tscale>-<aggregation>-<season>-<composite>`
-* `<spatial>`: `<grid>-<region>-<northpole>-<hovmoller>`
-
-It is important to note that the details of the north pole location go in the `<spatial>` field
-if the data are actually on a rotated grid, otherwise it needs to go in the `<hovmoller>` field (i.e. if 
-the data are back on a regular lat/lon grid with the north pole at 90N).  
-
-Examples:  
-`vrot_Merra_250hPa_daily_anom-wrt-all_y181x360-np20N260E.nc` #calc_vwind_rotation  
-`env-w567-vrot_Merra_250hPa_daily_anom-wrt-all_y181x360-np20N260E.nc` #calc_envelope  
-`env-w567-vrot_Merra_250hPa_daily-anom-wrt-all_y181x360-np20N260E-hov_lon225E335E-lat10S10N_absolute14.nc` #calc_hovmoller
-`psa-dates_Merra_250hPa_daily-anom-wrt-all_y181x360-np20N260E-hov-env-w567-vrot_lon225E335E-lat10S10N_absolute14.csv` #run_roim
-#filter_dates
-`tas_Merra_250hPa_daily-anom-wrt-all-SON-composite-mean_y181x360-np20N260E-hov-env-w567-vrot_lon225E335E-lat10S10N_absolute14_mariebyrdland-va-below-neg5.nc` #calc_composite
-
-
-### ZW3 analysis
-
-tas-composite  env_amp_median-date-list  zw3-w19-va-stats-extent75pct-filter90pct   ERAInterim   500hPa   030day-runmean   native-mermax   .ext
-
-tas-composite  env-amp-median   date-list  zw3-w19-va-extent75pct-filter90pct   ERAInterim   500hPa   030day-runmean   native-mermax   .ext
-
-* `<composite>`: `<variable>-composite`
-* `<metric>`
-* `<file_type>`
-* `<filters>`: `<analysis_category>-<wavenumbers>-<orig_var>-<filter1>-<filter2>-...-<filterN>
-  * analysis category can be `zw3` or `psa`
-  
