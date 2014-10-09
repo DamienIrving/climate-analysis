@@ -125,11 +125,11 @@ def get_composite(data, var, long_name, units, season):
     """Calculate the composite and it's attributes (using the desired var, long_name
     units and season"""
 
-    composite_mean = MV2.average(data_included, axis=0)
+    composite_mean = MV2.average(data, axis=0)
 
-    composite_atts = {'id': inargs.var,
-                      'long_name': indata.data.long_name,
-                      'units': indata.data.units,
+    composite_atts = {'id': var,
+                      'long_name': long_name,
+                      'units': units,
                       'history': 'Composite mean for %s season' %(season)}
 
     return composite_mean, composite_atts
@@ -214,15 +214,14 @@ author:
 
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("var", type=str, help="Input file variable")
+    parser.add_argument("date_file", type=str, help="File containing dates to be included in composite")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=None,
                         help="Time period over which to calculate the composite [default = entire]")
     parser.add_argument("--seasons", type=str, nargs='*', default=('DJF', 'MAM', 'JJA', 'SON', 'annual'),
                         help="Seasons for which to output a composite [default = DJF, MAM, JJA, SON, annual]")
 
-    parser.add_argument("--date_file", type=str, default=None, 
-                        help="List of dates to be included in composite")
     parser.add_argument("--offset", type=int, default=None,
                         help="Number of days to offset the input dates by (from date_file) [default = None]")
 
