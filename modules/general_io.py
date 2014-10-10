@@ -33,12 +33,6 @@ try:
 except ImportError:
     MODULE_HASH = 'unknown'
 
-## Alternative provenance tracking, if netcdf_io.py 
-#  was under version control directly ##
-#repo_dir = os.path.abspath(os.path.dirname(__file__))
-#MODULE_HASH = Repo(repo_dir).head.commit.hexsha
-
-
 
 def find_duplicates(inlist):
     """Return list of duplicates in a list"""
@@ -85,6 +79,15 @@ def set_outfile_date(outfile, new_date):
     return re.sub(r'([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})', new_dt.strftime("%Y-%m-%d"), outfile)
 
 
+def standard_datetime(dt):
+    """Take any arbitrarty date/time and convert to the standard
+    I use for all outputs: YYYY-MM-DD"""
+
+    new_dt = parser.parse(str(dt))
+
+    return new_dt.strftime("%Y-%m-%d")
+
+
 def write_dates(outfile, date_list):
     """Write a list of dates to file"""
     
@@ -96,45 +99,42 @@ def write_dates(outfile, date_list):
     fout.close()
 
 
-def standard_datetime(dt):
-    """Take any arbitrarty date/time and convert to the standard
-    I use for all outputs: YYYY-MM-DD"""
-
-    new_dt = parser.parse(str(dt))
-
-    return new_dt.strftime("%Y-%m-%d")
-
-
-def write_metadata(ofile, file_info=None, extra_notes=None):
+def write_metadata(ofile=None, file_info=None, extra_notes=None):
     """Write a metadata output file
     
     Arguments:
-      ofile        --  name of output image file
+      ofile        --  name of output file that we want to create a .met file
+                       alongside (i.e. new file with .met extension will be created)
       file_info    --  list of file info lists: ['fname', 'global atts history']
       extra_notes  --  list containing character strings of extra information (output is one list item per line)
       
     """
     
-    # Open .met file
-    fname, extension = ofile.split('.')
-    fout = open(fname+'.met', 'w')
-    
+    result = ''
+        
     # Write the timestamp
     time_stamp = get_timestamp()
-    fout.write(time_stamp+'\n \n')
+    result += time_stamp + '\n \n'
     
     # Write the extra info
     if extra_notes:
-        fout.write('Extra notes: \n \n')
-	for line in extra_notes:
-	    fout.write(line+'\n')
+        result += 'Extra notes: \n \n'
+        for line in extra_notes:
+            result += line + '\n'
     
     # Write the file details
     if file_info:
-        fout.write('\n')
+        result += '\n'
         for ifile in file_info:
-	    fname, history = ifile
-	    fout.write('Input file: %s \n \n' %(fname))
-	    fout.write('History: %s \n \n' %(history))
-    	
-    fout.close()
+            fname, history = ifile
+            result += 'Input file: %s \n \n' %(fname)
+            result += 'History: %s \n \n' %(history)
+    
+    # Create outfile or return string
+    if ofile:
+        fname, extension = ofile.split('.')
+        fout = open(fname+'.met', 'w')
+        fout.write(result) 
+        fout.close()
+    else:
+        return result
