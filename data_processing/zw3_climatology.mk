@@ -44,7 +44,7 @@ ${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_
 ## Step 1: Calculate the wave statistics (average, extent/coverage) ##
 
 ${ZW3_DIR}/wavestats_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< ${VAR} $@ --threshold ${EXTENT_THRESH}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< ${VAR} $@ --threshold ${EXTENT_THRESH}
 
 ## Step 2: Calculate the phase and amplitude of each Fourier component ##
 
@@ -62,7 +62,7 @@ ${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc : ${DATA_D
 	ncatted -O -a axis,time,c,c,T $@
 
 ${ZW3_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc : ${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
 
 # Step 4: Put it all in a common table/database
 
