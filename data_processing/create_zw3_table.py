@@ -27,6 +27,7 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import netcdf_io as nio
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -99,26 +100,6 @@ def get_zw3(infile):
 
     return output, fin.history
     
-    
-def get_env(infile):
-    """Extract wave envelope stats and output to pandas DataFrame"""
-
-    fin = netCDF4.Dataset(infile)
-    time_axis = get_time_axis(fin.variables['time'])
-
-    var_list = ['amp_mean', 'amp_median', 'extent', 'start_lon', 'end_lon']
-
-    data = numpy.zeros((len(time_axis), len(var_list)))
-    tag = 'env'
-    headers = [] 
-    for i, var in enumerate(var_list):
-        data[:, i] = fin.variables[var][:]
-        headers.append(tag+'_'+var)
-
-    output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis), columns=headers)
-
-    return output, fin.history
-
 
 def main(inargs):
     """Run the program."""
@@ -127,7 +108,7 @@ def main(inargs):
     
     fourier_DataFrame, fourier_history = get_fourier(inargs.fourier_file, inargs.lat_range)
     zw3_DataFrame, zw3_history = get_zw3(inargs.zw3_file)
-    env_DataFrame, env_history = get_env(inargs.env_file)
+    env_DataFrame, env_history = nio.wavestats_to_df(inargs.env_file)
     
     output = fourier_DataFrame.join([zw3_DataFrame, env_DataFrame, nenv_DataFrame])
     output.to_csv(inargs.outfile, float_format='%0.2f')

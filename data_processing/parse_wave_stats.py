@@ -35,6 +35,7 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import netcdf_io as nio
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -370,7 +371,7 @@ def main(inargs):
     """Run the program"""
    
     # Read data 
-    indata = pandas.read_csv(inargs.infile, index_col=0)
+    indata, metadata = nio.wavestats_to_df(inargs.infile)
     metric_threshold = get_threshold(indata, inargs.metric, inargs.metric_filter) 
     indata = add_duration(indata, inargs.metric, metric_threshold)
     stats = basic_stats(indata, [], before_filtering=True)    
@@ -395,11 +396,7 @@ def main(inargs):
     for line in stats:
         print line
 
-    # Get the metadata
-    met_file = inargs.infile.replace(".csv", ".met")
-    with open(met_file, 'r') as content_file:
-        metadata = content_file.read()
-
+    # Metadata
     metadata_list = [(inargs.infile, metadata),]
 
     # Create optional outputs
@@ -444,7 +441,7 @@ author:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     # Required arguments
-    parser.add_argument("infile", type=str, help="Input file name - it is the .csv output of create_zw3_table.py")
+    parser.add_argument("infile", type=str, help="Input file name - it is the .nc output of calc_wave_stats.py")
     parser.add_argument("metric", type=str, help="Name of the input file metric to be used")
     
     # Time filters

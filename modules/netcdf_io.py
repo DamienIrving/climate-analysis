@@ -24,6 +24,7 @@ single2list          -- Check if item is a list, then convert if not
 split_dt             -- Split a getTime().asComponentTime() date/time into year, month and day parts
 temporal_aggregation -- Create a temporal aggregate of the input data (i.e. raw, climatology or anomaly)
 time_axis_check      -- Check whether 2 time axes are the same
+wavestats_to_df      -- Takes a wavestats netCDF file and returns the output in a Pandas DataFrame
 write_netcdf         -- Write an output netCDF file
 xy_axis_check        -- Check whether 2 lat or lon axes are the same
 
@@ -56,6 +57,8 @@ cdms2.setNetcdfDeflateLevelFlag(0)
 import MV2
 import regrid2
 
+import pandas
+import netCDF4
 
 ## Import my modules ##
 
@@ -535,6 +538,25 @@ def get_timescale(times):
     print timescale
 
     return timescale
+
+
+def wavestats_to_df(infile):
+    """Extract wave envelope stats and output to pandas DataFrame"""
+
+    fin = netCDF4.Dataset(infile)
+    time_axis = get_time_axis(fin.variables['time'])
+
+    var_list = ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon']
+
+    data = numpy.zeros((len(time_axis), len(var_list)))
+    headers = [] 
+    for i, var in enumerate(var_list):
+        data[:, i] = fin.variables[var][:]
+        headers.append(var)
+
+    output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis), columns=headers)
+
+    return output, fin.history
 
 
 def hi_lo(data_series, current_max, current_min):

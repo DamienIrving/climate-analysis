@@ -26,7 +26,6 @@ modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 
 try:
-    import general_io as gio
     import netcdf_io as nio
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
@@ -66,7 +65,7 @@ def extent_stats(data_double, lons_double, threshold, lons_spacing):
 def extent_atts(orig_data, statistic, threshold, outvar_atts_list):
     """Get the attributes for the extent statistics"""
 
-    assert statistic in ['extent', 'start_lon', 'end_lon']
+    assert statistic in ['extent', 'startlon', 'endlon']
 
     var_atts = {'id': statistic,
                 'standard_name': statistic+' of wave amplitude exceeding '+threshold,
@@ -91,7 +90,7 @@ def amp_atts(orig_data, stat, outvar_atts_list):
     """Get the attributes for the wave amplitude statistic"""
    
     text = 'Zonal %s of the meridional maximum ' %(stat)
-    var_atts = {'id': 'amp_'+stat,
+    var_atts = {'id': 'amp'+stat,
                 'standard_name': text+orig_data.long_name,
                 'long_name': text+orig_data.long_name,
                 'units': orig_data.units,
@@ -169,8 +168,8 @@ def main(inargs):
     amp_atts(indata.data, 'mean', outvar_atts_list)
     amp_atts(indata.data, 'median', outvar_atts_list)
     extent_atts(indata.data, 'extent', inargs.threshold, outvar_atts_list)
-    extent_atts(indata.data, 'start_lon', inargs.threshold, outvar_atts_list)
-    extent_atts(indata.data, 'end_lon', inargs.threshold, outvar_atts_list)    
+    extent_atts(indata.data, 'startlon', inargs.threshold, outvar_atts_list)
+    extent_atts(indata.data, 'endlon', inargs.threshold, outvar_atts_list)    
 
     outdata_list = [amp_mean_data, amp_median_data, extent_data, start_lon_data, end_lon_data] 
     
