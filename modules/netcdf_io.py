@@ -540,25 +540,6 @@ def get_timescale(times):
     return timescale
 
 
-def wavestats_to_df(infile):
-    """Extract wave envelope stats and output to pandas DataFrame"""
-
-    fin = netCDF4.Dataset(infile)
-    time_axis = get_time_axis(fin.variables['time'])
-
-    var_list = ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon']
-
-    data = numpy.zeros((len(time_axis), len(var_list)))
-    headers = [] 
-    for i, var in enumerate(var_list):
-        data[:, i] = fin.variables[var][:]
-        headers.append(var)
-
-    output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis), columns=headers)
-
-    return output, fin.history
-
-
 def hi_lo(data_series, current_max, current_min):
     """Determines the new highest and lowest value"""
     
@@ -985,6 +966,25 @@ def time_axis_check(axis1, axis2):
 
     if (start_year1 != start_year2 or len(axis1) != len(axis2)):
         sys.exit('Input files do not all have the same time axis')
+
+
+def wavestats_to_df(infile):
+    """Extract wave envelope stats and output to pandas DataFrame"""
+
+    fin = netCDF4.Dataset(infile)
+    time_axis = get_time_axis(fin.variables['time'])
+
+    var_list = ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon']
+
+    data = numpy.zeros((len(time_axis), len(var_list)))
+    headers = [] 
+    for i, var in enumerate(var_list):
+        data[:, i] = fin.variables[var][:]
+        headers.append(var)
+
+    output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis), columns=headers)
+
+    return output, fin.history
 
 
 def write_netcdf(outfile_name, history_entry, global_atts, 
