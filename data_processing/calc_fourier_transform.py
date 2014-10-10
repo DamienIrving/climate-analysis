@@ -27,22 +27,21 @@ sys.path.append(modules_dir)
 
 try:
     import netcdf_io as nio
-    import coordinate_rotation as crot
+    import convenient
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
 
 # Define functions #
 
-
 def apply_lon_filter(data, lon_bounds):
     """Set all values outside of the specified longitude range [lon_bounds[0], lon_bounds[1]] to zero."""
     
     # Convert to common bounds (0, 360) #
  
-    lon_min = crot.adjust_lon_range(lon_bounds[0], radians=False, start=0.0)
-    lon_max = crot.adjust_lon_range(lon_bounds[1], radians=False, start=0.0)
-    lon_axis = crot.adjust_lon_range(data.getLongitude()[:], radians=False, start=0.0)
+    lon_min = convenient.adjust_lon_range(lon_bounds[0], radians=False, start=0.0)
+    lon_max = convenient.adjust_lon_range(lon_bounds[1], radians=False, start=0.0)
+    lon_axis = convenient.adjust_lon_range(data.getLongitude()[:], radians=False, start=0.0)
 
     # Make required values zero #
     

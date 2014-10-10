@@ -54,7 +54,7 @@ temp_files=()
 for year in "${years[@]}"; do
     end=`expr $year + 4`
     temp_file=${temp_dir}/temp-${8}_${year}-${end}.nc
-    /usr/local/uvcdat/1.3.0/bin/cdat ~/phd/data_processing/calc_fourier_transform.py $infile $invar ${temp_file} ${waveselect[@]} ${typeselect[@]} ${lonselect[@]} --time ${year}-01-01 ${end}-12-31 none 
+    /usr/local/anaconda/bin/python ~/phd/data_processing/calc_fourier_transform.py $infile $invar ${temp_file} ${waveselect[@]} ${typeselect[@]} ${lonselect[@]} --time ${year}-01-01 ${end}-12-31 none 
     temp_files+=(${temp_file})
 done
 

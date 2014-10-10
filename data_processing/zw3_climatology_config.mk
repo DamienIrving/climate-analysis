@@ -54,7 +54,7 @@ CONTOUR_VAR=zg
 STRIDE=2
 
 # Climatology
-METRIC=env_amp_median
+METRIC=ampmedian
 METRIC_THRESH=90pct
 
 # Composite
@@ -62,4 +62,5 @@ COMP_VAR=tas
 
 
 ## Target
-TARGET=${INDEX_DIR}/clim/${METRIC}-seasonal-values_zw3-${ENV_WAVE_LABEL}-${VAR}-stats-extent${EXTENT_THRESH}-filter${METRIC_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
+TARGET=${ZW3_DIR}/table_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv
+#${COMP_DIR}/tas-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.nc

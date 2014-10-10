@@ -112,36 +112,6 @@ def _filter_tiny(data, threshold=0.000001):
     return numpy.where(numpy.absolute(data) < threshold, 0.0, data)
  
 
-def adjust_lon_range(lons, radians=True, start=0.0):
-    """Express longitude values in the 360 degree (or 2*pi radians)
-    interval that begins at start.
-
-    Arguments:
-       lons      List of longitude axis values (monotonically increasing)
-       radians   Specify whether the input data are in radians (True) or
-                 degrees (False). Output will be the same units.
-       start     Start value for the output axis (add 360 degrees or 2*pi
-                 radians to get the end point)
-    """
-    
-    lons = nio.single2list(lons, numpy_array=True)    
-    
-    interval360 = 2.0*numpy.pi if radians else 360.0
-    end = start + interval360    
-    
-    less_than_start = numpy.ones([len(lons),])
-    while numpy.sum(less_than_start) != 0:
-        lons = numpy.where(lons < start, lons + interval360, lons)
-        less_than_start = lons < start
-    
-    more_than_end = numpy.ones([len(lons),])
-    while numpy.sum(more_than_end) != 0:
-        lons = numpy.where(lons >= end, lons - interval360, lons)
-        more_than_end = lons >= end
-
-    return lons
-
-
 #################################
 ## Coordinate system rotations ##
 #################################
@@ -250,7 +220,7 @@ def rotate_spherical(lats, lons, phi, theta, psi, invert=False):
     #lonrot = numpy.where(numpy.abs(lats) == 90.0, lons + phi + psi, lonrot)
     #but I haven't. Accuracy at the poles is not important
     
-    return latrot, adjust_lon_range(lonrot, radians=False, start=0.0) 
+    return latrot, convenient.adjust_lon_range(lonrot, radians=False, start=0.0) 
 
 
 ############################
@@ -372,13 +342,13 @@ def _rotation_sign(angleC, lonB, lonC):
     assert len(lonB) == len(lonC), \
     "Input arrays must be the same length"   
 
-    lonB_360 = adjust_lon_range(lonB, radians=False, start=0.0)
-    lonC_360 = adjust_lon_range(lonC, radians=False, start=0.0)
+    lonB_360 = convenient.adjust_lon_range(lonB, radians=False, start=0.0)
+    lonC_360 = convenient.adjust_lon_range(lonC, radians=False, start=0.0)
 
     new_start = lonB_360[0] - 180.0
 
-    lonB_360 = adjust_lon_range(lonB_360, radians=False, start=new_start)
-    lonC_360 = adjust_lon_range(lonC_360, radians=False, start=new_start)
+    lonB_360 = convenient.adjust_lon_range(lonB_360, radians=False, start=new_start)
+    lonC_360 = convenient.adjust_lon_range(lonC_360, radians=False, start=new_start)
 
     angleC_adjusted = numpy.where(lonC_360 < lonB_360, -angleC, angleC)
 

@@ -371,7 +371,7 @@ def main(inargs):
     """Run the program"""
    
     # Read data 
-    indata, metadata = nio.wavestats_to_df(inargs.infile)
+    indata, metadata = gio.wavestats_to_df(inargs.infile)
     metric_threshold = get_threshold(indata, inargs.metric, inargs.metric_filter) 
     indata = add_duration(indata, inargs.metric, metric_threshold)
     stats = basic_stats(indata, [], before_filtering=True)    

@@ -11,6 +11,7 @@ find_duplicates   -- Find duplicates in a list
 read_dates        -- Read in a list of dates
 set_outfile_date  -- Take an outfile name and replace existing date with new one
 standard_datetime -- Convert any arbitrary date/time to standard format: YYYY-MM-DD
+wavestats_to_df   -- Takes a wavestats netCDF file and returns the output in a Pandas DataFrame
 write_dates       -- Write a list of dates
 
 """
@@ -20,6 +21,8 @@ from datetime import datetime
 from dateutil import parser
 from collections import defaultdict
 import re
+
+
 
 try:
     from git import Repo  #doesn't come standard with uvcdat install
@@ -86,6 +89,25 @@ def standard_datetime(dt):
     new_dt = parser.parse(str(dt))
 
     return new_dt.strftime("%Y-%m-%d")
+
+
+def wavestats_to_df(infile):
+    """Extract wave envelope stats and output to pandas DataFrame"""
+
+    fin = netCDF4.Dataset(infile)
+    time_axis = get_time_axis(fin.variables['time'])
+
+    var_list = ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon']
+
+    data = numpy.zeros((len(time_axis), len(var_list)))
+    headers = [] 
+    for i, var in enumerate(var_list):
+        data[:, i] = fin.variables[var][:]
+        headers.append(var)
+
+    output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis), columns=headers)
+
+    return output, fin.history
 
 
 def write_dates(outfile, date_list):
