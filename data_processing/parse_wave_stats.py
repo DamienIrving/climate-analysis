@@ -36,6 +36,7 @@ sys.path.append(modules_dir)
 try:
     import general_io as gio
     import netcdf_io as nio
+    import convenient_anaconda as aconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -371,7 +372,7 @@ def main(inargs):
     """Run the program"""
    
     # Read data 
-    indata, metadata = gio.wavestats_to_df(inargs.infile)
+    indata, metadata = aconv.wavestats_to_df(inargs.infile)
     metric_threshold = get_threshold(indata, inargs.metric, inargs.metric_filter) 
     indata = add_duration(indata, inargs.metric, metric_threshold)
     stats = basic_stats(indata, [], before_filtering=True)    

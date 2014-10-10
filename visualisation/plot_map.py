@@ -47,6 +47,7 @@ try:
     import general_io as gio
     import coordinate_rotation as crot
     import plot_coordinate_rotation as pcr
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -574,7 +575,7 @@ def _plot_box(bmap, box_list, np=None):
             if np:
 		phi, theta, psi = crot.north_pole_to_rotation_angles(np[0], np[1])
 		rot_lats, rot_lons = crot.rotate_spherical(borders[side+'_lats'], borders[side+'_lons'], phi, theta, psi, invert=False)
-        	rot_lons_adjust = crot.adjust_lon_range(rot_lons, radians=False, start=0.0)
+        	rot_lons_adjust = uconv.adjust_lon_range(rot_lons, radians=False, start=0.0)
         	borders[side+'_lats'] = rot_lats
 		borders[side+'_lons'] = rot_lons_adjust
 
@@ -727,7 +728,7 @@ def _plot_search_paths(bmap, new_np, plot_lons, plot_lats, lon_start):
         orig_lats, orig_lons = nio.coordinate_pairs(lat_val, lon_vals)
         rot_lats, rot_lons = crot.rotate_spherical(orig_lats, orig_lons, phi, theta, psi, invert=False)
     
-        rot_lons_adjust = crot.adjust_lon_range(rot_lons, radians=False, start=lon_start)
+        rot_lons_adjust = uconv.adjust_lon_range(rot_lons, radians=False, start=lon_start)
     
         x, y = bmap(rot_lons_adjust, rot_lats)
         shade = '0.5' if lat == 0.0 else '0.8'

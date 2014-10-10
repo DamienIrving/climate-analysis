@@ -55,8 +55,6 @@ cdms2.setNetcdfDeflateLevelFlag(0)
 import MV2
 import regrid2
 
-import pandas
-import netCDF4
 
 ## Import my modules ##
 

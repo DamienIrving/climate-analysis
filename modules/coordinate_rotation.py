@@ -6,8 +6,6 @@ module_dir = os.path.join(os.environ['HOME'], 'data_processing')
 sys.path.insert(0, module_dir)
 
 Included functions:
-adjust_lon_range
-  --  Express longitude values in desired 360 degree interval
 
 rotation_matrix  
   --  Get the rotation matrix or its inverse
@@ -57,6 +55,7 @@ sys.path.append(modules_dir)
 
 try:
     import netcdf_io as nio
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -220,7 +219,7 @@ def rotate_spherical(lats, lons, phi, theta, psi, invert=False):
     #lonrot = numpy.where(numpy.abs(lats) == 90.0, lons + phi + psi, lonrot)
     #but I haven't. Accuracy at the poles is not important
     
-    return latrot, convenient.adjust_lon_range(lonrot, radians=False, start=0.0) 
+    return latrot, uconv.adjust_lon_range(lonrot, radians=False, start=0.0) 
 
 
 ############################
@@ -342,13 +341,13 @@ def _rotation_sign(angleC, lonB, lonC):
     assert len(lonB) == len(lonC), \
     "Input arrays must be the same length"   
 
-    lonB_360 = convenient.adjust_lon_range(lonB, radians=False, start=0.0)
-    lonC_360 = convenient.adjust_lon_range(lonC, radians=False, start=0.0)
+    lonB_360 = uconv.adjust_lon_range(lonB, radians=False, start=0.0)
+    lonC_360 = uconv.adjust_lon_range(lonC, radians=False, start=0.0)
 
     new_start = lonB_360[0] - 180.0
 
-    lonB_360 = convenient.adjust_lon_range(lonB_360, radians=False, start=new_start)
-    lonC_360 = convenient.adjust_lon_range(lonC_360, radians=False, start=new_start)
+    lonB_360 = uconv.adjust_lon_range(lonB_360, radians=False, start=new_start)
+    lonC_360 = uconv.adjust_lon_range(lonC_360, radians=False, start=new_start)
 
     angleC_adjusted = numpy.where(lonC_360 < lonB_360, -angleC, angleC)
 

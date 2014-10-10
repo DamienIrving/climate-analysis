@@ -27,7 +27,7 @@ sys.path.append(modules_dir)
 
 try:
     import netcdf_io as nio
-    import convenient
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -39,9 +39,9 @@ def apply_lon_filter(data, lon_bounds):
     
     # Convert to common bounds (0, 360) #
  
-    lon_min = convenient.adjust_lon_range(lon_bounds[0], radians=False, start=0.0)
-    lon_max = convenient.adjust_lon_range(lon_bounds[1], radians=False, start=0.0)
-    lon_axis = convenient.adjust_lon_range(data.getLongitude()[:], radians=False, start=0.0)
+    lon_min = uconv.adjust_lon_range(lon_bounds[0], radians=False, start=0.0)
+    lon_max = uconv.adjust_lon_range(lon_bounds[1], radians=False, start=0.0)
+    lon_axis = uconv.adjust_lon_range(data.getLongitude()[:], radians=False, start=0.0)
 
     # Make required values zero #
     

@@ -28,6 +28,7 @@ sys.path.append(modules_dir)
 try:
     import general_io as gio
     import netcdf_io as nio
+    import convenient_anaconda as aconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -108,7 +109,7 @@ def main(inargs):
     
     fourier_DataFrame, fourier_history = get_fourier(inargs.fourier_file, inargs.lat_range)
     zw3_DataFrame, zw3_history = get_zw3(inargs.zw3_file)
-    env_DataFrame, env_history = gio.wavestats_to_df(inargs.env_file)
+    env_DataFrame, env_history = aconv.wavestats_to_df(inargs.env_file)
     
     output = fourier_DataFrame.join([zw3_DataFrame, env_DataFrame, nenv_DataFrame])
     output.to_csv(inargs.outfile, float_format='%0.2f')
