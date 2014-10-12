@@ -4,6 +4,7 @@ my anaconda install but not uvcdat (because uvcdat doesn't play nice with
 pandas or netCDF4
 
 Included functions:
+get_time_axis     -- Get the time axis using the netCDF4 module
 wavestats_to_df   -- Takes a wavestats netCDF file and returns the output in a Pandas DataFrame
 
 """
@@ -11,6 +12,16 @@ wavestats_to_df   -- Takes a wavestats netCDF file and returns the output in a P
 import pandas
 import netCDF4
 import numpy
+
+
+def get_time_axis(time_variable):
+    """Get the time axis using the netCDF4 module"""
+
+    units = time_variable.units
+    calendar = time_variable.calendar
+    time_axis = netCDF4.num2date(time_variable[:], units=units, calendar=calendar)        
+    
+    return time_axis
 
 
 def wavestats_to_df(infile):

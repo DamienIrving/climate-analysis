@@ -35,16 +35,6 @@ except ImportError:
 
 # Define functions #
 
-def get_time_axis(time_variable):
-    """Get the time axis using the netCDF4 module"""
-
-    units = time_variable.units
-    calendar = time_variable.calendar
-    time_axis = netCDF4.num2date(time_variable[:], units=units, calendar=calendar)        
-    
-    return time_axis
-
-
 def find_nearest(array, value):
     """Find the closest array item to value"""
     
@@ -62,7 +52,7 @@ def get_fourier(infile, lat_range):
     var_list = map(str, var_list)
 
     # Time axis
-    time_axis = get_time_axis(fin.variables['time'])
+    time_axis = aconv.get_time_axis(fin.variables['time'])
 
     # Latitude axis
     lat_axis = fin.variables['latitude'][:]
@@ -93,7 +83,7 @@ def get_zw3(infile):
     """Extract ZW3 index and output to a pandas DataFrame"""
 
     fin = netCDF4.Dataset(infile)
-    time_axis = get_time_axis(fin.variables['time'])
+    time_axis = aconv.get_time_axis(fin.variables['time'])
 
     data = fin.variables['zw3'][:]
 
