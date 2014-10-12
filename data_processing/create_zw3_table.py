@@ -101,7 +101,7 @@ def main(inargs):
     zw3_DataFrame, zw3_history = get_zw3(inargs.zw3_file)
     env_DataFrame, env_history = aconv.wavestats_to_df(inargs.env_file)
     
-    output = fourier_DataFrame.join([zw3_DataFrame, env_DataFrame, nenv_DataFrame])
+    output = fourier_DataFrame.join([zw3_DataFrame, env_DataFrame])
     output.to_csv(inargs.outfile, float_format='%0.2f')
 
     metadata = [(inargs.fourier_file, fourier_history),
