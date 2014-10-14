@@ -79,27 +79,14 @@ def get_fourier(infile, lat_range):
     return output, fin.history
 
 
-def get_zw3(infile):
-    """Extract ZW3 index and output to a pandas DataFrame"""
-
-    fin = netCDF4.Dataset(infile)
-    time_axis = aconv.get_time_axis(fin.variables['time'])
-
-    data = fin.variables['zw3'][:]
-
-    output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis), columns=['ZW3_index'])
-
-    return output, fin.history
-    
-
 def main(inargs):
     """Run the program."""
 
     # Read data and check inputs #
     
     fourier_DataFrame, fourier_history = get_fourier(inargs.fourier_file, inargs.lat_range)
-    zw3_DataFrame, zw3_history = get_zw3(inargs.zw3_file)
-    env_DataFrame, env_history = aconv.wavestats_to_df(inargs.env_file)
+    zw3_DataFrame, zw3_history = aconv.wavestats_to_df(inargs.zw3_file, ['zw3'])
+    env_DataFrame, env_history = aconv.wavestats_to_df(inargs.env_file, ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon'])
     
     output = fourier_DataFrame.join([zw3_DataFrame, env_DataFrame])
     output.to_csv(inargs.outfile, float_format='%0.2f')

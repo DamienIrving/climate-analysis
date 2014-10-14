@@ -364,16 +364,17 @@ def plot_seasonal_values(data, outfile,
     ax.legend(loc=leg_loc, fontsize='small', ncol=5)
 
     plt.savefig(outfile)
-
     gio.write_metadata(outfile, file_info=metadata)
-     
+
 
 def main(inargs):
     """Run the program"""
    
     # Read data 
-    indata, metadata = aconv.wavestats_to_df(inargs.infile)
+    indata, metadata = aconv.wavestats_to_df(inargs.infile, ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon'])
     metric_threshold = get_threshold(indata, inargs.metric, inargs.metric_filter) 
+    
+    # Add relevant columns
     indata = add_duration(indata, inargs.metric, metric_threshold)
     stats = basic_stats(indata, [], before_filtering=True)    
 
@@ -418,7 +419,7 @@ def main(inargs):
         plot_seasonal_values(data, inargs.seasonal_values_line, 
                              start_year, start_month, end_year, end_month, month_years, metadata_list,
                              leg_loc=inargs.leg_loc, annual=inargs.annual)
-    
+
 
 if __name__ == '__main__':
 

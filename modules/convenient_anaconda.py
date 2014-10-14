@@ -24,13 +24,11 @@ def get_time_axis(time_variable):
     return time_axis
 
 
-def wavestats_to_df(infile):
-    """Extract wave envelope stats and output to pandas DataFrame"""
+def wavestats_to_df(infile, var_list):
+    """Extract the variables in var_list from the netCDF infile and place them in a pandas DataFrame"""
 
     fin = netCDF4.Dataset(infile)
     time_axis = get_time_axis(fin.variables['time'])
-
-    var_list = ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon']
 
     data = numpy.zeros((len(time_axis), len(var_list)))
     headers = [] 
