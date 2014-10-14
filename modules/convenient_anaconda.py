@@ -13,6 +13,17 @@ import pandas
 import netCDF4
 import numpy
 
+def get_threshold(DataSeries, column, threshold_str):
+    """Turn the user input threshold into a numeric threshold"""
+    
+    if 'pct' in threshold_str:
+        value = float(re.sub('pct', '', threshold_str))
+        threshold_float = numpy.percentile(DataSeries, value)
+    else:
+        threshold_float = float(threshold_str)
+    
+    return threshold_float
+
 
 def get_time_axis(time_variable):
     """Get the time axis using the netCDF4 module"""

@@ -269,18 +269,6 @@ def get_intersection(dictionary, key_list):
     return list(result)
 
 
-def get_threshold(DataFrame, column, threshold_str):
-    """Turn the user input threshold into a numeric threshold"""
-    
-    if 'pct' in threshold_str:
-        value = float(re.sub('pct', '', threshold_str))
-        threshold_float = numpy.percentile(DataFrame[column], value)
-    else:
-        threshold_float = float(threshold_str)
-    
-    return threshold_float
-
-
 def get_years(date_list):
     """Return a list of integer years"""
     
@@ -372,7 +360,7 @@ def main(inargs):
    
     # Read data 
     indata, metadata = aconv.wavestats_to_df(inargs.infile, ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon'])
-    metric_threshold = get_threshold(indata, inargs.metric, inargs.metric_filter) 
+    metric_threshold = aconv.get_threshold(indata[inargs.metric], inargs.metric_filter) 
     
     # Add relevant columns
     indata = add_duration(indata, inargs.metric, metric_threshold)
