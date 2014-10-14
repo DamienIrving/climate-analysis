@@ -96,20 +96,20 @@ regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
            'nino34': [(-5, 5, 'cc'), (190, 240, 'cc')],
            'nino4': [(-5, 5, 'cc'), (160, 210, 'cc')],
            'sh': [(-90, 0, 'cc'), (0, 360, 'co')],
-	   'shextropics20': [(-90, -20, 'cc'), (0, 360, 'co')],
+           'shextropics20': [(-90, -20, 'cc'), (0, 360, 'co')],
            'shextropics30': [(-90, -30, 'cc'), (0, 360, 'co')],
-	   'small': [(-5, 0, 'cc'), (10, 15, 'cc')],
+           'small': [(-5, 0, 'cc'), (10, 15, 'cc')],
            'tropics': [(-30, 30, 'cc'), (0, 360, 'co')],
-	   'glatt': [(20, 80, 'cc'), (-180, 180, 'co')],
+           'glatt': [(20, 80, 'cc'), (-180, 180, 'co')],
            'nonpolar70': [(-70, 70, 'cc'), (0, 360, 'co')],
-	   'nonpolar80': [(-80, 80, 'cc'), (0, 360, 'co')],
-	   'sh-psa': [(-90, 0, 'cc'), (90, 450, 'co')],
-	   'sh-psa-extra': [(-90, 30, 'cc'), (90, 450, 'co')],
-	   'world-dateline': [(-90, 90, 'cc'), (0, 360, 'co')],
-	   'world-dateline-duplicate360': [(-90, 90, 'cc'), (0, 360, 'cc')],
-	   'world-greenwich': [(-90, 90, 'cc'), (-180, 180, 'co')],
-	   'world-psa': [(-90, 90, 'cc'), (90, 450, 'co')],
-	   'zw31': [(-50, -45, 'cc'), (45, 60, 'cc')],
+           'nonpolar80': [(-80, 80, 'cc'), (0, 360, 'co')],
+           'sh-psa': [(-90, 0, 'cc'), (90, 450, 'co')],
+           'sh-psa-extra': [(-90, 30, 'cc'), (90, 450, 'co')],
+           'world-dateline': [(-90, 90, 'cc'), (0, 360, 'co')],
+           'world-dateline-duplicate360': [(-90, 90, 'cc'), (0, 360, 'cc')],
+           'world-greenwich': [(-90, 90, 'cc'), (-180, 180, 'co')],
+           'world-psa': [(-90, 90, 'cc'), (90, 450, 'co')],
+           'zw31': [(-50, -45, 'cc'), (45, 60, 'cc')],
            'zw32': [(-50, -45, 'cc'), (161, 171, 'cc')],
            'zw33': [(-50, -45, 'cc'), (279, 289, 'cc')],
            }
@@ -121,48 +121,48 @@ class InputData:
     """Extract and subset data."""
 
     def __init__(self, fname, var_id, convert=False, normalise=False, **kwargs):
-	"""Extract desired data from an input file.
-	
-	Keyword arguments (with examples):
-	
-	SUBSETTORS
+        """Extract desired data from an input file.
+    
+        Keyword arguments (with examples):
+    
+        SUBSETTORS
         latitude  -- (-30, 30)
         level     -- (1000.)
         longitude -- (120, 165)
         region    -- aus
         time      -- ('1979-01-01', '2000-12-31', 'MONTH/SEASON'), 
-		     MONTH/SEASON (optional 3rd argument): 
+                     MONTH/SEASON (optional 3rd argument): 
                      'JAN', 'FEB', ..., 'DEC'
-		     'DJF', ... 'SON'	
+                     'DJF', ... 'SON'   
 
-	MANIPULATORS
-	agg       -- (quantity, season, lower_time_bound, upper_time_bound)
+        MANIPULATORS
+        agg       -- (quantity, season, lower_time_bound, upper_time_bound)
                      quantity: 'raw', 'climatology' or 'anomaly'
                      season: ANNUALCYCLE, SEASONALCYCLE, DJF, MJJASO etc
                      time_bounds (optional):
                      e.g. '1979-01-01', '1980-12-31'
         convert   -- True or False (for converting units)
         grid      -- (startLat,nlat,deltaLat,
-	              startLon,nlon,deltaLon)
+                  startLon,nlon,deltaLon)
         runave    -- window size for the running average 
-	spatave   -- True (for returning average over all spatial dimensions)
-	normalise -- True (normalise data along the time axis)
+        spatave   -- True (for returning average over all spatial dimensions)
+        normalise -- True (normalise data along the time axis)
 
         The order of operations is as follows: subset data, 
-	spatial averaging (spatave), temporal aggregation (agg), 
-	running average (runave), regrid (grid), convert units, 
-	normalise 
-       		
+        spatial averaging (spatave), temporal aggregation (agg), 
+        running average (runave), regrid (grid), convert units, 
+        normalise 
+            
         self.data has all the attributes and methods
-	of a typical cdms2 variable. For instance:
+        of a typical cdms2 variable. For instance:
         - self.data.getLatitude()
-	- self.data.getLatitude()
-	- self.data.getTime()
-	- self.data.attributes (dictionary incl. _FillValue, units etc)       
-	
+        - self.data.getLatitude()
+        - self.data.getTime()
+        - self.data.attributes (dictionary incl. _FillValue, units etc)       
+    
         """
 
-        infile = cdms2.open(fname)       	
+        infile = cdms2.open(fname)          
         _infile_attribute_check(infile, var_id)
         kwargs['order'] = _define_order(infile, var_id)
 
@@ -174,14 +174,14 @@ class InputData:
                 self.minlat, self.maxlat = kwargs['latitude'][0:2]
                 self.minlon, self.maxlon = kwargs['longitude'][0:2]
                 self.region = kwargs['region']
-	    except KeyError:
+            except KeyError:
                 print 'region not defined - using all spatial data...'    
-	    del kwargs['region']
+            del kwargs['region']
 
         #remove None values
         for key in kwargs:
             if not kwargs[key]:
-	        del kwargs[key]
+                del kwargs[key]
 
         subsettors = ['latitude', 'level', 'longitude', 'time']
         subset_kwargs = {}
@@ -197,37 +197,37 @@ class InputData:
             ave_axes = data.getOrder().translate(None, 't')
             data = cdutil.averager(data, axis=ave_axes, weights=['unweighted']*len(ave_axes))
 
-	if kwargs.has_key('agg'):
+        if kwargs.has_key('agg'):
             quantity = kwargs['agg'][0]
-	    timescale = kwargs['agg'][1]
+            timescale = kwargs['agg'][1]
             times = [kwargs['agg'][2], kwargs['agg'][3]] if len(kwargs['agg']) > 2 else None
             data = temporal_aggregation(data, timescale, quantity, time_period=times)
 
         if kwargs.has_key('runave'):
-	    window = kwargs['runave']
+            window = kwargs['runave']
             data = running_average(data, window) if window > 1 else data
 
         if kwargs.has_key('grid'):
             data = regrid_uniform(data, kwargs['grid'])            
 
         if convert:
-	    data = convert_units(data)
+            data = convert_units(data)
 
         if normalise:
             data = normalise_data(data, sub_mean=True)
 
         # Set object attributes #
         
-	if 'x' in data.getOrder():
+        if 'x' in data.getOrder():
             if not (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0:
-	        print 'WARNING: There are duplicate longitude values (can be problematic for some applications)'  
+                print 'WARNING: There are duplicate longitude values (can be problematic for some applications)'  
 
         self.data = data
-	self.fname = fname
-	self.id = var_id
-	self.global_atts = infile.attributes
-	
-	infile.close()
+        self.fname = fname
+        self.id = var_id
+        self.global_atts = infile.attributes
+    
+        infile.close()
     
 
     def datetime_axis(self):
@@ -242,21 +242,21 @@ class InputData:
         datetimes = self.data.getTime().asComponentTime()
         
         months = []
-	for datetime in datetimes:
-	    months.append(int(str(datetime).split('-')[1]))    
+        for datetime in datetimes:
+            months.append(int(str(datetime).split('-')[1]))    
 
         return months
 
 
     def picker(self, **kwargs):
         """Select data based on non-contiguous axis values.
-	
-	Keyword arguments (with examples)
-	latitude  -- (-30, -15, 5, 30)
+    
+        Keyword arguments (with examples)
+        latitude  -- (-30, -15, 5, 30)
         level     -- (1000.)
         longitude -- (120, 165, 190)
         time      -- ('1979-01', '1983-02', '2000-12-31', )
-		     
+             
         """
 
         pick = genutil.picker(**kwargs)
@@ -270,101 +270,10 @@ class InputData:
         datetimes = self.data.getTime().asComponentTime()
         
         years = []
-	for datetime in datetimes:
+        for datetime in datetimes:
             years.append(int(str(datetime).split('-')[0]))
-	        
+            
         return years
-
-
-    def temporal_composite(self, index, 
-                           method=None, limit=1.0, bound='upper', season=None, average=False,
-			   normalise=False, remove_ave=False):
-        """Extract composite from data, based on the time axis.
-	
-	Positional arguments:
-	  index      --  a cdms2.tvariable.TransientVariable instance
-	                 respresenting a data timeseries 
-	  method     --  method for determining the composite threshold
-	  limit      --  value applied to that method (e.g. 1.0 standard
-	                 deviations)
-          bound      --  indicates what type of bound the limit is
-          average    --  collect up all the composite members in this category
-                         and calculate the mean 
-          normalise  --	 normalise the data before calculating the composite	     
-	  remove_ave --  remove average in the normalisation procedure
-	
-        """
-	
-	assert isinstance(index, cdms2.tvariable.TransientVariable)
-	assert method in [None, 'std']
-        assert type(limit) == float
-	assert season in [None, 'ann', 'djf', 'mam', 'jja', 'son']
-        assert bound in ['upper', 'lower', 'between']
-
-        # Check that the input data and index have the same time axis #
-
-        time_axis_check(self.data.getTime(), index.getTime())
-	
-	# Normalise the input data #
-	
-	if normalise:
-	    data_complete = normalise_data(self.data, sub_mean=remove_ave)
-	else:
-	    data_complete = self.data
-
-        # Extract the season #
-
-        if season == 'ann':
-            season = None
-
-        if season:
-            seasons = {'djf': [12, 1, 2],
-                       'mam': [3, 4, 5],
-                       'jja': [6, 7, 8],
-                       'son': [9, 10, 11]}
-            indices0 = numpy.where(numpy.array(self.months()) == seasons[season][0], 1, 0)
-            indices1 = numpy.where(numpy.array(self.months()) == seasons[season][1], 1, 0)
-            indices2 = numpy.where(numpy.array(self.months()) == seasons[season][2], 1, 0)
-            indices = numpy.nonzero((indices0 + indices1 + indices2) == 1)
-            data_season = temporal_extract(data_complete, indices)
-	    index = temporal_extract(index, indices)
-	else:
-	    data_season = data_complete
-
-        # Extract the data that pass the threshold #
-
-        if method == 'std':
-            threshold = genutil.statistics.std(index) * limit
-        else:
-            threshold = limit 
-
-        tests = {'upper': 'index > threshold',
-                 'lower': 'index < threshold',
-                 'between': '-threshold < index < threshold'}
-
-        indices_include = numpy.nonzero(numpy.where(eval(tests[bound]), 1, 0) == 1)
-        indices_exclude = numpy.nonzero(numpy.where(eval(tests[bound]), 1, 0) == 0)
-        data_in_composite = temporal_extract(data_season, indices_include)
-        data_out_composite = temporal_extract(data_season, indices_exclude)
-        
-        # Perform the t-test 
-	# To perform a Welch's t-test (two independent samples, unequal variances), need the 
-        # latest version of scipy in order to use the equal_var keyword argument
-	
-	t, p_vals = stats.ttest_ind(data_in_composite, data_out_composite, axis=0) #equal_var=False) 
-
-        # Perform necessary averaging #
-
-#        count = numpy.shape(composite)[0]
-#        
-#        final_composite = MV2.average(composite, axis=0) if average else composite
-#        final_composite.count = count
-
-        return data_in_composite, p_vals
-
-
-#    def eddy
-#    def mask
 
 
 def convert_units(data):
@@ -398,7 +307,6 @@ def convert_units(data):
         print 'Units have not been converted.'
 
         newdata = data
-
 
     return newdata 
 
@@ -443,8 +351,8 @@ def _define_order(infile, var_id, template='tyxz'):
      
     input_order = ''
     for dimension in infile.listdimension(vname=var_id):
-	if not dimension in ['bound', 'nv', 'nb2', 'time_bnds', 'tbnds']:
-	    input_order = input_order + infile.getAxis(dimension).axis.lower()
+    if not dimension in ['bound', 'nv', 'nb2', 'time_bnds', 'tbnds']:
+        input_order = input_order + infile.getAxis(dimension).axis.lower()
 
     order = copy.deepcopy(template)
     for item in template:
@@ -491,10 +399,9 @@ def get_datetime(datetime_list):
 
     datetime_object_list = []
     for item in datetime_list:
-        #compensate for 60.0 seconds which genutil.filters.runningaverage
-	#can produce
-	if not str(item)[-4] in ['0', '1', '2', '3', '4', '5', ':']:
-	    item = str(item)[0:-5]        
+        #compensate for 60.0 seconds which genutil.filters.runningaverage can produce
+        if not str(item)[-4] in ['0', '1', '2', '3', '4', '5', ':']:
+            item = str(item)[0:-5]        
         datetime_object_list.append(parse(str(item)))
 
     return datetime_object_list
@@ -540,9 +447,9 @@ def hi_lo(data_series, current_max, current_min):
     """Determines the new highest and lowest value"""
     
     try:
-       highest = MV2.max(data_series)
+        highest = MV2.max(data_series)
     except:
-       highest = max(data_series)
+        highest = max(data_series)
     
     if highest > current_max:
         new_max = highest
@@ -575,9 +482,9 @@ def _infile_attribute_check(infile, var_id):
     # File dimension attributes #
     
     for dimension in infile.listdimension():
-	if not dimension in ['bound', 'nv', 'nb2', 'time_bnds', 'tbnds']:
-	    assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
-	    'Input dimensions must have an axis attribute that is X, Y, Z or T'
+    if not dimension in ['bound', 'nv', 'nb2', 'time_bnds', 'tbnds']:
+        assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
+        'Input dimensions must have an axis attribute that is X, Y, Z or T'
 
     # Variable attributes #
 
@@ -622,11 +529,11 @@ def match_dates(dates, time_axis, invert_matching=False):
         try:
             index = time_axis_split.index(date)
             if invert_matching:
-		misses.remove(time_axis[index])
-	    else:
-	        matches.append(time_axis[index])
+                misses.remove(time_axis[index])
+            else:
+                matches.append(time_axis[index])
         except ValueError:
-	    pass	    
+            pass        
 
     if invert_matching:
         return misses
@@ -646,7 +553,7 @@ def normalise_data(indata, sub_mean=False):
     
     if sub_mean:
         mean = cdutil.averager(indata, axis='t', weights='unweighted')
-	data = indata - mean
+        data = indata - mean
     else:
         data = indata
 
@@ -664,10 +571,10 @@ def regrid_uniform(data, target_grid):
         outgrid = target_grid
     else:
         assert isinstance(target_grid, (list, tuple)) and len(target_grid) == 6, \
-	'Target grid must be a cdms2.grid.TransientRectGrid or list specifying: startLat, nlat, deltaLat, startLon, nlon, deltaLon'
-	
-	startLat, nlat, deltaLat, startLon, nlon, deltaLon = target_grid
-        outgrid = cdms2.createUniformGrid(startLat, nlat, deltaLat, startLon, nlon, deltaLon)
+    'Target grid must be a cdms2.grid.TransientRectGrid or list specifying: startLat, nlat, deltaLat, startLon, nlon, deltaLon'
+    
+    startLat, nlat, deltaLat, startLon, nlon, deltaLon = target_grid
+    outgrid = cdms2.createUniformGrid(startLat, nlat, deltaLat, startLon, nlon, deltaLon)
     
     regridFunc = regrid2.Horizontal(ingrid, outgrid)
     
@@ -722,8 +629,8 @@ def _subset_data(infile, var_id, **kwargs):
     longitude -- (120, 165) or 230
     region    -- aus
     time      -- ('1979-01-01', '2000-12-31', 'MONTH/SEASON'), 
-	          options: 'JAN', 'FEB', ..., 'DEC'
-	                   'DJF', ... 'SON'
+                  options: 'JAN', 'FEB', ..., 'DEC'
+                           'DJF', ... 'SON'
     """     
 
     assert type(infile) == cdms2.dataset.CdmsFile      
@@ -735,7 +642,7 @@ def _subset_data(infile, var_id, **kwargs):
     for axis in ['latitude', 'longitude']:
         if axis in kwargs.keys():
             if type(kwargs[axis]) == int or type(kwargs[axis]) == float:
-	        try:
+                try:
                     axis_vals = infile.getAxis(axis)[:]
                 except TypeError:
                     axis_vals = infile.getAxis(axis[0:3])[:]
@@ -743,72 +650,72 @@ def _subset_data(infile, var_id, **kwargs):
                 if kwargs[axis] != nearest:
                     print "Selected %s not available, used %s instead" %(axis, str(nearest))
                     kwargs[axis] = nearest
-	
-    # Final selection (involves some messy time stuff)    	
+    
+    # Final selection (involves some messy time stuff)      
     if kwargs.has_key('time'):
-	assert isinstance(kwargs['time'], (list, tuple)), \
-	'time selector must be a list or tuple'
+        assert isinstance(kwargs['time'], (list, tuple)), \
+        'time selector must be a list or tuple'
 
-	assert len(kwargs['time']) == 2 or len(kwargs['time']) == 3, \
-	'time selector must be length two or three'
+        assert len(kwargs['time']) == 2 or len(kwargs['time']) == 3, \
+        'time selector must be length two or three'
 
         date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
-	assert re.search(date_pattern, kwargs['time'][0]) or kwargs['time'][0].lower() == 'none'
-	assert re.search(date_pattern, kwargs['time'][1]) or kwargs['time'][1].lower() == 'none'
-	valid_trange = re.search(date_pattern, kwargs['time'][0]) and re.search(date_pattern, kwargs['time'][1])
+        assert re.search(date_pattern, kwargs['time'][0]) or kwargs['time'][0].lower() == 'none'
+        assert re.search(date_pattern, kwargs['time'][1]) or kwargs['time'][1].lower() == 'none'
+        valid_trange = re.search(date_pattern, kwargs['time'][0]) and re.search(date_pattern, kwargs['time'][1])
 
         month_dict = {'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 
-		      'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG': 8, 
-        	      'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12}
+                      'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG': 8, 
+                      'SEP': 9, 'OCT': 10, 'NOV': 11, 'DEC': 12}
         season_dict = {'DJF': ('JAN', 'FEB', 'DEC'),
-		       'MAM': ('MAR', 'APR', 'MAY'),
-        	       'JJA': ('JUN', 'JUL', 'AUG'),
-        	       'SON': ('SEP', 'OCT', 'NOV')}
-	if len(kwargs['time']) == 3 and kwargs['time'][2].lower() != 'none':
-	    assert (kwargs['time'][2] in month_dict.keys()) or (kwargs['time'][2] in season_dict.keys())
+                       'MAM': ('MAR', 'APR', 'MAY'),
+                       'JJA': ('JUN', 'JUL', 'AUG'),
+                       'SON': ('SEP', 'OCT', 'NOV')}
+        if len(kwargs['time']) == 3 and kwargs['time'][2].lower() != 'none':
+            assert (kwargs['time'][2] in month_dict.keys()) or (kwargs['time'][2] in season_dict.keys())
 
-	    month_selector = kwargs['time'][2]
-	    date_selector = kwargs['time'][0:2]
-	    del kwargs['time']
+            month_selector = kwargs['time'][2]
+            date_selector = kwargs['time'][0:2]
+            del kwargs['time']
 
-	    #make the month/season selection
+            #make the month/season selection
             months = (month_selector,) if month_selector in month_dict.keys() else season_dict[month_selector]
             datetimes = infile.getAxis('time').asComponentTime()
             years_all = []
-	    for datetime in datetimes:
-        	years_all.append(int(str(datetime).split('-')[0]))
+            for datetime in datetimes:
+                years_all.append(int(str(datetime).split('-')[0]))
             years_unique = list(set(years_all))
 
             extracts = []
             for year in years_unique:
-        	for month in months: 
+                for month in months: 
                     start_date = str(year)+'-'+str(month_dict[month])+'-1 00:00:0.0'
                     end_date = str(year)+'-'+str(month_dict[month])+'-'+str(calendar.monthrange(year, month_dict[month])[-1])+' 23:59:0.0'
                     kwargs['time'] = (start_date, end_date)
                     try:
-                	extracts.append(infile(var_id, **kwargs))
+                        extracts.append(infile(var_id, **kwargs))
                     except cdms2.error.CDMSError:
-                	continue
+                        continue
 
             data = MV2.concatenate(extracts, axis=0) if len(extracts) > 1 else extracts[0]      
 
-	    #make the date range selection
-	    if valid_trange:
-		data = data(time=date_selector)
+            #make the date range selection
+            if valid_trange:
+                data = data(time=date_selector)
 
             #reinstate stripped attributes
-	    for att in infile.listattribute(vname=var_id):
-	        setattr(data, att, infile.getattribute(var_id, att))
+            for att in infile.listattribute(vname=var_id):
+                setattr(data, att, infile.getattribute(var_id, att))
 
-	elif valid_trange:
-	    kwargs['time'] = (kwargs['time'][0]+' 0:0:0.0', kwargs['time'][1]+' 23:59:0.0')
-	    data = infile(var_id, **kwargs)
+        elif valid_trange:
+            kwargs['time'] = (kwargs['time'][0]+' 0:0:0.0', kwargs['time'][1]+' 23:59:0.0')
+            data = infile(var_id, **kwargs)
 
-	else:
-	    del kwargs['time']
-	    data = infile(var_id, **kwargs)
-    else:            	         
-	data = infile(var_id, **kwargs)
+        else:
+            del kwargs['time']
+            data = infile(var_id, **kwargs)
+    else:                        
+        data = infile(var_id, **kwargs)
 
     return data
 
@@ -847,13 +754,13 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
     assert output_quantity in ['raw', 'climatology', 'anomaly']
 
     accepted_timescales = ['SEASONALCYCLE', 'ANNUALCYCLE', 'YEAR',
-	                   'DJF', 'MAM', 'JJA', 'SON',
-			   'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                           'DJF', 'MAM', 'JJA', 'SON',
+                           'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
                            'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
     double_alphabet = 'JFMAMJJASONDJFMAMJJASOND'
     assert (output_timescale in accepted_timescales) or \
            (output_timescale in double_alphabet) or \
-	   (output_timescale.lower() == 'input')
+           (output_timescale.lower() == 'input')
    
     if time_period:
         assert len(time_period) == 2, \
@@ -889,15 +796,14 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
         outdata = season.climatology(data, criteriaarg=[1.0, None])
     elif output_quantity == 'anomaly':
         clim = season.climatology(data(time=time_period), criteriaarg=[1.0, None]) if time_period else season.climatology(data, criteriaarg=[1.0, None])
-	assert type(clim) != type(None), \
-	'Input data are of insufficient temporal extent to calculate climatology'	
+        assert type(clim) != type(None), \
+        'Input data are of insufficient temporal extent to calculate climatology'   
         outdata = season.departures(data, ref=clim)
 
     assert type(outdata) != type(None), \
     'Input data are of insufficient temporal extent to calculate the requested temporal aggregation (%s)' %(output_quantity)
 
     return outdata
-
 
 
 def temporal_extract(data, selection, indexes=True):
@@ -965,7 +871,7 @@ def write_netcdf(outfile_name, history_entry, global_atts,
                        (usually generated from " ".join(sys.argv))
       global_atts   -- Dictionary of global attributes for output file
                        (usually obtained from InputData instances via
-		       the .global_atts attribute)
+                       the .global_atts attribute)
       outdata       -- List or tuple of numpy arrays, containing 
                        the data for each output variable
       outvar_atts   -- List or tuple of dictionaries, containing 
@@ -974,7 +880,7 @@ def write_netcdf(outfile_name, history_entry, global_atts,
                        long_name, missing_value, units, history
       outvar_axes   -- List or tuple of axis lists or tuples for 
                        each outdata element (must be in order tyx)
-	  	       Should be generated using the cdat getTime(),
+                       Should be generated using the cdat getTime(),
                        getLatitude() or getLongitude() methods
                     
     Keyword arguments:
@@ -997,14 +903,13 @@ def write_netcdf(outfile_name, history_entry, global_atts,
     '6th argument (outvar_axes) must be a list or tuple of axis lists or tuples, e.g. (data.getTime(),)'
     
     for axes in outvar_axes:
-	index = 0
-	for axis in axes:
-            test = (axis.isTime(), axis.isLatitude(), axis.isLongitude())
-            assert sum(test) == 1 and test.index(1) >= index, \
-            '6th argument (outvar_axes) elements must a time, latitude or longitude axis, in that order'
-            index = test.index(1)
+    index = 0
+    for axis in axes:
+        test = (axis.isTime(), axis.isLatitude(), axis.isLongitude())
+        assert sum(test) == 1 and test.index(1) >= index, \
+        '6th argument (outvar_axes) elements must a time, latitude or longitude axis, in that order'
+        index = test.index(1)
     
-
     outfile = cdms2.open(outfile_name, 'w')
     
     # Global attributes #
@@ -1032,14 +937,14 @@ def write_netcdf(outfile_name, history_entry, global_atts,
         for axis in outvar_axes[index]:
             outvar_axis_list.append(outfile.copyAxis(axis))
 
-	var = cdms2.MV2.array(outdata[index])
+        var = cdms2.MV2.array(outdata[index])
         var = var.astype(numpy.float32)
-	var.setAxisList(outvar_axis_list)
+        var.setAxisList(outvar_axis_list)
 
-	for key, value in outvar_atts[index].iteritems():
+        for key, value in outvar_atts[index].iteritems():
             setattr(var, key, value)
 
-	outfile.write(var)  
+        outfile.write(var)  
 
     outfile.close()
 
