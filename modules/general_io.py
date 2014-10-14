@@ -21,17 +21,18 @@ from dateutil import parser
 from collections import defaultdict
 import re
 
-
-
 try:
-    from git import Repo  #doesn't come standard with uvcdat install
+    from git import Repo 
     cwd = os.getcwd()
     repo_dir = '/'
     for directory in cwd.split('/')[1:]:
         repo_dir = os.path.join(repo_dir, directory)
         if directory == 'phd':
             break
-    MODULE_HASH = Repo(repo_dir).head.commit.hexsha
+    try:
+        MODULE_HASH = Repo(repo_dir).head.commit.hexsha
+    except AttributeError: # Older versions of gitpython work differently
+        MODULE_HASH = Repo(repo_dir).commits()[0].id
 except ImportError:
     MODULE_HASH = 'unknown'
 
