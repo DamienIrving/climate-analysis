@@ -39,6 +39,7 @@ ENV_WAVE_LABEL=w19
 COE_SEARCH=--filter 1 9 --outtype coefficients 
 COE_WAVE_LABEL=w19
 LAT_RANGE=-70 -40
+LAT_SINGLE=-55
 LAT_LABEL=55S
 
 # Extent statistics

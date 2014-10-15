@@ -12,59 +12,66 @@
 ## Define marcos ##
 include zw3_climatology_config.mk
 
-## Phony target
+## Phony target ##
 all : ${TARGET}
 
 ### Calculate the wave envelope ###
 
 ## Step 1: Apply temporal averaging to the meridional wind data ##
 
-#v-wind
-${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_daily_${GRID}.nc
+V_ORIG=${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_daily_${GRID}.nc
+V_RUNMEAN=${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${V_RUNMEAN} : ${V_ORIG}
 	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
+## Step 2: Extract the wave envelope (for the entire globe) ##
 
-## Step 2: Extract the wave envelope (for the entire globe) and collapse the meridional dimension ##
-
-${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+ENV_3D=${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${ENV_3D} : ${V_RUNMEAN}
 	${FOURIER_METHOD} $< ${VAR} $@ ${ENV_SEARCH}
 
-${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+## Step 3: Collapse the meridional dimension ##
+
+ENV_2D=${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
+${ENV_2D} : ${ENV_3D}
 	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
 
 ### Generate the table/database of interesting results ###
-#    - Average meridional max of env and nenv, env and nenv extent/coverage <= calc_wave_stats.py
-#    - Phase and amplitude of each Fourier component (for a selected latitude band or range)  <= calc_fourier_transform.py
-#    - Raphael ZW3 index <= calc_index.py
 
+## Step 1: Calculate the wave statistics (metrics like mean & max, extent/coverage, etc) ##
 
-## Step 1: Calculate the wave statistics (average, extent/coverage) ##
-
-${ZW3_DIR}/wavestats_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc : ${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
+WAVE_STATS={ZW3_DIR}/wavestats_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc 
+${WAVE_STATS} : ${ENV_2D}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< ${VAR} $@ --threshold ${EXTENT_THRESH}
 
 ## Step 2: Calculate the phase and amplitude of each Fourier component ##
 
-${ZW3_DIR}/fourier_zw3_${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc : ${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+${FOURIER_INFO}=${ZW3_DIR}/fourier_zw3_${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc 
+${FOURIER_INFO} : ${V_RUNMEAN}
 	${FOURIER_METHOD} $< ${VAR} $@ ${COE_SEARCH}
 
 ## Step 3: Calculate the ZW3 index of Raphael (2004) ## 
 
-${DATA_DIR}/zg_${DATASET}_500hPa_daily_native-zonal-anom.nc : ${DATA_DIR}/zg_${DATASET}_500hPa_daily_native.nc       
+ZG_ORIG=${DATA_DIR}/zg_${DATASET}_500hPa_daily_native.nc
+ZG_ZONAL_ANOM=${DATA_DIR}/zg_${DATASET}_500hPa_daily_native-zonal-anom.nc
+${ZG_ZONAL_ANOM} : ${ZG_ORIG}       
 	${ZONAL_ANOM_METHOD} $< zg $@
 	ncatted -O -a axis,time,c,c,T $@
 
-${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc : ${DATA_DIR}/zg_${DATASET}_500hPa_daily_native-zonal-anom.nc
+ZG_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
+${ZG_ZONAL_ANOM_RUNMEAN} : ${ZG_ZONAL_ANOM}
 	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-${ZW3_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc : ${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc
+ZW3_INDEX=${ZW3_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
+${ZW3_INDEX} : ${ZG_ZONAL_ANOM_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
 
-# Step 4: Put it all in a common table/database
+## Step 4: Put it all in a common table/database ##
 
-${ZW3_DIR}/table_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv : ${ZW3_DIR}/wavestats_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc ${ZW3_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc ${ZW3_DIR}/fourier_zw3_${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+TABLE=${ZW3_DIR}/table_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv 
+${TABLE} : ${WAVE_STATS} ${ZW3_INDEX} ${FOURIER_INFO}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_zw3_table.py $(word 1,$^) $(word 2,$^) $(word 3,$^) $@
