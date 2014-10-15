@@ -72,9 +72,9 @@ def nc_to_df(infile, var_list, lat=None):
     options = {}
     if lat:
         if lat[0] == lat[1]:
-            options['latitude'] = lat[0]
+            options['latitude'] = float(lat[0])
         else:
-            options['latitude'] = lat[0:2]
+            options['latitude'] = (float(lat[0]), float(lat[1]))
         options[lat[2]] = True
         
     # Extract data
