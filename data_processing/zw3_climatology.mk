@@ -43,13 +43,13 @@ ${ENV_2D} : ${ENV_3D}
 
 ## Step 1: Calculate the wave statistics (metrics like mean & max, extent/coverage, etc) ##
 
-WAVE_STATS={ZW3_DIR}/wavestats_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc 
+WAVE_STATS=${ZW3_DIR}/wavestats_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc 
 ${WAVE_STATS} : ${ENV_2D}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< ${VAR} $@ --threshold ${EXTENT_THRESH}
 
 ## Step 2: Calculate the phase and amplitude of each Fourier component ##
 
-${FOURIER_INFO}=${ZW3_DIR}/fourier_zw3_${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc 
+FOURIER_INFO=${ZW3_DIR}/fourier_zw3_${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc 
 ${FOURIER_INFO} : ${V_RUNMEAN}
 	${FOURIER_METHOD} $< ${VAR} $@ ${COE_SEARCH}
 
