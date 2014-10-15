@@ -355,8 +355,8 @@ def _define_order(infile, var_id, template='tyxz'):
      
     input_order = ''
     for dimension in infile.listdimension(vname=var_id):
-    if not dimension in ['bound', 'nv', 'nb2', 'time_bnds', 'tbnds']:
-        input_order = input_order + infile.getAxis(dimension).axis.lower()
+        if not dimension in ['bound', 'nv', 'nb2', 'time_bnds', 'tbnds']:
+            input_order = input_order + infile.getAxis(dimension).axis.lower()
 
     order = copy.deepcopy(template)
     for item in template:
@@ -486,9 +486,9 @@ def _infile_attribute_check(infile, var_id):
     # File dimension attributes #
     
     for dimension in infile.listdimension():
-    if not dimension in ['bound', 'nv', 'nb2', 'time_bnds', 'tbnds']:
-        assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
-        'Input dimensions must have an axis attribute that is X, Y, Z or T'
+        if not dimension in ['bound', 'nv', 'nb2', 'time_bnds', 'tbnds']:
+            assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
+            'Input dimensions must have an axis attribute that is X, Y, Z or T'
 
     # Variable attributes #
 
@@ -907,13 +907,13 @@ def write_netcdf(outfile_name, history_entry, global_atts,
     '6th argument (outvar_axes) must be a list or tuple of axis lists or tuples, e.g. (data.getTime(),)'
     
     for axes in outvar_axes:
-    index = 0
-    for axis in axes:
-        test = (axis.isTime(), axis.isLatitude(), axis.isLongitude())
-        assert sum(test) == 1 and test.index(1) >= index, \
-        '6th argument (outvar_axes) elements must a time, latitude or longitude axis, in that order'
-        index = test.index(1)
-    
+	index = 0
+	for axis in axes:
+            test = (axis.isTime(), axis.isLatitude(), axis.isLongitude())
+            assert sum(test) == 1 and test.index(1) >= index, \
+            '6th argument (outvar_axes) elements must a time, latitude or longitude axis, in that order'
+            index = test.index(1)
+
     outfile = cdms2.open(outfile_name, 'w')
     
     # Global attributes #

@@ -9,9 +9,13 @@ nc_to_df          -- Takes a netCDF file and returns the output in a Pandas Data
 
 """
 
+import os, sys, pdb
+
+import numpy
+
 import pandas
 import netCDF4
-import numpy
+
 
 # Import my modules #
 
@@ -27,6 +31,7 @@ sys.path.append(modules_dir)
 
 try:
     import netcdf_io as nio
+    import general_io as gio
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -86,6 +91,6 @@ def nc_to_df(infile, var_list, lat=None):
         data[:, i+1] = numpy.array(indata.data)
         headers.append(var)
 
-    output = pandas.DataFrame(data, index=map(lambda x: x.strftime("%Y-%m-%d"), time_axis), columns=headers)
+    output = pandas.DataFrame(data, index=map(lambda x: gio.standard_datetime(x), time_axis), columns=headers)
 
     return output, indata.global_atts
