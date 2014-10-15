@@ -76,15 +76,15 @@ def main(inargs):
 
     # Read input data into a single pandas DataFrame
 
-    x_dataframe, x_metadata = aconv.wavestats_to_df(inargs.xfile, [inargs.xvar])
-    y_dataframe, y_metadata = aconv.wavestats_to_df(inargs.yfile, [inargs.yvar])
+    x_dataframe, x_metadata = aconv.nc_to_df(inargs.xfile, [inargs.xvar], lat=inargs.xlat)
+    y_dataframe, y_metadata = aconv.nc_to_df(inargs.yfile, [inargs.yvar], lat=inargs.ylat)
     dataframe_list = [y_dataframe]
     metadata_list = [(inargs.xfile, x_metadata)]
     if inargs.xfile != inargs.yfile:
         metadata_list.append((inargs.yfile, y_metadata))
 
     if inargs.colour:
-        c_dataframe, c_metadata = aconv.wavestats_to_df(inargs.colour[0], [inargs.colour[1]])
+        c_dataframe, c_metadata = aconv.nc_to_df(inargs.colour[0], [inargs.colour[1]], lat=inargs.clat)
         dataframe_list.append(c_dataframe)
         if (inargs.colour[0] != inargs.xfile) and (inargs.colour[0] != inargs.yfile):
             metadata_list.append((inargs.colour, c_metadata))
@@ -160,6 +160,13 @@ author:
                         help="Switch for normalising the x and y input data [default: False]")
     parser.add_argument("--thin", type=int, default=1,
                         help="Stride for thinning the data (e.g. 3 will keep one-third of the data) [default: 1]")
+    
+    parser.add_argument("--xlat", type=str, nargs=3, metavar=('LAT_MAX', 'LAT_MIN', 'METHOD'), default=None, 
+                        help="Collapse the latitude axis of xfile over range (LAT_MAX, LAT_MIN) using METHOD (mermax or spatave)")
+    parser.add_argument("--ylat", type=str, nargs=3, metavar=('LAT_MAX', 'LAT_MIN', 'METHOD'), default=None, 
+                        help="Collapse the latitude axis of yfile over range (LAT_MAX, LAT_MIN) using METHOD (mermax or spatave)")
+    parser.add_argument("--clat", type=str, nargs=3, metavar=('LAT_MAX', 'LAT_MIN', 'METHOD'), default=None, 
+                        help="Collapse the latitude axis of colour file over range (LAT_MAX, LAT_MIN) using METHOD (mermax or spatave)")
 
     # Plot options
     parser.add_argument("--trend_line", action="store_true", default=False,

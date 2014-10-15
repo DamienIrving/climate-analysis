@@ -142,14 +142,14 @@ class InputData:
                      time_bounds (optional):
                      e.g. '1979-01-01', '1980-12-31'
         convert   -- True or False (for converting units)
-        grid      -- (startLat,nlat,deltaLat,
-                  startLon,nlon,deltaLon)
+        grid      -- (startLat, nlat, deltaLat, startLon, nlon, deltaLon)
         runave    -- window size for the running average 
+        mermax    -- True (take the meridional maximum of the data)
         spatave   -- True (for returning average over all spatial dimensions)
         normalise -- True (normalise data along the time axis)
 
         The order of operations is as follows: subset data, 
-        spatial averaging (spatave), temporal aggregation (agg), 
+        spatial averaging (mermax, spatave), temporal aggregation (agg), 
         running average (runave), regrid (grid), convert units, 
         normalise 
             
@@ -193,10 +193,14 @@ class InputData:
        
         # Manipulate the subsetted data #  
 
+        if kwargs.has_key('mermax'):
+            lat_index = data.getOrder().index('y')
+            data = MV2.max(data, axis=lat_index)
+        
         if kwargs.has_key('spatave'):
             ave_axes = data.getOrder().translate(None, 't')
             data = cdutil.averager(data, axis=ave_axes, weights=['unweighted']*len(ave_axes))
-
+        
         if kwargs.has_key('agg'):
             quantity = kwargs['agg'][0]
             timescale = kwargs['agg'][1]

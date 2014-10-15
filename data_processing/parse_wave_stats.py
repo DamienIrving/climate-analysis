@@ -359,7 +359,7 @@ def main(inargs):
     """Run the program"""
    
     # Read data 
-    indata, metadata = aconv.wavestats_to_df(inargs.infile, ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon'])
+    indata, metadata = aconv.nc_to_df(inargs.infile, ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon'])
     metric_threshold = aconv.get_threshold(indata[inargs.metric], inargs.metric_filter) 
     
     # Add relevant columns
