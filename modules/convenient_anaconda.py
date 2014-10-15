@@ -93,4 +93,4 @@ def nc_to_df(infile, var_list, lat=None):
 
     output = pandas.DataFrame(data, index=map(lambda x: gio.standard_datetime(x), time_axis), columns=headers)
 
-    return output, indata.global_atts
+    return output, indata.global_atts['history']
