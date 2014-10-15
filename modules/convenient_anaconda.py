@@ -75,7 +75,8 @@ def nc_to_df(infile, var_list, lat=None):
             options['latitude'] = float(lat[0])
         else:
             options['latitude'] = (float(lat[0]), float(lat[1]))
-        options[lat[2]] = True
+            assert lat[2] in ['mermax', 'spatave']
+            options[lat[2]] = True
         
     # Extract data
     

@@ -161,12 +161,12 @@ author:
     parser.add_argument("--thin", type=int, default=1,
                         help="Stride for thinning the data (e.g. 3 will keep one-third of the data) [default: 1]")
     
-    parser.add_argument("--xlat", type=str, nargs=3, metavar=('LAT_MAX', 'LAT_MIN', 'METHOD'), default=None, 
-                        help="Collapse the latitude axis of xfile over range (LAT_MAX, LAT_MIN) using METHOD (mermax or spatave)")
-    parser.add_argument("--ylat", type=str, nargs=3, metavar=('LAT_MAX', 'LAT_MIN', 'METHOD'), default=None, 
-                        help="Collapse the latitude axis of yfile over range (LAT_MAX, LAT_MIN) using METHOD (mermax or spatave)")
-    parser.add_argument("--clat", type=str, nargs=3, metavar=('LAT_MAX', 'LAT_MIN', 'METHOD'), default=None, 
-                        help="Collapse the latitude axis of colour file over range (LAT_MAX, LAT_MIN) using METHOD (mermax or spatave)")
+    parser.add_argument("--xlat", type=str, nargs=3, metavar=('LAT_MIN', 'LAT_MAX', 'METHOD'), default=None, 
+                        help="Collapse the latitude axis of xfile over range (LAT_MIN, LAT_MAX) using METHOD (mermax or spatave; or none if LAT_MAX == LAT_MIN)")
+    parser.add_argument("--ylat", type=str, nargs=3, metavar=('LAT_MIN', 'LAT_MAX', 'METHOD'), default=None, 
+                        help="Collapse the latitude axis of yfile over range (LAT_MIN, LAT_MAX) using METHOD (mermax or spatave; or none if LAT_MAX == LAT_MIN)")
+    parser.add_argument("--clat", type=str, nargs=3, metavar=('LAT_MIN', 'LAT_MAX', 'METHOD'), default=None, 
+                        help="Collapse the latitude axis of colour file over range (LAT_MIN, LAT_MAX) using METHOD (mermax or spatave); or none if LAT_MAX == LAT_MIN")
 
     # Plot options
     parser.add_argument("--trend_line", action="store_true", default=False,
