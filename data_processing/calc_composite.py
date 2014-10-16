@@ -32,7 +32,7 @@ sys.path.append(modules_dir)
 try:
     import general_io as gio
     import netcdf_io as nio
-    import convenience_universal as uconv
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
