@@ -15,7 +15,6 @@ import datetime
 from dateutil.relativedelta import relativedelta
 
 import MV2
-from scipy import stats
 
 
 # Import my modules #
@@ -33,56 +32,12 @@ sys.path.append(modules_dir)
 try:
     import general_io as gio
     import netcdf_io as nio
+    import convenience_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
 
 # Define functions #
-
-def get_significance(data_included, data_excluded, matching_dates, missing_dates):
-    """Calculate the composite.
-    
-    The approach for the significance test is to compare the mean of the included
-    data sample with that of the excluded data sample via an independent, two-sample,
-    parametric t-test (for details, see Wilks textbook). 
-    
-    http://stackoverflow.com/questions/21494141/how-do-i-do-a-f-test-in-python
-
-    FIXME: If equal_var=False then it will perform a Welch's t-test, which is for samples
-    with unequal variance (early versions of scipy don't have this option). To test whether
-    the variances are equal or not you use an F-test (i.e. do the test at each grid point and
-    then assign equal_var accordingly). If your data is close to normally distributed you can 
-    use the Barlett test (scipy.stats.bartlett), otherwise the Levene test (scipy.stats.levene).
-    
-    FIXME: I need to account for autocorrelation in the data by calculating an effective
-    sample size (see Wilkes, p 147). I can get the autocorrelation using either
-    genutil.autocorrelation or the acf function in the statsmodels time series analysis
-    python library, however I can't see how to alter the sample size in stats.ttest_ind.
-
-    FIXME: I also need to consider whether a parametric t-test is appropriate. One of my samples
-    might be very non-normally distributed, which means a non-parametric test might be better. 
-    
-    """
-
-#    alpha = 0.05 
-#    w, p_value = scipy.stats.levene(data_included, data_excluded)
-#    if p_value > alpha:
-#        equal_var = False# Reject the null hypothesis that Var(X) == Var(Y)
-#    else:
-#        equal_var = True
-
-    t, pvals = stats.ttest_ind(data_included, data_excluded, axis=0, equal_var=True) 
-    print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident) and assumed equal variances'
-
-    pval_atts = {'id': 'p',
-                 'standard_name': 'p_value',
-                 'long_name': 'Two-tailed p-value',
-                 'units': ' ',
-                 'history': """Standard independent two sample t-test comparing the data sample that meets the composite criteria (size=%s) to a sample containing the remaining data (size=%s)""" %(len(matching_dates), len(missing_dates)),
-                 'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=False)'}
-
-    return pvals, pval_atts
-
 
 def date_offset(date_list, offset):
     """Offset a list of dates by the specified number of days"""
@@ -173,7 +128,7 @@ def main(inargs):
 	# Perform significance test # 
 
 	if data_excluded.any():
-            pval, pval_atts = get_significance(data_included, data_excluded, matching_dates, missing_dates)
+            pval, pval_atts = uconv.get_significance(data_included, data_excluded)
             outdata_list.append(pval)
             outvar_atts_list.append(pval_atts)
             outvar_axes_list.append(composite.getAxisList())	

@@ -8,6 +8,7 @@ single2list          -- Check if item is a list, then convert if not
 """
 
 import numpy
+from scipy import stats
 
 
 def adjust_lon_range(lons, radians=True, start=0.0):
@@ -38,6 +39,58 @@ def adjust_lon_range(lons, radians=True, start=0.0):
         more_than_end = lons >= end
 
     return lons
+
+
+def get_significance(data_included, data_excluded):
+    """Perform significance test.
+    
+    The approach for the significance test is to compare the mean of the included
+    data sample with that of the excluded data sample via an independent, two-sample,
+    parametric t-test (for details, see Wilks textbook). 
+    
+    http://stackoverflow.com/questions/21494141/how-do-i-do-a-f-test-in-python
+
+    FIXME: If equal_var=False then it will perform a Welch's t-test, which is for samples
+    with unequal variance (early versions of scipy don't have this option). To test whether
+    the variances are equal or not you use an F-test (i.e. do the test at each grid point and
+    then assign equal_var accordingly). If your data is close to normally distributed you can 
+    use the Barlett test (scipy.stats.bartlett), otherwise the Levene test (scipy.stats.levene).
+    
+    FIXME: I need to account for autocorrelation in the data by calculating an effective
+    sample size (see Wilkes, p 147). I can get the autocorrelation using either
+    genutil.autocorrelation or the acf function in the statsmodels time series analysis
+    python library, however I can't see how to alter the sample size in stats.ttest_ind.
+
+    FIXME: I also need to consider whether a parametric t-test is appropriate. One of my samples
+    might be very non-normally distributed, which means a non-parametric test might be better. 
+    
+    """
+
+#    alpha = 0.05 
+#    w, p_value = scipy.stats.levene(data_included, data_excluded)
+#    if p_value > alpha:
+#        equal_var = False# Reject the null hypothesis that Var(X) == Var(Y)
+#    else:
+#        equal_var = True
+
+    t, pvals = stats.mstats.ttest_ind(data_included, data_excluded, axis=0, equal_var=True) 
+    print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident) and assumed equal variances'
+
+    try:
+        size_included = numpy.sum(numpy.invert(data_included.mask[0,::]))
+        size_excluded = numpy.sum(numpy.invert(data_excluded.mask[0,::]))
+    except AttributeError:
+        size_included = data_included.shape[0]
+        size_excluded = data_excluded.shape[0]
+    
+    pval_atts = {'id': 'p',
+                 'standard_name': 'p_value',
+                 'long_name': 'Two-tailed p-value',
+                 'units': ' ',
+                 'history': """Standard independent two sample t-test comparing the data sample that meets the composite criteria (size=%s) to a sample containing the remaining data (size=%s)""" %(str(size_included), str(size_excluded)),
+                 'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=False)'}
+
+    return pvals, pval_atts
 
 
 def get_threshold(data, threshold_str, axis=None):

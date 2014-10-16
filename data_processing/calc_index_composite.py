@@ -11,12 +11,6 @@ import sys, os, pdb
 import argparse
 import numpy
 
-import datetime
-from dateutil.relativedelta import relativedelta
-
-import MV2
-from scipy import stats
-
 
 # Import my modules #
 
@@ -31,110 +25,13 @@ modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 
 try:
-    import general_io as gio
     import netcdf_io as nio
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
 
 # Define functions #
-
-def get_significance(data_included, data_excluded, matching_dates, missing_dates):
-    """Calculate the composite.
-    
-    The approach for the significance test is to compare the mean of the included
-    data sample with that of the excluded data sample via an independent, two-sample,
-    parametric t-test (for details, see Wilks textbook). 
-    
-    http://stackoverflow.com/questions/21494141/how-do-i-do-a-f-test-in-python
-
-    FIXME: If equal_var=False then it will perform a Welch's t-test, which is for samples
-    with unequal variance (early versions of scipy don't have this option). To test whether
-    the variances are equal or not you use an F-test (i.e. do the test at each grid point and
-    then assign equal_var accordingly). If your data is close to normally distributed you can 
-    use the Barlett test (scipy.stats.bartlett), otherwise the Levene test (scipy.stats.levene).
-    
-    FIXME: I need to account for autocorrelation in the data by calculating an effective
-    sample size (see Wilkes, p 147). I can get the autocorrelation using either
-    genutil.autocorrelation or the acf function in the statsmodels time series analysis
-    python library, however I can't see how to alter the sample size in stats.ttest_ind.
-
-    FIXME: I also need to consider whether a parametric t-test is appropriate. One of my samples
-    might be very non-normally distributed, which means a non-parametric test might be better. 
-    
-    """
-
-#    alpha = 0.05 
-#    w, p_value = scipy.stats.levene(data_included, data_excluded)
-#    if p_value > alpha:
-#        equal_var = False# Reject the null hypothesis that Var(X) == Var(Y)
-#    else:
-#        equal_var = True
-
-    t, pvals = stats.ttest_ind(data_included, data_excluded, axis=0, equal_var=True) 
-    print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident) and assumed equal variances'
-
-    pval_atts = {'id': 'p',
-                 'standard_name': 'p_value',
-                 'long_name': 'Two-tailed p-value',
-                 'units': ' ',
-                 'history': """Standard independent two sample t-test comparing the data sample that meets the composite criteria (size=%s) to a sample containing the remaining data (size=%s)""" %(len(matching_dates), len(missing_dates)),
-                 'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=False)'}
-
-    return pvals, pval_atts
-
-
-def date_offset(date_list, offset):
-    """Offset a list of dates by the specified number of days"""
-    
-    dt_list = map(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), date_list)
-
-    if offset > 0:
-        edited_dt_list = map(lambda x: x + relativedelta(days=offset), dt_list)
-    else:
-        edited_dt_list = map(lambda x: x - relativedelta(days=abs(offset)), dt_list)
-	
-    edited_date_list = map(lambda x: x.strftime('%Y-%m-%d'), edited_dt_list)
-
-    return edited_date_list
-
-
-def filter_dates(data, date_file, offset):
-    """Filter the data into an included (in date_file) and excluded subset. An
-    offset can be applied to the dates in date_file"""
-
-    if not date_file:
-        data_included = data
-        data_excluded = numpy.array([])
-        date_metadata = None
-    else:
-        date_list, date_metadata = gio.read_dates(date_file)
-        if offset:
-            date_list = date_offset(date_list, offset)
-    
-        matching_dates = nio.match_dates(date_list, data.getTime().asComponentTime())
-        missing_dates = nio.match_dates(date_list, data.getTime().asComponentTime(), invert_matching=True)
-
-        data_included = nio.temporal_extract(data, matching_dates, indexes=False)
-        data_excluded = nio.temporal_extract(data, missing_dates, indexes=False)
-
-    return data_included, data_excluded, date_metadata, matching_dates, missing_dates
-
-
-def get_composite(data, var, long_name, standard_name, units, season):
-    """Calculate the composite and it's attributes (using the desired var, long_name
-    units and season"""
-
-    composite_mean = MV2.average(data, axis=0)
-
-    composite_atts = {'id': var,
-                      'standard_name': standard_name,
-                      'long_name': long_name,
-                      'units': units,
-                      'history': 'Composite mean for %s season' %(season)}
-
-    return composite_mean, composite_atts
-
 
 def main(inargs):
     """Run the program."""
@@ -155,33 +52,55 @@ def main(inargs):
 	# Prepate input data #
         
         selector = 'none' if season == 'annual' else season
-	var_data = nio.InputData(inargs.varfile, inargs.var, time=(start_date, end_date, selector),  **nio.dict_filter(vars(inargs), ['region']))
-        metric_data = nio.InputData(inargs.metricfile, inargs.metric, time=(start_date, end_date, selector))
+	var_indata = nio.InputData(inargs.varfile, inargs.var, time=(start_date, end_date, selector),  **nio.dict_filter(vars(inargs), ['region']))
+        metric_indata = nio.InputData(inargs.metricfile, inargs.metric, time=(start_date, end_date, selector))
 
-	# Filter data #
+        # Find threshold for variable and get boolean index array for samples > and <= the threshold #
 
-	data_included, data_excluded, date_metadata, matching_dates, missing_dates = filter_dates(indata.data, inargs.date_file, inargs.offset)
+        time_index = var_indata.data.getOrder().index('t')
+        assert time_index == 0, "If time is not the first axis, the numpy.resize broadcasting in this script will mess up the data"
+        threshold = uconv.get_threshold(var_indata.data, inargs.threshold, axis=time_index)
+        threshold = numpy.resize(threshold, var_indata.data.shape)
 
+        included_indexes = var_indata.data > threshold
+        excluded_indexes = numpy.invert(included_indexes)
+
+        # Create masked metric arrays #
+
+        metric_data = numpy.resize(metric_indata.data, var_indata.data.shape)
+        metric_data_included = numpy.ma.masked_array(metric_data, mask=included_indexes)
+        metric_data_excluded = numpy.ma.masked_array(metric_data, mask=excluded_indexes)
+            
 	# Calculate composite # 
 
-	composite, composite_atts = get_composite(data_included, inargs.var, 
-                                        	  indata.data.long_name, indata.data.standard_name, indata.data.units,
-                                        	  season)
-	outdata_list.append(composite)
+	#composite, composite_atts = get_composite(data_included, inargs.var, 
+        #                                	  indata.data.long_name, indata.data.standard_name, indata.data.units,
+        #                                	  season)
+	
+        composite_mean = metric_data_included.mean(axis=0)
+
+        composite_atts = {'id': inargs.metric,
+                          'standard_name': metric_indata.data.standard_name,
+                          'long_name': metric_indata.data.long_name,
+                          'units': metric_indata.data.units,
+                          'history': 'Composite mean for %s season' %(season)}
+
+        outdata_list.append(composite)
 	outvar_atts_list.append(composite_atts)
 	outvar_axes_list.append(composite.getAxisList())
 
 	# Perform significance test # 
 
-	if data_excluded.any():
-            pval, pval_atts = get_significance(data_included, data_excluded, matching_dates, missing_dates)
-            outdata_list.append(pval)
-            outvar_atts_list.append(pval_atts)
-            outvar_axes_list.append(composite.getAxisList())	
+        pval, pval_atts = uconv.get_significance(metric_data_included, metric_data_excluded)
+        outdata_list.append(pval)
+        outvar_atts_list.append(pval_atts)
+        outvar_axes_list.append(composite.getAxisList())	
 
 
     # Write the output file #
 
+    ### FIXME: Need the output of both input files to appear in the output netCDF
+  
     if date_metadata:
         indata.global_atts['history'] = '%s \n%s' %(date_metadata, indata.global_atts['history'])
     else:
@@ -214,8 +133,9 @@ author:
     parser.add_argument("var", type=str, help="Name of variable in varfile")
     parser.add_argument("metricfile", type=str, help="Name of file containing metric")
     parser.add_argument("metric", type=str, help="Name of metric in metricfile")
+    parser.add_argument("threshold", type=str,help="Threshold for defining an extreme event. Can be percentile (e.g. 90pct) or raw value.")
     parser.add_argument("outfile", type=str, help="Output file name")
-
+    
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=None,
                         help="Time period over which to calculate the composite [default = entire]")
     parser.add_argument("--seasons", type=str, nargs='*', default=('DJF', 'MAM', 'JJA', 'SON', 'annual'),
