@@ -1,28 +1,13 @@
 """Collection of convenient functions that will work with my anaconda or uvcdat install
 
 Included functions:
-adjust_lon_range     --  Express longitude values in desired 360 degree interval
+adjust_lon_range     -- Express longitude values in desired 360 degree interval
+get_threshold        -- Turn the user input threshold into a numeric threshold
 single2list          -- Check if item is a list, then convert if not
 
 """
 
 import numpy
-
-
-def single2list(item, numpy_array=False):
-    """Check if item is a list, then convert if not"""
-    
-    try:
-        test = len(item)
-    except TypeError:
-        output = [item,]
-    else:
-        output = item 
-        
-    if numpy_array and not isinstance(output, numpy.ndarray):
-        return numpy.array(output)
-    else:
-        return output
 
 
 def adjust_lon_range(lons, radians=True, start=0.0):
@@ -53,3 +38,31 @@ def adjust_lon_range(lons, radians=True, start=0.0):
         more_than_end = lons >= end
 
     return lons
+
+
+def get_threshold(data, threshold_str, axis=None):
+    """Turn the user input threshold into a numeric threshold"""
+    
+    if 'pct' in threshold_str:
+        value = float(re.sub('pct', '', threshold_str))
+        threshold_float = numpy.percentile(data, value, axis=axis)
+    else:
+        threshold_float = float(threshold_str)
+    
+    return threshold_float
+
+
+def single2list(item, numpy_array=False):
+    """Check if item is a list, then convert if not"""
+    
+    try:
+        test = len(item)
+    except TypeError:
+        output = [item,]
+    else:
+        output = item 
+        
+    if numpy_array and not isinstance(output, numpy.ndarray):
+        return numpy.array(output)
+    else:
+        return output

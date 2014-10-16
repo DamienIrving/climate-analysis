@@ -37,6 +37,7 @@ try:
     import general_io as gio
     import netcdf_io as nio
     import convenient_anaconda as aconv
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -360,7 +361,7 @@ def main(inargs):
    
     # Read data 
     indata, metadata = aconv.nc_to_df(inargs.infile, ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon'])
-    metric_threshold = aconv.get_threshold(indata[inargs.metric], inargs.metric_filter) 
+    metric_threshold = uconv.get_threshold(indata[inargs.metric], inargs.metric_filter) 
     
     # Add relevant columns
     indata = add_duration(indata, inargs.metric, metric_threshold)

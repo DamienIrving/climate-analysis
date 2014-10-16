@@ -4,8 +4,8 @@ my anaconda install but not uvcdat (because uvcdat doesn't play nice with
 pandas or netCDF4
 
 Included functions:
-get_time_axis     -- Get the time axis using the netCDF4 module
-nc_to_df          -- Takes a netCDF file and returns the output in a Pandas DataFrame
+get_time_axis   -- Get the time axis using the netCDF4 module
+nc_to_df        -- Takes a netCDF file and returns the output in a Pandas DataFrame
 
 """
 
@@ -36,17 +36,6 @@ except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
 # Functions
-
-def get_threshold(DataSeries, column, threshold_str):
-    """Turn the user input threshold into a numeric threshold"""
-    
-    if 'pct' in threshold_str:
-        value = float(re.sub('pct', '', threshold_str))
-        threshold_float = numpy.percentile(DataSeries, value)
-    else:
-        threshold_float = float(threshold_str)
-    
-    return threshold_float
 
 
 def get_time_axis(time_variable):

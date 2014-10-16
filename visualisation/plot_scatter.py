@@ -24,6 +24,7 @@ sys.path.append(modules_dir)
 try:
     import general_io as gio
     import convenient_anaconda as aconv
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -105,7 +106,7 @@ def main(inargs):
     # Filter data
 
     if inargs.filter:
-        threshold = aconv.get_threshold(dataframe[inargs.filter[0]], inargs.filter[1])
+        threshold = uconv.get_threshold(dataframe[inargs.filter[0]], inargs.filter[1])
         selector = dataframe[inargs.filter[0]] >= threshold
         dataframe = dataframe[selector]
 
