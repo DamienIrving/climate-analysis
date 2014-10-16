@@ -1,7 +1,7 @@
 """
-Filename:     calc_composite.py
+Filename:     calc_index_composite.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Calculates a composite
+Description:  For a given variable, calculate a composite of a related index
 
 """
 
@@ -99,15 +99,10 @@ def main(inargs):
 
     # Write the output file #
 
-    ### FIXME: Need the output of both input files to appear in the output netCDF
-  
-    if date_metadata:
-        indata.global_atts['history'] = '%s \n%s' %(date_metadata, indata.global_atts['history'])
-    else:
-        indata.global_atts['history'] = indata.global_atts['history']
+    var_indata.global_atts['history'] = '%s \n%s' %(var_indata.global_atts['history'], metric_indata.global_atts['history'])
 
     nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
-                     indata.global_atts, 
+                     var_indata.global_atts, 
                      outdata_list,
                      outvar_atts_list, 
                      outvar_axes_list)

@@ -72,7 +72,7 @@ ${SEASONAL_VALUES_PLOT}: ${WAVE_STATS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --seasonal_values_line $@ --metric_filter ${METRIC_THRESH}
 
 
-### Calculate composite for variable of interest (e.g. tas, pr, sic) ###
+### Calculate composite for variable of interest (e.g. tas, pr, sic) two ways ###
 
 ## Step 1: Generate list of dates for use in composite creation ##
 
@@ -88,11 +88,18 @@ ${COMP_VAR_ANOM_RUNMEAN} : ${COMP_VAR_ORIG}
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-## Step 3: Calculate composite ##
+## Step 3: Calculate composite - way 1 ##
 
 COMP_VAR_FILE=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc 
 ${COMP_VAR_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${DATE_LIST} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< tas $@ --date_file $(word 2,$^) 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) 
+
+## Step 4: Calculate composite - way 2
+
+COMP_METRIC_FILE=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}${COMP_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc
+${COMP_METRIC_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${WAVE_STATS}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${METRIC} ${COMP_THRESH} $@
+
 
 
 #

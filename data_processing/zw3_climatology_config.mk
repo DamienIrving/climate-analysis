@@ -60,8 +60,8 @@ METRIC_THRESH=90pct
 
 # Composite
 COMP_VAR=tas
+COMP_THRESH=90pct
 
 
 ## Target
-TARGET=${ZW3_DIR}/table_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv
-#${COMP_DIR}/tas-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.nc
+TARGET=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}${COMP_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc
