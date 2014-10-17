@@ -73,8 +73,8 @@ def get_significance(data_included, data_excluded):
 #    else:
 #        equal_var = True
 
-    t, pvals = stats.mstats.ttest_ind(data_included, data_excluded, axis=0, equal_var=True) 
-    print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident) and assumed equal variances'
+    t, pvals = stats.ttest_ind(data_included, data_excluded, axis=0, equal_var=True) # stats.mstats.ttest_ind would be better but does not have equal_var option
+    print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident), assumed equal variances and did not handle masks'
 
     try:
         size_included = numpy.sum(numpy.invert(data_included.mask[0,::]))
