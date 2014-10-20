@@ -42,7 +42,7 @@ def adjust_lon_range(lons, radians=True, start=0.0):
     return lons
 
 
-def get_significance(data_included, data_excluded, size_included, size_excluded):
+def get_significance(data_included, data_excluded, size_included, size_excluded, outvar):
     """Perform significance test.
     
     The approach for the significance test is to compare the mean of the included
@@ -77,7 +77,7 @@ def get_significance(data_included, data_excluded, size_included, size_excluded)
     t, pvals = stats.ttest_ind(data_included, data_excluded, axis=0, equal_var=True) # stats.mstats.ttest_ind would be better but does not have equal_var option
     print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident), assumed equal variances and did not handle masks'
 
-    pval_atts = {'id': 'p',
+    pval_atts = {'id': outvar,
                  'standard_name': 'p_value',
                  'long_name': 'Two-tailed p-value',
                  'units': ' ',

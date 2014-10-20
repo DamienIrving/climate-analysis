@@ -93,7 +93,7 @@ def main(inargs):
 
 	# Perform significance test # 
 
-        pval, pval_atts = uconv.get_significance(metric_data_included, metric_data_excluded, size_included, size_excluded)
+        pval, pval_atts = uconv.get_significance(metric_data_included, metric_data_excluded, size_included, size_excluded, 'p_'+season)
         outdata_list.append(pval)
         outvar_atts_list.append(pval_atts)
         outvar_axes_list.append(var_indata.data.getAxisList()[1:]) #exclude time axis	

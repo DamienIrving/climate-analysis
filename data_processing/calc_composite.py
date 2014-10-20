@@ -82,7 +82,7 @@ def get_composite(data, var, long_name, standard_name, units, season):
 
     composite_mean = MV2.average(data, axis=0)
 
-    composite_atts = {'id': var,
+    composite_atts = {'id': var+'_'+season,
                       'standard_name': standard_name,
                       'long_name': long_name,
                       'units': units,
@@ -128,7 +128,7 @@ def main(inargs):
 	# Perform significance test # 
 
 	if data_excluded.any():
-            pval, pval_atts = uconv.get_significance(data_included, data_excluded, size_included, size_excluded)
+            pval, pval_atts = uconv.get_significance(data_included, data_excluded, size_included, size_excluded, 'p_'+season)
             outdata_list.append(pval)
             outvar_atts_list.append(pval_atts)
             outvar_axes_list.append(composite.getAxisList())	
