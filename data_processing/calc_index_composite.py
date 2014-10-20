@@ -85,27 +85,30 @@ def main(inargs):
 	
         composite_mean = metric_data_included.mean(axis=0)
 
-        composite_atts = {'id': inargs.metric,
+        composite_atts = {'id': inargs.metric+'_'+season,
                           'standard_name': metric_indata.data.standard_name,
                           'long_name': metric_indata.data.long_name,
                           'units': metric_indata.data.units,
                           'history': 'Composite mean for %s season' %(season)}
 
-        outdata_list.append(composite)
+        outdata_list.append(composite_mean)
 	outvar_atts_list.append(composite_atts)
-	outvar_axes_list.append(composite.getAxisList())
+	outvar_axes_list.append(var_indata.data.getAxisList()[1:])  #exclude time axis
 
 	# Perform significance test # 
 
         pval, pval_atts = uconv.get_significance(metric_data_included, metric_data_excluded, size_included, size_excluded)
         outdata_list.append(pval)
         outvar_atts_list.append(pval_atts)
-        outvar_axes_list.append(composite.getAxisList())	
+        outvar_axes_list.append(var_indata.data.getAxisList()[1:]) #exclude time axis	
 
 
     # Write the output file #
 
-    var_indata.global_atts['history'] = '%s \n%s' %(var_indata.global_atts['history'], metric_indata.global_atts['history'])
+    var_insert = 'History of %s:\n' %(inargs.varfile)
+    metric_insert = 'History of %s:\n' %(inargs.metricfile)
+    var_indata.global_atts['history'] = '%s %s \n %s %s' %(var_insert, var_indata.global_atts['history'], 
+                                                           metric_insert, metric_indata.global_atts['history'])
 
     nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
                      var_indata.global_atts, 
@@ -145,9 +148,5 @@ author:
                         help="Region over which to calculate the composite [default: entire]")
 
     args = parser.parse_args()            
-
-
-    print 'Input file: ', args.infile
-    print 'Output file: ', args.outfile  
 
     main(args)

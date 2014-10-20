@@ -137,7 +137,10 @@ def main(inargs):
     # Write the output file #
 
     if date_metadata:
-        indata.global_atts['history'] = '%s \n%s' %(date_metadata, indata.global_atts['history'])
+        infile_insert = 'History of %s:\n' %(inargs.infile)
+        date_insert = 'History of %s:\n' %(inargs.date_file)
+        indata.global_atts['history'] = '%s %s \n %s %s' %(infile_insert, indata.global_atts['history'], 
+                                                           date_insert, date_metadata)
     else:
         indata.global_atts['history'] = indata.global_atts['history']
 
