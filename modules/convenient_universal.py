@@ -9,6 +9,7 @@ single2list          -- Check if item is a list, then convert if not
 
 import numpy
 from scipy import stats
+import re
 
 
 def adjust_lon_range(lons, radians=True, start=0.0):
