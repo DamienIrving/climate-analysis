@@ -78,10 +78,6 @@ def main(inargs):
         metric_data_excluded = numpy.ma.masked_array(metric_data, mask=excluded_indexes)
             
 	# Calculate composite # 
-
-	#composite, composite_atts = get_composite(data_included, inargs.var, 
-        #                                	  indata.data.long_name, indata.data.standard_name, indata.data.units,
-        #                                	  season)
 	
         composite_mean = metric_data_included.mean(axis=0)
 
