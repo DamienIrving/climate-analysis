@@ -64,6 +64,12 @@ def main(inargs):
 
         included_indexes = var_indata.data > threshold
         excluded_indexes = numpy.invert(included_indexes)
+        try:
+            size_included = excluded_indexes[0,::].sum()
+            size_excluded = included_indexes[0,::].sum()
+        except IndexError:
+            size_included = excluded_indexes.sum()
+            size_excluded = included_indexes.sum()
 
         # Create masked metric arrays #
 
@@ -91,7 +97,7 @@ def main(inargs):
 
 	# Perform significance test # 
 
-        pval, pval_atts = uconv.get_significance(metric_data_included, metric_data_excluded)
+        pval, pval_atts = uconv.get_significance(metric_data_included, metric_data_excluded, size_included, size_excluded)
         outdata_list.append(pval)
         outvar_atts_list.append(pval_atts)
         outvar_axes_list.append(composite.getAxisList())	

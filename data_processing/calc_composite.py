@@ -73,7 +73,7 @@ def filter_dates(data, date_file, offset):
         data_included = nio.temporal_extract(data, matching_dates, indexes=False)
         data_excluded = nio.temporal_extract(data, missing_dates, indexes=False)
 
-    return data_included, data_excluded, date_metadata, matching_dates, missing_dates
+    return data_included, data_excluded, date_metadata, len(matching_dates), len(missing_dates)
 
 
 def get_composite(data, var, long_name, standard_name, units, season):
@@ -114,7 +114,7 @@ def main(inargs):
 
 	# Filter data #
 
-	data_included, data_excluded, date_metadata, matching_dates, missing_dates = filter_dates(indata.data, inargs.date_file, inargs.offset)
+	data_included, data_excluded, date_metadata, size_included, size_excluded = filter_dates(indata.data, inargs.date_file, inargs.offset)
 
 	# Calculate composite # 
 
@@ -128,7 +128,7 @@ def main(inargs):
 	# Perform significance test # 
 
 	if data_excluded.any():
-            pval, pval_atts = uconv.get_significance(data_included, data_excluded)
+            pval, pval_atts = uconv.get_significance(data_included, data_excluded, size_included, size_excluded)
             outdata_list.append(pval)
             outvar_atts_list.append(pval_atts)
             outvar_axes_list.append(composite.getAxisList())	
