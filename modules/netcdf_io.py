@@ -510,8 +510,7 @@ def list_kwargs(func):
     return details.args[-nopt:]
 
 
-
-def match_dates(dates, time_axis, invert_matching=False):
+def match_dates(dates, time_axis, invert_matching=False, return_indexes=False):
     """Take a simple list of dates (e.g. 1979-01-01) and match with the corresponding
     times in a more detailed time axis (e.g. 1979-01-01 12:00:0.0).
     
@@ -521,28 +520,39 @@ def match_dates(dates, time_axis, invert_matching=False):
     Arguments:   
       invert_matching = True  => return a list of time_axis values that aren't in dates
                         False => return a list of time_axis values that are in dates
+
+      return_indexes =  True  => the returned time_axis values are index numbers
+                        False => the returned time_axis values are actual dates
     """
     
     dates_split = map(split_dt, dates)
     time_axis_split = map(split_dt, time_axis)
     
-    matches = []
-    misses = time_axis[:]  # creates a shallow copy
+    matches_indexes = []
+    matches_dates = []
+    misses_indexes = range(0, len(time_axis))
+    misses_dates = time_axis[:]  # creates a shallow copy
     
     for date in dates_split:
         try:
             index = time_axis_split.index(date)
             if invert_matching:
-                misses.remove(time_axis[index])
+                misses_dates.remove(time_axis[index])
+                misses_indexes.remove(index)
             else:
-                matches.append(time_axis[index])
+                matches_dates.append(time_axis[index])
+                matches_indexes.append(index)
         except ValueError:
             pass        
 
-    if invert_matching:
-        return misses
+    if invert_matching and return_indexes:
+        return misses_indexes
+    elif invert_matching and not return_indexes:
+        return misses_dates
+    elif not invert_matching and return_indexes:
+        return matches_indexes
     else:
-        return matches
+        return matches_dates
 
 
 def normalise_data(indata, sub_mean=False):
@@ -810,30 +820,46 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
     return outdata
 
 
-def temporal_extract(data, selection, indexes=True):
+def temporal_extract(data, selection, indexes=True, tvar_out=True):
     """Extract the data corresponding to the supplied selection.
     
-    indexes = True  ->  the selection is a list of indexes to be selected
-    indexes = False ->  the selection is a list of dates: YYYY-MM-DD
+    indexes = True   ->  the input selection is a list of indexes to be selected
+    indexes = False  ->  the input selection is a list of dates: YYYY-MM-DD
     
+    tvar_out = True  ->  the output is a cdms2 transient variable
+    tvar_out = False ->  the output is a numpy array
+
+    Note that for large arrays, this function will run MUCH faster if the output
+    is a numpy array (the genutil.picker is slow)
+ 
     """
     
     assert isinstance(data, cdms2.tvariable.TransientVariable)
-    
-    if indexes:
-        times = numpy.take(data.getTime().asComponentTime(), selection)
-        times_str = str(times).strip('[').strip(']').split()
-        
-        dt_list = []
-        for i in range(0, len(times_str), 2):            
-            dt_list.append(times_str[i]+' '+times_str[i+1])
+    assert data.getOrder()[0] == 't', \
+    "The first dimension must be time"
+    assert indexes or tvar_out, \
+    "At the moment temporal extract cannot take a list of dates and return a numpy array"  
+
+    if tvar_out:
+
+	if indexes:
+            times = numpy.take(data.getTime().asComponentTime(), selection)
+            times_str = str(times).strip('[').strip(']').split()
+
+            dt_list = []
+            for i in range(0, len(times_str), 2):            
+        	dt_list.append(times_str[i]+' '+times_str[i+1])
+	else:
+            dt_list = selection
+
+	pick = genutil.picker(time=dt_list)
+        output = data(pick)
+
     else:
-        dt_list = selection
+        
+        output = numpy.take(data, selection, axis=0)
 
-    pick = genutil.picker(time=dt_list)
-    
-    return data(pick)
-
+    return output 
 
 def time_axis_check(axis1, axis2):
     """Checks whether the time axes of the input files are the same"""

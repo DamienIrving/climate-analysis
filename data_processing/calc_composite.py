@@ -67,20 +67,20 @@ def filter_dates(data, date_file, offset):
         if offset:
             date_list = date_offset(date_list, offset)
     
-        matching_dates = nio.match_dates(date_list, data.getTime().asComponentTime())
-        missing_dates = nio.match_dates(date_list, data.getTime().asComponentTime(), invert_matching=True)
+        matching_date_indexes = nio.match_dates(date_list, data.getTime().asComponentTime(), invert_matching=False, return_indexes=True)
+        missing_date_indexes = nio.match_dates(date_list, data.getTime().asComponentTime(), invert_matching=True, return_indexes=True)
 
-        data_included = nio.temporal_extract(data, matching_dates, indexes=False)
-        data_excluded = nio.temporal_extract(data, missing_dates, indexes=False)
+        data_included = nio.temporal_extract(data, matching_date_indexes, indexes=True, tvar_out=False)
+        data_excluded = nio.temporal_extract(data, missing_date_indexes, indexes=True, tvar_out=False)
 
-    return data_included, data_excluded, date_metadata, len(matching_dates), len(missing_dates)
+    return data_included, data_excluded, date_metadata, len(matching_date_indexes), len(missing_date_indexes)
 
 
 def get_composite(data, var, long_name, standard_name, units, season):
     """Calculate the composite and it's attributes (using the desired var, long_name
     units and season"""
 
-    composite_mean = MV2.average(data, axis=0)
+    composite_mean = numpy.mean(data, axis=0)
 
     composite_atts = {'id': var+'_'+season,
                       'standard_name': standard_name,
@@ -111,6 +111,7 @@ def main(inargs):
         
         selector = 'none' if season == 'annual' else season
 	indata = nio.InputData(inargs.infile, inargs.var, time=(start_date, end_date, selector),  **nio.dict_filter(vars(inargs), ['region']))
+        assert indata.data.getOrder()[0] == 't', "First axis must be time"
 
 	# Filter data #
 
@@ -123,7 +124,7 @@ def main(inargs):
                                         	  season)
 	outdata_list.append(composite)
 	outvar_atts_list.append(composite_atts)
-	outvar_axes_list.append(composite.getAxisList())
+	outvar_axes_list.append(indata.data.getAxisList()[1:])
 
 	# Perform significance test # 
 
@@ -131,7 +132,7 @@ def main(inargs):
             pval, pval_atts = uconv.get_significance(data_included, data_excluded, size_included, size_excluded, 'p_'+season)
             outdata_list.append(pval)
             outvar_atts_list.append(pval_atts)
-            outvar_axes_list.append(composite.getAxisList())	
+            outvar_axes_list.append(indata.data.getAxisList()[1:])	
 
 
     # Write the output file #
