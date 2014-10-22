@@ -57,14 +57,22 @@ def get_timestamp():
 
 
 def read_dates(infile):
-    """Read a file of dates (one per line) and write to a list"""
+    """Read a file of dates (one per line) and write to a list.
+
+    Assumes there is a metadata file corresponding to infile which 
+    has exactly the same name but ends with .met
+
+    """
     
     fin = open(infile, 'r')
     date_list = []
     for line in fin:
         date_list.append(line.rstrip('\n'))
     fin.close()
-    date_metadata = date_list.pop(0)
+
+    file_body = infile.split('.')[0]
+    with open (file_body+'.met', 'r') as metfile:
+        date_metadata=metfile.read()
 
     return date_list, date_metadata
 
@@ -95,8 +103,6 @@ def write_dates(outfile, date_list):
     """Write a list of dates to file"""
     
     fout = open(outfile, 'w')
-    timestamp = get_timestamp()
-    fout.write('# '+timestamp+'\n')
     for date in date_list:
         fout.write(date+'\n')
     fout.close()
@@ -117,21 +123,22 @@ def write_metadata(ofile=None, file_info=None, extra_notes=None):
         
     # Write the timestamp
     time_stamp = get_timestamp()
-    result += time_stamp + '\n \n'
+    result += time_stamp + '\n'
     
     # Write the extra info
     if extra_notes:
-        result += 'Extra notes: \n \n'
+        result += 'Extra notes: \n'
         for line in extra_notes:
             result += line + '\n'
     
     # Write the file details
     if file_info:
-        result += '\n'
         for ifile in file_info:
             fname, history = ifile
-            result += 'Input file: %s \n \n' %(fname)
-            result += 'History: %s \n \n' %(history)
+            if len(file_info) > 1:
+                result += 'History of %s: \n %s \n' %(fname, history)
+            else:
+                result += '%s \n' %(history)
     
     # Create outfile or return string
     if ofile:
