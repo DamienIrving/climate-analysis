@@ -9,7 +9,7 @@ single2list          -- Check if item is a list, then convert if not
 
 import numpy
 from scipy import stats
-import re
+import pdb, re
 
 
 def adjust_lon_range(lons, radians=True, start=0.0):
@@ -42,8 +42,14 @@ def adjust_lon_range(lons, radians=True, start=0.0):
     return lons
 
 
-def get_significance(data_included, data_excluded, size_included, size_excluded, outvar):
+def get_significance(data_included, data_excluded, p_var,
+                     size_included, size_excluded):
     """Perform significance test.
+
+    size_included and size_included can either be a variable name (and the variable 
+    attributes will be returned; useful in cases where the size is an array) or a
+    single number (useful in cases where the size is constant and you want it in the
+    p_var attributes).
     
     The approach for the significance test is to compare the mean of the included
     data sample with that of the excluded data sample via an independent, two-sample,
@@ -74,17 +80,38 @@ def get_significance(data_included, data_excluded, size_included, size_excluded,
 #    else:
 #        equal_var = True
 
-    t, pvals = stats.ttest_ind(data_included, data_excluded, axis=0, equal_var=True) # stats.mstats.ttest_ind would be better but does not have equal_var option
-    print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident), assumed equal variances and did not handle masks'
+    assert type(size_included) == type(size_excluded)
+    assert type(size_included) in [str, float, int]
 
-    pval_atts = {'id': outvar,
+    t, pvals = stats.mstats.ttest_ind(data_included, data_excluded, axis=0) # stats.ttest_ind has an equal_var option that mstats does not
+    print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident) and assumed equal variances'
+
+    pval_atts = {'id': p_var,
                  'standard_name': 'p_value',
                  'long_name': 'Two-tailed p-value',
                  'units': ' ',
-                 'history': """Standard independent two sample t-test comparing the data sample that meets the composite criteria (size=%s) to a sample containing the remaining data (size=%s)""" %(str(size_included), str(size_excluded)),
+                 'history': """Standard independent two sample t-test comparing the included data sample (size=%s) to a sample containing the remaining data (size=%s)""" %(str(size_included), str(size_excluded)),
                  'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=False)'}
 
-    return pvals, pval_atts
+    if type(size_included) == str:
+
+	size_included_atts = {'id': size_included,
+                              'standard_name': size_included,
+                              'long_name': size_included,
+                              'units': ' ',
+                              'history': """Size of sample that exceeds the threshold"""}
+
+	size_excluded_atts = {'id': size_excluded,
+                              'standard_name': size_excluded,
+                              'long_name': size_excluded,
+                              'units': ' ',
+                              'history': """Size of sample that does not exceed threshold"""}
+
+	return pvals, pval_atts, size_included_atts, size_excluded_atts
+
+    else:
+
+        return pvals, pval_atts
 
 
 def get_threshold(data, threshold_str, axis=None):

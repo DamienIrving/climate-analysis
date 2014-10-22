@@ -129,7 +129,7 @@ def main(inargs):
 	# Perform significance test # 
 
 	if data_excluded.any():
-            pval, pval_atts = uconv.get_significance(data_included, data_excluded, size_included, size_excluded, 'p_'+season)
+            pval, pval_atts = uconv.get_significance(data_included, data_excluded, 'p_'+season, size_included, size_excluded)
             outdata_list.append(pval)
             outvar_atts_list.append(pval_atts)
             outvar_axes_list.append(indata.data.getAxisList()[1:])	

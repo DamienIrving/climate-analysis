@@ -62,15 +62,12 @@ def main(inargs):
         threshold = uconv.get_threshold(var_indata.data, inargs.threshold, axis=time_index)
         threshold = numpy.resize(threshold, var_indata.data.shape)
 
-        included_indexes = var_indata.data > threshold
-        excluded_indexes = numpy.invert(included_indexes)
-        try:
-            size_included = excluded_indexes[0,::].sum()
-            size_excluded = included_indexes[0,::].sum()
-        except IndexError:
-            size_included = excluded_indexes.sum()
-            size_excluded = included_indexes.sum()
-
+        excluded_indexes = var_indata.data > threshold  # Because True gets masked, and I want the trues included
+        included_indexes = numpy.invert(excluded_indexes)
+ 
+        size_included = excluded_indexes.sum(axis=0)
+        size_excluded = included_indexes.sum(axis=0)
+ 
         # Create masked metric arrays #
 
         metric_data = numpy.resize(metric_indata.data, var_indata.data.shape)
@@ -93,10 +90,12 @@ def main(inargs):
 
 	# Perform significance test # 
 
-        pval, pval_atts = uconv.get_significance(metric_data_included, metric_data_excluded, size_included, size_excluded, 'p_'+season)
-        outdata_list.append(pval)
-        outvar_atts_list.append(pval_atts)
-        outvar_axes_list.append(var_indata.data.getAxisList()[1:]) #exclude time axis	
+        pval, pval_atts, size_incl_atts, size_excl_atts = uconv.get_significance(metric_data_included, metric_data_excluded, 'p_'+season,
+                                                                                 'size_incl_'+season, 'size_excl_'+season)
+        for data, atts in [(pval, pval_atts), (size_included, size_incl_atts), (size_excluded, size_excl_atts)]:
+            outdata_list.append(data)
+            outvar_atts_list.append(atts)
+            outvar_axes_list.append(var_indata.data.getAxisList()[1:]) #exclude time axis	
 
 
     # Write the output file #
