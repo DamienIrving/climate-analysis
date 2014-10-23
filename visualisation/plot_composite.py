@@ -72,7 +72,9 @@ def extract_data(infile, variable_list, p=False):
 	sample_list.append(sample_sizes)
 	data_list.append(temp_data.data)
     
-    return data_list, sample_list
+    metadata = temp_data.global_atts['history']
+
+    return data_list, sample_list, [infile, metadata]
     
 
 def main(inargs):
@@ -83,12 +85,15 @@ def main(inargs):
     if inargs.stippling:
         assert len(inargs.variables) == len(inargs.stippling)
         
-    indata_list, temp = extract_data(inargs.infile, inargs.variables)
-    stipple_list, sample_list = extract_data(inargs.infile, inargs.stippling)
+    indata_list, temp, indata_metadata = extract_data(inargs.infile, inargs.variables)
+    stipple_list, sample_list, temp = extract_data(inargs.infile, inargs.variables)
     stipple_list = stipple_list if inargs.stippling else None
 
-    if inargs.contour_files:
-        contour_list, temp = extract_data(inargs.contour_files, inargs.contour_var)
+    output_metadata = [indata_metadata]
+
+    if inargs.contour_file:
+        contour_list, temp, contour_metadata = extract_data(inargs.contour_file, inargs.contour_vars)
+        output_metadata.append(contour_metadata)
     else:
         contour_list = None
 	
@@ -117,7 +122,7 @@ def main(inargs):
 		heading_list.append(inargs.headings[i]+' ('+included_sample_size+'/'+str(int(total_size))+')') 
         else:
 	    heading_list = inargs.headings    
- 
+
     pm.multiplot(indata_list,
                  dimensions=dimensions,
 		 region=inargs.region,
@@ -133,7 +138,8 @@ def main(inargs):
                  projection=inargs.projection, 
                  extend=inargs.extend,
 		 box=box_list,
-                 image_size=inargs.image_size)
+                 image_size=inargs.image_size,
+                 file_info=output_metadata)
 
 
 if __name__ == '__main__':
@@ -145,10 +151,11 @@ example (abyss.earthsci.unimelb.edu.au):
     tas_annual tas_DJF tas_MAM tas_JJA tas_SON
     --headings annual DJF MAM JJA SON
     --ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0
-    --units temperature_anomaly_(Celsius) 
+    --units temperature_anomaly 
     --contour_file zg-infile.nc
     --contour_vars zg_annual zg_DJF zg_MAM zg_JJA zg_SON
     --contour_ticks -30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30
+    --projection spstere
 
 """
   
