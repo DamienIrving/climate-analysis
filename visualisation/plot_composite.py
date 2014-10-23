@@ -7,11 +7,8 @@ Description:  Plots composite maps
 
 # Import general Python modules #
 
-import os
-import sys
+import os, sys, re, pdb
 import argparse
-import re
-import pdb
 
 # Import my modules #
 
@@ -36,16 +33,32 @@ except ImportError:
 
 # Define functions #
 
-def extract_data(file_list, variable):
+def switch_to_p(var_list):
+    """Change variable names so they starts with p instead (e.g. tas_DJF becomes p_DJF)"""
+    
+    output = []
+    for var in var_list:
+        name, season = var.split('_')
+        output.append(var+'_'+season)
+
+    return output
+    
+
+def extract_data(infile, variable_list, p=False):
     """Return lists of the data and corresponding composite sample sizes:
     [size included, size excluded]
+
+    If p is true it changes the variable names to get the p values instead.
     
     """
 
+    if p:
+        variable_list = switch_to_p(variable_list)    
+        
     data_list = []
     sample_list = []
-    for infile in file_list:
-        temp_data = nio.InputData(infile, variable)
+    for var in variable_list:
+        temp_data = nio.InputData(infile, var)
 	try:
 	    temp_history = temp_data.data.attributes['history']
 	    matches = re.findall(r'(size=[0-9]+)', temp_history)
@@ -64,14 +77,15 @@ def extract_data(file_list, variable):
 
 def main(inargs):
     """Run the program"""
-        
-    indata_list, temp = extract_data(inargs.files, inargs.variable)
-    stipple_list, sample_list = extract_data(inargs.files, 'p')
-    
+
+    if inargs.contour_vars:
+        assert len(inargs.variables) == len(inargs.contour_vars)
     if inargs.stippling:
-        stipdata_list = stipple_list
-    else:
-        stipdata_list = None
+        assert len(inargs.variables) == len(inargs.stippling)
+        
+    indata_list, temp = extract_data(inargs.infile, inargs.variables)
+    stipple_list, sample_list = extract_data(inargs.infile, inargs.stippling)
+    stipple_list = stipple_list if inargs.stippling else None
 
     if inargs.contour_files:
         contour_list, temp = extract_data(inargs.contour_files, inargs.contour_var)
@@ -114,7 +128,7 @@ def main(inargs):
 		 delat=30, delon=30,
 		 contour=True,
 		 contour_data=contour_list, contour_ticks=inargs.contour_ticks,
-                 stipple_data=stipdata_list, stipple_threshold=0.05, stipple_size=1.0, stipple_thin=5,
+                 stipple_data=stipple_list, stipple_threshold=0.05, stipple_size=1.0, stipple_thin=5,
 		 ticks=inargs.ticks, discrete_segments=inargs.segments, colourbar_colour=inargs.palette,
                  projection=inargs.projection, 
                  extend=inargs.extend,
@@ -126,22 +140,14 @@ if __name__ == '__main__':
 
     extra_info="""
 example (abyss.earthsci.unimelb.edu.au):
-    cdat plot_composite.py tas
-    tas-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-annual.nc
-    tas-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-DJF.nc
-    tas-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-MAM.nc
-    tas-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-JJA.nc
-    tas-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-SON.nc
+    cdat plot_composite.py
+    tas-infile.nc 
+    tas_annual tas_DJF tas_MAM tas_JJA tas_SON
     --headings annual DJF MAM JJA SON
     --ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0
-    --units temperature_anomaly_(Celsius)
-    --contour_var sf
-    --contour_files
-    sf-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-annual.nc
-    sf-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-DJF.nc
-    sf-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-MAM.nc
-    sf-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-JJA.nc
-    sf-hov-vrot-env-w567_Merra_250hPa_daily-anom-wrt-1979-2012_y181x360_np20-260_absolute14_lon225-335_dates_filter-west-antartica-northerly-va_composite-SON.nc
+    --units temperature_anomaly_(Celsius) 
+    --contour_file zg-infile.nc
+    --contour_vars zg_annual zg_DJF zg_MAM zg_JJA zg_SON
     --contour_ticks -30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30
 
 """
@@ -152,10 +158,10 @@ example (abyss.earthsci.unimelb.edu.au):
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("variable", type=str, 
-                        help="name of variable to plot")
-    parser.add_argument("files", type=str, nargs='+', 
-                        help="composite files to plot (assumed that these came from calc_composite.py")
+    parser.add_argument("infile", type=str, 
+                        help="composite file to plot (assumed to have come from calc_composite.py)")
+    parser.add_argument("variables", type=str, nargs='+',
+                        help="name of variables from infile to plot")
     
     parser.add_argument("--ofile", type=str, default='test.png',
                         help="name of output file [default: test.png]")
@@ -189,10 +195,10 @@ example (abyss.earthsci.unimelb.edu.au):
                         help="switch for plotting boxes showing the ZW3 index [default: False]")
     
     # Contour plot
-    parser.add_argument("--contour_var", type=str, default=None,
-                        help="Variable for the contour plot [default: None]")
-    parser.add_argument("--contour_files", type=str, nargs='*', default=None,
-                        help="Files for the contour plot [default: None]")
+    parser.add_argument("--contour_file", type=str, default=None,
+                        help="File for the contour plot (assumed to have come from calc_composite.py) [default: None]")
+    parser.add_argument("--contour_vars", type=str, nargs='*', default=None,
+                        help="name of variables from contour_file to plot [default: None]")
     parser.add_argument("--contour_ticks", type=float, nargs='*', default=None,
                         help="Ticks/levels for the contour plot [default: auto]")
     
