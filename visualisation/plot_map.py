@@ -910,7 +910,7 @@ def _shuffle(in_list, rows, cols):
     if not in_list:
         return None
 
-    in_list = nio.single2list(in_list)
+    in_list = uconv.single2list(in_list)
 
     rows = int(rows)
     cols = int(cols)

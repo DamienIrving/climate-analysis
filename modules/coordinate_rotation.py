@@ -199,8 +199,8 @@ def rotate_spherical(lats, lons, phi, theta, psi, invert=False):
     ngmath library (http://ngwww.ucar.edu/ngmath/)    
     """
     
-    lats = nio.single2list(lats)
-    lons = nio.single2list(lons)
+    lats = uconv.single2list(lats)
+    lons = uconv.single2list(lons)
     
     assert len(lats) == len(lons), \
     'lats and lons are pairs corresponding to each grid point'
@@ -292,8 +292,8 @@ def rotation_angle(latA, lonA, latB, lonB, latsC, lonsC, reshape=None):
     ##Some assertions (e.g. latA, lonA, latB, lonB must be len=1, while latC and lonC do not 
     ##Perhaps change names of latA etc to something more meaningful (e.g. new_np_lat)?
 
-    latsC = nio.single2list(latsC)
-    lonsC = nio.single2list(lonsC)
+    latsC = uconv.single2list(latsC)
+    lonsC = uconv.single2list(lonsC)
 
     latA_flat = numpy.repeat(latA, len(lonsC))
     lonA_flat = numpy.repeat(lonA, len(lonsC))
@@ -335,8 +335,8 @@ def _rotation_sign(angleC, lonB, lonC):
     north pole was at 90N, 0E) 
     """
     
-    lonB = nio.single2list(lonB, numpy_array=True)
-    lonC = nio.single2list(lonC, numpy_array=True)
+    lonB = uconv.single2list(lonB, numpy_array=True)
+    lonC = uconv.single2list(lonC, numpy_array=True)
 
     assert len(lonB) == len(lonC), \
     "Input arrays must be the same length"   
