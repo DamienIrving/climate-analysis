@@ -88,13 +88,20 @@ ${COMP_VAR_ANOM_RUNMEAN} : ${COMP_VAR_ORIG}
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-## Step 3: Calculate composite - way 1 ##
+## Step 3a: Calculate composite - way 1 ##
 
 COMP_VAR_FILE=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc 
 ${COMP_VAR_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${DATE_LIST} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) 
 
-## Step 4: Calculate composite - way 2
+## Step 3b: Plot composite - way 1 ##
+
+COMP_VAR_PLOT=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
+: ${COMP_VAR_FILE}
+	${CDAT} ${DATA_SCRIPT_DIR}/plot_composite.py $< ${COMP_VAR}_annual ${COMP_VAR}_DJF ${COMP_VAR}_MAM ${COMP_VAR}_JJA ${COMP_VAR}_SON --headings annual DJF MAM JJA SON --ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0 --units temperature_anomaly --projection spstere --ofile $@
+
+
+## Step 4: Calculate composite - way 2 ##
 
 COMP_METRIC_FILE=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}${COMP_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc
 ${COMP_METRIC_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${WAVE_STATS}
