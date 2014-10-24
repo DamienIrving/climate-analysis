@@ -85,32 +85,34 @@ ${SEASONAL_VALUES_PLOT}: ${WAVE_STATS}
 
 ### Calculate composite envelope (with zg overlay) ###
 
-## Step 1: Get the composite mean envelope ##
-
-COMP_ENV_FILE=${COMP_DIR}/env-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc 
-${COMP_ENV_FILE} : ${ENV_3D} ${DATE_LIST} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${VAR} $@ --date_file $(word 2,$^) 
-
-## Step 2: Get the composite mean contour ##
-
-CONTOUR_ZONAL_ANOM_RUNMEAN_COMP=${COMP_DIR}/${CONTOUR_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
-${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP} : ${CONTOUR_ZONAL_ANOM_RUNMEAN} ${DATE_LIST} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${CONTOUR_VAR} $@ --date_file $(word 2,$^)
-
-## Step 3: Plot ##
-
-COMP_ENV_PLOT=${COMP_DIR}/env-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}-zg_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-zonal-anom.png
-${COMP_ENV_PLOT} : ${COMP_ENV_FILE} ${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP}
-	${CDAT} ${DATA_SCRIPT_DIR}/plot_composite.py $(word 1,$^)  ${VAR}_annual ${VAR}_DJF ${VAR}_MAM ${VAR}_JJA ${VAR}_SON --headings annual DJF MAM JJA SON --ticks 0 1 2 3 4 5 6 7 8 9 10 --units ms-1 --projection spstere --palette hot_r --countour_file $(word 2,$^) --contour_vars ${CONTOUR_VAR}_annual ${CONTOUR_VAR}_DJF ${CONTOUR_VAR}_MAM ${CONTOUR_VAR}_JJA ${CONTOUR_VAR}_SON  --ofile $@
-
-
-### Calculate composite for variable of interest (e.g. tas, pr, sic) two ways ###
-
 ## Step 1: Generate list of dates for use in composite creation ##
 
 DATE_LIST=${COMP_DIR}/dates_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.txt 
 ${DATE_LIST}: ${WAVE_STATS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --date_list $@ --metric_filter ${METRIC_THRESH}
+
+## Step 2: Get the composite mean envelope ##
+
+COMP_ENV_FILE=${COMP_DIR}/env-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc 
+${COMP_ENV_FILE} : ${ENV_3D} ${DATE_LIST} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${VAR} $@ --date_file $(word 2,$^) 
+
+## Step 3: Get the composite mean contour ##
+
+CONTOUR_ZONAL_ANOM_RUNMEAN_COMP=${COMP_DIR}/${CONTOUR_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
+${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP} : ${CONTOUR_ZONAL_ANOM_RUNMEAN} ${DATE_LIST} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${CONTOUR_VAR} $@ --date_file $(word 2,$^)
+
+## Step 4: Plot ##
+
+COMP_ENV_PLOT=${COMP_DIR}/env-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}-zg_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-zonal-anom.png
+${COMP_ENV_PLOT} : ${COMP_ENV_FILE} ${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP}
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $(word 1,$^)  ${VAR}_annual ${VAR}_DJF ${VAR}_MAM ${VAR}_JJA ${VAR}_SON --headings annual DJF MAM JJA SON --ticks 0 1 2 3 4 5 6 7 8 9 10 --units ms-1 --projection spstere --palette hot_r --contour_file $(word 2,$^) --contour_vars ${CONTOUR_VAR}_annual ${CONTOUR_VAR}_DJF ${CONTOUR_VAR}_MAM ${CONTOUR_VAR}_JJA ${CONTOUR_VAR}_SON  --ofile $@
+
+
+### Calculate composite for variable of interest (e.g. tas, pr, sic) two ways ###
+
+## Step 1: Generate list of dates for use in composite creation (done above) ##
 
 ## Step 2: Calculate the anomaly for the variable of interest and apply temporal averaging ##
 
@@ -129,8 +131,8 @@ ${COMP_VAR_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${DATE_LIST}
 ## Step 3b: Plot composite - way 1 ##
 
 COMP_VAR_PLOT=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
-${COMP_VAR_PLOT} : ${COMP_VAR_FILE}
-	${CDAT} ${DATA_SCRIPT_DIR}/plot_composite.py $< ${COMP_VAR}_annual ${COMP_VAR}_DJF ${COMP_VAR}_MAM ${COMP_VAR}_JJA ${COMP_VAR}_SON --headings annual DJF MAM JJA SON --ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0 --units temperature_anomaly --projection spstere --ofile $@
+${COMP_VAR_PLOT} : ${COMP_VAR_FILE} ${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP}
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $(word 1,$^) ${COMP_VAR}_annual ${COMP_VAR}_DJF ${COMP_VAR}_MAM ${COMP_VAR}_JJA ${COMP_VAR}_SON --headings annual DJF MAM JJA SON --ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0 --extend both --units temperature_anomaly --projection spstere --contour_file $(word 2,$^) --contour_vars ${CONTOUR_VAR}_annual ${CONTOUR_VAR}_DJF ${CONTOUR_VAR}_MAM ${CONTOUR_VAR}_JJA ${CONTOUR_VAR}_SON --ofile $@
 
 
 ## Step 4: Calculate composite - way 2 ##
