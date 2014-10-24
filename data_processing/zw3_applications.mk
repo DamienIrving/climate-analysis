@@ -25,10 +25,21 @@ ${CONTOUR_ZONAL_ANOM_RUNMEAN} : ${CONTOUR_ZONAL_ANOM}
 	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-## Step 3: Plot the envelope ##
+## Step 3: Plot the envelope for a selection of individual timesteps ##
 ENV_PLOT=${MAP_DIR}/env/${TSCALE_LABEL}/${VAR}/env-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}_${PLOT_END}.png 
 ${ENV_PLOT}: ${ENV_3D} ${CONTOUR_ZONAL_ANOM_RUNMEAN}
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_envelope.py $< ${VAR} ${TSTEP} --contour $(word 2,$^) ${CONTOUR_VAR} --timescale ${TSCALE_LABEL} --time ${PLOT_START} ${PLOT_END} none --projection spstere --stride ${STRIDE} --raphael --ofile $@
+
+## Step 4: Plot the climatological mean envelope ##
+
+ENV_CLIM=${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-clim_${GRID}.nc
+${ENV_CLIM} : ${ENV_3D} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${VAR} $@
+
+ENV_CLIM_PLOT=${MAP_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-clim_${GRID}.png
+${ENV_CLIM_PLOT} : ${ENV_CLIM}
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $< ${VAR}_annual ${VAR}_DJF ${VAR}_MAM ${VAR}_JJA ${VAR}_SON --headings annual DJF MAM JJA SON --units ms-1 --palette hot_r --ticks 0 1 2 3 4 5 6 7 8 --extend max --projection spstere --ofile $@
+
 
 
 ### Plot the Hilbert transform ###
@@ -97,7 +108,7 @@ ${COMP_VAR_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${DATE_LIST}
 ## Step 3b: Plot composite - way 1 ##
 
 COMP_VAR_PLOT=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
-: ${COMP_VAR_FILE}
+${COMP_VAR_PLOT} : ${COMP_VAR_FILE}
 	${CDAT} ${DATA_SCRIPT_DIR}/plot_composite.py $< ${COMP_VAR}_annual ${COMP_VAR}_DJF ${COMP_VAR}_MAM ${COMP_VAR}_JJA ${COMP_VAR}_SON --headings annual DJF MAM JJA SON --ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0 --units temperature_anomaly --projection spstere --ofile $@
 
 

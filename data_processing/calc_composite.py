@@ -62,6 +62,8 @@ def filter_dates(data, date_file, offset):
         data_included = data
         data_excluded = numpy.array([])
         date_metadata = None
+        size_included = False
+        size_excluded = False
     else:
         date_list, date_metadata = gio.read_dates(date_file)
         if offset:
@@ -73,7 +75,10 @@ def filter_dates(data, date_file, offset):
         data_included = nio.temporal_extract(data, matching_date_indexes, indexes=True, tvar_out=False)
         data_excluded = nio.temporal_extract(data, missing_date_indexes, indexes=True, tvar_out=False)
 
-    return data_included, data_excluded, date_metadata, len(matching_date_indexes), len(missing_date_indexes)
+        size_included = len(matching_date_indexes)
+        size_excluded = len(missing_date_indexes)
+
+    return data_included, data_excluded, date_metadata, size_included, size_excluded
 
 
 def get_composite(data, var, long_name, standard_name, units, season):
