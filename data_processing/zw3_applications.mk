@@ -65,7 +65,9 @@ ${METRIC_VS_ZW3_PLOT} : ${WAVE_STATS} ${ZW3_INDEX} ${FOURIER_INFO}
 
 ## Plot 3: My metric versus SAM and ENSO ##
 
-##FIXME
+ENSO_VS_SAM_PLOT=.png
+${ENSO_VS_SAM_PLOT} : ${ENSO_DATA} ${SAM_DATA} ${WAVE_STATS}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${ENSO_INDEX} $(word 2,$^) ${SAM_INDEX} $@ --colour $(word 3,$^) ${METRIC} --normalise --trend_line --cmap jet --ylabel SAM --xlabel ENSO --clat ${LAT_SINGLE} ${LAT_SINGLE} none
 
 
 ### Climatological stats ###
