@@ -10,7 +10,7 @@ Description:  For a given variable, calculate a composite of a related index
 import sys, os, pdb, operator
 import argparse
 import numpy
-import datetime
+import MV2
 
 
 # Import my modules #
@@ -105,12 +105,18 @@ def main(inargs):
             var_indata, metric_indata, time_index = extract_data(inargs, new_start_date, new_end_date, selector)
             assert var_indata.data.shape[0] == metric_indata.data.shape[0]
 
+        if inargs.absolute:
+            var_indata.data = MV2.absolute(var_indata.data)
+
         # Find threshold for variable and get boolean index array for samples > and <= the threshold #
         
         threshold = uconv.get_threshold(var_indata.data, inargs.threshold, axis=time_index)
         threshold = numpy.resize(threshold, var_indata.data.shape)
 
-        excluded_indexes = var_indata.data > threshold  # Because True gets masked, and I want the trues included
+        if inargs.include == 'above':
+            excluded_indexes = var_indata.data > threshold  # Because True gets masked, and I want the trues included
+        else:
+            excluded_indexes = var_indata.data < threshold  # Because True gets masked, and I want the trues included
         included_indexes = numpy.invert(excluded_indexes)
  
         size_included = excluded_indexes.sum(axis=0)
@@ -189,6 +195,12 @@ author:
     parser.add_argument("threshold", type=str,help="Threshold for defining an extreme event. Can be percentile (e.g. 90pct) or raw value.")
     parser.add_argument("outfile", type=str, help="Output file name")
     
+
+    parser.add_argument("--include", type=str, choices=('above', 'below'), default='above',
+                        help="Include values above or below threshold [default: above]")
+    parser.add_argument("--absolute", action="store_true", default=False,
+                        help="Use the absolute value of var [default: above]")
+
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=None,
                         help="Time period over which to calculate the composite [default = entire]")
     parser.add_argument("--seasons", type=str, nargs='*', default=('DJF', 'MAM', 'JJA', 'SON', 'annual'),

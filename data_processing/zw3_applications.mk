@@ -122,29 +122,45 @@ ${COMP_VAR_ANOM_RUNMEAN} : ${COMP_VAR_ORIG}
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-## Step 3a: Calculate composite - way 1 ##
+## Step 3: Calculate & plot composite - method 1 ##
 
 COMP_VAR_FILE=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc 
 ${COMP_VAR_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${DATE_LIST} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) 
 
-## Step 3b: Plot composite - way 1 ##
-
 COMP_VAR_PLOT=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
 ${COMP_VAR_PLOT} : ${COMP_VAR_FILE} ${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP}
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $(word 1,$^) ${COMP_VAR}_annual ${COMP_VAR}_DJF ${COMP_VAR}_MAM ${COMP_VAR}_JJA ${COMP_VAR}_SON --headings annual DJF MAM JJA SON --ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0 --extend both --units temperature_anomaly --projection spstere --contour_file $(word 2,$^) --contour_vars ${CONTOUR_VAR}_annual ${CONTOUR_VAR}_DJF ${CONTOUR_VAR}_MAM ${CONTOUR_VAR}_JJA ${CONTOUR_VAR}_SON --ofile $@
 
+## Step 4a: Calculate & plot composite - method 2, > 90pct ##
 
-## Step 4: Calculate composite - way 2 ##
+COMP_METRIC_90PCT_FILE=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}90pct-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc
+${COMP_METRIC_90PCT_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${WAVE_STATS}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${METRIC} 90pct $@ --region sh
 
-COMP_METRIC_FILE=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}${COMP_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc
-${COMP_METRIC_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${WAVE_STATS}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${METRIC} ${COMP_THRESH} $@
+COMP_METRIC_90PCT_PLOT=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}90pct-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
+${COMP_METRIC_90PCT_PLOT} : ${COMP_METRIC_90PCT_FILE}
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $< ${METRIC}_annual ${METRIC}_DJF ${METRIC}_MAM ${METRIC}_JJA ${METRIC}_SON --headings annual DJF MAM JJA SON --extend both --units ms-1 --projection spstere --palette hot_r --ofile $@
 
+## Step 4b: Calculate & plot composite - method 2, < 10pct ##
 
-COMP_METRIC_PLOT=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}${COMP_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
-${COMP_METRIC_PLOT} : ${COMP_METRIC_FILE}
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $< ${METRIC}_annual ${METRIC}_DJF ${METRIC}_MAM ${METRIC}_JJA ${METRIC}_SON --headings annual DJF MAM JJA SON --extend both --units ms-1 --projection spstere --ofile $@
+COMP_METRIC_10PCT_FILE=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}10pct-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc
+${COMP_METRIC_10PCT_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${WAVE_STATS}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${METRIC} 10pct $@ --include below --region sh
+
+COMP_METRIC_10PCT_PLOT=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}10pct-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
+${COMP_METRIC_10PCT_PLOT} : ${COMP_METRIC_10PCT_FILE}
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $< ${METRIC}_annual ${METRIC}_DJF ${METRIC}_MAM ${METRIC}_JJA ${METRIC}_SON --headings annual DJF MAM JJA SON --extend both --units ms-1 --projection spstere --palette Blues --ofile $@
+
+## Step 4c: Calculate & plot composite - method 2, > 90pct abs ##
+
+COMP_METRIC_90PCTABS_FILE=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}90pctabs-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc
+${COMP_METRIC_90PCTABS_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${WAVE_STATS}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${METRIC} 10pct $@ --absolute --region sh
+
+COMP_METRIC_90PCTABS_PLOT=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}90pctabs-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
+${COMP_METRIC_90PCTABS_PLOT} : ${COMP_METRIC_90PCTABS_FILE}
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $< ${METRIC}_annual ${METRIC}_DJF ${METRIC}_MAM ${METRIC}_JJA ${METRIC}_SON --headings annual DJF MAM JJA SON --extend both --units ms-1 --projection spstere --palette jet --ofile $@
 
 #
 ## Optional extras ##
