@@ -7,9 +7,10 @@ Description:  For a given variable, calculate a composite of a related index
 
 # Import general Python modules #
 
-import sys, os, pdb
+import sys, os, pdb, operator
 import argparse
 import numpy
+import datetime
 
 
 # Import my modules #
@@ -33,6 +34,52 @@ except ImportError:
 
 # Define functions #
 
+def check_time_axis(var_indata, metric_indata):
+    """Check that the time axes are the same and trim to 
+    the shortest if they're not.
+
+    Assumes daily timestep data.
+
+    """
+
+    var_dates = var_indata.datetime_axis()
+    metric_dates = metric_indata.datetime_axis()
+    diff_flag = False
+
+    if var_dates[0].strftime("%Y-%m-%d") == metric_dates[0].strftime("%Y-%m-%d"):
+        new_start_date = var_dates[0].strftime("%Y-%m-%d")
+    elif var_dates[0] > metric_dates[0]:
+        new_start_date = var_dates[0].strftime("%Y-%m-%d")
+        diff_flag = True
+    else:
+        new_start_date = metric_dates[0].strftime("%Y-%m-%d") 
+        diff_flag = True
+
+    if var_dates[-1].strftime("%Y-%m-%d") == metric_dates[-1].strftime("%Y-%m-%d"):
+        new_end_date = var_dates[-1].strftime("%Y-%m-%d")+' 23:59:0.0'
+    elif var_dates[-1] < metric_dates[-1]:
+        new_end_date = var_dates[-1].strftime("%Y-%m-%d")+' 23:59:0.0'
+        diff_flag = True
+    else:
+        new_end_date = metric_dates[-1].strftime("%Y-%m-%d")+' 23:59:0.0'
+        diff_flag = True
+      
+    return new_start_date, new_end_date, diff_flag
+
+
+def extract_data(inargs, start_date, end_date, selector):
+    """Extract the data"""
+
+    var_indata = nio.InputData(inargs.varfile, inargs.var, time=(start_date, end_date, selector),  **nio.dict_filter(vars(inargs), ['region']))
+
+    time_index = var_indata.data.getOrder().index('t')
+    assert time_index == 0, "If time is not the first axis, the numpy.resize broadcasting in this script will mess up the data"
+        
+    metric_indata = nio.InputData(inargs.metricfile, inargs.metric, time=(start_date, end_date, selector))
+
+    return var_indata, metric_indata, time_index
+    
+
 def main(inargs):
     """Run the program."""
     
@@ -52,13 +99,14 @@ def main(inargs):
 	# Prepate input data #
         
         selector = 'none' if season == 'annual' else season
-	var_indata = nio.InputData(inargs.varfile, inargs.var, time=(start_date, end_date, selector),  **nio.dict_filter(vars(inargs), ['region']))
-        metric_indata = nio.InputData(inargs.metricfile, inargs.metric, time=(start_date, end_date, selector))
+        var_indata, metric_indata, time_index = extract_data(inargs, start_date, end_date, selector)
+        new_start_date, new_end_date, diff_flag = check_time_axis(var_indata, metric_indata)
+        if diff_flag:
+            var_indata, metric_indata, time_index = extract_data(inargs, new_start_date, new_end_date, selector)
+            assert var_indata.data.shape[0] == metric_indata.data.shape[0]
 
         # Find threshold for variable and get boolean index array for samples > and <= the threshold #
-
-        time_index = var_indata.data.getOrder().index('t')
-        assert time_index == 0, "If time is not the first axis, the numpy.resize broadcasting in this script will mess up the data"
+        
         threshold = uconv.get_threshold(var_indata.data, inargs.threshold, axis=time_index)
         threshold = numpy.resize(threshold, var_indata.data.shape)
 
@@ -70,13 +118,19 @@ def main(inargs):
  
         # Create masked metric arrays #
 
-        metric_data = numpy.resize(metric_indata.data, var_indata.data.shape)
+        if len(var_indata.data.shape) > 1:
+            dim_size = reduce(operator.mul, var_indata.data.shape[1:], 1)
+            metric_data = numpy.repeat(metric_indata.data, dim_size)
+            metric_data = numpy.reshape(metric_data, var_indata.data.shape)
+        else:
+            metric_data = metric_indata.data
+
         metric_data_included = numpy.ma.masked_array(metric_data, mask=included_indexes)
         metric_data_excluded = numpy.ma.masked_array(metric_data, mask=excluded_indexes)
-            
+ 
 	# Calculate composite # 
 	
-        composite_mean = metric_data_included.mean(axis=0)
+        composite_mean = metric_data_included.mean(axis=time_index)
 
         composite_atts = {'id': inargs.metric+'_'+season,
                           'standard_name': metric_indata.data.standard_name,
