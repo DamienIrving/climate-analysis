@@ -142,6 +142,9 @@ ${COMP_METRIC_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${WAVE_STATS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${METRIC} ${COMP_THRESH} $@
 
 
+COMP_METRIC_PLOT=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}${COMP_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
+${COMP_METRIC_PLOT} : ${COMP_METRIC_FILE}
+	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $< ${METRIC}_annual ${METRIC}_DJF ${METRIC}_MAM ${METRIC}_JJA ${METRIC}_SON --headings annual DJF MAM JJA SON --extend both --units ms-1 --projection spstere --ofile $@
 
 #
 ## Optional extras ##
