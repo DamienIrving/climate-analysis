@@ -51,7 +51,7 @@ def read_Marshall(infile, metric, time_start):
             if not numpy.isnan(data[month]):
                 output_data.append(data[month])
                 ct = cdtime.comptime(year, month, 15)
-                rt = ct.torel(time_start)
+                rt = ct.torel(time_start).value
                 output_times.append(rt)
 
     output_atts = {'id': 'SAM',
@@ -62,7 +62,7 @@ def read_Marshall(infile, metric, time_start):
 
     history_dict = {'history': datetime.now().strftime("%a %b %d %H:%M:%S %Y")+': downloaded from http://www.antarctica.ac.uk/met/gjma/sam.html \n'}
 
-    return output_data, output_times, output_atts, history_dict
+    return numpy.array(output_data), output_times, output_atts, history_dict
 
 
 def read_CPC(infile, metric, time_start):
@@ -75,13 +75,13 @@ def read_CPC(infile, metric, time_start):
 
     output_data = []
     output_times = []
-    for date, data in ENSO_index_pandas.iterrows():
+    for date, data in ENSO_index.iterrows():
         year, month = date
         if not numpy.isnan(data[metric]):
-            output_ENSO_data.append(data[metric])
+            output_data.append(data[metric])
             ct = cdtime.comptime(year, month, 15)
-            rt = ct.torel(time_start)
-            output_ENSO_times.append(rt)
+            rt = ct.torel(time_start).value
+            output_times.append(rt)
 
     output_atts = {'id': metric,
                    'standard_name': metric,
@@ -91,7 +91,7 @@ def read_CPC(infile, metric, time_start):
 
     history_dict = {'history': datetime.now().strftime("%a %b %d %H:%M:%S %Y")+': monthly SST data downloaded from http://www.cpc.ncep.noaa.gov/data/indices/ \n'}
 
-    return output_data, output_times, output_atts, history_dict
+    return numpy.array(output_data), output_times, output_atts, history_dict
 
 
 def create_taxis(time_values, time_start):
@@ -126,8 +126,11 @@ def main(inargs):
 if __name__ == '__main__':
 
     extra_info =""" 
-
-    
+example:
+  /usr/local/anaconda/bin/python txt_to_nc.py 
+  /mnt/meteo0/data/simmonds/dbirving/Indices/newsam.1957.2014.txt 
+  SAM Marshall test_SAM.nc
+  
 """
 
     description='Take a text file and convert to netCDF'
@@ -151,15 +154,3 @@ if __name__ == '__main__':
 
     main(args)
 
-
-
-
-
-
-
-
-
-
-
-
-'/home/dbirving/Downloads/Data/newsam.1957.2014.txt'
