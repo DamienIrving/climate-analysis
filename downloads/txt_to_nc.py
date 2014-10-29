@@ -68,9 +68,15 @@ def read_Marshall(infile, metric, time_start):
 def read_CPC(infile, metric, time_start):
     """Read the monthly SST data from http://www.cpc.ncep.noaa.gov/data/indices/"""
 
+    name_list = ('nino12', 'nino12_anom', 
+                 'nino3', 'nino3_anom', 
+                 'nino4', 'nino4_anom',
+                 'nino34', 'nino34_anom')
+
     ENSO_index = pandas.read_csv(infile,  
                                  delim_whitespace=True, 
-                                 header=0, 
+                                 header=0,
+                                 names=name_list, 
                                  index_col=(0,1))
 
     output_data = []
