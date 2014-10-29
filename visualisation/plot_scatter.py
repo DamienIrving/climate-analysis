@@ -45,13 +45,13 @@ def scatter_plot(x_data, y_data,
                  xlabel, ylabel,
                  outfile, 
                  c_data=None, 
-                 normalised=False, thin=1, 
+                 zero_lines=False, thin=1, 
                  trend=False, cmap='jet'):
     """Create scatterplot."""
 
     plt.figure()
 
-    if normalised:
+    if zero_lines:
         plt.axhline(y=0, linestyle='-', color='0.5')
         plt.axvline(x=0, linestyle='-', color='0.5')
 
@@ -121,7 +121,7 @@ def main(inargs):
                  xlabel, ylabel,
                  inargs.ofile, 
                  c_data=c_data, 
-                 normalised=inargs.normalise, thin=inargs.thin, 
+                 zero_lines=inargs.zero_lines, thin=inargs.thin, 
                  trend=inargs.trend_line, cmap=inargs.cmap)
 
     gio.write_metadata(inargs.ofile, file_info=metadata_list)
@@ -177,6 +177,8 @@ author:
     # Plot options
     parser.add_argument("--trend_line", action="store_true", default=False,
                         help="Switch for a linear line of best fit [default: False]")
+    parser.add_argument("--zero_lines", action="store_true", default=False,
+                        help="Switch for drawing zero lines [default: False]")
     parser.add_argument("--cmap", type=str, default='jet', choices=('jet', 'jet_r', 'hot', 'hot_r', 'RdBu', 'RdBu_r'),
                         help="Colour map [default: False]")
     parser.add_argument("--xlabel", type=str, default=None,
