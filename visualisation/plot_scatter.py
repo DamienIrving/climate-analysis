@@ -90,7 +90,8 @@ def main(inargs):
         if (inargs.colour[0] != inargs.xfile) and (inargs.colour[0] != inargs.yfile):
             metadata_list.append((inargs.colour, c_metadata))
         
-    dataframe =  x_dataframe.join(dataframe_list)
+    dataframe = x_dataframe.join(dataframe_list)
+    dataframe = dataframe.dropna()
 
     # Normalise data 
 
@@ -130,7 +131,11 @@ if __name__ == '__main__':
 
     extra_info =""" 
 example:
-  env_amp_mean
+   /usr/local/anaconda/bin/python plot_scatter.py 
+   /mnt/meteo0/data/simmonds/dbirving/Indices/tos_CPC_surface_monthly_nino34.nc NINO34 
+   /mnt/meteo0/data/simmonds/dbirving/Indices/psl_Marshall_surface_monthly_SAM.nc SAM 
+   test_scatter.png 
+   --colour /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw3/wavestats_zw3_w19-extent75pct_env-va_ERAInterim_500hPa_030day-runmean_native-mermax-55S.nc ampmedian
 
 author:
     Damien Irving, d.irving@student.unimelb.edu.au
