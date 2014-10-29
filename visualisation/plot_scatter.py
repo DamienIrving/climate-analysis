@@ -88,7 +88,7 @@ def main(inargs):
         c_dataframe, c_metadata = aconv.nc_to_df(inargs.colour[0], [inargs.colour[1]], lat=inargs.clat)
         dataframe_list.append(c_dataframe)
         if (inargs.colour[0] != inargs.xfile) and (inargs.colour[0] != inargs.yfile):
-            metadata_list.append((inargs.colour, c_metadata))
+            metadata_list.append((inargs.colour[0], c_metadata))
         
     dataframe = x_dataframe.join(dataframe_list)
     dataframe = dataframe.dropna()

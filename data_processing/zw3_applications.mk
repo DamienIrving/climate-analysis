@@ -55,19 +55,21 @@ ${HILBERT_PLOT}: ${V_RUNMEAN}
 
 METRIC_VS_WAVE3_PLOT=${INDEX_DIR}/${METRIC}-vs-wave3_zw3_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
 ${METRIC_VS_WAVE3_PLOT} : ${WAVE_STATS} ${FOURIER_INFO}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${METRIC} $(word 2,$^) wave3_amp $@ --colour $(word 2,$^) wave4_amp --normalise --trend_line --thin 3 --cmap hot_r --ylabel wave_3 --xlabel my_index --ylat ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} ${MER_METHOD} --clat ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} ${MER_METHOD}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${METRIC} $(word 2,$^) wave3_amp $@ --colour $(word 2,$^) wave4_amp --normalise --trend_line --zero_lines --thin 3 --cmap hot_r --ylabel wave_3 --xlabel my_index --ylat ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} ${MER_METHOD} --clat ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} ${MER_METHOD}
 
 ## Plot 2: My metric versus ZW3 index ##
 
 METRIC_VS_ZW3_PLOT=${INDEX_DIR}/${METRIC}-vs-zw3index_zw3_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
 ${METRIC_VS_ZW3_PLOT} : ${WAVE_STATS} ${ZW3_INDEX} ${FOURIER_INFO}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${METRIC} $(word 2,$^) zw3 $@ --colour $(word 3,$^) wave3_phase --normalise --trend_line --thin 3 --cmap jet --ylabel ZW3_index --xlabel my_index --clat ${LAT_SINGLE} ${LAT_SINGLE} none
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${METRIC} $(word 2,$^) zw3 $@ --colour $(word 3,$^) wave3_phase --normalise --trend_line --zero_lines --thin 3 --cmap jet --ylabel ZW3_index --xlabel my_index --clat ${LAT_SINGLE} ${LAT_SINGLE} none
 
 ## Plot 3: My metric versus SAM and ENSO ##
 
-ENSO_VS_SAM_PLOT=.png
+ENSO_DATA=${DATA_HOME}/Indices/tos_CPC_surface_monthly-anom-wrt-1981-2010_nino34.nc
+SAM_DATA=${DATA_HOME}/Indices/psl_Marshall_surface_monthly_SAM.nc
+ENSO_VS_SAM_PLOT=${INDEX_DIR}/${METRIC}-vs-${ENSO_METRIC}-vs-${SAM_METRIC}_zw3_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
 ${ENSO_VS_SAM_PLOT} : ${ENSO_DATA} ${SAM_DATA} ${WAVE_STATS}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${ENSO_INDEX} $(word 2,$^) ${SAM_INDEX} $@ --colour $(word 3,$^) ${METRIC} --normalise --trend_line --cmap jet --ylabel SAM --xlabel ENSO --clat ${LAT_SINGLE} ${LAT_SINGLE} none
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${ENSO_METRIC} $(word 2,$^) ${SAM_METRIC} $@ --colour $(word 3,$^) ${METRIC} --trend_line --zero_lines
 
 
 ### Climatological stats ###

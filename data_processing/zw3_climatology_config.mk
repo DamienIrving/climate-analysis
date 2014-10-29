@@ -1,8 +1,8 @@
 # zw3_climatology_config.mk
 
 # System configuration
-DATA_HOME=/mnt/meteo0/data/simmonds/dbirving/${DATASET}
-DATA_DIR=${DATA_HOME}/data
+DATA_HOME=/mnt/meteo0/data/simmonds/dbirving
+DATA_DIR=${DATA_HOME}/${DATASET}/data
 ZW3_DIR=${DATA_DIR}/zw3
 MAP_DIR=${ZW3_DIR}/figures/maps
 INDEX_DIR=${ZW3_DIR}/figures/indexes
@@ -62,6 +62,10 @@ METRIC_THRESH=90pct
 COMP_VAR=tas
 COMP_THRESH=90pct
 
+# Index comparison
+ENSO_METRIC=nino34_anom
+SAM_METRIC=SAM
+
 
 ## Target
-TARGET=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}${COMP_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc
+TARGET=${INDEX_DIR}/${METRIC}-vs-${ENSO_METRIC}-vs-${SAM_METRIC}_zw3_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
