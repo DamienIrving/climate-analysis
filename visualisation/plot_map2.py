@@ -86,13 +86,21 @@ def collapse_time(cube, ntimes, timestep):
     return new_cube  
 
 
+def extract_data():
+
+
+
 def main(inargs):
     """Run program."""
 
     # Extract data #
     
     time_constraint = get_time_constraint(inargs.start, inargs.end)
-    lat_constraint = iris.Constraint(latitude=lambda y: y <= 0.0)
+    
+    if inargs.projection == 'SouthPolarStereo':
+        lat_constraint = iris.Constraint(latitude=lambda y: y <= 0.0)
+    else:
+        lat_constraint = iris.Constraint()
 
     with iris.FUTURE.context(cell_datetime_objects=True):
         u_cube = iris.load_cube(inargs.u_file, inargs.u_var & time_constraint & lat_constraint)
@@ -189,8 +197,8 @@ improvements:
                         help="name of output file [default: test.png]")
     parser.add_argument("--title", type=str, default=None,
                         help="plot title [default: None]")
-    parser.add_argument("--projection", type=str, choices=('cyl', 'nsper', 'spstere', 'npstere'),
-                        help="map projection [default: cyl]")
+    parser.add_argument("--projection", type=str, default='PlateCarree', choices=('PlateCarree', 'SouthPolarStereo'),
+                        help="map projection [default: PlateCarree]")
 
     args = parser.parse_args()              
 
