@@ -44,6 +44,13 @@ except ImportError:
 
 # Define functions
 
+standard_names = {'sf' : 'streamfunction',
+                  'zg' : 'geopotential_height',
+                  'ua' : 'eastward_wind',
+                  'va' : 'northward_wind',
+                  'tas' : 'surface_air_temperature'}
+
+
 def get_time_constraint(start, end):
     """Set the time constraint"""
     
@@ -151,15 +158,23 @@ improvements:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("u_file", type=str, help="input file name for the zonal wind")
-    parser.add_argument("u_var", type=str, help="standard_name for the zonal wind")
-    parser.add_argument("v_file", type=str, help="input file name for the meridional wind")
-    parser.add_argument("v_var", type=str, help="standard_name for the meridional wind")
+    # Input data
 
-    parser.add_argument("--zg_file", type=str, default=None, 
-                        help="input file name for the geopoential height zonal anomaly")
-    parser.add_argument("--zg_var", type=str, default=None,
+    parser.add_argument("--u_file", type=str, default=None, 
+                        help="input file name for the zonal wind")
+    parser.add_argument("--u_var", type=str, default=None 
+                        help="zonal wind variable")
+    parser.add_argument("--v_file", type=str, default=None,
+                        help="input file name for the meridional wind")
+    parser.add_argument("--v_var", type=str, default=None,
+                        help="meridional wind variable")
+
+    parser.add_argument("--contour_file", type=str, default=None, 
+                        help="input file name for the contours")
+    parser.add_argument("--contour_var", type=str, default=None,
                         help="standard_name for the geopotential height zonal anomaly")
+
+    # Time considerations
 
     parser.add_argument("--start", type=str, default='',
                         help="start date in YYYY-MM-DD format [default = None])")
@@ -168,12 +183,14 @@ improvements:
     parser.add_argument("--timestep", type=int, default=None,
                         help="By default multiple timesteps are averaged. This option allows the specification of a particular timestep")
  
+    # Output options
+
     parser.add_argument("--ofile", type=str, default='test.png',
                         help="name of output file [default: test.png]")
-
     parser.add_argument("--title", type=str, default=None,
                         help="plot title [default: None]")
-
+    parser.add_argument("--projection", type=str, choices=('cyl', 'nsper', 'spstere', 'npstere'),
+                        help="map projection [default: cyl]")
 
     args = parser.parse_args()              
 
