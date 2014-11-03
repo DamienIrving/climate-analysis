@@ -52,7 +52,7 @@ standard_names = {'sf' : 'streamfunction',
 
 plot_types = ['colour', 'contour', 'uwind', 'vwind', 'stipple']
 
-projections = {'PlateCarree': ccrs.PlateCarree(),
+projections = {'PlateCarree': ccrs.PlateCarree(central_longitude=-180.0),
                'SouthPolarStereo': ccrs.SouthPolarStereo()}
 
 
@@ -106,14 +106,10 @@ def extract_data(infile_list, projection):
     else:
         lat_constraint = iris.Constraint()
 
-    cube_dict = {}
-    for key in plot_types:
-        cube_dict[key] = []
-        type_count[key] = 0 
-
-    for infile, var, start_date, end_date, timestep, plot_type in infile_list:
+    cube_dict = {} 
+    for infile, var, start_date, end_date, timestep, plot_type, plot_number in infile_list:
         assert plot_type in plot_types
-        time_constraint = get_time_constraint(inargs.start, inargs.end)
+        time_constraint = get_time_constraint(start_date, end_date)
 	with iris.FUTURE.context(cell_datetime_objects=True):  
             new_cube = iris.load_cube(infile, standard_names[var] & time_constraint & lat_constraint)
         
@@ -121,12 +117,9 @@ def extract_data(infile_list, projection):
         if ntimes > 1:
             new_cube = collapse_time(new_cube, ntimes, int(timestep))
 
-        cube_dict[plot_type].append(new_cube)
-        type_count[plot_type] += 1
+        cube_dict[(plot_type, int(plot_number))] = new_cube
 
-    nplots = numpy.max(type_count.values())
-
-    return cube_dict, nplots
+    return cube_dict
 
 
 def plot_flow(x, y, u, v, ax, flow_type):
@@ -141,52 +134,136 @@ def plot_flow(x, y, u, v, ax, flow_type):
         ax.quiver(x, y, u, v, transform=ccrs.PlateCarree(), regrid_shape=40) 
 
 
+def plot_colour(cube, colour_type, colourbar):
+    """Plot the colour plot and colourbar"""
 
-def multiplot(cube_dict, nplots,
+    assert colour_type in ['smooth', 'pixels']
+
+    if colour_type == 'smooth':
+        if colourbar == 'individual':
+            cf = qplt.contourf(cube)
+        else:
+            cf = iplt.contourf(cube)  #levels, colors=colors, linewidth=0, extend='both')
+    elif colour_type == 'pixels':
+        cf = qplt.pcolormesh(cube)
+
+    return cf
+
+
+def plot_contour(cube):
+    """Plot the contours"""
+
+    qplt.contour(cube, colors='0.3', linewidths=2)
+
+
+def set_colourbar(orientation, cf, fig):
+    """Define the global colourbar"""
+
+    assert orientation in ('horizontal', 'vertical')
+
+    # left, bottom, width, height
+    dimensions = {'horizontal': [0.1, 0.1, 0.8, 0.03],
+                  'vertical': [0.85, 0.1, 0.1, 0.08]}
+
+    colorbar_axes = fig.add_axes(dimensions[orientation])
+    plt.colorbar(cf, colorbar_axes, orientation=orientation)
+
+    # Add the colour bar
+    cbar = plt.colorbar(cf, colorbar_axes, orientation=orientation)
+
+    # Label the colour bar and add ticks
+    #cbar.set_label(e1_slice.units)
+    #cbar.ax.tick_params(length=0)
+
+
+def set_spacing(colourbar_type):
+    """Set the subplot spacing depending on the requested colourbar.
+    
+    This function sets aside space at the right side or the bottom of 
+    the figure for a vertical or horizontal colourbar respectively.
+
+    The automatic spacing performed by matplotlib will fill the 
+    available space (e.g. in a 2 by 2 array the subplots will gravitate
+    towards the corners), so final tweaking of the spacing between sub-plots 
+    can be achieved by altering  the width and height of the figure itself. 
+
+    """
+
+    assert colourbar_type in ['individual', 'horizontal', 'vertical']
+
+    hspace = 0.05  #height reserved for white space between subplots
+    wspace = 0.05  #width reserved for blank space between subplots
+    top = 0.95     #top of the subplots of the figure
+    left = 0.075   #left side of the subplots of the figure
+
+    bottom = 0.15 if colourbar_type == 'horizontal' else 0.05
+    right = 0.825 if colourbar_type == 'vertical' else 0.925 
+
+    plt.gcf().subplots_adjust(hspace=hspace, wspace=wspace, 
+                              top=top, bottom=bottom,
+                              left=left, right=right)
+        
+
+def multiplot(cube_dict, nrows, ncols,
               projection='PlateCarree',
-              flow_type='quiver'
+              flow_type='quiver',
+              colour_type='smooth',
               title=None,
               ofile='test.png'):
     """Create the plot."""
 
-    plt.figure(figsize=(8, 10))
+    fig = plt.figure(figsize=(14, 10))   #width, height  ### ADD TO OPTIONS
+    set_spacing(inargs.colourbar)
 
-    # Setup the map
-    ax = plt.axes(projection=projections[projection])
-    ax.set_extent((x.min(), x.max(), y.min(), -30.0), crs=projections['PlateCarree'])
+    if title:
+        fig.suptitle(inargs.title.replace('_',' '))
 
-    ax.coastlines()
-    ax.gridlines()
-    #ax.set_global()
+    axis_list = []
+    for plotnum in range(1, nrows*ncols + 1):
 
-    # Plot away!
+        ax = plt.subplot(nrows, ncols, plotnum, projection=projections[projection])
+        plt.sca(ax)
+        #axis_list.append(plt.gca())
 
-    for plotnum in range(0, nplots):
+        # Mini header
+        plt.title('Mini header')
 
-        # Streamline or quiverplot
+        # Set limits
+        if projection == 'SouthPolarStereo':
+            ax.set_extent((0, 360, -90.0, -30.0), crs=projections['PlateCarree'])
+        else:
+            plt.gca().set_global()
+
+        # Add colour plot
         try:
-            u_cube = cube_dict['uwind'][plotnum]
-            v_cube = cube_dict['vwind'][plotnum]
+            colour_cube = cube_dict[('colour', plotnum)]    
+            cf = plot_colour(colour_cube, colour_type, colourbar)
+        except KeyError:
+            pass
+
+        # Add streamline or quiverplot
+        try:
+            u_cube = cube_dict[('uwind', plotnum)]
+            v_cube = cube_dict[('vwind', plotnum)]
             x = u_cube.coords('longitude')[0].points
             y = u_cube.coords('latitude')[0].points
             u = u_cube.data
             v = v_cube.data
             plot_flow(x, y, u, v, ax, flow_type)
-        except IndexError:
+        except KeyError:
             pass
 
-        # Contour lines
+        # Add contour lines
         try:
-            cont_cube = cube_dict['contour'][plotnum]
-            qplt.contour(cont_cube, colors='0.3', linewidths=2)
-        except IndexError:
+            contour_cube = cube_dict[('contour', plotnum)]
+            plot_contour(contour_cube)
+        except KeyError:
             pass
 
-
-
-       
-    if title:
-        plt.title(inargs.title.replace('_',' '))
+        plt.gca().coastlines()
+        plt.gca().gridlines()#draw_labels=True)
+        if not colourbar == 'individual':
+            set_colorbar(colourbar, cf, fig)       
 
     plt.savefig(ofile)
 
@@ -196,18 +273,18 @@ def main(inargs):
 
     # Extract data #
     
-    cube_dict, nplots = extract_data(inargs.infiles, inargs.projection)
+    cube_dict = extract_data(inargs.infiles, inargs.projection)
     
     # Creat the plot
 
-    multiplot(cube_dict, nplots,
+    multiplot(cube_dict, inargs.nrows, inargs.ncols,
               projection=inargs.projection,
               flow_type=inargs.flow_type,
+              colour_type=inargs.colour_type,
               title=inargs.title,
               ofile=inargs.ofile)
     
-
-    gio.write_metadata(inargs.ofile)
+    #gio.write_metadata(inargs.ofile)
 
 
 if __name__ == '__main__':
@@ -232,10 +309,13 @@ improvements:
     parser.add_argument("end", type=str, help="end date in YYY-MM-DD, let START=END for single time step (can be None)")
     parser.add_argument("timestep", type=str, help="for data with a time axis of len > 1 pick a timestep (can be None)")
     parser.add_argument("type", type=str, help="plot type: can be uwind, vwind, contour, colour, stipple")
+    parser.add_argument("plotnum", type=str, help="plot number corresponding to infile")
+    parser.add_argument("nrows", type=int, help="number of rows in the entire grid of plots")
+    parser.add_argument("ncols", type=int, help="number of columns in the entire grid of plots")
 
-    parser.add_argument("--infiles", type=str, action='append', default=[], nargs=5,
-                        metavar=('FILENAME', 'VAR', 'START', 'END', 'TIMESTEP', 'TYPE'),  
-                        help="additional input file name, variable, start date, end date and plot type [default: None]")
+    parser.add_argument("--infiles", type=str, action='append', default=[], nargs=7,
+                        metavar=('FILENAME', 'VAR', 'START', 'END', 'TIMESTEP', 'TYPE', 'PLOTNUM'),  
+                        help="additional input file name, variable, start date, end date, plot type and plot number [default: None]")
 
     # Time considerations
 
@@ -249,8 +329,11 @@ improvements:
     parser.add_argument("--projection", type=str, default='PlateCarree', choices=projections.keys(),
                         help="map projection [default: PlateCarree]")
     parser.add_argument("--flow_type", type=str, default='quiver', choices=('quiver', 'streamlines'),
-                        help="what to do with the uwind and vwind data")
-
+                        help="what to do with the uwind and vwind data [default=quiver]")
+    parser.add_argument("--colour_type", type=str, default='smooth', choices=('smooth', 'pixels'),
+                        help="how to present the colours [default=smooth]")
+    parser.add_argument("--colourbar", type=str, default='horizontal', choices=('individual', 'horizontal', 'vertical') 
+                        help="type of colourbar [default: horizontal]")
     # Output options
 
     parser.add_argument("--ofile", type=str, default='test.png',
@@ -258,6 +341,6 @@ improvements:
     
 
     args = parser.parse_args()              
-    args.infiles.insert(0, [args.infile, args.variable, args.start, args.end, args.timestep, args.type])
+    args.infiles.insert(0, [args.infile, args.variable, args.start, args.end, args.timestep, args.type, args.plotnum])
 
     main(args)
