@@ -53,29 +53,44 @@ standard_names = {'sf' : 'streamfunction',
 
 plot_types = ['colour', 'contour', 'uwind', 'vwind', 'stipple']
 
-projections = {'PlateCarree': ccrs.PlateCarree(central_longitude=-180.0),
+projections = {'PlateCarree_Greenwich': ccrs.PlateCarree(), # Centred on Greenwich, which means lons go from 0 to 360
+               'PlateCarree_Dateline': ccrs.PlateCarree(central_longitude=-180.0),
                'SouthPolarStereo': ccrs.SouthPolarStereo()}
 
 units_dict = {'ms-1': '$m s^{-1}$',
               'm.s-1': '$m s^{-1}$'}
 
 
+def check_projection(cube, input_projection):
+    """Check that the specified input projection is correct"""
+
+    coord_names = [coord.name() for coord in cube.coords()]
+    lon_name = next(obj for obj in coord_names if 'lon' in obj)
+    first_lon = cube.coord(lon_name).points[0]
+
+    if input_projection == 'PlateCarree_Greenwich':
+        assert first_lon == 0.0, \
+        'Mismatch between data grid and specified input projection'
+    else:
+        print 'WARNING: There is no test in this script to see if the data grid matches the specifed input projection'
+
+
 def collapse_time(cube, ntimes, timestep):
     """Select the desired timestep from the time axis"""
 
-    if timestep:
-        new_cube = cube[timestep, :, :]
-    else:
+    if timestep == None:
         print 'Averaging over the %s time points' %(str(ntimes))
         new_cube = cube.collapsed('time', iris.analysis.MEAN)
+    else:
+        new_cube = cube[timestep, :, :]
 
     return new_cube  
 
 
-def extract_data(infile_list, projection):
+def extract_data(infile_list, input_projection, output_projection):
     """Extract data"""
 
-    if projection == 'SouthPolarStereo':
+    if output_projection == 'SouthPolarStereo':
         lat_constraint = iris.Constraint(latitude=lambda y: y <= 0.0)
     else:
         lat_constraint = iris.Constraint()
@@ -87,10 +102,15 @@ def extract_data(infile_list, projection):
         time_constraint = get_time_constraint(start_date, end_date)
 	with iris.FUTURE.context(cell_datetime_objects=True):  
             new_cube = iris.load_cube(infile, standard_names[var] & time_constraint & lat_constraint)
-            
+        
+        check_projection(new_cube, input_projection)
         ntimes = len(new_cube.coords('time')[0].points)
         if ntimes > 1:
-            new_cube = collapse_time(new_cube, ntimes, int(timestep))
+            try:
+                timestep = int(timestep)
+            except ValueError:
+                timestep = None
+            new_cube = collapse_time(new_cube, ntimes, timestep)
 
         cube_dict[(plot_type, int(plot_number))] = new_cube
         metadata_dict[infile] = new_cube.attributes['history']
@@ -129,10 +149,11 @@ def get_time_constraint(start, end):
 
 
 def multiplot(cube_dict, nrows, ncols,
+              input_projection='PlateCarree_Greenwich',
               #broad plot options
               figure_size=None,
               subplot_spacing=0.05,
-              projection='PlateCarree',
+              output_projection='PlateCarree_Dateline',
               flow_type='quiver',
               box_list=None,
               #headings
@@ -160,7 +181,7 @@ def multiplot(cube_dict, nrows, ncols,
     colour_plot_switch = False
     for plotnum in range(1, nrows*ncols + 1):
 
-        ax = plt.subplot(nrows, ncols, plotnum, projection=projections[projection])
+        ax = plt.subplot(nrows, ncols, plotnum, projection=projections[output_projection])
         plt.sca(ax)
 
         # Mini header
@@ -171,8 +192,8 @@ def multiplot(cube_dict, nrows, ncols,
             pass
 
         # Set limits
-        if projection == 'SouthPolarStereo':
-            ax.set_extent((0, 360, -90.0, -30.0), crs=projections['PlateCarree'])
+        if output_projection == 'SouthPolarStereo':
+            ax.set_extent((0, 360, -90.0, -30.0), crs=projections[input_projection])
         else:
             plt.gca().set_global()
 
@@ -193,7 +214,7 @@ def multiplot(cube_dict, nrows, ncols,
             y = u_cube.coords('latitude')[0].points
             u = u_cube.data
             v = v_cube.data
-            plot_flow(x, y, u, v, ax, flow_type)
+            plot_flow(x, y, u, v, ax, flow_type, input_projection)
         except KeyError:
             pass
 
@@ -206,7 +227,7 @@ def multiplot(cube_dict, nrows, ncols,
 
         # Add boxes
         if box_list:
-            plot_boxes(box_list)
+            plot_boxes(box_list, input_projection)
 
         # Add plot features
         plt.gca().coastlines()
@@ -218,7 +239,7 @@ def multiplot(cube_dict, nrows, ncols,
     plt.savefig(ofile)
 
 
-def plot_boxes(box_list):
+def plot_boxes(box_list, input_projection):
     """Add boxes to the plot.
     
     Arguments:
@@ -258,7 +279,7 @@ def plot_boxes(box_list):
 
 	for side in ['north', 'south', 'east', 'west']:
             x, y = borders[side+'_lons'], borders[side+'_lats']
-            plt.plot(x, y, linestyle=style, color=color, transform=ccrs.PlateCarree())
+            plt.plot(x, y, linestyle=style, color=color, transform=projections[input_projection])
 
 
 def plot_colour(cube, 
@@ -296,16 +317,16 @@ def plot_contour(cube):
     qplt.contour(cube, colors='0.3', linewidths=2)
 
 
-def plot_flow(x, y, u, v, ax, flow_type):
+def plot_flow(x, y, u, v, ax, flow_type, input_projection):
     """Plot quivers or streamlines"""
 
     assert flow_type in ['streamlines', 'quivers']
 
     if flow_type == 'streamlines':
         magnitude = (u ** 2 + v ** 2) ** 0.5
-        ax.streamplot(x, y, u, v, transform=ccrs.PlateCarree(), linewidth=2, density=2, color=magnitude)
+        ax.streamplot(x, y, u, v, transform=projections[input_projection], linewidth=2, density=2, color=magnitude)
     elif flow_type == 'quivers':
-        ax.quiver(x, y, u, v, transform=ccrs.PlateCarree(), regrid_shape=40) 
+        ax.quiver(x, y, u, v, transform=projections[input_projection], regrid_shape=40) 
 
 
 def set_colourbar(orientation, span, cf, fig, units):
@@ -371,14 +392,16 @@ def main(inargs):
 
     # Extract data #
     
-    cube_dict, metadata_dict = extract_data(inargs.infiles, inargs.projection)
+    cube_dict, metadata_dict = extract_data(inargs.infiles, inargs.input_projection, inargs.output_projection)
     
     # Creat the plot
 
     multiplot(cube_dict, inargs.nrows, inargs.ncols,
+              input_projection=inargs.input_projection,
+              #broad plot options
+              output_projection=inargs.output_projection,
               figure_size=inargs.figure_size,
               subplot_spacing=inargs.subplot_spacing,
-              projection=inargs.projection,
               flow_type=inargs.flow_type,
               box_list=inargs.boxes,
               #headings
@@ -426,15 +449,17 @@ example:
     parser.add_argument("--infiles", type=str, action='append', default=[], nargs=7,
                         metavar=('FILENAME', 'VAR', 'START', 'END', 'TIMESTEP', 'TYPE', 'PLOTNUM'),  
                         help="additional input file name, variable, start date, end date, plot type and plot number [default: None]")
- 
+    parser.add_argument("--input_projection", type=str, default='PlateCarree_Greenwich', choices=projections.keys(),
+                        help="input map projection [default: PlateCarree_Greenwich]") 
+
     # Broad plot options
     
     parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
     parser.add_argument("--subplot_spacing", type=float, default=0.05,
                         help="minimum spacing between subplots [default=0.05]")
-    parser.add_argument("--projection", type=str, default='PlateCarree', choices=projections.keys(),
-                        help="map projection [default: PlateCarree]")
+    parser.add_argument("--output_projection", type=str, default='PlateCarree_Dateline', choices=projections.keys(),
+                        help="output map projection [default: PlateCarree_Dateline]")
     parser.add_argument("--flow_type", type=str, default='quivers', choices=('quivers', 'streamlines'),
                         help="what to do with the uwind and vwind data [default=quiver]")
     parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
