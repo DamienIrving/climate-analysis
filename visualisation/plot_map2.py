@@ -38,6 +38,7 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import netcdf_io as nio
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -128,8 +129,10 @@ def get_time_constraint(start, end):
 def multiplot(cube_dict, nrows, ncols,
               #broad plot options
               figure_size=None,
+              subplot_spacing=0.05,
               projection='PlateCarree',
               flow_type='quiver',
+              box_list=None,
               #headings
               title=None, subplot_headings=None,
               #colourbar
@@ -142,7 +145,11 @@ def multiplot(cube_dict, nrows, ncols,
     """Create the plot."""
 
     fig = plt.figure(figsize=figure_size)
-    set_spacing(colourbar_type)
+    if not figure_size:
+        print 'figure width: %s' %(str(fig.get_figwidth()))
+        print 'figure height: %s' %(str(fig.get_figheight()))
+
+    set_spacing(colourbar_type, subplot_spacing)
 
     if title:
         fig.suptitle(inargs.title.replace('_',' '))
@@ -195,6 +202,10 @@ def multiplot(cube_dict, nrows, ncols,
         except KeyError:
             pass
 
+        # Add boxes
+        if box_list:
+            plot_boxes(box_list)
+
         # Add plot features
         plt.gca().coastlines()
         plt.gca().gridlines()#draw_labels=True)
@@ -203,6 +214,49 @@ def multiplot(cube_dict, nrows, ncols,
             set_colourbar(colourbar_type, colourbar_span, cf, fig, plot_units)       
 
     plt.savefig(ofile)
+
+
+def plot_boxes(box_list):
+    """Add boxes to the plot.
+    
+    Arguments:
+        box  ->  (name, color, style)
+    
+    """
+    styles = {}
+    styles['dashed'] = '--'
+    styles['solid'] = '-'
+    
+    for box in box_list: 
+        region, color, style = box
+	
+        assert region in nio.regions.keys()
+        assert style in styles.keys()
+
+	south_lat, north_lat = nio.regions[region][0][0: 2]
+        west_lon, east_lon = nio.regions[region][1][0: 2]
+        
+       	# Adjust the longitude values as required
+	assert (0.0 <= east_lon <= 360) and  (0.0 <= west_lon <= 360), \
+	"""Longitude coordinates for the box must be 0 < lon < 360"""  
+	if (east_lon < west_lon) and (west_lon > 180.0):
+            west_lon = west_lon - 360.0
+	if (east_lon < west_lon) and (west_lon <= 180.0):
+            east_lon = east_lon + 360.0
+
+	# Define the plot borders
+	borders = {}
+	borders['north_lons'] = borders['south_lons'] =  numpy.arange(west_lon, east_lon + 1, 1)
+	borders['south_lats'] = numpy.repeat(south_lat, len(borders['south_lons']))
+	borders['north_lats'] = numpy.repeat(north_lat, len(borders['south_lons']))
+
+	borders['east_lats'] = borders['west_lats'] = numpy.arange(south_lat, north_lat + 1, 1)
+	borders['west_lons'] = numpy.repeat(west_lon, len(borders['west_lats']))
+	borders['east_lons'] = numpy.repeat(east_lon, len(borders['west_lats']))
+
+	for side in ['north', 'south', 'east', 'west']:
+            x, y = borders[side+'_lons'], borders[side+'_lats']
+            plt.plot(x, y, linestyle=style, color=color, transform=ccrs.PlateCarree())
 
 
 def plot_colour(cube, 
@@ -282,7 +336,7 @@ def set_colourbar(orientation, span, cf, fig, units):
     #cbar.ax.tick_params(length=0)
 
 
-def set_spacing(colourbar_type):
+def set_spacing(colourbar_type, subplot_spacing):
     """Set the subplot spacing depending on the requested colourbar.
     
     This function sets aside space at the right side or the bottom of 
@@ -297,10 +351,10 @@ def set_spacing(colourbar_type):
 
     assert colourbar_type in ['individual', 'horizontal', 'vertical']
 
-    hspace = 0.05  # height reserved for white space between subplots
-    wspace = 0.05  # width reserved for blank space between subplots
-    top = 0.95     # top of the subplots of the figure
-    left = 0.075   # left side of the subplots of the figure
+    hspace = subplot_spacing  # height reserved for white space between subplots
+    wspace = subplot_spacing  # width reserved for blank space between subplots
+    top = 0.95                # top of the subplots of the figure
+    left = 0.075              # left side of the subplots of the figure
 
     bottom = 0.15 if colourbar_type == 'horizontal' else 0.05
     right = 0.825 if colourbar_type == 'vertical' else 0.925 
@@ -321,8 +375,10 @@ def main(inargs):
 
     multiplot(cube_dict, inargs.nrows, inargs.ncols,
               figure_size=inargs.figure_size,
+              subplot_spacing=inargs.subplot_spacing,
               projection=inargs.projection,
               flow_type=inargs.flow_type,
+              box_list=inargs.boxes,
               #headings
               title=inargs.title,
               subplot_headings=inargs.subplot_headings,
@@ -342,7 +398,7 @@ def main(inargs):
 if __name__ == '__main__':
 
     extra_info = """
-improvements:
+example:
   
 
 """
@@ -373,10 +429,14 @@ improvements:
     
     parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
+    parser.add_argument("--subplot_spacing", type=float, default=0.05,
+                        help="minimum spacing between subplots [default=0.05]")
     parser.add_argument("--projection", type=str, default='PlateCarree', choices=projections.keys(),
                         help="map projection [default: PlateCarree]")
     parser.add_argument("--flow_type", type=str, default='quiver', choices=('quiver', 'streamlines'),
                         help="what to do with the uwind and vwind data [default=quiver]")
+    parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
+                        help="""draw a box - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
 
     # Headings
 
