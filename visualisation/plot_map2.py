@@ -126,15 +126,18 @@ def get_time_constraint(start, end):
 
 
 def multiplot(cube_dict, nrows, ncols,
+              #broad plot options
               figure_size=None,
               projection='PlateCarree',
               flow_type='quiver',
+              #headings
+              title=None, subplot_headings=None,
+              #colourbar
               colour_type='smooth',
-              title=None,
-              colourbar_type='horizontal',
-              colourbar_span=0.6,
+              colourbar_type='horizontal', colourbar_span=0.6,
               units=None,
-              subplot_headings=None,
+              palette='jet', extend='neither', ticks=None,
+              #output
               ofile='test.png'):
     """Create the plot."""
 
@@ -167,7 +170,8 @@ def multiplot(cube_dict, nrows, ncols,
         # Add colour plot
         try:
             colour_cube = cube_dict[('colour', plotnum)]    
-            cf = plot_colour(colour_cube, colour_type, colourbar_type)
+            cf = plot_colour(colour_cube, colour_type, colourbar_type, 
+                             palette, extend, ticks)
             colour_plot_switch = True
         except KeyError:
             pass
@@ -201,16 +205,29 @@ def multiplot(cube_dict, nrows, ncols,
     plt.savefig(ofile)
 
 
-def plot_colour(cube, colour_type, colourbar_type):
-    """Plot the colour plot and colourbar"""
+def plot_colour(cube, 
+                colour_type, colourbar_type, 
+                palette, extend, ticks):
+    """Plot the colour plot"""
 
     assert colour_type in ['smooth', 'pixels']
 
+    if palette:
+	if hasattr(plt.cm, palette):
+            cmap = getattr(plt.cm, palette)
+            colors = None
+	else:
+            print "Error, color option '", palette, "' not a valid option"
+            sys.exit(1)
+
     if colour_type == 'smooth':
         if colourbar_type == 'individual':
-            cf = qplt.contourf(cube)
+            cf = qplt.contourf(cube, cmap=cmap, colors=colors, levels=ticks, extend=extend)
         else:
-            cf = iplt.contourf(cube)  #levels, colors=colors, linewidth=0, extend='both')
+            cf = iplt.contourf(cube, cmap=cmap, colors=colors, levels=ticks, extend=extend)
+            # colors is the option where you can give a list of hex strings
+            # I haven't been able to figure out how to get extent to work with that
+
     elif colour_type == 'pixels':
         cf = qplt.pcolormesh(cube)
 
@@ -306,12 +323,17 @@ def main(inargs):
               figure_size=inargs.figure_size,
               projection=inargs.projection,
               flow_type=inargs.flow_type,
-              colour_type=inargs.colour_type,
+              #headings
               title=inargs.title,
-              colourbar_type=inargs.colourbar_type,
-              colourbar_span=inargs.colourbar_span,
               subplot_headings=inargs.subplot_headings,
+              #colourbar
+              colourbar_type=inargs.colourbar_type,
+              colour_type=inargs.colour_type,
+              colourbar_span=inargs.colourbar_span,
               units=inargs.units,
+              palette=inargs.palette, extend=inargs.extend,
+              ticks=inargs.ticks,
+              #output
               ofile=inargs.ofile)
     
     #gio.write_metadata(inargs.ofile)
@@ -346,32 +368,40 @@ improvements:
     parser.add_argument("--infiles", type=str, action='append', default=[], nargs=7,
                         metavar=('FILENAME', 'VAR', 'START', 'END', 'TIMESTEP', 'TYPE', 'PLOTNUM'),  
                         help="additional input file name, variable, start date, end date, plot type and plot number [default: None]")
-    parser.add_argument("--units", type=str, default=None, 
-                        help="Units (recognised units: ms-1)")
-
-    # Time considerations
-
-    parser.add_argument("--timestep", type=int, default=None,
-                        help="By default multiple timesteps are averaged. This option allows the specification of a particular timestep")
  
-    # Plot options
+    # Broad plot options
+    
+    parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
+                        help="size of the figure (in inches)")
+    parser.add_argument("--projection", type=str, default='PlateCarree', choices=projections.keys(),
+                        help="map projection [default: PlateCarree]")
+    parser.add_argument("--flow_type", type=str, default='quiver', choices=('quiver', 'streamlines'),
+                        help="what to do with the uwind and vwind data [default=quiver]")
+
+    # Headings
 
     parser.add_argument("--title", type=str, default=None,
                         help="plot title [default: None]")
-    parser.add_argument("--projection", type=str, default='PlateCarree', choices=projections.keys(),
-                        help="map projection [default: PlateCarree]")
-    parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
-                        help="size of the figure (in inches)")
-    parser.add_argument("--flow_type", type=str, default='quiver', choices=('quiver', 'streamlines'),
-                        help="what to do with the uwind and vwind data [default=quiver]")
+    parser.add_argument("--subplot_headings", type=str, nargs='*', default=None,
+                        help="list of subplot headings (in order from top left to bottom right, write none for a blank)")
+
+    # Colourbar
+
     parser.add_argument("--colour_type", type=str, default='smooth', choices=('smooth', 'pixels'),
                         help="how to present the colours [default=smooth]")
     parser.add_argument("--colourbar_type", type=str, default='horizontal', choices=('individual', 'horizontal', 'vertical'),
                         help="type of colourbar [default: horizontal]")
     parser.add_argument("--colourbar_span", type=float, default=0.6,
                         help="the span of the colour bar (expressed as a fraction) [default: 0.6]")
-    parser.add_argument("--subplot_headings", type=str, nargs='*', default=None,
-                        help="list of subplot headings (in order from top left to bottom right, write none for a blank)")
+    parser.add_argument("--palette", type=str, default='jet',
+                        choices=('jet', 'jet_r', 'hot', 'hot_r', 'Blues', 'RdBu', 'RdBu_r', 'Oranges'),
+                        help="Colourbar colours [defualt: jet]")
+    parser.add_argument("--ticks", type=float, nargs='*', default=None,
+                        help="list of tick marks to appear on the colour bar [default = auto]")
+    parser.add_argument("--extend", type=str, choices=('both', 'neither', 'min', 'max'), default='neither',
+                        help="selector for arrow points at either end of colourbar [default: neither]")
+    parser.add_argument("--units", type=str, default=None, 
+                        help="Units (recognised units: ms-1)")
 
     # Output options
 
