@@ -114,7 +114,7 @@ def write_metadata(ofile=None, file_info=None, extra_notes=None):
     Arguments:
       ofile        --  name of output file that we want to create a .met file
                        alongside (i.e. new file with .met extension will be created)
-      file_info    --  list of file info lists: ['fname', 'global atts history']
+      file_info    --  a dictionary where keys are filenames and values are the global attribute history
       extra_notes  --  list containing character strings of extra information (output is one list item per line)
       
     """
@@ -133,9 +133,10 @@ def write_metadata(ofile=None, file_info=None, extra_notes=None):
     
     # Write the file details
     if file_info:
-        for ifile in file_info:
-            fname, history = ifile
-            if len(file_info) > 1:
+        assert type(file_info) == dict
+        nfiles = len(file_info.keys())
+        for fname, history in file_info.iteritems():
+            if nfiles > 1:
                 result += 'History of %s: \n %s \n' %(fname, history)
             else:
                 result += '%s \n' %(history)

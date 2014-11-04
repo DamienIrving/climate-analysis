@@ -81,19 +81,21 @@ def extract_data(infile_list, projection):
         lat_constraint = iris.Constraint()
 
     cube_dict = {} 
+    metadata_dict = {}
     for infile, var, start_date, end_date, timestep, plot_type, plot_number in infile_list:
         assert plot_type in plot_types
         time_constraint = get_time_constraint(start_date, end_date)
 	with iris.FUTURE.context(cell_datetime_objects=True):  
             new_cube = iris.load_cube(infile, standard_names[var] & time_constraint & lat_constraint)
-        
+            
         ntimes = len(new_cube.coords('time')[0].points)
         if ntimes > 1:
             new_cube = collapse_time(new_cube, ntimes, int(timestep))
 
         cube_dict[(plot_type, int(plot_number))] = new_cube
+        metadata_dict[infile] = new_cube.attributes['history']
 
-    return cube_dict
+    return cube_dict, metadata_dict
 
 
 def get_time_constraint(start, end):
@@ -369,7 +371,7 @@ def main(inargs):
 
     # Extract data #
     
-    cube_dict = extract_data(inargs.infiles, inargs.projection)
+    cube_dict, metadata_dict = extract_data(inargs.infiles, inargs.projection)
     
     # Creat the plot
 
@@ -392,7 +394,7 @@ def main(inargs):
               #output
               ofile=inargs.ofile)
     
-    #gio.write_metadata(inargs.ofile)
+    gio.write_metadata(inargs.ofile, file_info=metadata_dict)
 
 
 if __name__ == '__main__':
