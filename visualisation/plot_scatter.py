@@ -76,19 +76,19 @@ def main(inargs):
     """Run program."""
 
     # Read input data into a single pandas DataFrame
-
+    
     x_dataframe, x_metadata = aconv.nc_to_df(inargs.xfile, [inargs.xvar], lat=inargs.xlat)
     y_dataframe, y_metadata = aconv.nc_to_df(inargs.yfile, [inargs.yvar], lat=inargs.ylat)
     dataframe_list = [y_dataframe]
-    metadata_list = [(inargs.xfile, x_metadata)]
-    if inargs.xfile != inargs.yfile:
-        metadata_list.append((inargs.yfile, y_metadata))
+
+    metadata_dict = {}
+    metadata_dict[inargs.xfile] = x_metadata
+    metadata_dict[inargs.yfile] = y_metadata
 
     if inargs.colour:
         c_dataframe, c_metadata = aconv.nc_to_df(inargs.colour[0], [inargs.colour[1]], lat=inargs.clat)
         dataframe_list.append(c_dataframe)
-        if (inargs.colour[0] != inargs.xfile) and (inargs.colour[0] != inargs.yfile):
-            metadata_list.append((inargs.colour[0], c_metadata))
+        metadata_dict[inargs.colour[0]] = c_metadata
         
     dataframe = x_dataframe.join(dataframe_list)
     dataframe = dataframe.dropna()
@@ -124,7 +124,7 @@ def main(inargs):
                  zero_lines=inargs.zero_lines, thin=inargs.thin, 
                  trend=inargs.trend_line, cmap=inargs.cmap)
 
-    gio.write_metadata(inargs.ofile, file_info=metadata_list)
+    gio.write_metadata(inargs.ofile, file_info=metadata_dict)
 
 
 if __name__ == '__main__':

@@ -91,9 +91,9 @@ def main(inargs):
     output = fourier_DataFrame.join([zw3_DataFrame, env_DataFrame])
     output.to_csv(inargs.outfile, float_format='%0.2f')
 
-    metadata = [(inargs.fourier_file, fourier_history),
-                (inargs.zw3_file, zw3_history),
-                (inargs.env_file, env_history)]
+    metadata = {inargs.fourier_file: fourier_history,
+                inargs.zw3_file: zw3_history,
+                inargs.env_file: env_history}
     gio.write_metadata(inargs.outfile, file_info=metadata)  # You can't write metadata headers with to_csv, hence the need for a separate metadata file
 
 

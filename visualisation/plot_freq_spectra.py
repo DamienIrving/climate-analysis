@@ -131,7 +131,7 @@ def main(inargs):
     
     plt.savefig(inargs.outfile)
     plt.clf()
-    metadata = [[indata.fname, indata.global_atts['history']],]
+    metadata = {indata.fname: indata.global_atts['history']}
     gio.write_metadata(inargs.outfile, file_info=metadata)
     
 

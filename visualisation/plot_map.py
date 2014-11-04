@@ -103,13 +103,14 @@ def _decimal_places(diff):
     return int(dec)
 
 
-def extract_data(file_list, region='world-dateline', convert=False):
+def extract_data(file_list, metadata_dict, region='world-dateline', convert=False):
     """Create list of nio.InputData.data instances.
 
     Positional arguments:
-      file_list  -- List of tuples containing:
-                    (file_name, var), or
-                    (file_name, var, start, end, months)
+      file_list      --  List of tuples containing:
+                         (file_name, var), or
+                         (file_name, var, start, end, months)
+      metadata_dict  --  keys are file names and values the history
 
     Keyword arguments:
       region     -- Name of a region key in netcdf_io.region
@@ -124,7 +125,6 @@ def extract_data(file_list, region='world-dateline', convert=False):
     assert region in nio.regions.keys()
 
     data_list = []
-    metadata_list = []
     for item in file_list:
         fname = item[0]
         var = item[1]
@@ -136,7 +136,7 @@ def extract_data(file_list, region='world-dateline', convert=False):
 	     indata = nio.InputData(fname, var, region=region, convert=convert)
        
         data = indata.data
-	metadata = [indata.fname, indata.global_atts['history']]
+	metadata_dict[indata.fname] = indata.global_atts['history']
        
         #Data must be two dimensional 
         if (re.match('^t', data.getOrder())):
@@ -148,9 +148,8 @@ def extract_data(file_list, region='world-dateline', convert=False):
 	    print 'WARNING: There are duplicate longitude values (which is useful for sterographic plots but sometimes problematic otherwise)'  
 	
         data_list.append(data)
-	metadata_list.append(metadata)
 
-    return data_list, metadata_list  
+    return data_list, metadata_dict  
 
 
 def _generate_colourmap(colourmap, nsegs):
@@ -947,17 +946,12 @@ def _main(inargs):
 
     # Extract data #
 
-    infile_data, infile_metadata = extract_data(inargs.infiles, region=inargs.region, convert=inargs.convert)
-    contour_data, contour_metadata = extract_data(inargs.contour_file, region=inargs.region, convert=inargs.convert)
-    uwnd_data, uwnd_metadata = extract_data(inargs.uwnd_file, region=inargs.region, convert=inargs.convert)
-    vwnd_data, vwnd_metadata = extract_data(inargs.vwnd_file, region=inargs.region, convert=inargs.convert)
-    stipple_data, stipple_metadata = extract_data(inargs.stipple_file, region=inargs.region, convert=inargs.convert)
-    
-    metadata_list = []
-    for ifile_type in [infile_metadata, contour_metadata, uwnd_metadata, vwnd_metadata, stipple_metadata]:
-        if ifile_type:
-	    for ifile in ifile_type:
-	        metadata_list.append(ifile)
+    metadata_dict = {}
+    infile_data, metadata_dict = extract_data(inargs.infiles, metadata_dict, region=inargs.region, convert=inargs.convert)
+    contour_data, metadata_dict = extract_data(inargs.contour_file, metadata_dict, region=inargs.region, convert=inargs.convert)
+    uwnd_data, metadata_dict = extract_data(inargs.uwnd_file, metadata_dict, region=inargs.region, convert=inargs.convert)
+    vwnd_data, metadata_dict = extract_data(inargs.vwnd_file, metadata_dict, region=inargs.region, convert=inargs.convert)
+    stipple_data, metadata_dict = extract_data(inargs.stipple_file, metadata_dict, region=inargs.region, convert=inargs.convert) 
       
     # Generate plot #
 
@@ -966,7 +960,7 @@ def _main(inargs):
               uwnd_data=uwnd_data,
               vwnd_data=vwnd_data,
               stipple_data=stipple_data,
-	      file_info=metadata_list, 
+	      file_info=metadata_dict, 
               **nio.dict_filter(vars(inargs), nio.list_kwargs(multiplot)))
 
 

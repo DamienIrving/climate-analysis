@@ -74,7 +74,7 @@ def extract_data(infile, variable_list, p=False):
     
     metadata = temp_data.global_atts['history']
 
-    return data_list, sample_list, [infile, metadata]
+    return data_list, sample_list, metadata
     
 
 def main(inargs):
@@ -89,11 +89,11 @@ def main(inargs):
     stipple_list, sample_list, temp = extract_data(inargs.infile, inargs.variables)
     stipple_list = stipple_list if inargs.stippling else None
 
-    output_metadata = [indata_metadata]
+    output_metadata = {inargs.infile: indata_metadata}
 
     if inargs.contour_file:
         contour_list, temp, contour_metadata = extract_data(inargs.contour_file, inargs.contour_vars)
-        output_metadata.append(contour_metadata)
+        output_metadata[inargs.contour_file] = contour_metadata
     else:
         contour_list = None
 	

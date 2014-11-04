@@ -388,25 +388,25 @@ def main(inargs):
         print line
 
     # Metadata
-    metadata_list = [(inargs.infile, metadata),]
+    metadata_dict = {inargs.infile: metadata}
 
     # Create optional outputs
     if inargs.date_list:   
         gio.write_dates(inargs.date_list, data.index.tolist())
-        gio.write_metadata(inargs.date_list, file_info=metadata_list)
+        gio.write_metadata(inargs.date_list, file_info=metadata_dict)
 
     if inargs.duration_histogram:
-        plot_duration_histogram(data['duration'], inargs.duration_histogram, metadata_list)
+        plot_duration_histogram(data['duration'], inargs.duration_histogram, metadata_dict)
 
     if inargs.monthly_totals_histogram:
         start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
         plot_monthly_totals(data, inargs.monthly_totals_histogram,
-                            start_year, start_month, end_year, end_month, month_years, metadata_list)
+                            start_year, start_month, end_year, end_month, month_years, metadata_dict)
     
     if inargs.seasonal_values_line:
         start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
         plot_seasonal_values(data, inargs.seasonal_values_line, 
-                             start_year, start_month, end_year, end_month, month_years, metadata_list,
+                             start_year, start_month, end_year, end_month, month_years, metadata_dict,
                              leg_loc=inargs.leg_loc, annual=inargs.annual)
 
 
