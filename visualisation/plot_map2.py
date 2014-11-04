@@ -435,7 +435,7 @@ example:
                         help="minimum spacing between subplots [default=0.05]")
     parser.add_argument("--projection", type=str, default='PlateCarree', choices=projections.keys(),
                         help="map projection [default: PlateCarree]")
-    parser.add_argument("--flow_type", type=str, default='quiver', choices=('quiver', 'streamlines'),
+    parser.add_argument("--flow_type", type=str, default='quivers', choices=('quivers', 'streamlines'),
                         help="what to do with the uwind and vwind data [default=quiver]")
     parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
                         help="""draw a box - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
