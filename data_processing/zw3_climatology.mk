@@ -12,8 +12,6 @@
 ## Define marcos ##
 include zw3_climatology_config.mk
 
-## Phony target ##
-all : ${TARGET}
 
 ### Calculate the wave envelope ###
 
@@ -75,3 +73,7 @@ ${ZW3_INDEX} : ${ZG_ZONAL_ANOM_RUNMEAN}
 TABLE=${ZW3_DIR}/table_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv 
 ${TABLE} : ${WAVE_STATS} ${ZW3_INDEX} ${FOURIER_INFO}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_zw3_table.py $(word 1,$^) $(word 2,$^) $(word 3,$^) $@
+
+
+## Phony target ##
+all : ${TABLE}

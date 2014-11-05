@@ -65,7 +65,3 @@ COMP_THRESH=90pct
 # Index comparison
 ENSO_METRIC=nino34_anom
 SAM_METRIC=SAM
-
-
-## Target
-TARGET=${INDEX_DIR}/${METRIC}-vs-${ENSO_METRIC}-vs-${SAM_METRIC}_zw3_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png

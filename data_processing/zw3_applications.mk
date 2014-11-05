@@ -7,8 +7,6 @@
 include zw3_climatology_config.mk
 include zw3_climatology.mk
 
-## Phony target
-all : ${TARGET}
 
 ### Plot the envelope ###
 
@@ -165,6 +163,12 @@ ${COMP_METRIC_90PCTABS_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${WAVE_STATS}
 COMP_METRIC_90PCTABS_PLOT=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}90pctabs-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
 ${COMP_METRIC_90PCTABS_PLOT} : ${COMP_METRIC_90PCTABS_FILE}
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $< ${METRIC}_annual ${METRIC}_DJF ${METRIC}_MAM ${METRIC}_JJA ${METRIC}_SON --headings annual DJF MAM JJA SON --extend both --units ms-1 --projection spstere --palette jet --ofile $@
+
+
+## Phony target
+all : ${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP}
+
+
 
 #
 ## Optional extras ##
