@@ -42,7 +42,8 @@ def adjust_lon_range(lons, radians=True, start=0.0):
     return lons
 
 
-def get_significance(data_included, data_excluded, p_var,
+def get_significance(data_included, data_excluded, 
+                     p_var, p_standard_name,
                      size_included, size_excluded):
     """Perform significance test.
 
@@ -87,7 +88,7 @@ def get_significance(data_included, data_excluded, p_var,
     print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident) and assumed equal variances'
 
     pval_atts = {'id': p_var,
-                 'standard_name': 'p_value',
+                 'standard_name': p_standard_name,
                  'long_name': 'Two-tailed p-value',
                  'units': ' ',
                  'history': """Standard independent two sample t-test comparing the included data sample (size=%s) to a sample containing the remaining data (size=%s)""" %(str(size_included), str(size_excluded)),

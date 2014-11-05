@@ -88,8 +88,8 @@ def get_composite(data, var, long_name, standard_name, units, season):
     composite_mean = numpy.mean(data, axis=0)
 
     composite_atts = {'id': var+'_'+season,
-                      'standard_name': standard_name,
-                      'long_name': long_name,
+                      'standard_name': standard_name+'_'+season,
+                      'long_name': long_name+' for '+season,
                       'units': units,
                       'history': 'Composite mean for %s season' %(season)}
 
@@ -134,7 +134,9 @@ def main(inargs):
 	# Perform significance test # 
 
 	if data_excluded.any():
-            pval, pval_atts = uconv.get_significance(data_included, data_excluded, 'p_'+season, size_included, size_excluded)
+            pval, pval_atts = uconv.get_significance(data_included, data_excluded, 
+	                                             'p_'+season, 'p_value_'+season, 
+						     size_included, size_excluded)
             outdata_list.append(pval)
             outvar_atts_list.append(pval_atts)
             outvar_axes_list.append(indata.data.getAxisList()[1:])	
