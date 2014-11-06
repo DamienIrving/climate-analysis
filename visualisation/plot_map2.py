@@ -178,7 +178,10 @@ def multiplot(cube_dict, nrows, ncols,
               colour_type='smooth',
               colourbar_type='horizontal', colourbar_span=0.6,
               units=None,
-              palette='jet', extend='neither', ticks=None,
+              palette='jet', extend='neither', colourbar_ticks=None,
+              #contours
+              contour_levels=None,
+              contour_labels=False,
               #output
               ofile='test.png'):
     """Create the plot."""
@@ -218,7 +221,7 @@ def multiplot(cube_dict, nrows, ncols,
         try:
             colour_cube = cube_dict[('colour', plotnum)]    
             cf = plot_colour(colour_cube, colour_type, colourbar_type, 
-                             palette, extend, ticks)
+                             palette, extend, colourbar_ticks)
             colour_plot_switch = True
         except KeyError:
             pass
@@ -238,7 +241,7 @@ def multiplot(cube_dict, nrows, ncols,
         # Add contour lines
         try:
             contour_cube = cube_dict[('contour', plotnum)]
-            plot_contour(contour_cube)
+            plot_contour(contour_cube, contour_levels, contour_labels)
         except KeyError:
             pass
 
@@ -328,12 +331,14 @@ def plot_colour(cube,
     return cf
 
 
-def plot_contour(cube):
+def plot_contour(cube, levels, labels_switch):
     """Plot the contours"""
 
-    qplt.contour(cube, colors='0.3', linewidths=2)
+    contour_plot = iplt.contour(cube, colors='k', linewidths=1.5, levels=levels)
+    if labels_switch:
+        plt.clabel(contour_plot, fmt='%.1f')
 
-
+    
 def plot_flow(x, y, u, v, ax, flow_type, input_projection):
     """Plot quivers or streamlines"""
 
@@ -429,9 +434,12 @@ def main(inargs):
               colourbar_type=inargs.colourbar_type,
               colour_type=inargs.colour_type,
               colourbar_span=inargs.colourbar_span,
+              colourbar_ticks=inargs.colourbar_ticks,
               units=inargs.units,
               palette=inargs.palette, extend=inargs.extend,
-              ticks=inargs.ticks,
+              #contours
+              contour_levels=inargs.contour_levels,
+              contour_labels=inargs.contour_labels,
               #output
               ofile=inargs.ofile)
     
@@ -442,7 +450,16 @@ if __name__ == '__main__':
 
     extra_info = """
 example:
-  
+  /usr/local/anaconda/bin/python plot_map2.py 
+  /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw3/figures/composites/tas-composite_zw3_ampmedian90pct-w19_env-va_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native.nc 
+  tas_DJF none none none colour 1 1 1 
+  --palette RdBu_r 
+  --colourbar_ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0 
+  --output_projection SouthPolarStereo 
+  --subplot_headings DJF 
+  --infiles /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw3/figures/composites/zg-composite_zw3_ampmedian90pct-w19_env-va_ERAInterim_500hPa_030day-runmean_native-zonal-anom.nc 
+  zg_DJF none none none contour 1 
+  --contour_levels -150 -120 -90 -60 -30 0 30 60 90 120 150
 
 """
 
@@ -503,12 +520,19 @@ example:
     parser.add_argument("--palette", type=str, default='jet',
                         choices=('jet', 'jet_r', 'hot', 'hot_r', 'Blues', 'RdBu', 'RdBu_r', 'Oranges'),
                         help="Colourbar colours [defualt: jet]")
-    parser.add_argument("--ticks", type=float, nargs='*', default=None,
-                        help="list of tick marks to appear on the colour bar [default = auto]")
+    parser.add_argument("--colourbar_ticks", type=float, nargs='*', default=None,
+                        help="list of tick marks to appear on the colourbar [default = auto]")
     parser.add_argument("--extend", type=str, choices=('both', 'neither', 'min', 'max'), default='neither',
                         help="selector for arrow points at either end of colourbar [default: neither]")
     parser.add_argument("--units", type=str, default=None, 
                         help="Units (recognised units: ms-1)")
+
+    # Contour lines
+
+    parser.add_argument("--contour_levels", type=float, nargs='*', default=None,
+                        help="list of contour levels to plot [default = auto]")
+    parser.add_argument("--contour_labels", action="store_true", default=False,
+                        help="switch for having contour labels [default: False]")
 
     # Output options
 
