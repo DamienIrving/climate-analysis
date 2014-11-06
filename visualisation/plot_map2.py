@@ -45,11 +45,6 @@ except ImportError:
 
 # Define functions
 
-standard_names = {'sf' : 'streamfunction',
-                  'zg' : 'geopotential_height',
-                  'ua' : 'eastward_wind',
-                  'va' : 'northward_wind',
-                  'tas' : 'surface_air_temperature'}
 
 plot_types = ['colour', 'contour', 'uwind', 'vwind', 'stipple']
 
@@ -100,22 +95,42 @@ def extract_data(infile_list, input_projection, output_projection):
     for infile, var, start_date, end_date, timestep, plot_type, plot_number in infile_list:
         assert plot_type in plot_types
         time_constraint = get_time_constraint(start_date, end_date)
-	with iris.FUTURE.context(cell_datetime_objects=True):  
-            new_cube = iris.load_cube(infile, standard_names[var] & time_constraint & lat_constraint)
+        standard_name = get_standard_name(var)
+	with iris.FUTURE.context(cell_datetime_objects=True):
+            new_cube = iris.load_cube(infile, standard_name & time_constraint & lat_constraint)
         
         check_projection(new_cube, input_projection)
-        ntimes = len(new_cube.coords('time')[0].points)
-        if ntimes > 1:
-            try:
-                timestep = int(timestep)
-            except ValueError:
-                timestep = None
-            new_cube = collapse_time(new_cube, ntimes, timestep)
+        coord_names = [coord.name() for coord in new_cube.coords()]
+        if 'time' in coord_names:
+            ntimes = len(new_cube.coords('time')[0].points)
+            if ntimes > 1:
+        	try:
+                    timestep = int(timestep)
+        	except ValueError:
+                    timestep = None
+        	new_cube = collapse_time(new_cube, ntimes, timestep)
 
         cube_dict[(plot_type, int(plot_number))] = new_cube
         metadata_dict[infile] = new_cube.attributes['history']
 
     return cube_dict, metadata_dict
+
+
+def get_standard_name(var):
+    """For a given var, get the corresponding standard name"""
+
+    standard_names = {'sf' : 'streamfunction',
+                      'zg' : 'geopotential_height',
+                      'ua' : 'eastward_wind',
+                      'va' : 'northward_wind',
+                      'tas' : 'surface_air_temperature'}
+
+    key_matches = [key for key in standard_names.keys() if key in var]  
+    assert len(key_matches) == 1
+
+    standard_name = re.sub(key_matches[0], standard_names[key_matches[0]], var)
+
+    return standard_name
 
 
 def get_time_constraint(start, end):
@@ -156,6 +171,7 @@ def multiplot(cube_dict, nrows, ncols,
               output_projection='PlateCarree_Dateline',
               flow_type='quiver',
               box_list=None,
+              grid_labels=False,
               #headings
               title=None, subplot_headings=None,
               #colourbar
@@ -194,6 +210,7 @@ def multiplot(cube_dict, nrows, ncols,
         # Set limits
         if output_projection == 'SouthPolarStereo':
             ax.set_extent((0, 360, -90.0, -30.0), crs=projections[input_projection])
+            grid_labels=False  #iris does not support this yet
         else:
             plt.gca().set_global()
 
@@ -231,7 +248,7 @@ def multiplot(cube_dict, nrows, ncols,
 
         # Add plot features
         plt.gca().coastlines()
-        plt.gca().gridlines()#draw_labels=True)
+        plt.gca().gridlines(draw_labels=grid_labels)
         if not colourbar_type == 'individual' and colour_plot_switch:
             plot_units = units if units else colour_cube.units.symbol
             set_colourbar(colourbar_type, colourbar_span, cf, fig, plot_units)       
@@ -404,6 +421,7 @@ def main(inargs):
               subplot_spacing=inargs.subplot_spacing,
               flow_type=inargs.flow_type,
               box_list=inargs.boxes,
+              grid_labels=inargs.grid_labels,
               #headings
               title=inargs.title,
               subplot_headings=inargs.subplot_headings,
@@ -464,6 +482,8 @@ example:
                         help="what to do with the uwind and vwind data [default=quiver]")
     parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
                         help="""draw a box - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
+    parser.add_argument("--grid_labels", action="store_true", default=False,
+                        help="switch for having gird labels [default: False]")
 
     # Headings
 

@@ -89,9 +89,9 @@ def get_significance(data_included, data_excluded,
 
     pval_atts = {'id': p_var,
                  'standard_name': p_standard_name,
-                 'long_name': 'Two-tailed p-value',
+                 'long_name': p_standard_name,
                  'units': ' ',
-                 'history': """Standard independent two sample t-test comparing the included data sample (size=%s) to a sample containing the remaining data (size=%s)""" %(str(size_included), str(size_excluded)),
+                 'history': """Two-tailed p-value from standard independent two sample t-test comparing the included data sample (size=%s) to a sample containing the remaining data (size=%s)""" %(str(size_included), str(size_excluded)),
                  'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=False)'}
 
     if type(size_included) == str:
