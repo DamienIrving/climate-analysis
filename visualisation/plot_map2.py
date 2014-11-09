@@ -92,6 +92,7 @@ def extract_data(infile_list, input_projection, output_projection):
 
     cube_dict = {} 
     metadata_dict = {}
+    plot_numbers = []
     for infile, var, start_date, end_date, timestep, plot_type, plot_number in infile_list:
         assert plot_type in plot_types
         time_constraint = get_time_constraint(start_date, end_date)
@@ -112,8 +113,9 @@ def extract_data(infile_list, input_projection, output_projection):
 
         cube_dict[(plot_type, int(plot_number))] = new_cube
         metadata_dict[infile] = new_cube.attributes['history']
+        plot_numbers.append(int(plot_number))
 
-    return cube_dict, metadata_dict
+    return cube_dict, metadata_dict, set(plot_numbers)
 
 
 def get_standard_name(var):
@@ -125,7 +127,7 @@ def get_standard_name(var):
                       'va' : 'northward_wind',
                       'tas' : 'surface_air_temperature'}
 
-    key_matches = [key for key in standard_names.keys() if key in var]  
+    key_matches = [key for key in standard_names.keys() if key in var.split('_')[0]]  
     assert len(key_matches) == 1
 
     standard_name = re.sub(key_matches[0], standard_names[key_matches[0]], var)
@@ -172,6 +174,7 @@ def multiplot(cube_dict, nrows, ncols,
               flow_type='quiver',
               box_list=None,
               grid_labels=False,
+              blank_plots=[],
               #headings
               title=None, subplot_headings=None,
               #colourbar
@@ -200,61 +203,63 @@ def multiplot(cube_dict, nrows, ncols,
     colour_plot_switch = False
     for plotnum in range(1, nrows*ncols + 1):
 
-        ax = plt.subplot(nrows, ncols, plotnum, projection=projections[output_projection])
-        plt.sca(ax)
+        if not plotnum in blank_plots:
 
-        # Mini header
-        try:
-            if not subplot_headings[plotnum - 1].lower() == 'none':
-                plt.title(subplot_headings[plotnum - 1].replace("_", " "))
-        except (TypeError, IndexError):
-            pass
+            ax = plt.subplot(nrows, ncols, plotnum, projection=projections[output_projection])
+            plt.sca(ax)
 
-        # Set limits
-        if output_projection == 'SouthPolarStereo':
-            ax.set_extent((0, 360, -90.0, -30.0), crs=projections[input_projection])
-            grid_labels=False  #iris does not support this yet
-        else:
-            plt.gca().set_global()
+            # Mini header
+            try:
+        	if not subplot_headings[plotnum - 1].lower() == 'none':
+                    plt.title(subplot_headings[plotnum - 1].replace("_", " "))
+            except (TypeError, IndexError):
+        	pass
 
-        # Add colour plot
-        try:
-            colour_cube = cube_dict[('colour', plotnum)]    
-            cf = plot_colour(colour_cube, colour_type, colourbar_type, 
-                             palette, extend, colourbar_ticks)
-            colour_plot_switch = True
-        except KeyError:
-            pass
+            # Set limits
+            if output_projection == 'SouthPolarStereo':
+        	ax.set_extent((0, 360, -90.0, -30.0), crs=projections[input_projection])
+        	grid_labels=False  #iris does not support this yet
+            else:
+        	plt.gca().set_global()
 
-        # Add streamline or quiverplot
-        try:
-            u_cube = cube_dict[('uwind', plotnum)]
-            v_cube = cube_dict[('vwind', plotnum)]
-            x = u_cube.coords('longitude')[0].points
-            y = u_cube.coords('latitude')[0].points
-            u = u_cube.data
-            v = v_cube.data
-            plot_flow(x, y, u, v, ax, flow_type, input_projection)
-        except KeyError:
-            pass
+            # Add colour plot
+            try:
+        	colour_cube = cube_dict[('colour', plotnum)]    
+        	cf = plot_colour(colour_cube, colour_type, colourbar_type, 
+                        	 palette, extend, colourbar_ticks)
+        	colour_plot_switch = True
+            except KeyError:
+        	pass
 
-        # Add contour lines
-        try:
-            contour_cube = cube_dict[('contour', plotnum)]
-            plot_contour(contour_cube, contour_levels, contour_labels)
-        except KeyError:
-            pass
+            # Add streamline or quiverplot
+            try:
+        	u_cube = cube_dict[('uwind', plotnum)]
+        	v_cube = cube_dict[('vwind', plotnum)]
+        	x = u_cube.coords('longitude')[0].points
+        	y = u_cube.coords('latitude')[0].points
+        	u = u_cube.data
+        	v = v_cube.data
+        	plot_flow(x, y, u, v, ax, flow_type, input_projection)
+            except KeyError:
+        	pass
 
-        # Add boxes
-        if box_list:
-            plot_boxes(box_list, input_projection)
+            # Add contour lines
+            try:
+        	contour_cube = cube_dict[('contour', plotnum)]
+        	plot_contour(contour_cube, contour_levels, contour_labels)
+            except KeyError:
+        	pass
 
-        # Add plot features
-        plt.gca().coastlines()
-        plt.gca().gridlines(draw_labels=grid_labels)
-        if not colourbar_type == 'individual' and colour_plot_switch:
-            plot_units = units if units else colour_cube.units.symbol
-            set_colourbar(colourbar_type, colourbar_span, cf, fig, plot_units)       
+            # Add boxes
+            if box_list:
+        	plot_boxes(box_list, input_projection)
+
+            # Add plot features
+            plt.gca().coastlines()
+            plt.gca().gridlines(draw_labels=grid_labels)
+            if not colourbar_type == 'individual' and colour_plot_switch:
+        	plot_units = units if units else colour_cube.units.symbol
+        	set_colourbar(colourbar_type, colourbar_span, cf, fig, plot_units)       
 
     plt.savefig(ofile)
 
@@ -409,13 +414,25 @@ def set_spacing(colourbar_type, subplot_spacing):
                               left=left, right=right)
         
 
+def get_blanks(nrows, ncols, plot_set):
+    """Return a list of plot locations that should remain blank"""
+
+    assert type(plot_set) == set
+
+    nplots = nrows * ncols
+    plot_numbers = range(1, nplots + 1)
+
+    return list(set(plot_numbers) - plot_set)
+
+
 def main(inargs):
     """Run program."""
 
     # Extract data #
     
-    cube_dict, metadata_dict = extract_data(inargs.infiles, inargs.input_projection, inargs.output_projection)
-    
+    cube_dict, metadata_dict, plot_set = extract_data(inargs.infiles, inargs.input_projection, inargs.output_projection)
+    blanks = get_blanks(inargs.nrows, inargs.ncols, plot_set)    
+
     # Creat the plot
 
     multiplot(cube_dict, inargs.nrows, inargs.ncols,
@@ -427,6 +444,7 @@ def main(inargs):
               flow_type=inargs.flow_type,
               box_list=inargs.boxes,
               grid_labels=inargs.grid_labels,
+              blank_plots=blanks,
               #headings
               title=inargs.title,
               subplot_headings=inargs.subplot_headings,
