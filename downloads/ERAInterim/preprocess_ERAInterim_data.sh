@@ -44,6 +44,7 @@ if [[ "${outvar}" = "zg" ]] ; then
 elif [[ "${outvar}" = "tas" ]] ; then
     ncatted -O -a standard_name,${outvar},o,c,"surface_air_temperature" ${outfile}
     ncatted -O -a long_name,${outvar},o,c,"surface_air_temperature" ${outfile}
+    ncatted -O -a level,${outvar},o,c,"2m" ${outfile}
 elif [[ "${outvar}" = "va" ]] ; then
     ncatted -O -a standard_name,${outvar},o,c,"northward_wind" ${outfile}
     ncatted -O -a long_name,${outvar},o,c,"northward_wind" ${outfile}
