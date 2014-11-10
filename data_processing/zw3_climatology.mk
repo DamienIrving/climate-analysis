@@ -13,6 +13,8 @@
 include zw3_climatology_config.mk
 
 
+all : ${TARGET}
+
 ### Calculate the wave envelope ###
 
 ## Step 1: Apply temporal averaging to the meridional wind data ##
@@ -74,6 +76,3 @@ TABLE=${ZW3_DIR}/table_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_$
 ${TABLE} : ${WAVE_STATS} ${ZW3_INDEX} ${FOURIER_INFO}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_zw3_table.py $(word 1,$^) $(word 2,$^) $(word 3,$^) $@
 
-
-## Phony target ##
-all : ${TABLE}

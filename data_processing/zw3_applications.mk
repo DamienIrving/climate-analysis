@@ -8,6 +8,8 @@ include zw3_climatology_config.mk
 include zw3_climatology.mk
 
 
+all : ${TARGET}
+
 ### Plot the envelope ###
 
 ## Step 1: Calculate the contour zonal anomaly ##
@@ -47,6 +49,7 @@ ${HILBERT_PLOT}: ${V_RUNMEAN}
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< ${VAR} ${TSTEP} $@ --timescale ${TSCALE_LABEL} --time ${PLOT_START} ${PLOT_END} none --latitude ${LAT_RANGE} --stride ${STRIDE}
 
 
+
 ### Index comparisons ###
 
 ## Plot 1: My metric versus wave 3 ##
@@ -70,6 +73,7 @@ ${ENSO_VS_SAM_PLOT} : ${ENSO_DATA} ${SAM_DATA} ${WAVE_STATS}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${ENSO_METRIC} $(word 2,$^) ${SAM_METRIC} $@ --colour $(word 3,$^) ${METRIC} --trend_line --zero_lines
 
 
+
 ### Climatological stats ###
 
 ## Plot 1: Monthly totals histogram ##
@@ -83,6 +87,7 @@ ${MONTHLY_TOTALS_PLOT} : ${WAVE_STATS}
 SEASONAL_VALUES_PLOT=${INDEX_DIR}/clim/seasvals_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png 
 ${SEASONAL_VALUES_PLOT}: ${WAVE_STATS} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --seasonal_values_line $@ --metric_filter ${METRIC_THRESH}
+
 
 
 ### Calculate composite envelope (with zg overlay) ###
@@ -112,6 +117,7 @@ ${COMP_ENV_PLOT} : ${COMP_ENV_FILE} ${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP}
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $(word 1,$^)  ${VAR}_annual ${VAR}_DJF ${VAR}_MAM ${VAR}_JJA ${VAR}_SON --headings annual DJF MAM JJA SON --ticks 0 1 2 3 4 5 6 7 8 9 10 --units ms-1 --projection spstere --palette hot_r --contour_file $(word 2,$^) --contour_vars ${CONTOUR_VAR}_annual ${CONTOUR_VAR}_DJF ${CONTOUR_VAR}_MAM ${CONTOUR_VAR}_JJA ${CONTOUR_VAR}_SON  --ofile $@
 
 
+
 ### Calculate composite for variable of interest (e.g. tas, pr, sic) two ways ###
 
 ## Step 1: Generate list of dates for use in composite creation (done above) ##
@@ -130,9 +136,9 @@ COMP_VAR_FILE=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${
 ${COMP_VAR_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${DATE_LIST} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) 
 
-COMP_VAR_PLOT=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
+COMP_VAR_PLOT=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
 ${COMP_VAR_PLOT} : ${COMP_VAR_FILE} ${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP}
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $(word 1,$^) ${COMP_VAR}_annual ${COMP_VAR}_DJF ${COMP_VAR}_MAM ${COMP_VAR}_JJA ${COMP_VAR}_SON --headings annual DJF MAM JJA SON --ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0 --extend both --units temperature_anomaly --projection spstere --contour_file $(word 2,$^) --contour_vars ${CONTOUR_VAR}_annual ${CONTOUR_VAR}_DJF ${CONTOUR_VAR}_MAM ${CONTOUR_VAR}_JJA ${CONTOUR_VAR}_SON --ofile $@
+	bash ${VIS_SCRIPT_DIR}/plot_composite.sh $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${CONTOUR_VAR} $@
 
 ## Step 4a: Calculate & plot composite - method 2, > 90pct ##
 
@@ -163,11 +169,6 @@ ${COMP_METRIC_90PCTABS_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${WAVE_STATS}
 COMP_METRIC_90PCTABS_PLOT=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}90pctabs-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
 ${COMP_METRIC_90PCTABS_PLOT} : ${COMP_METRIC_90PCTABS_FILE}
 	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $< ${METRIC}_annual ${METRIC}_DJF ${METRIC}_MAM ${METRIC}_JJA ${METRIC}_SON --headings annual DJF MAM JJA SON --extend both --units ms-1 --projection spstere --palette jet --ofile $@
-
-
-## Phony target
-all : ${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP}
-
 
 
 #

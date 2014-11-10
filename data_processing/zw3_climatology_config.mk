@@ -65,3 +65,5 @@ COMP_THRESH=90pct
 # Index comparison
 ENSO_METRIC=nino34_anom
 SAM_METRIC=SAM
+
+TARGET=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
