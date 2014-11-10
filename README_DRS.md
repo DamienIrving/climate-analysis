@@ -8,13 +8,20 @@ they must have undergone pre-processing
 
 ## Standard variable abbreviations
 
-* `zg`: Geopotential height
+This list gives the stardard variable id, followed by the `standard_name` / `long_name` (these both need to be the same and have underscores instead of spaces
+to keep iris/cartopy happy.
+
+* `zg`, `geopotential_height`: Geopotential height
+* `tas`, `surface_air_temperature`: Surface air temperature
 * `psl`: Sea level pressure
 * `sf`: Streamfunction
-* `ua`: Eastward wind velocity
-* `va`: Northward wind velocity
+* `ua`, `eastward_wind`: Eastward wind velocity
+* `va`, `northward_wind`: Northward wind velocity
 * `vrot`: Northward wind velocity on a rotated sphere (i.e. the north pole has been shifted and the meridional wind re-calculated accordingly) 
+* `envva`, `hilbert_transformed_northward_wind`: Wave envelope calculated via a Hilbert Transform
 
+In order to be compliant with my iris/cartopy plotting routines, all variables should start with these standard names (and have the corresponding unaltered `standard_name` 
+and `long_name`) then things can be appended to the id using underscores (e.g. `tas_DJF`). 
 
 ## File name syntax
 
