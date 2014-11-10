@@ -125,9 +125,10 @@ def get_standard_name(var):
                       'zg' : 'geopotential_height',
                       'ua' : 'eastward_wind',
                       'va' : 'northward_wind',
+                      'envva' : 'hilbert_transformed_northward_wind',
                       'tas' : 'surface_air_temperature'}
 
-    key_matches = [key for key in standard_names.keys() if key in var.split('_')[0]]  
+    key_matches = [key for key in standard_names.keys() if re.search('^%s' %(key), var)]  
     assert len(key_matches) == 1
 
     standard_name = re.sub(key_matches[0], standard_names[key_matches[0]], var)

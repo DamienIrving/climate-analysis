@@ -37,9 +37,19 @@ ncrename -O -v ${invar},${outvar} ${outfile}
 ncatted -O -a axis,time,c,c,T ${outfile}
 
 if [[ "${outvar}" = "zg" ]] ; then
-    ncatted -O -a units,${outvar},m,c,"m" ${outfile}
-    ncatted -O -a standard_name,${outvar},m,c,"geopotential_height" ${outfile}
-    ncatted -O -a long_name,${outvar},m,c,"geopotential height at 500hPa" ${outfile}
+    ncatted -O -a units,${outvar},o,c,"m" ${outfile}
+    ncatted -O -a standard_name,${outvar},o,c,"geopotential_height" ${outfile}
+    ncatted -O -a long_name,${outvar},o,c,"geopotential_height" ${outfile}
+    ncatted -O -a level,${outvar},o,c,"500hPa" ${outfile}
 elif [[ "${outvar}" = "tas" ]] ; then
-    ncatted -O -a standard_name,${outvar},c,c,"surface_air_temperature" ${outfile}
+    ncatted -O -a standard_name,${outvar},o,c,"surface_air_temperature" ${outfile}
+    ncatted -O -a long_name,${outvar},o,c,"surface_air_temperature" ${outfile}
+elif [[ "${outvar}" = "va" ]] ; then
+    ncatted -O -a standard_name,${outvar},o,c,"northward_wind" ${outfile}
+    ncatted -O -a long_name,${outvar},o,c,"northward_wind" ${outfile}
+    ncatted -O -a level,${outvar},o,c,"500hPa" ${outfile}
+elif [[ "${outvar}" = "va" ]] ; then
+    ncatted -O -a standard_name,${outvar},o,c,"eastward_wind" ${outfile}
+    ncatted -O -a long_name,${outvar},o,c,"eastward_wind" ${outfile}
+    ncatted -O -a level,${outvar},o,c,"500hPa" ${outfile}
 fi

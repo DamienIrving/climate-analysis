@@ -26,6 +26,10 @@ if [ $var == 'tas' ] ; then
     ticks="-3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0" 
     extend=max
     palette=RdBu_r
+elif [ $var == 'va' ] ; then  # envelope
+    ticks="0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0" 
+    extend=max
+    palette=hot_r
 else
     echo "Unknown variable: $var"
     exit 1

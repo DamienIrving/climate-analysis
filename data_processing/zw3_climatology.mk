@@ -27,13 +27,13 @@ ${V_RUNMEAN} : ${V_ORIG}
 
 ## Step 2: Extract the wave envelope (for the entire globe) ##
 
-ENV_3D=${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+ENV_3D=${ZW3_DIR}/env${VAR}_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 ${ENV_3D} : ${V_RUNMEAN}
 	${FOURIER_METHOD} $< ${VAR} $@ ${ENV_SEARCH}
 
 ## Step 3: Collapse the meridional dimension ##
 
-ENV_2D=${ZW3_DIR}/env_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
+ENV_2D=${ZW3_DIR}/env${VAR}_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
 ${ENV_2D} : ${ENV_3D}
 	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
 	ncatted -O -a axis,time,c,c,T $@
@@ -45,7 +45,7 @@ ${ENV_2D} : ${ENV_3D}
 
 WAVE_STATS=${ZW3_DIR}/wavestats_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc 
 ${WAVE_STATS} : ${ENV_2D}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< ${VAR} $@ --threshold ${EXTENT_THRESH}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< env${VAR} $@ --threshold ${EXTENT_THRESH}
 
 ## Step 2: Calculate the phase and amplitude of each Fourier component ##
 

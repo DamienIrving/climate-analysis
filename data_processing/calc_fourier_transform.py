@@ -199,16 +199,16 @@ def get_coefficient_atts(orig_data, min_freq, max_freq):
     for freq in range(min_freq, max_freq + 1):
         filter_text = get_filter_text(method, freq, freq)
         mag_atts = {'id': 'wave'+str(freq)+'_amp',
-                    'standard_name': 'Amplitude of '+method+' '+orig_data.long_name,
-                    'long_name': 'Amplitude of '+method+' '+orig_data.long_name,
+                    'standard_name': 'amplitude_of_'+method+'_'+orig_data.long_name,
+                    'long_name': 'amplitude_of_'+method+'_'+orig_data.long_name,
                     'units': orig_data.units,
                     'history': filter_text}
         outvar_atts_list.append(mag_atts)
         outvar_axes_list.append(orig_data.getAxisList()[:-1])
         
         phase_atts = {'id': 'wave'+str(freq)+'_phase',
-                      'standard_name': 'First local maxima of '+method+' '+orig_data.long_name,
-                      'long_name': 'First local maxima of '+method+' '+orig_data.long_name,
+                      'standard_name': 'first_local_maxima_of_'+method+'_'+orig_data.long_name,
+                      'long_name': 'first_local_maxima_of_'+method+'_'+orig_data.long_name,
                       'units': orig_data.getLongitude().units,
                       'history': filter_text}
         outvar_atts_list.append(phase_atts)    
@@ -241,11 +241,11 @@ def hilbert_transform(data, lon_axis, min_freq, max_freq, out_type=None):
 def get_hilbert_atts(orig_data, min_freq, max_freq):
     """Get the attributes for the output Hilbert transform file"""
    
-    method = 'Hilbert transformed'
+    method = 'hilbert transformed'
     filter_text = get_filter_text(method, min_freq, max_freq)
-    var_atts = {'id': orig_data.id,
-                'standard_name': method+' '+orig_data.long_name,
-                'long_name': method+' '+orig_data.long_name,
+    var_atts = {'id': 'env'+orig_data.id,
+                'standard_name': method+'_'+orig_data.long_name,
+                'long_name': method+'_'+orig_data.long_name,
                 'units': orig_data.units,
                 'history': filter_text}
 
