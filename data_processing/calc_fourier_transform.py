@@ -241,7 +241,7 @@ def hilbert_transform(data, lon_axis, min_freq, max_freq, out_type=None):
 def get_hilbert_atts(orig_data, min_freq, max_freq):
     """Get the attributes for the output Hilbert transform file"""
    
-    method = 'hilbert transformed'
+    method = 'hilbert_transformed'
     filter_text = get_filter_text(method, min_freq, max_freq)
     var_atts = {'id': 'env'+orig_data.id,
                 'standard_name': method+'_'+orig_data.long_name,
