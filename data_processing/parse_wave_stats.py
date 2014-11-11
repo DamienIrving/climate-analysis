@@ -323,7 +323,7 @@ def plot_monthly_totals(data, outfile, start_year, start_month, end_year, end_mo
 
 def plot_seasonal_values(data, outfile, 
                          start_year, start_month, end_year, end_month, month_years, metadata,
-                         leg_loc=7, annual=False):
+                         leg_loc=7, scale_annual=1.0):
     """Plot a line graph showing the seasonal values for each year"""
     
     for month, years in month_years.iteritems():
@@ -341,9 +341,12 @@ def plot_seasonal_values(data, outfile,
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
 
-    season_list = ['DJF', 'MAM', 'JJA', 'SON']
-    if annual:
-        season_list.append('annual')
+    if scale_annual == 0.0:
+        season_list = ['DJF', 'MAM', 'JJA', 'SON']
+    else:
+        season_list = ['DJF', 'MAM', 'JJA', 'SON', 'annual']
+        seasonal_values['annual'] = numpy.array(seasonal_values['annual']) * scale_annual
+
     for season in season_list:
         ax.plot(years[season], seasonal_values[season], color=colors[season], lw=2.0, label=season)       
 
@@ -407,7 +410,7 @@ def main(inargs):
         start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
         plot_seasonal_values(data, inargs.seasonal_values_line, 
                              start_year, start_month, end_year, end_month, month_years, metadata_dict,
-                             leg_loc=inargs.leg_loc, annual=inargs.annual)
+                             leg_loc=inargs.leg_loc, scale_annual=inargs.scale_annual)
 
 
 if __name__ == '__main__':
@@ -460,8 +463,8 @@ author:
     # Plot options
     parser.add_argument("--leg_loc", type=int, default=0,
                         help="Location of legend for line graph [default = 0 = top right] (7 = centre right)")
-    parser.add_argument("--annual", action="store_true", default=False,
-                        help="switch for including the annual season in the seasonal values plot [default: False]")
+    parser.add_argument("--scale_annual", type=float, default=1,
+                        help="scale factor (multply by) for the annual season in the seasonal values plot (can be zero for no plot) [default = 1]")
 
     args = parser.parse_args()            
     main(args)
