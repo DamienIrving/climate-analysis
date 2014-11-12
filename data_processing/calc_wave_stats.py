@@ -68,8 +68,9 @@ def extent_atts(orig_data, statistic, threshold, outvar_atts_list):
     assert statistic in ['extent', 'startlon', 'endlon']
 
     var_atts = {'id': statistic,
-                'standard_name': statistic+' of wave amplitude exceeding '+threshold,
-                'long_name': statistic+' of wave amplitude exceeding '+threshold,
+                'standard_name': statistic+'_of_wave_amplitude_exceeding_threshold',
+                'long_name': statistic+'_of_wave_amplitude_exceeding_threshold',
+                'threshold': threshold,
                 'units': orig_data.getLongitude().units,
                 'history': orig_data.history}
 
@@ -89,7 +90,7 @@ def amp_stats(data):
 def amp_atts(orig_data, stat, outvar_atts_list):
     """Get the attributes for the wave amplitude statistic"""
    
-    text = 'Zonal %s of the meridional maximum ' %(stat)
+    text = 'zonal_%s_of_the_meridional_maximum_' %(stat)
     var_atts = {'id': 'amp'+stat,
                 'standard_name': text+orig_data.long_name,
                 'long_name': text+orig_data.long_name,

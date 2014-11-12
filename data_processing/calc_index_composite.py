@@ -139,8 +139,8 @@ def main(inargs):
         composite_mean = metric_data_included.mean(axis=time_index)
 
         composite_atts = {'id': inargs.metric+'_'+season,
-                          'standard_name': metric_indata.data.standard_name,
-                          'long_name': metric_indata.data.long_name,
+                          'standard_name': metric_indata.data.standard_name+'_'+season,
+                          'long_name': metric_indata.data.long_name+'_'+season,
                           'units': metric_indata.data.units,
                           'history': 'Composite mean for %s season' %(season)}
 
@@ -150,7 +150,8 @@ def main(inargs):
 
 	# Perform significance test # 
 
-        pval, pval_atts, size_incl_atts, size_excl_atts = uconv.get_significance(metric_data_included, metric_data_excluded, 'p_'+season,
+        pval, pval_atts, size_incl_atts, size_excl_atts = uconv.get_significance(metric_data_included, metric_data_excluded,
+                                                                                 'p_'+season, 'p_value_'+season,
                                                                                  'size_incl_'+season, 'size_excl_'+season)
         for data, atts in [(pval, pval_atts), (size_included, size_incl_atts), (size_excluded, size_excl_atts)]:
             outdata_list.append(data)
