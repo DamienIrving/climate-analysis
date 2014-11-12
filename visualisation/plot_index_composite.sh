@@ -2,7 +2,7 @@ function usage {
     echo "USAGE: bash $0 infile var theshold outfile"
     echo "   varfile:    Input file name for colour plot"
     echo "   var:        Variable for colour plot"
-    echo "   threshold:  Threshold used for the index composite"
+    echo "   threshold:  Threshold used for the index composite [90pct, 10pct, 90pctabs]"
     echo "   outfile:    Output file name"
     echo "   e.g. bash $0 ampmedian_data.nc ampmedian 90pct plot.png"
     exit 1
@@ -22,6 +22,8 @@ outfile=$4
 
 if [[ $var == 'ampmedian' && $threshold == '90pct' ]] ; then
     palette=hot_r
+elif [[ $var == 'ampmedian' && $threshold == '90pctabs' ]] ; then
+    palette=jet
 elif [[ $var == 'ampmedian' && $threshold == '10pct' ]] ; then
     palette=Blues
 else

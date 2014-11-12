@@ -196,7 +196,7 @@ def multiplot(cube_dict, nrows, ncols,
         print 'figure width: %s' %(str(fig.get_figwidth()))
         print 'figure height: %s' %(str(fig.get_figheight()))
 
-    set_spacing(colourbar_type, subplot_spacing)
+    set_spacing(colourbar_type, colourbar_orientation, subplot_spacing)
 
     if title:
         fig.suptitle(inargs.title.replace('_',' '))
@@ -398,7 +398,7 @@ def set_individual_colourbar(orientation, cf, units):
         cbar.set_label(units.replace("_", " "))
 
 
-def set_spacing(colourbar_type, subplot_spacing):
+def set_spacing(colourbar_type, colourbar_orientation, subplot_spacing):
     """Set the subplot spacing depending on the requested colourbar.
     
     This function sets aside space at the right side or the bottom of 
@@ -411,15 +411,23 @@ def set_spacing(colourbar_type, subplot_spacing):
 
     """
 
-    assert colourbar_type in ['individual', 'horizontal', 'vertical']
+    assert colourbar_type in ['individual', 'global']
+    assert colourbar_orientation in ['horizontal', 'vertical']
 
     hspace = subplot_spacing  # height reserved for white space between subplots
     wspace = subplot_spacing  # width reserved for blank space between subplots
     top = 0.95                # top of the subplots of the figure
     left = 0.075              # left side of the subplots of the figure
 
-    bottom = 0.15 if colourbar_type == 'horizontal' else 0.05
-    right = 0.825 if colourbar_type == 'vertical' else 0.925 
+    if colourbar_type == 'global' and colourbar_orientation == 'horizontal':
+        bottom = 0.15
+    else:
+        bottom = 0.05
+
+    if colourbar_type == 'global' and colourbar_orientation == 'vertical':
+        right = 0.825
+    else:
+        right = 0.925 
 
     plt.gcf().subplots_adjust(hspace=hspace, wspace=wspace, 
                               top=top, bottom=bottom,
