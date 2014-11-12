@@ -148,7 +148,7 @@ ${COMP_METRIC_90PCT_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${WAVE_STATS}
 
 COMP_METRIC_90PCT_PLOT=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}90pct-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
 ${COMP_METRIC_90PCT_PLOT} : ${COMP_METRIC_90PCT_FILE}
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $< ${METRIC}_annual ${METRIC}_DJF ${METRIC}_MAM ${METRIC}_JJA ${METRIC}_SON --headings annual DJF MAM JJA SON --extend both --units ms-1 --projection spstere --palette hot_r --ofile $@
+	bash ${VIS_SCRIPT_DIR}/plot_index_composite.sh $< ${METRIC} 90pct $@
 
 ## Step 4b: Calculate & plot composite - method 2, < 10pct ##
 
@@ -158,7 +158,7 @@ ${COMP_METRIC_10PCT_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${WAVE_STATS}
 
 COMP_METRIC_10PCT_PLOT=${COMP_DIR}/${METRIC}-composite_zw3_${COMP_VAR}10pct-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
 ${COMP_METRIC_10PCT_PLOT} : ${COMP_METRIC_10PCT_FILE}
-	${CDAT} ${VIS_SCRIPT_DIR}/plot_composite.py $< ${METRIC}_annual ${METRIC}_DJF ${METRIC}_MAM ${METRIC}_JJA ${METRIC}_SON --headings annual DJF MAM JJA SON --extend both --units ms-1 --projection spstere --palette Blues --ofile $@
+	bash ${VIS_SCRIPT_DIR}/plot_index_composite.sh $< ${METRIC} 10pct $@
 
 ## Step 4c: Calculate & plot composite - method 2, > 90pct abs ##
 

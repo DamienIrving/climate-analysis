@@ -126,7 +126,8 @@ def get_standard_name(var):
                       'ua' : 'eastward_wind',
                       'va' : 'northward_wind',
                       'envva' : 'hilbert_transformed_northward_wind',
-                      'tas' : 'surface_air_temperature'}
+                      'tas' : 'surface_air_temperature',
+		      'ampmedian': 'zonal_median_of_the_meridional_maximum_hilbert_transformed_northward_wind'}
 
     key_matches = [key for key in standard_names.keys() if re.search('^%s' %(key), var)]  
     assert len(key_matches) == 1
@@ -180,8 +181,8 @@ def multiplot(cube_dict, nrows, ncols,
               title=None, subplot_headings=None,
               #colourbar
               colour_type='smooth',
-              colourbar_type='horizontal', colourbar_span=0.6,
-              units=None,
+              colourbar_type='global', colourbar_orientation='horizontal', global_colourbar_span=0.6,
+              global_units=None,
               palette='jet', extend='neither', colourbar_ticks=None,
               #contours
               contour_levels=None,
@@ -225,9 +226,12 @@ def multiplot(cube_dict, nrows, ncols,
 
             # Add colour plot
             try:
-        	colour_cube = cube_dict[('colour', plotnum)]    
+        	colour_cube = cube_dict[('colour', plotnum)]
         	cf = plot_colour(colour_cube, colour_type, colourbar_type, 
                         	 palette, extend, colourbar_ticks)
+                units = global_units if global_units else colour_cube.units.symbol
+                if colourbar_type == 'individual':
+                    set_individual_colourbar(colourbar_orientation, cf, units)
         	colour_plot_switch = True
             except KeyError:
         	pass
@@ -258,9 +262,8 @@ def multiplot(cube_dict, nrows, ncols,
             # Add plot features
             plt.gca().coastlines()
             plt.gca().gridlines(draw_labels=grid_labels)
-            if not colourbar_type == 'individual' and colour_plot_switch:
-        	plot_units = units if units else colour_cube.units.symbol
-        	set_colourbar(colourbar_type, colourbar_span, cf, fig, plot_units)       
+            if colourbar_type == 'global' and colour_plot_switch:
+        	set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units)       
 
     plt.savefig(ofile)
 
@@ -324,12 +327,9 @@ def plot_colour(cube,
             sys.exit(1)
 
     if colour_type == 'smooth':
-        if colourbar_type == 'individual':
-            cf = qplt.contourf(cube, cmap=cmap, colors=colors, levels=ticks, extend=extend)
-        else:
-            cf = iplt.contourf(cube, cmap=cmap, colors=colors, levels=ticks, extend=extend)
-            # colors is the option where you can give a list of hex strings
-            # I haven't been able to figure out how to get extent to work with that
+        cf = iplt.contourf(cube, cmap=cmap, colors=colors, levels=ticks, extend=extend)
+        # colors is the option where you can give a list of hex strings
+        # I haven't been able to figure out how to get extent to work with that
 
     elif colour_type == 'pixels':
         cf = qplt.pcolormesh(cube)
@@ -357,7 +357,7 @@ def plot_flow(x, y, u, v, ax, flow_type, input_projection):
         ax.quiver(x, y, u, v, transform=projections[input_projection], regrid_shape=40) 
 
 
-def set_colourbar(orientation, span, cf, fig, units):
+def set_global_colourbar(orientation, span, cf, fig, units):
     """Define the global colourbar"""
 
     assert orientation in ('horizontal', 'vertical')
@@ -385,6 +385,17 @@ def set_colourbar(orientation, span, cf, fig, units):
     else:
         cbar.set_label(units.replace("_", " "))
     #cbar.ax.tick_params(length=0)
+
+
+def set_individual_colourbar(orientation, cf, units):
+    """Define the colourbar for an individual plot"""
+
+    cbar = plt.colorbar(cf, orientation=orientation)
+
+    if units in units_dict.keys():
+        cbar.set_label(units_dict[units])
+    else:
+        cbar.set_label(units.replace("_", " "))
 
 
 def set_spacing(colourbar_type, subplot_spacing):
@@ -450,11 +461,12 @@ def main(inargs):
               title=inargs.title,
               subplot_headings=inargs.subplot_headings,
               #colourbar
+              colourbar_orientation=inargs.colourbar_orientation,
               colourbar_type=inargs.colourbar_type,
               colour_type=inargs.colour_type,
-              colourbar_span=inargs.colourbar_span,
+              global_colourbar_span=inargs.global_colourbar_span,
               colourbar_ticks=inargs.colourbar_ticks,
-              units=inargs.units,
+              global_units=inargs.units,
               palette=inargs.palette, extend=inargs.extend,
               #contours
               contour_levels=inargs.contour_levels,
@@ -532,10 +544,12 @@ example:
 
     parser.add_argument("--colour_type", type=str, default='smooth', choices=('smooth', 'pixels'),
                         help="how to present the colours [default=smooth]")
-    parser.add_argument("--colourbar_type", type=str, default='horizontal', choices=('individual', 'horizontal', 'vertical'),
-                        help="type of colourbar [default: horizontal]")
-    parser.add_argument("--colourbar_span", type=float, default=0.6,
-                        help="the span of the colour bar (expressed as a fraction) [default: 0.6]")
+    parser.add_argument("--colourbar_type", type=str, default='global', choices=('individual', 'global'),
+                        help="type of colourbar [default: global]")
+    parser.add_argument("--colourbar_orientation", type=str, default='horizontal', choices=('horizontal', 'vertical'),
+                        help="orientation of colourbar [default: horizontal]")
+    parser.add_argument("--global_colourbar_span", type=float, default=0.6,
+                        help="the span of the global colour bar (expressed as a fraction) [default: 0.6]")
     parser.add_argument("--palette", type=str, default='jet',
                         choices=('jet', 'jet_r', 'hot', 'hot_r', 'Blues', 'RdBu', 'RdBu_r', 'Oranges'),
                         help="Colourbar colours [defualt: jet]")
