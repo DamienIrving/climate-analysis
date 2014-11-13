@@ -199,7 +199,8 @@ def calc_zw3(index, ifile, var_id, base_period):
     	
     hx = 'Ref: ZW3 index of Raphael (2004)'
     var_atts = {'id': 'zw3',
-                'long_name': 'Zonal Wave 3 index Index',
+                'long_name': 'zonal_wave_3_index',
+                'standard_name': 'zonal_wave_3_index',
                 'units': '',
                 'history': hx}
 
@@ -238,7 +239,8 @@ def calc_sam(index, ifile, var_id, base_period):
     hx = 'Ref: Marshall (2003) and Gong & Wang (1999). Base period: %s to %s' %(base_period[0], 
                                                                                 base_period[1])
     var_atts = {'id': 'sam',
-                'long_name': 'Southern Annular Mode Index',
+                'long_name': 'Southern_Annular_Mode_Index',
+                'standard_name': 'Southern_Annular_Mode_Index',
                 'units': '',
                 'history': hx}
 
@@ -265,7 +267,8 @@ def calc_iemi(index, ifile, var_id, base_period):
     hx = 'Ref: Li et al 2010, Adv Atmos Sci, 27, 1210-20. Base period: %s to %s' %(base_period[0], 
                                                                                    base_period[1])
     var_atts = {'id': 'iemi',
-                'long_name': 'Improved ENSO Modoki Index',
+                'long_name': 'improved_ENSO_Modoki_Index',
+                'standard_name': 'improved_ENSO_Modoki_Index',
                 'units': 'Celsius',
                 'history': hx}
 
@@ -293,7 +296,8 @@ def calc_nino(index, ifile, var_id, base_period):
                                                           base_period[0],
                                                           base_period[1])
     var_atts = {'id': 'nino'+index[4:],
-                'long_name': 'nino'+index[4:]+' '+'index',
+                'long_name': 'nino'+index[4:]+'_index',
+                'standard_name': 'nino'+index[4:]+'_index',
                 'units': 'Celsius',
                 'history': hx}
     
@@ -332,11 +336,12 @@ def calc_nino_new(index, ifile, var_id, base_period):
     hx = 'Ref: Ren & Jin 2011, GRL, 38, L04704. Base period: %s to %s'  %(base_period[0], 
                                                                           base_period[1])
     long_name = {}
-    long_name['NINOCT'] = 'Nino cold tongue index'
-    long_name['NINOWP'] = 'Nino warm pool index'    
+    long_name['NINOCT'] = 'nino_cold_tongue_index'
+    long_name['NINOWP'] = 'nino_warm_pool_index'    
 
     attributes = {'id': 'nino'+index[4:],
                   'long_name': long_name[index],
+                  'standard_name': long_name[index],
                   'units': 'Celsius',
                   'history': hx}
 

@@ -193,40 +193,6 @@ def crop_dates(start_date, end_date):
     
     return start_date, end_date, month_years
 
-  
-def datetime_selector(times_str, season=None, start=None, end=None):
-    """Define a datetime selector based on the supplied datetime column""" 
-    
-    #note that selections can be as complex as:
-    #((3 <= month) & (month <= 5)) | ((20 <= month) & (month <= 23))
-    
-    times_dt = pandas.to_datetime(times_str, format='%Y-%m-%d')
-
-    month_selection = {}
-    month_selection['DJF'] = (12, 1, 2)
-    month_selection['MAM'] = (3, 4, 5)
-    month_selection['JJA'] = (6, 7, 8)
-    month_selection['SON'] = (9, 10, 11)
-
-    combined_selection = numpy.ones(len(times_dt), dtype=bool)  #Initialise with all true
-
-    if season:
-        months = times_dt.map(lambda x: x.month)
-        season_selection = (months.map(lambda val: val in month_selection[season]))
-        combined_selection = combined_selection & season_selection
-    
-    if start:
-        datetime_start = datetime.strptime(start, '%Y-%m-%d')
-        start_selection = times_dt >= datetime_start  
-        combined_selection = combined_selection & start_selection
-    
-    if end:
-        datetime_end = datetime.strptime(end, '%Y-%m-%d')
-        end_selection = times_dt <= datetime_end
-        combined_selection = combined_selection & end_selection
-    
-    return combined_selection
-
 
 def duration_stats(duration_list, stats_list):
     """Append some duration data to a list of statistics"""
@@ -371,7 +337,7 @@ def main(inargs):
     stats = basic_stats(indata, [], before_filtering=True)    
 
     # Apply filters
-    dt_selector = datetime_selector(indata.index, inargs.season, inargs.start, inargs.end)
+    dt_selector = aconv.pandas_dt_selector(indata.index, inargs.season, inargs.start, inargs.end)
     selector = dt_selector
     
     metric_selection = indata[inargs.metric] >= metric_threshold

@@ -4,8 +4,9 @@ my anaconda install but not uvcdat (because uvcdat doesn't play nice with
 pandas or netCDF4
 
 Included functions:
-get_time_axis   -- Get the time axis using the netCDF4 module
-nc_to_df        -- Takes a netCDF file and returns the output in a Pandas DataFrame
+pandas_dt_selector  --  Create a datetime selector for a Pandas DataFrame
+get_time_axis       --  Get the time axis using the netCDF4 module
+nc_to_df            --  Takes a netCDF file and returns the output in a Pandas DataFrame
 
 """
 
@@ -36,6 +37,39 @@ except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
 # Functions
+
+def pandas_dt_selector(times_str, season=None, start=None, end=None):
+    """Define a Pandas datetime selector based on the supplied datetime column""" 
+    
+    #note that selections can be as complex as:
+    #((3 <= month) & (month <= 5)) | ((20 <= month) & (month <= 23))
+    
+    times_dt = pandas.to_datetime(times_str, format='%Y-%m-%d')
+
+    month_selection = {}
+    month_selection['DJF'] = (12, 1, 2)
+    month_selection['MAM'] = (3, 4, 5)
+    month_selection['JJA'] = (6, 7, 8)
+    month_selection['SON'] = (9, 10, 11)
+
+    combined_selection = numpy.ones(len(times_dt), dtype=bool)  #Initialise with all true
+
+    if season:
+        months = times_dt.map(lambda x: x.month)
+        season_selection = (months.map(lambda val: val in month_selection[season]))
+        combined_selection = combined_selection & season_selection
+    
+    if start:
+        datetime_start = datetime.strptime(start, '%Y-%m-%d')
+        start_selection = times_dt >= datetime_start  
+        combined_selection = combined_selection & start_selection
+    
+    if end:
+        datetime_end = datetime.strptime(end, '%Y-%m-%d')
+        end_selection = times_dt <= datetime_end
+        combined_selection = combined_selection & end_selection
+    
+    return combined_selection
 
 
 def get_time_axis(time_variable):
