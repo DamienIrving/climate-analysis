@@ -68,8 +68,17 @@ ${METRIC_VS_ZW3_PLOT} : ${WAVE_STATS} ${ZW3_INDEX} ${FOURIER_INFO}
 
 ENSO_DATA=${DATA_HOME}/Indices/tos_CPC_surface_monthly-anom-wrt-1981-2010_nino34.nc
 SAM_DATA=${DATA_HOME}/Indices/psl_Marshall_surface_monthly_SAM.nc
-ENSO_VS_SAM_PLOT=${INDEX_DIR}/${METRIC}-vs-${ENSO_METRIC}-vs-${SAM_METRIC}_zw3_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
-${ENSO_VS_SAM_PLOT} : ${ENSO_DATA} ${SAM_DATA} ${WAVE_STATS}
+
+METRIC_VS_ENSO_PLOT=${INDEX_DIR}/${METRIC}-vs-${ENSO_METRIC}_zw3_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
+${METRIC_VS_ENSO_PLOT} : ${WAVE_STATS} ${ENSO_DATA} 
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${METRIC} $(word 2,$^) ${ENSO_METRIC} $@ --trend_line --zero_lines
+
+METRIC_VS_SAM_PLOT=${INDEX_DIR}/${METRIC}-vs-${SAM_METRIC}_zw3_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
+${METRIC_VS_SAM_PLOT} : ${WAVE_STATS} ${SAM_DATA} 
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${METRIC} $(word 2,$^) ${SAM_METRIC} $@ --trend_line --zero_lines
+
+METRIC_VS_ENSO_VS_SAM_PLOT=${INDEX_DIR}/${METRIC}-vs-${ENSO_METRIC}-vs-${SAM_METRIC}_zw3_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
+${METRIC_VS_ENSO_VS_SAM_PLOT} : ${ENSO_DATA} ${SAM_DATA} ${WAVE_STATS}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${ENSO_METRIC} $(word 2,$^) ${SAM_METRIC} $@ --colour $(word 3,$^) ${METRIC} --trend_line --zero_lines
 
 
