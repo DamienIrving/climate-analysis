@@ -229,6 +229,15 @@ ${ANTICOMP_VAR_PLOT} : ${ANTICOMP_VAR_FILE} ${CONTOUR_ZONAL_ANOM_RUNMEAN_ANTICOM
 	bash ${VIS_SCRIPT_DIR}/plot_composite.sh $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${CONTOUR_VAR} $@
 
 
+### MEX ###
+
+MEX_INDEX=${ZW3_DIR}/mex_${COMP_VAR}_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc 
+${MEX_INDEX} : ${COMP_VAR_ANOM_RUNMEAN}
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py MEX $< ${COMP_VAR} $@
+
+
+
+
 #
 ## Optional extras ##
 #

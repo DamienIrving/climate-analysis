@@ -205,7 +205,79 @@ def calc_zw3(index, ifile, var_id, base_period):
                 'history': hx}
 
     return zw3_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
+
+
+def calc_mex(index, ifile, var_id, base_period):
+    """Calculate the mid-latitude extreme index (MEX)
     
+    Method similar to Coumou (2014). Differences include:
+      - They detrend their data first 
+    
+    This function uses cdo instead of CDAT because the
+    cdutil library doesn't have routines for calculating 
+    the daily climatology or stdev.
+    
+    Any running mean should have been applied to the 
+    input data beforehand. 
+
+    Possible improvements:
+      - A weighted mean?
+        
+    """
+
+    west_lon = 0
+    east_lon = 360
+    south_lat = -75
+    north_lat = -40
+
+    # Determine the timescale
+
+    indata_complete = nio.InputData(ifile, var_id, latitude=(south_lat, north_lat)) 
+    time_axis = indata_complete.data.getTime().asComponentTime()
+    timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
+        
+    assert timescale in ['daily', 'monthly']
+    tscale_abbrev = 'day' if timescale == 'daily' else 'mon' 
+
+    # Calculate the index
+	
+    div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
+    div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
+    sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
+    avg_operator_text = ' -y%savg ' %(tscale_abbrev)
+    std_operator_text = ' -y%sstd ' %(tscale_abbrev)
+
+    selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, 
+	                                          south_lat, north_lat, 
+						  ifile)
+
+    anomaly = sub_operator_text + selregion + avg_operator_text + selregion
+    std = std_operator_text + selregion
+
+    print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
+    cdo_result = div_operator_func(input=anomaly + std, returnArray=var_id)
+    square_term = numpy.square(cdo_result)
+    square_term = cdms2.createVariable(square_term, grid=indata_complete.getGrid(), axes=indata_complete.getAxisList())
+
+    ave_axes = square_term.getOrder().translate(None, 't')  #all but the time axis
+    mex_timeseries_raw = cdutil.averager(square_term, axis=ave_axes, weights=['weighted']*len(ave_axes))
+    
+    mex_avg = numpy.mean(mex_timeseries_raw)
+    mex_std = numpy.std(mex_timeseries_raw)
+
+    mex_timeseries_normalised = (mex_timeseries_raw / mex_avg) / mex_std
+
+    # Define the output attributes
+    	
+    hx = 'Ref: MEX index of Coumou (2014)'
+    var_atts = {'id': 'mex',
+                'long_name': 'midlatitude_extreme_index',
+                'standard_name': 'midlatitude_extreme_index',
+                'units': '',
+                'history': hx}
+
+    return mex_timeseries_normalised, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
+
     
 def calc_sam(index, ifile, var_id, base_period):
     """Calculate an index of the Southern Annular Mode.
@@ -357,7 +429,8 @@ def main(inargs):
                           'NINO_new': calc_nino_new,
                           'IEMI': calc_iemi,
                           'SAM': calc_sam,
-			  'ZW3': calc_zw3}   
+			  'ZW3': calc_zw3,
+                          'MEX': calc_mex}   
     
     if inargs.index[0:4] == 'NINO':
         if inargs.index == 'NINOCT' or inargs.index == 'NINOWP':
@@ -423,7 +496,7 @@ planned enhancements:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     
     parser.add_argument("index", type=str, help="Index to calculate",
-                        choices=['NINO12', 'NINO3', 'NINO4', 'NINO34', 'NINOCT', 'NINOWP', 'IEMI', 'SAM', 'ZW3'])
+                        choices=['NINO12', 'NINO3', 'NINO4', 'NINO34', 'NINOCT', 'NINOWP', 'IEMI', 'SAM', 'ZW3', 'MEX'])
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")

@@ -67,4 +67,4 @@ COMP_THRESH=90pct
 ENSO_METRIC=nino34_anom
 SAM_METRIC=SAM
 
-TARGET=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_LOW_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
+TARGET=${ZW3_DIR}/mex_${COMP_VAR}_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc 
