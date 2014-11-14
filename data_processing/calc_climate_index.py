@@ -16,6 +16,7 @@ import numpy
 from cdo import *
 cdo = Cdo()
 import pdb
+import cdms2, cdutil
 
 # Import my modules #
 
@@ -257,7 +258,7 @@ def calc_mex(index, ifile, var_id, base_period):
     print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
     cdo_result = div_operator_func(input=anomaly + std, returnArray=var_id)
     square_term = numpy.square(cdo_result)
-    square_term = cdms2.createVariable(square_term, grid=indata_complete.getGrid(), axes=indata_complete.getAxisList())
+    square_term = cdms2.createVariable(square_term, grid=indata_complete.data.getGrid(), axes=indata_complete.data.getAxisList())
 
     ave_axes = square_term.getOrder().translate(None, 't')  #all but the time axis
     mex_timeseries_raw = cdutil.averager(square_term, axis=ave_axes, weights=['weighted']*len(ave_axes))
@@ -265,7 +266,7 @@ def calc_mex(index, ifile, var_id, base_period):
     mex_avg = numpy.mean(mex_timeseries_raw)
     mex_std = numpy.std(mex_timeseries_raw)
 
-    mex_timeseries_normalised = (mex_timeseries_raw / mex_avg) / mex_std
+    mex_timeseries_normalised = (mex_timeseries_raw - mex_avg) / mex_std
 
     # Define the output attributes
     	
