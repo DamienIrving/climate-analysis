@@ -35,6 +35,7 @@ fi
 
 ncrename -O -v ${invar},${outvar} ${outfile}
 ncatted -O -a axis,time,c,c,T ${outfile}
+ncatted -O -a calendar,global,d,, ${outfile}  # Iris does not like this
 
 if [[ "${outvar}" = "zg" ]] ; then
     ncatted -O -a units,${outvar},o,c,"m" ${outfile}
