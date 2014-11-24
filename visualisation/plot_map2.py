@@ -183,7 +183,7 @@ def multiplot(cube_dict, nrows, ncols,
               colour_type='smooth',
               colourbar_type='global', colourbar_orientation='horizontal', global_colourbar_span=0.6,
               global_units=None,
-              palette='jet', extend='neither', colourbar_ticks=None,
+              palette='hot_r', extend='neither', colourbar_ticks=None,
               #contours
               contour_levels=None,
               contour_labels=False,
@@ -558,9 +558,9 @@ example:
                         help="orientation of colourbar [default: horizontal]")
     parser.add_argument("--global_colourbar_span", type=float, default=0.6,
                         help="the span of the global colour bar (expressed as a fraction) [default: 0.6]")
-    parser.add_argument("--palette", type=str, default='jet',
-                        choices=('jet', 'jet_r', 'hot', 'hot_r', 'Blues', 'RdBu', 'RdBu_r', 'Oranges'),
-                        help="Colourbar colours [defualt: jet]")
+    parser.add_argument("--palette", type=str, default='hot_r',
+                        choices=('rainbow', 'rainbow_r', 'hot', 'hot_r', 'Blues', 'RdBu', 'RdBu_r', 'BrBG', 'BrBG_r'),
+                        help="Colourbar colours [defualt: hot_r]")
     parser.add_argument("--colourbar_ticks", type=float, nargs='*', default=None,
                         help="list of tick marks to appear on the colourbar [default = auto]")
     parser.add_argument("--extend", type=str, choices=('both', 'neither', 'min', 'max'), default='neither',
