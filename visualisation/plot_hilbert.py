@@ -114,28 +114,37 @@ def plot_hilbert(data_dict, date_list,
                                                                                               max_freq=wave_max, 
                                                                                               exclude=filt)
 
-	# Plot original signal
-	tag = 'meridional wind, %s' %(lat_tag)
-	ax.plot(xaxis, numpy.array(data), color='green', label=tag)
+        ax.axhline(y=0.0, linestyle='-', color='0.8')
+        
+        # Plot original signal
+        tag = 'meridional wind, %s'  %(lat_tag)
+        ax.plot(xaxis, numpy.array(data), color='green', label=tag)
 
-	# Plot individual wavenumber components
-	for wavenum in range(wmin, wmax):
-            axe.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], 
-                     color='0.5', linestyle='--')
+        # Plot reconstructed signal
+        tag = 'reconstructed signal (waves %s-%s)'  %(str(wmin), str(wmax))
+        ax.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], color='orange', linestyle='--', label=tag)
 
-	# Plot reconstructed signal
-	tag = 'wave %s-%s signal, %s'  %(str(wmin), str(wmax), lat_tag)
-	ax.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], color='orange', linestyle='--', label=tag)
+        # Plot reconstructed envelope
+        tag = 'wave envelope'
+        ax.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='orange', label=tag)
 
-	# Plot reconstructed envelope
-	tag = 'wave %s-%s envelope, %s'  %(str(wmin), str(wmax), lat_tag)
-	ax.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='orange', label=tag)
+        # Plot individual wavenumber components
+        for wavenum in range(wmin, wmax):
+            ax.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], color='0.5', linestyle='--')
+        ax.plot(xaxis, 2*filtered_signal['positive', wmax, wmax], color='0.5', linestyle='--', label='Fourier components')
 
+        # Plot details
+        ax.set_xlim(0, 360)
         if ybounds:
-	    ax.set_ylim(ybounds)
+            ax.set_ylim(ybounds) 
 
-	font = font_manager.FontProperties(size='small')
-	ax.legend(loc=4, prop=font)
+        ax.set_title(date)
+        
+        ax.set_ylabel('$m s^{-1}$', fontsize='medium')
+        ax.set_xlabel('longitude', fontsize='medium')
+
+        font = font_manager.FontProperties(size='small')
+        ax.legend(loc=4, prop=font)
 
     plt.savefig(outfile)
 
