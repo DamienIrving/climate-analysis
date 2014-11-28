@@ -159,14 +159,14 @@ def main(inargs):
 	long_name = 'Meridional wind for a shifted north pole %s' %(grid_insert)
 	clim = ''  
 
-    history = 'Location of north pole: %s N, %s E. Prime meridian point = %s N, %s E. %s' %(str(inargs.north_pole[0]), str(inargs.north_pole[1]), 
+    notes = 'Location of north pole: %s N, %s E. Prime meridian point = %s N, %s E. %s' %(str(inargs.north_pole[0]), str(inargs.north_pole[1]), 
 											    str(inargs.pm[0]), str(inargs.pm[1]), clim)
 
     vrot_atts = {'id': 'vrot',
                  'standard_name': standard_name,
                  'long_name': long_name,
                  'units': indataU.data.units,
-                 'history': history}
+                 'notes': notes}
 											    
     outdata_list = [vwind_rot,] if inargs.noswitch else [vwind_rot_switch,]
     outvar_atts_list = [vrot_atts,]

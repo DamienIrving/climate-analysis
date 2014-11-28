@@ -72,7 +72,7 @@ def extent_atts(orig_data, statistic, threshold, outvar_atts_list):
                 'long_name': statistic+'_of_wave_amplitude_exceeding_threshold',
                 'threshold': threshold,
                 'units': orig_data.getLongitude().units,
-                'history': orig_data.history}
+                'notes': orig_data.notes}
 
     outvar_atts_list.append(var_atts)
 
@@ -95,7 +95,7 @@ def amp_atts(orig_data, stat, outvar_atts_list):
                 'standard_name': text+orig_data.long_name,
                 'long_name': text+orig_data.long_name,
                 'units': orig_data.units,
-                'history': orig_data.history}
+                'notes': orig_data.notes}
 
     outvar_atts_list.append(var_atts)
 

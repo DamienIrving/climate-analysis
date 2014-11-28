@@ -64,12 +64,12 @@ def main(inargs):
     slope_atts = {'id': inargs.var,
                   'long_name': 'Trend in %s' %(name_text),
                   'units': 'degC per year', #%(indata.data.units),
-                  'history': 'Slope from genutil.statistics.linearregression for %s season ' %(season_text)}
+                  'notes': 'Slope from genutil.statistics.linearregression for %s season ' %(season_text)}
 
 #    pval_atts = {'id': 'p',
 #                 'long_name': 'Two-tailed p-value',
 #                 'units': ' ',
-#                 'history': """Standard independent two sample t-test comparing the data sample that meets the composite criteria to a sample containing the remaining data""",
+#                 'notes': """Standard independent two sample t-test comparing the data sample that meets the composite criteria to a sample containing the remaining data""",
 #                 'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=False)'}
 
     outdata_list = [slope,] #p_val]

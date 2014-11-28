@@ -132,7 +132,7 @@ def main(inargs):
                 'standard_name': 'envelope',
                 'long_name': 'Amplitude of Wave Envelope',
                 'units': 'm s-1',
-                'history': 'Ref: Zimin et al. 2003. Mon. Wea. Rev. 131, 1011-1017. Wavenumber range: %s to %s' %(kmin, kmax)}
+                'notes': 'Ref: Zimin et al. 2003. Mon. Wea. Rev. 131, 1011-1017. Wavenumber range: %s to %s' %(kmin, kmax)}
 
     outdata_list = [outdata,]
     outvar_atts_list = [var_atts,]

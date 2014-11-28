@@ -40,85 +40,85 @@ var_atts['magnitude'] = {'id': 'spd',
     'standard_name': 'wind_speed',
     'long_name': 'Wind Speed',
     'units': 'm s-1',
-    'history': 'windspharm magnitude() function - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'windspharm magnitude() function - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['vorticity'] = {'id': 'vrt',
     'standard_name': 'relative_vorticity',
     'long_name': 'Relative Vorticity',
     'units': 's-1',   
-    'history': 'windspharm vorticity(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'windspharm vorticity(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['divergence'] = {'id': 'div',
     'standard_name': 'divergence',
     'long_name': 'Divergence',
     'units': '1.e-6 s-1',   
-    'history': 'windspharm divergence(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'windspharm divergence(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['absolutevorticity'] = {'id': 'avrt',
     'standard_name': 'absolute_vorticity',
     'long_name': 'Absolute Vorticity (sum of relative and planetary)',
     'units': '1.e-5 s-1',
-    'history': 'windspharm absolutevorticity(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'windspharm absolutevorticity(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['planetaryvorticity'] = {'id': 'pvrt',
     'standard_name': 'planetary_vorticity',
     'long_name': 'Planetary Vorticity (Coriolis parameter)',
     'units': 's-1',
-    'history': 'windspharm planetaryvorticity(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'windspharm planetaryvorticity(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['irrotationalcomponent','u'] = {'id': 'uchi',
     'standard_name': 'irrotational_zonal_wind',
     'long_name': 'Zonal irrotational (divergent) component of the vector wind (from Helmholtz decomposition)',
     'units': 'm s-1',
-    'history': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['irrotationalcomponent','v'] = {'id': 'vchi',
     'standard_name': 'irrotational_meridional_wind',
     'long_name': 'Meridional irrotational (divergent) component of the vector wind (from Helmholtz decomposition)',
     'units': 'm s-1',
-    'history': 'windspharm irrotationalcomponent() - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'windspharm irrotationalcomponent() - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['nondivergentcomponent','u'] = {'id': 'upsi',
     'standard_name': 'non_divergent_zonal_wind',
     'long_name': 'Zonal non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)',
     'units': 'm s-1',
-    'history': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['nondivergentcomponent','v'] = {'id': 'vpsi',
     'standard_name': 'non-divergent meridional wind',
     'long_name': 'meridional non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)',
     'units': 'm s-1',
-    'history': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['streamfunction'] = {'id': 'sf',
     'standard_name': 'streamfunction',
     'long_name': 'Streamfunction (rotational wind blows along streamfunction contours, speed proportional to gradient)',
     'units': '1.e+6 m2 s-1',  
-    'history': 'windspharm streamfunction() - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'windspharm streamfunction() - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['velocitypotential'] = {'id':'vp',
     'standard_name': 'velocity_potential',
     'long_name': 'Velocity Potential (divergent wind blows along velocity potential contours, speed proportional to gradient)',
     'units': '1.e+6 m2 s-1',  
-    'history': 'windspharm velocitypotential() - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'windspharm velocitypotential() - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['rossbywavesource'] = {'id': 'rws',
     'standard_name': 'rossby_wave_source',
     'long_name': 'Rossby Wave Source',
     'units': '1.e-11 s-2',  
-    'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['rossbywavesource1'] = {'id': 'rws1',
     'standard_name': 'rossby_wave_source_vortex',
     'long_name': 'Rossby wave source, vortex stretching term',
     'units': '1.e-11 s-2',  
-    'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
 
 var_atts['rossbywavesource2'] = {'id': 'rws2',
     'standard_name': 'rossby_wave_source_advection',
     'long_name': 'Rossby wave source, advection of absolute vorticity by divergent flow term',
     'units': '1.e-11 s-2',  
-    'history': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
 
 
 def calc_quantity(uwnd, vwnd, quantity):

@@ -202,7 +202,7 @@ def get_coefficient_atts(orig_data, min_freq, max_freq):
                     'standard_name': 'amplitude_of_'+method+'_'+orig_data.long_name,
                     'long_name': 'amplitude_of_'+method+'_'+orig_data.long_name,
                     'units': orig_data.units,
-                    'history': filter_text}
+                    'notes': filter_text}
         outvar_atts_list.append(mag_atts)
         outvar_axes_list.append(orig_data.getAxisList()[:-1])
         
@@ -210,7 +210,7 @@ def get_coefficient_atts(orig_data, min_freq, max_freq):
                       'standard_name': 'first_local_maxima_of_'+method+'_'+orig_data.long_name,
                       'long_name': 'first_local_maxima_of_'+method+'_'+orig_data.long_name,
                       'units': orig_data.getLongitude().units,
-                      'history': filter_text}
+                      'notes': filter_text}
         outvar_atts_list.append(phase_atts)    
         outvar_axes_list.append(orig_data.getAxisList()[:-1])
 
@@ -247,7 +247,7 @@ def get_hilbert_atts(orig_data, min_freq, max_freq):
                 'standard_name': method+'_'+orig_data.long_name,
                 'long_name': method+'_'+orig_data.long_name,
                 'units': orig_data.units,
-                'history': filter_text}
+                'notes': filter_text}
 
     outvar_atts_list = [var_atts,]
     outvar_axes_list = [orig_data.getAxisList(),]
@@ -256,7 +256,7 @@ def get_hilbert_atts(orig_data, min_freq, max_freq):
 
 
 def get_filter_text(method, min_freq, max_freq):
-    """Get the history attribute text according to the analysis
+    """Get the notes attribute text according to the analysis
     method and frequency range"""
 
     if min_freq and max_freq:

@@ -84,7 +84,7 @@ def temporal_corr(data1, data2):
                   'long_name': 'temporal correlation',
                   'units': '',
                   'missing_value': 1e20, 
-                  'history': 'genutil.statistics.correlation(centered=1, biased=1)'
+                  'notes': 'genutil.statistics.correlation(centered=1, biased=1)'
                  }
                   
     return tempcorr, output_axes, attributes

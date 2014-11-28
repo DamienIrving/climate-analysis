@@ -64,7 +64,7 @@ def main(inargs):
     attributes = {'id': inargs.variable,
                  'long_name': indata.data.long_name,
                  'units': indata.data.units,
-                 'history': 'The zonal mean has been subtracted at each time step.'}
+                 'notes': 'The zonal mean has been subtracted at each time step.'}
 
     outdata_list = [zonal_anomaly,]
     outvar_atts_list = [attributes,]

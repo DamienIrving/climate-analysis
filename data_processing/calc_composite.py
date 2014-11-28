@@ -91,7 +91,7 @@ def get_composite(data, var, long_name, standard_name, units, season):
                       'standard_name': standard_name+'_'+season,
                       'long_name': standard_name+'_'+season,
                       'units': units,
-                      'history': 'Composite mean for %s season' %(season)}
+                      'notes': 'Composite mean for %s season' %(season)}
 
     return composite_mean, composite_atts
 

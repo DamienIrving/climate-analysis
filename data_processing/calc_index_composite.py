@@ -142,7 +142,7 @@ def main(inargs):
                           'standard_name': metric_indata.data.standard_name+'_'+season,
                           'long_name': metric_indata.data.long_name+'_'+season,
                           'units': metric_indata.data.units,
-                          'history': 'Composite mean for %s season' %(season)}
+                          'notes': 'Composite mean for %s season' %(season)}
 
         outdata_list.append(composite_mean)
 	outvar_atts_list.append(composite_atts)

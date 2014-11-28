@@ -58,7 +58,7 @@ def read_Marshall(infile, metric, time_start):
                    'standard_name': 'SAM',
                    'long_name': 'Southern Annular Mode index',
                    'units': '',
-                   'history': 'SAM index (Marshall, 2003)'}
+                   'notes': 'SAM index (Marshall, 2003)'}
 
     history_dict = {'history': datetime.now().strftime("%a %b %d %H:%M:%S %Y")+': downloaded from http://www.antarctica.ac.uk/met/gjma/sam.html \n'}
 
@@ -93,7 +93,7 @@ def read_CPC(infile, metric, time_start):
                    'standard_name': metric,
                    'long_name': metric,
                    'units': 'degrees Celcius',
-                   'history': ''}
+                   'notes': ''}
 
     history_dict = {'history': datetime.now().strftime("%a %b %d %H:%M:%S %Y")+': monthly SST data downloaded from http://www.cpc.ncep.noaa.gov/data/indices/ \n'}
 

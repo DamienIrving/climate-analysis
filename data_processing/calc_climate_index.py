@@ -198,12 +198,12 @@ def calc_zw3(index, ifile, var_id, base_period):
  
     # Define the output attributes
     	
-    hx = 'Ref: ZW3 index of Raphael (2004)'
+    notes = 'Ref: ZW3 index of Raphael (2004)'
     var_atts = {'id': 'zw3',
                 'long_name': 'zonal_wave_3_index',
                 'standard_name': 'zonal_wave_3_index',
                 'units': '',
-                'history': hx}
+                'notes': notes}
 
     return zw3_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
 
@@ -275,7 +275,7 @@ def calc_mex(index, ifile, var_id, base_period):
                 'long_name': 'midlatitude_extreme_index',
                 'standard_name': 'midlatitude_extreme_index',
                 'units': '',
-                'history': hx}
+                'notes': hx}
 
     return mex_timeseries_normalised, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
 
@@ -315,7 +315,7 @@ def calc_sam(index, ifile, var_id, base_period):
                 'long_name': 'Southern_Annular_Mode_Index',
                 'standard_name': 'Southern_Annular_Mode_Index',
                 'units': '',
-                'history': hx}
+                'notes': hx}
 
     return sami_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
     
@@ -343,7 +343,7 @@ def calc_iemi(index, ifile, var_id, base_period):
                 'long_name': 'improved_ENSO_Modoki_Index',
                 'standard_name': 'improved_ENSO_Modoki_Index',
                 'units': 'Celsius',
-                'history': hx}
+                'notes': hx}
 
     return iemi_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
  
@@ -372,7 +372,7 @@ def calc_nino(index, ifile, var_id, base_period):
                 'long_name': 'nino'+index[4:]+'_index',
                 'standard_name': 'nino'+index[4:]+'_index',
                 'units': 'Celsius',
-                'history': hx}
+                'notes': hx}
     
     return nino_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
     
@@ -416,7 +416,7 @@ def calc_nino_new(index, ifile, var_id, base_period):
                   'long_name': long_name[index],
                   'standard_name': long_name[index],
                   'units': 'Celsius',
-                  'history': hx}
+                  'notes': hx}
 
     return nino_new_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
 

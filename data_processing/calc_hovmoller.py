@@ -119,7 +119,7 @@ def main(inargs):
                 'long_name': 'envelope',  # this is the name that plot_hovmoller.py uses
 		'standard_name': 'Clipped Wave Envelope',
                 'units': 'm s-1',
-                'history': hx }
+                'notes': hx }
 		
     outdata_list = [hov_data_filtered,]
     outvar_atts_list = [var_atts,]

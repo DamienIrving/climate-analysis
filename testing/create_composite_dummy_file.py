@@ -63,7 +63,7 @@ def main(inargs):
                  'standard_name': 'dummy_data',
                  'long_name': 'dummy_data',
                  'units': 'none',
-                 'history': dummy_history}
+                 'notes': dummy_history}
 
     nio.write_netcdf(inargs.outfile_data, " ".join(sys.argv), 
                      indata.global_atts, 
@@ -79,7 +79,7 @@ def main(inargs):
                    'standard_name': 'dummy_metric',
                    'long_name': 'dummy_metric',
                    'units': 'none',
-                   'history': "Dummy metric 8.0 in Apr and 1.0 elsewhere"}
+                   'notes': "Dummy metric 8.0 in Apr and 1.0 elsewhere"}
 
     nio.write_netcdf(inargs.outfile_metric, " ".join(sys.argv), 
                      indata.global_atts, 

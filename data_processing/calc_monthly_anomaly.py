@@ -75,7 +75,7 @@ def main(inargs):
     attributes = {'id': inargs.variable,
                  'long_name': full_data.data.long_name,
                  'units': full_data.data.units,
-                 'history': 'Calculated anomaly relative to the %s to %s monthly climatology.'  %(inargs.base[0], inargs.base[1])}
+                 'notes': 'Calculated anomaly relative to the %s to %s monthly climatology.'  %(inargs.base[0], inargs.base[1])}
 
     indata_list = [full_data,]
     outdata_list = [monthly_anomaly,]
