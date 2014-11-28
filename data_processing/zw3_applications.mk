@@ -25,10 +25,10 @@ ${CONTOUR_ZONAL_ANOM_RUNMEAN} : ${CONTOUR_ZONAL_ANOM}
 	cdo ${TSCALE} $< $@
 	ncatted -O -a axis,time,c,c,T $@
 
-## Step 3: Plot the envelope for a selection of individual timesteps ##
-ENV_PLOT=${MAP_DIR}/env/${TSCALE_LABEL}/${VAR}/env${VAR}-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}_${PLOT_DATE}.png 
+## Step 3: Plot the envelope for a selection of timesteps for publication ##
+ENV_PLOT=${MAP_DIR}/env/${TSCALE_LABEL}/${VAR}/env${VAR}-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}_${PLOT_DATE1}_${PLOT_DATE2}.png 
 ${ENV_PLOT}: ${ENV_3D} ${CONTOUR_ZONAL_ANOM_RUNMEAN}
-	bash ${VIS_SCRIPT_DIR}/plot_envelope.sh $< env${VAR} $(word 2,$^) ${CONTOUR_VAR} ${PLOT_DATE} $@
+	bash ${VIS_SCRIPT_DIR}/plot_envelope.sh $< env${VAR} $(word 2,$^) ${CONTOUR_VAR} ${PLOT_DATE1} ${PLOT_DATE2} $@
 
 ## Step 4: Plot the climatological mean envelope ##
 
@@ -42,7 +42,7 @@ ${ENV_CLIM_PLOT} : ${ENV_CLIM}
 
 
 
-### Plot the Hilbert transform ###
+### Plot the Hilbert transform for publication ###
 
 HILBERT_PLOT=${INDEX_DIR}/hilbert/${TSCALE_LABEL}/hilbert_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${LAT_LABEL}_${PLOT_DATE1}_${PLOT_DATE2}.png 
 ${HILBERT_PLOT}: ${V_RUNMEAN}
