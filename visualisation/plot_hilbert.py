@@ -146,7 +146,7 @@ def plot_hilbert(data_dict, date_list,
         font = font_manager.FontProperties(size='small')
         ax.legend(loc=4, prop=font)
 
-    plt.savefig(outfile)
+    fig.savefig(outfile, bbox_inches='tight')
 
 
 def main(inargs):

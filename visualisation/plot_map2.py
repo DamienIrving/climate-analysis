@@ -271,7 +271,7 @@ def multiplot(cube_dict, nrows, ncols,
             if colourbar_type == 'global' and colour_plot_switch:
         	set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units)       
 
-    plt.savefig(ofile)
+    fig.savefig(ofile, bbox_inches='tight')
 
 
 def plot_boxes(box_list, input_projection):
