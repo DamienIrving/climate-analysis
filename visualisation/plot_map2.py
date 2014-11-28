@@ -55,6 +55,9 @@ projections = {'PlateCarree_Greenwich': ccrs.PlateCarree(), # Centred on Greenwi
 units_dict = {'ms-1': '$m s^{-1}$',
               'm.s-1': '$m s^{-1}$'}
 
+styles = {'dashed': '--',
+          'solid': '-'}
+
 
 def check_projection(cube, input_projection):
     """Check that the specified input projection is correct"""
@@ -98,8 +101,8 @@ def extract_data(infile_list, input_projection, output_projection):
         time_constraint = get_time_constraint(start_date, end_date)
         standard_name = get_standard_name(var)
 	with iris.FUTURE.context(cell_datetime_objects=True):
-            new_cube = iris.load_cube(infile, standard_name & time_constraint & lat_constraint)
-        
+            new_cube = iris.load_cube(infile, standard_name & time_constraint & lat_constraint)       
+
         check_projection(new_cube, input_projection)
         coord_names = [coord.name() for coord in new_cube.coords()]
         if 'time' in coord_names:
@@ -174,7 +177,7 @@ def multiplot(cube_dict, nrows, ncols,
               subplot_spacing=0.05,
               output_projection='PlateCarree_Dateline',
               flow_type='quiver',
-              box_list=None,
+              box_list=None, lat_line_list=None,
               grid_labels=False,
               blank_plots=[],
               #headings
@@ -255,9 +258,12 @@ def multiplot(cube_dict, nrows, ncols,
             except KeyError:
         	pass
 
-            # Add boxes
+            # Add boxes and lines
             if box_list:
         	plot_boxes(box_list, input_projection)
+
+            if lat_line_list:
+                plot_lines(lat_line_list, input_projection, line_type='lat')  
 
             # Add plot features
             plt.gca().coastlines()
@@ -275,9 +281,6 @@ def plot_boxes(box_list, input_projection):
         box  ->  (name, color, style)
     
     """
-    styles = {}
-    styles['dashed'] = '--'
-    styles['solid'] = '-'
     
     for box in box_list: 
         region, color, style = box
@@ -355,6 +358,25 @@ def plot_flow(x, y, u, v, ax, flow_type, input_projection):
         ax.streamplot(x, y, u, v, transform=projections[input_projection], linewidth=2, density=2, color=magnitude)
     elif flow_type == 'quivers':
         ax.quiver(x, y, u, v, transform=projections[input_projection], regrid_shape=40) 
+
+
+def plot_lines(line_list, input_projection, line_type='lat'):
+    """Highlight certain lines of latitude or longitude"""
+
+    assert line_type in ['lat', 'lon']
+
+    for line in line_list: 
+        value, color, style = line
+        assert style in styles.keys()
+
+        if line_type == 'lat':
+            x = numpy.arange(0, 360, 1)
+            y = numpy.repeat(float(value), x.shape[0])
+        elif line_type == 'lon':
+            y = numpy.arange(-90, 91, 1)
+            x = numpy.repeat(float(value), y.shape[0])
+
+        plt.plot(x, y, linestyle=style, color=color, transform=projections[input_projection])
 
 
 def set_global_colourbar(orientation, span, cf, fig, units):
@@ -462,7 +484,7 @@ def main(inargs):
               figure_size=inargs.figure_size,
               subplot_spacing=inargs.subplot_spacing,
               flow_type=inargs.flow_type,
-              box_list=inargs.boxes,
+              box_list=inargs.boxes, lat_line_list=inargs.lat_lines,
               grid_labels=inargs.grid_labels,
               blank_plots=blanks,
               #headings
@@ -538,6 +560,8 @@ example:
                         help="what to do with the uwind and vwind data [default=quiver]")
     parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
                         help="""draw a box - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
+    parser.add_argument("--lat_lines", type=str, action='append', default=None, nargs=3, metavar=('LAT', 'COLOUR', 'STYLE'),
+                        help="""draw a line - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
     parser.add_argument("--grid_labels", action="store_true", default=False,
                         help="switch for having gird labels [default: False]")
 
