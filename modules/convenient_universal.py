@@ -91,7 +91,7 @@ def get_significance(data_included, data_excluded,
                  'standard_name': p_standard_name,
                  'long_name': p_standard_name,
                  'units': ' ',
-                 'history': """Two-tailed p-value from standard independent two sample t-test comparing the included data sample (size=%s) to a sample containing the remaining data (size=%s)""" %(str(size_included), str(size_excluded)),
+                 'notes': """Two-tailed p-value from standard independent two sample t-test comparing the included data sample (size=%s) to a sample containing the remaining data (size=%s)""" %(str(size_included), str(size_excluded)),
                  'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=False)'}
 
     if type(size_included) == str:
@@ -100,13 +100,13 @@ def get_significance(data_included, data_excluded,
                               'standard_name': size_included,
                               'long_name': size_included,
                               'units': ' ',
-                              'history': """Size of sample that exceeds the threshold"""}
+                              'notes': """Size of sample that exceeds the threshold"""}
 
 	size_excluded_atts = {'id': size_excluded,
                               'standard_name': size_excluded,
                               'long_name': size_excluded,
                               'units': ' ',
-                              'history': """Size of sample that does not exceed threshold"""}
+                              'notes': """Size of sample that does not exceed threshold"""}
 
 	return pvals, pval_atts, size_included_atts, size_excluded_atts
 

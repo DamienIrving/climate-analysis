@@ -176,7 +176,7 @@ def write_netcdf(fname_out,waf_data_ns,time_axis,lat_axis,lon_axis,sourcefile_te
     setattr(outfile,'Contact','Damien Irving (d.irving@student.unimelb.edu.au)')
     setattr(outfile,'Reference','Takaya & Nakamura (2001) J. Atmos. Sci., 58, 608-627')
     setattr(outfile,'Sourcefiles',sourcefile_text)
-    setattr(outfile,'history','%s: Created using %s, format=NETCDF3_CLASSIC' %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"), sys.argv[0])) 
+    setattr(outfile,'notes','%s: Created using %s, format=NETCDF3_CLASSIC' %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"), sys.argv[0])) 
 
     # Dimensions #
 
@@ -202,7 +202,7 @@ def write_netcdf(fname_out,waf_data_ns,time_axis,lat_axis,lon_axis,sourcefile_te
     setattr(out_data, 'units', 'm2 s-2')
     setattr(out_data, 'name', 'Wave activity flux, %s component' %(outvar[-1]))
     setattr(out_data, 'missing_value', 9.999e+20) 
-    setattr(out_data, 'history', 'Calculated wave activity flux from U wind, V wind and geopotential height')
+    setattr(out_data, 'notes', 'Calculated wave activity flux from U wind, V wind and geopotential height')
     
     waf_data_ns = waf_data_ns.astype(numpy.float32)
     

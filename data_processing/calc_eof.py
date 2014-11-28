@@ -75,7 +75,7 @@ class EofAnalysis:
                              'units': eof_units,
                              'var_exp': self.var_exp[i],
                              'reference': 'https://github.com/ajdawson/eof2',
-                             'history': eof_scaling_text}
+                             'notes': eof_scaling_text}
   
         return eofs, attributes
      
@@ -102,7 +102,7 @@ class EofAnalysis:
                              'units': pc_units,
                              'var_exp': self.var_exp[i],
                              'reference': 'https://github.com/ajdawson/eof2',
-                             'history': pc_scaling_text}
+                             'notes': pc_scaling_text}
 
 	return pcs, attributes 
  

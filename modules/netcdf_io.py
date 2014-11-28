@@ -907,7 +907,7 @@ def write_netcdf(outfile_name, history_entry, global_atts,
       outvar_atts   -- List or tuple of dictionaries, containing 
                        the attriubtes for each output variable
                        Suggested minumum attributes include: id, 
-                       long_name, missing_value, units, history
+                       long_name, missing_value, units, notes
       outvar_axes   -- List or tuple of axis lists or tuples for 
                        each outdata element (must be in order tyx)
                        Should be generated using the cdat getTime(),
