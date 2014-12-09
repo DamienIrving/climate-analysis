@@ -245,7 +245,7 @@ def get_years(date_list):
     return numpy.arange(start_year, end_year + 1, 1)
 
 
-def plot_duration_histogram(data, outfile, metadata):
+def plot_duration_histogram(data):
     """Plot a duration histogram"""
 
     bin_counts, bin_centres, bin_edges = create_histogram(data, duration=True)
@@ -256,12 +256,9 @@ def plot_duration_histogram(data, outfile, metadata):
     plt.xlim(bin_edges[0], bin_edges[-1])    
     plt.xlabel('Duration (days)')
     plt.ylabel('Frequency')
-    
-    plt.savefig(outfile)
-    gio.write_metadata(outfile, file_info=metadata)
 
 
-def plot_monthly_totals(data, outfile, start_year, start_month, end_year, end_month, month_years, metadata):
+def plot_monthly_totals(ax, data, start_year, start_month, end_year, end_month, month_years):
     """Plot a bar chart showing the totals for each month"""
 
     date_list = data.index.tolist()
@@ -283,12 +280,9 @@ def plot_monthly_totals(data, outfile, start_year, start_month, end_year, end_mo
     plt.ylabel('Percentage of days')
     plt.xticks(ind+width/2., calendar.month_abbr[1:])
 
-    plt.savefig(outfile)
-    gio.write_metadata(outfile, file_info=metadata)
 
-
-def plot_seasonal_values(data, outfile, 
-                         start_year, start_month, end_year, end_month, month_years, metadata,
+def plot_seasonal_values(ax, data, 
+                         start_year, start_month, end_year, end_month, month_years,
                          leg_loc=7, scale_annual=1.0):
     """Plot a line graph showing the seasonal values for each year"""
     
@@ -303,9 +297,6 @@ def plot_seasonal_values(data, outfile,
     colors = {'DJF': 'red', 'MAM': 'orange',
              'JJA': 'blue', 'SON': 'green',
              'annual': 'black'}
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
 
     if scale_annual == 0.0:
         season_list = ['DJF', 'MAM', 'JJA', 'SON']
@@ -320,9 +311,6 @@ def plot_seasonal_values(data, outfile,
     ax.set_xlabel('year')
     ax.set_ylabel('total days')
     ax.legend(loc=leg_loc, fontsize='small', ncol=5)
-
-    plt.savefig(outfile)
-    gio.write_metadata(outfile, file_info=metadata)
 
 
 def main(inargs):
@@ -369,19 +357,39 @@ def main(inargs):
         gio.write_dates(inargs.date_list, data.index.tolist())
         gio.write_metadata(inargs.date_list, file_info=metadata_dict)
 
-    if inargs.duration_histogram:
-        plot_duration_histogram(data['duration'], inargs.duration_histogram, metadata_dict)
+    if inargs.plot_name:
 
-    if inargs.monthly_totals_histogram:
-        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
-        plot_monthly_totals(data, inargs.monthly_totals_histogram,
-                            start_year, start_month, end_year, end_month, month_years, metadata_dict)
-    
-    if inargs.seasonal_values_line:
-        start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
-        plot_seasonal_values(data, inargs.seasonal_values_line, 
-                             start_year, start_month, end_year, end_month, month_years, metadata_dict,
-                             leg_loc=inargs.leg_loc, scale_annual=inargs.scale_annual)
+        fig = plt.figure(figsize=inargs.figure_size)
+        if not inargs.figure_size:
+            print 'figure width: %s' %(str(fig.get_figwidth()))
+            print 'figure height: %s' %(str(fig.get_figheight()))
+
+        if inargs.dimensions:
+            nrows, ncols = inargs.dimensions
+        else:
+            nrows = 1
+            ncols = len(inargs.plot_types)
+
+        for index, plot_type in enumerate(inargs.plot_types):
+            plotnum = index + 1
+            ax = plt.subplot(nrows, ncols, plotnum)
+            plt.sca(ax)
+
+            assert plot_type in ('duration_histogram', 'monthly_totals_histogram', 'seasonal_values_line')
+            if plot_type == 'duration_histogram':
+                plot_duration_histogram(ax, data['duration'])
+            elif plot_type == 'monthly_totals_histogram':
+                start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
+                plot_monthly_totals(ax, data, 
+                                    start_year, start_month, end_year, end_month, month_years)
+            elif plot_type == 'seasonal_values_line':
+                start_year, start_month, end_year, end_month, month_years = get_date_bounds(indata, dt_selector)
+                plot_seasonal_values(ax, data, 
+                                     start_year, start_month, end_year, end_month, month_years,
+                                     leg_loc=inargs.leg_loc, scale_annual=inargs.scale_annual)
+
+        fig.savefig(inargs.plot_name, bbox_inches='tight')
+        gio.write_metadata(inargs.plot_name, file_info=metadata_dict)
 
 
 if __name__ == '__main__':
@@ -424,12 +432,11 @@ author:
                         help="Duration filter - only events of length equal to or within these bounds are included")
                         
     # Optional outputs
-    parser.add_argument("--duration_histogram", type=str, default=None, 
-                        help="Name of output file for a histogram of the duration")
-    parser.add_argument("--monthly_totals_histogram", type=str, default=None,
-                        help="Name of the output file for a histogram of the monthly totals of days that survived the filtering")
-    parser.add_argument("--seasonal_values_line", type=str, default=None,
-                        help="Name of the output file for a line graph of the seasonal counts")
+    parser.add_argument("--plot_name", type=str, default=None, 
+                        help="Name of output plot")
+    parser.add_argument("--plot_types", type=str, nargs='*', default=('seasonal_values_line', 'monthly_totals_histogram'), 
+                        choices=('duration_histogram', 'monthly_totals_histogram', 'seasonal_values_line'), 
+                        help="Types of plots to include")
     parser.add_argument("--date_list", type=str, default=None, 
                         help="Name of output file for list of filtered dates")      
 
@@ -438,6 +445,11 @@ author:
                         help="Location of legend for line graph [default = 0 = top right] (7 = centre right)")
     parser.add_argument("--scale_annual", type=float, default=1,
                         help="scale factor (multply by) for the annual season in the seasonal values plot (can be zero for no plot) [default = 1]")
+    parser.add_argument("--dimensions", type=int, nargs=2, metavar=("NROWS", "NCOLS"), default=None,
+                        help="dimensions of the plot")
+    parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
+                        help="size of the figure (in inches)")
+
 
     args = parser.parse_args()            
     main(args)

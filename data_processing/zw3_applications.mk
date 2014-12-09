@@ -83,18 +83,11 @@ ${METRIC_VS_ENSO_VS_SAM_PLOT} : ${ENSO_DATA} ${SAM_DATA} ${WAVE_STATS}
 
 ### Climatological stats ###
 
-## Plot 1: Monthly totals histogram ##
+## Plot 1: Seasonal and monthly summaries ##
 
-MONTHLY_TOTALS_PLOT=${INDEX_DIR}/clim/montots_zw3_${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png 
-${MONTHLY_TOTALS_PLOT} : ${WAVE_STATS} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --monthly_totals_histogram $@ --metric_threshold ${METRIC_HIGH_THRESH}
-
-## Plot 2: Seasonal values line graph ##
-
-SEASONAL_VALUES_PLOT=${INDEX_DIR}/clim/seasvals_zw3_${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png 
-${SEASONAL_VALUES_PLOT}: ${WAVE_STATS} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --seasonal_values_line $@ --metric_threshold ${METRIC_HIGH_THRESH} --scale_annual 0.25
-
+SEAS_MON_SUMMARY_PLOT=${INDEX_DIR}/clim/montots-seasvals_zw3_${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png 
+${SEAS_MON_SUMMARY_PLOT} : ${WAVE_STATS} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --plot_name $@ --plot_types monthly_totals_histogram seasonal_values_line --metric_threshold ${METRIC_HIGH_THRESH} --scale_annual 0.25 --figure_size 16 6
 
 
 ### Calculate composite envelope (with zg overlay) ###
