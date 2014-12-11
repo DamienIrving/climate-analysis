@@ -100,7 +100,7 @@ def extract_data(infile_list, input_projection, output_projection):
         assert plot_type in plot_types
         time_constraint = get_time_constraint(start_date, end_date)
         standard_name = get_standard_name(var)
-	with iris.FUTURE.context(cell_datetime_objects=True):
+        with iris.FUTURE.context(cell_datetime_objects=True):
             new_cube = iris.load_cube(infile, standard_name & time_constraint & lat_constraint)       
 
         check_projection(new_cube, input_projection)
@@ -108,11 +108,11 @@ def extract_data(infile_list, input_projection, output_projection):
         if 'time' in coord_names:
             ntimes = len(new_cube.coords('time')[0].points)
             if ntimes > 1:
-        	try:
-                    timestep = int(timestep)
-        	except ValueError:
-                    timestep = None
-        	new_cube = collapse_time(new_cube, ntimes, timestep)
+            try:
+                timestep = int(timestep)
+            except ValueError:
+                timestep = None
+            new_cube = collapse_time(new_cube, ntimes, timestep)
 
         cube_dict[(plot_type, int(plot_number))] = new_cube
         metadata_dict[infile] = new_cube.attributes['history']
@@ -130,7 +130,7 @@ def get_standard_name(var):
                       'va' : 'northward_wind',
                       'envva' : 'hilbert_transformed_northward_wind',
                       'tas' : 'surface_air_temperature',
-		      'ampmedian': 'zonal_median_of_the_meridional_maximum_hilbert_transformed_northward_wind'}
+                      'ampmedian': 'zonal_median_of_the_meridional_maximum_hilbert_transformed_northward_wind'}
 
     key_matches = [key for key in standard_names.keys() if re.search('^%s' %(key), var)]  
     assert len(key_matches) == 1
@@ -190,6 +190,10 @@ def multiplot(cube_dict, nrows, ncols,
               #contours
               contour_levels=None,
               contour_labels=False,
+              #stippling
+              stipple_threshold=None,
+              stipple_size=2.0,
+              stipple_thin=1,
               #output
               ofile='test.png'):
     """Create the plot."""
@@ -215,52 +219,63 @@ def multiplot(cube_dict, nrows, ncols,
 
             # Mini header
             try:
-        	if not subplot_headings[plotnum - 1].lower() == 'none':
+                if not subplot_headings[plotnum - 1].lower() == 'none':
                     plt.title(subplot_headings[plotnum - 1].replace("_", " "))
             except (TypeError, IndexError):
-        	pass
+                pass
 
             # Set limits
             if output_projection == 'SouthPolarStereo':
-        	ax.set_extent((0, 360, -90.0, -30.0), crs=projections[input_projection])
-        	grid_labels=False  #iris does not support this yet
+                ax.set_extent((0, 360, -90.0, -30.0), crs=projections[input_projection])
+                grid_labels=False  #iris does not support this yet
             else:
-        	plt.gca().set_global()
+                plt.gca().set_global()
 
             # Add colour plot
             try:
-        	colour_cube = cube_dict[('colour', plotnum)]
-        	cf = plot_colour(colour_cube, colour_type, colourbar_type, 
-                        	 palette, extend, colourbar_ticks)
+                colour_cube = cube_dict[('colour', plotnum)]
+                cf = plot_colour(colour_cube, colour_type, colourbar_type, 
+                                 palette, extend, colourbar_ticks)
                 units = global_units if global_units else colour_cube.units.symbol
                 if colourbar_type == 'individual':
                     set_individual_colourbar(colourbar_orientation, cf, units)
-        	colour_plot_switch = True
+                colour_plot_switch = True
             except KeyError:
-        	pass
+                pass
 
             # Add streamline or quiverplot
             try:
-        	u_cube = cube_dict[('uwind', plotnum)]
-        	v_cube = cube_dict[('vwind', plotnum)]
-        	x = u_cube.coords('longitude')[0].points
-        	y = u_cube.coords('latitude')[0].points
-        	u = u_cube.data
-        	v = v_cube.data
-        	plot_flow(x, y, u, v, ax, flow_type, input_projection)
+                u_cube = cube_dict[('uwind', plotnum)]
+                v_cube = cube_dict[('vwind', plotnum)]
+                x = u_cube.coords('longitude')[0].points
+                y = u_cube.coords('latitude')[0].points
+                u = u_cube.data
+                v = v_cube.data
+                plot_flow(x, y, u, v, ax, flow_type, input_projection)
             except KeyError:
-        	pass
+                pass
 
             # Add contour lines
             try:
-        	contour_cube = cube_dict[('contour', plotnum)]
-        	plot_contour(contour_cube, contour_levels, contour_labels)
+                contour_cube = cube_dict[('contour', plotnum)]
+                plot_contour(contour_cube, contour_levels, contour_labels)
             except KeyError:
-        	pass
+                pass
+
+            # Add stippling
+            try:
+                stipple_cube = cube_dict[('stippling', plotnum)]
+                lats = stipple_cube.coords('longitude')[0].points
+                lons = stipple_cube.coords('latitude')[0].points
+                data = stipple_cube.data
+                plot_stippling(data, lats, lons, input_projection,
+                               stipple_threshold, stipple_size, stipple_thin)
+            except KeyError:
+                pass
 
             # Add boxes and lines
             if box_list:
-        	plot_boxes(box_list, input_projection)
+                plot_boxes(box_list, input_projection)
 
             if lat_line_list:
                 plot_lines(lat_line_list, input_projection, line_type='lat')  
@@ -269,7 +284,7 @@ def multiplot(cube_dict, nrows, ncols,
             plt.gca().coastlines()
             plt.gca().gridlines(draw_labels=grid_labels)
             if colourbar_type == 'global' and colour_plot_switch:
-        	set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units)       
+                set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units)       
 
     fig.savefig(ofile, bbox_inches='tight')
 
@@ -284,32 +299,32 @@ def plot_boxes(box_list, input_projection):
     
     for box in box_list: 
         region, color, style = box
-	
+    
         assert region in nio.regions.keys()
         assert style in styles.keys()
 
-	south_lat, north_lat = nio.regions[region][0][0: 2]
+        south_lat, north_lat = nio.regions[region][0][0: 2]
         west_lon, east_lon = nio.regions[region][1][0: 2]
         
-       	# Adjust the longitude values as required
-	assert (0.0 <= east_lon <= 360) and  (0.0 <= west_lon <= 360), \
-	"""Longitude coordinates for the box must be 0 < lon < 360"""  
-	if (east_lon < west_lon) and (west_lon > 180.0):
+        # Adjust the longitude values as required
+        assert (0.0 <= east_lon <= 360) and  (0.0 <= west_lon <= 360), \
+        """Longitude coordinates for the box must be 0 < lon < 360"""  
+        if (east_lon < west_lon) and (west_lon > 180.0):
             west_lon = west_lon - 360.0
-	if (east_lon < west_lon) and (west_lon <= 180.0):
+        if (east_lon < west_lon) and (west_lon <= 180.0):
             east_lon = east_lon + 360.0
 
-	# Define the plot borders
-	borders = {}
-	borders['north_lons'] = borders['south_lons'] =  numpy.arange(west_lon, east_lon + 1, 1)
-	borders['south_lats'] = numpy.repeat(south_lat, len(borders['south_lons']))
-	borders['north_lats'] = numpy.repeat(north_lat, len(borders['south_lons']))
+        # Define the plot borders
+        borders = {}
+        borders['north_lons'] = borders['south_lons'] =  numpy.arange(west_lon, east_lon + 1, 1)
+        borders['south_lats'] = numpy.repeat(south_lat, len(borders['south_lons']))
+        borders['north_lats'] = numpy.repeat(north_lat, len(borders['south_lons']))
 
-	borders['east_lats'] = borders['west_lats'] = numpy.arange(south_lat, north_lat + 1, 1)
-	borders['west_lons'] = numpy.repeat(west_lon, len(borders['west_lats']))
-	borders['east_lons'] = numpy.repeat(east_lon, len(borders['west_lats']))
+        borders['east_lats'] = borders['west_lats'] = numpy.arange(south_lat, north_lat + 1, 1)
+        borders['west_lons'] = numpy.repeat(west_lon, len(borders['west_lats']))
+        borders['east_lons'] = numpy.repeat(east_lon, len(borders['west_lats']))
 
-	for side in ['north', 'south', 'east', 'west']:
+        for side in ['north', 'south', 'east', 'west']:
             x, y = borders[side+'_lons'], borders[side+'_lats']
             plt.plot(x, y, linestyle=style, color=color, transform=projections[input_projection])
 
@@ -322,10 +337,10 @@ def plot_colour(cube,
     assert colour_type in ['smooth', 'pixels']
 
     if palette:
-	if hasattr(plt.cm, palette):
+        if hasattr(plt.cm, palette):
             cmap = getattr(plt.cm, palette)
             colors = None
-	else:
+        else:
             print "Error, color option '", palette, "' not a valid option"
             sys.exit(1)
 
@@ -377,6 +392,29 @@ def plot_lines(line_list, input_projection, line_type='lat'):
             x = numpy.repeat(float(value), y.shape[0])
 
         plt.plot(x, y, linestyle=style, color=color, transform=projections[input_projection])
+
+
+def plot_stippling(data, lats, lons, input_projection,
+                   threshold, size, thinning_factor):
+    """Plot the stippling"""
+    
+    t = int(thinning_factor)
+    thin_lat = lats[::t]
+    thin_lon = lons[::t]
+    thin_data = data[::t, ::t]
+    for iy, lat in enumerate(thin_lat):
+        for ix, lon in enumerate(thin_lon):
+            value = thin_data[iy, ix]
+            if threshold:
+                if value <= threshold:
+                    plt.plot(lon, lat, marker='o', markersize=size, markerfacecolor='black', 
+                             markeredgecolor='black', markeredgewidth=0.2, 
+                             transform=projections[input_projection]) 
+            else:
+                if value == 1:
+                    plt.plot(lon, lat, marker='o', markersize=size, markerfacecolor='black', 
+                             markeredgecolor='black', markeredgewidth=0.2,
+                             transform=projections[input_projection])
 
 
 def set_global_colourbar(orientation, span, cf, fig, units):
@@ -501,6 +539,10 @@ def main(inargs):
               #contours
               contour_levels=inargs.contour_levels,
               contour_labels=inargs.contour_labels,
+              #stipples
+              stipple_threshold=inargs.stipple_threshold,
+              stipple_size=inargs.stipple_size,
+              stipplie_thin=inargs.stipple_thin,
               #output
               ofile=inargs.ofile)
     
@@ -556,14 +598,17 @@ example:
                         help="minimum spacing between subplots [default=0.05]")
     parser.add_argument("--output_projection", type=str, default='PlateCarree_Dateline', choices=projections.keys(),
                         help="output map projection [default: PlateCarree_Dateline]")
+    parser.add_argument("--grid_labels", action="store_true", default=False,
+                        help="switch for having gird labels [default: False]")
+                        
+    # Lines and boxes
+
     parser.add_argument("--flow_type", type=str, default='quivers', choices=('quivers', 'streamlines'),
                         help="what to do with the uwind and vwind data [default=quiver]")
     parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
                         help="""draw a box - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
     parser.add_argument("--lat_lines", type=str, action='append', default=None, nargs=3, metavar=('LAT', 'COLOUR', 'STYLE'),
-                        help="""draw a line - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
-    parser.add_argument("--grid_labels", action="store_true", default=False,
-                        help="switch for having gird labels [default: False]")
+                        help="""highlight a particular line of latitude - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
 
     # Headings
 
@@ -598,6 +643,15 @@ example:
                         help="list of contour levels to plot [default = auto]")
     parser.add_argument("--contour_labels", action="store_true", default=False,
                         help="switch for having contour labels [default: False]")
+
+    # Stippling
+    
+    parser.add_argument("--stipple_threshold", type=float,  
+                        help="threshold above which stipples will be plotted [default: None]") 
+    parser.add_argument("--stipple_size", type=float,  
+                        help="size of stipples [default: 2.0]")
+    parser.add_argument("--stipple_thin", type=int,  
+                        help="thinning factor for plotting stipples [defualt: 1]")  
 
     # Output options
 
