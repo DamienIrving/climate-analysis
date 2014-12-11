@@ -108,11 +108,11 @@ def extract_data(infile_list, input_projection, output_projection):
         if 'time' in coord_names:
             ntimes = len(new_cube.coords('time')[0].points)
             if ntimes > 1:
-            try:
-                timestep = int(timestep)
-            except ValueError:
-                timestep = None
-            new_cube = collapse_time(new_cube, ntimes, timestep)
+                try:
+                    timestep = int(timestep)
+                except ValueError:
+                    timestep = None
+                new_cube = collapse_time(new_cube, ntimes, timestep)
 
         cube_dict[(plot_type, int(plot_number))] = new_cube
         metadata_dict[infile] = new_cube.attributes['history']
@@ -542,7 +542,7 @@ def main(inargs):
               #stipples
               stipple_threshold=inargs.stipple_threshold,
               stipple_size=inargs.stipple_size,
-              stipplie_thin=inargs.stipple_thin,
+              stipple_thin=inargs.stipple_thin,
               #output
               ofile=inargs.ofile)
     
@@ -646,11 +646,11 @@ example:
 
     # Stippling
     
-    parser.add_argument("--stipple_threshold", type=float,  
+    parser.add_argument("--stipple_threshold", type=float, default=None,  
                         help="threshold above which stipples will be plotted [default: None]") 
-    parser.add_argument("--stipple_size", type=float,  
+    parser.add_argument("--stipple_size", type=float, default=2.0, 
                         help="size of stipples [default: 2.0]")
-    parser.add_argument("--stipple_thin", type=int,  
+    parser.add_argument("--stipple_thin", type=int, default=1, 
                         help="thinning factor for plotting stipples [defualt: 1]")  
 
     # Output options
