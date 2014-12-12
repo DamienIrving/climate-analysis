@@ -114,14 +114,16 @@ def main(inargs):
         threshold = numpy.resize(threshold, var_indata.data.shape)
 
         if inargs.include == 'above':
-            excluded_indexes = var_indata.data > threshold  # Because True gets masked, and I want the trues included
+            subset_indexes = var_indata.data < threshold  # Because True gets masked, and I want the trues included
         else:
-            excluded_indexes = var_indata.data < threshold  # Because True gets masked, and I want the trues included
-        included_indexes = numpy.invert(excluded_indexes)
- 
-        size_included = excluded_indexes.sum(axis=0)
-        size_excluded = included_indexes.sum(axis=0)
- 
+            subset_indexes = var_indata.data > threshold  # Because True gets masked, and I want the trues included
+  
+        size_subset_array = subset_indexes.sum(axis=0)
+        assert size_subset_array.min() == size_subset_array.max()
+        
+        size_all = var_indata.data.shape[time_index]
+        size_subset = size_all - size_subset_array[0, 0]
+
         # Create masked metric arrays #
 
         if len(var_indata.data.shape) > 1:
@@ -131,12 +133,11 @@ def main(inargs):
         else:
             metric_data = metric_indata.data
 
-        metric_data_included = numpy.ma.masked_array(metric_data, mask=included_indexes)
-        metric_data_excluded = numpy.ma.masked_array(metric_data, mask=excluded_indexes)
+        metric_data_subset = numpy.ma.masked_array(metric_data, mask=subset_indexes)
  
 	# Calculate composite # 
 	
-        composite_mean = metric_data_included.mean(axis=time_index)
+        composite_mean = metric_data_subset.mean(axis=time_index)
 
         composite_atts = {'id': inargs.metric+'_'+season,
                           'standard_name': metric_indata.data.standard_name+'_'+season,
@@ -150,13 +151,13 @@ def main(inargs):
 
 	# Perform significance test # 
 
-        pval, pval_atts, size_incl_atts, size_excl_atts = uconv.get_significance(metric_data_included, metric_data_excluded,
-                                                                                 'p_'+season, 'p_value_'+season,
-                                                                                 'size_incl_'+season, 'size_excl_'+season)
-        for data, atts in [(pval, pval_atts), (size_included, size_incl_atts), (size_excluded, size_excl_atts)]:
-            outdata_list.append(data)
-            outvar_atts_list.append(atts)
-            outvar_axes_list.append(var_indata.data.getAxisList()[1:]) #exclude time axis	
+        pval, pval_atts = uconv.get_significance(metric_data_subset, metric_data,
+                                                 'p_'+season, 'p_value_'+season,
+                                                 size_subset, size_all)
+
+        outdata_list.append(pval)
+        outvar_atts_list.append(pval_atts)
+        outvar_axes_list.append(var_indata.data.getAxisList()[1:]) #exclude time axis	
 
 
     # Write the output file #

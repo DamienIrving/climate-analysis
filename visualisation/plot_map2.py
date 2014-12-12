@@ -192,8 +192,8 @@ def multiplot(cube_dict, nrows, ncols,
               contour_levels=None,
               contour_labels=False,
               #hatching
-              hatch_bounds=(0.95, 1.0),
-              hatch_styles=('.'),
+              hatch_bounds=(0.0, 0.05),
+              hatch_styles=('\\\\'),
               #output
               ofile='test.png'):
     """Create the plot."""
@@ -625,9 +625,9 @@ example:
 
     # Hatching
     
-    parser.add_argument("--hatch_bounds", type=float, nargs='*', default=(0.95, 1.0),   
-                        help="list of bounds for the hatching [default: 0.95, 1.0]") 
-    parser.add_argument("--hatch_styles", type=str, nargs = '*', default=('.'), 
+    parser.add_argument("--hatch_bounds", type=float, nargs='*', default=(0.0, 0.05),   
+                        help="list of bounds for the hatching [default: 0.0, 0.05]") 
+    parser.add_argument("--hatch_styles", type=str, nargs = '*', default=('\\\\'), 
                         help="""type of hatching for each bound interval. Choices are . / \\ None \\\\ * [default: .]""")  
 
     # Output options
