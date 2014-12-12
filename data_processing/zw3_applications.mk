@@ -34,7 +34,7 @@ ${ENV_PLOT}: ${ENV_3D} ${CONTOUR_ZONAL_ANOM_RUNMEAN}
 
 ENV_CLIM=${ZW3_DIR}/env${VAR}_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-clim_${GRID}.nc
 ${ENV_CLIM} : ${ENV_3D} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< env${VAR} $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< env${VAR} $@ --region sh
 
 ENV_CLIM_PLOT=${MAP_DIR}/env${VAR}_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-clim_${GRID}.png
 ${ENV_CLIM_PLOT} : ${ENV_CLIM}
@@ -134,7 +134,7 @@ ${COMP_VAR_ANOM_RUNMEAN} : ${COMP_VAR_ORIG}
 
 COMP_VAR_FILE=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.nc 
 ${COMP_VAR_FILE} : ${COMP_VAR_ANOM_RUNMEAN} ${DATE_LIST} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) --region sh 
 
 COMP_VAR_PLOT=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
 ${COMP_VAR_PLOT} : ${COMP_VAR_FILE} ${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP}
@@ -184,7 +184,7 @@ ${ZW3_DATE_LIST} : ${ZW3_INDEX}
 
 CONTOUR_ZONAL_ANOM_RUNMEAN_ZW3COMP=${COMP_DIR}/${CONTOUR_VAR}-composite_zw3_zw3${METRIC_HIGH_THRESH}_${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${CONTOUR_ZONAL_ANOM_RUNMEAN_ZW3COMP} : ${CONTOUR_ZONAL_ANOM_RUNMEAN} ${ZW3_DATE_LIST} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${CONTOUR_VAR} $@ --date_file $(word 2,$^)
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${CONTOUR_VAR} $@ --date_file $(word 2,$^) --region sh
 
 ## Step 3: Plot it
 
