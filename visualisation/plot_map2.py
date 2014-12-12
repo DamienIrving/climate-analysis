@@ -46,7 +46,7 @@ except ImportError:
 # Define functions
 
 
-plot_types = ['colour', 'contour', 'uwind', 'vwind', 'stipple']
+plot_types = ['colour', 'contour', 'uwind', 'vwind', 'hatching']
 
 projections = {'PlateCarree_Greenwich': ccrs.PlateCarree(), # Centred on Greenwich, which means lons go from 0 to 360
                'PlateCarree_Dateline': ccrs.PlateCarree(central_longitude=-180.0),
@@ -130,7 +130,8 @@ def get_standard_name(var):
                       'va' : 'northward_wind',
                       'envva' : 'hilbert_transformed_northward_wind',
                       'tas' : 'surface_air_temperature',
-                      'ampmedian': 'zonal_median_of_the_meridional_maximum_hilbert_transformed_northward_wind'}
+                      'ampmedian': 'zonal_median_of_the_meridional_maximum_hilbert_transformed_northward_wind',
+                      'p' : 'p_value'}
 
     key_matches = [key for key in standard_names.keys() if re.search('^%s' %(key), var)]  
     assert len(key_matches) == 1
@@ -190,10 +191,9 @@ def multiplot(cube_dict, nrows, ncols,
               #contours
               contour_levels=None,
               contour_labels=False,
-              #stippling
-              stipple_threshold=None,
-              stipple_size=2.0,
-              stipple_thin=1,
+              #hatching
+              hatch_bounds=(0.95, 1.0),
+              hatch_styles=('.'),
               #output
               ofile='test.png'):
     """Create the plot."""
@@ -262,14 +262,10 @@ def multiplot(cube_dict, nrows, ncols,
             except KeyError:
                 pass
 
-            # Add stippling
+            # Add hatching
             try:
-                stipple_cube = cube_dict[('stippling', plotnum)]
-                lats = stipple_cube.coords('longitude')[0].points
-                lons = stipple_cube.coords('latitude')[0].points
-                data = stipple_cube.data
-                plot_stippling(data, lats, lons, input_projection,
-                               stipple_threshold, stipple_size, stipple_thin)
+                hatch_cube = cube_dict[('hatching', plotnum)]
+                plot_hatching(hatch_cube, hatch_bounds, hatch_styles)
             except KeyError:
                 pass
 
@@ -350,7 +346,7 @@ def plot_colour(cube,
         # I haven't been able to figure out how to get extent to work with that
 
     elif colour_type == 'pixels':
-        cf = qplt.pcolormesh(cube)
+        cf = iplt.pcolormesh(cube, cmap=cmap)
 
     return cf
 
@@ -394,27 +390,11 @@ def plot_lines(line_list, input_projection, line_type='lat'):
         plt.plot(x, y, linestyle=style, color=color, transform=projections[input_projection])
 
 
-def plot_stippling(data, lats, lons, input_projection,
-                   threshold, size, thinning_factor):
-    """Plot the stippling"""
-    
-    t = int(thinning_factor)
-    thin_lat = lats[::t]
-    thin_lon = lons[::t]
-    thin_data = data[::t, ::t]
-    for iy, lat in enumerate(thin_lat):
-        for ix, lon in enumerate(thin_lon):
-            value = thin_data[iy, ix]
-            if threshold:
-                if value <= threshold:
-                    plt.plot(lon, lat, marker='o', markersize=size, markerfacecolor='black', 
-                             markeredgecolor='black', markeredgewidth=0.2, 
-                             transform=projections[input_projection]) 
-            else:
-                if value == 1:
-                    plt.plot(lon, lat, marker='o', markersize=size, markerfacecolor='black', 
-                             markeredgecolor='black', markeredgewidth=0.2,
-                             transform=projections[input_projection])
+def plot_hatching(cube, hatch_bounds, hatch_styles):
+
+    """Plot the hatching"""
+
+    iplt.contourf(cube, colors='none', levels=hatch_bounds, hatches=hatch_styles)
 
 
 def set_global_colourbar(orientation, span, cf, fig, units):
@@ -539,10 +519,9 @@ def main(inargs):
               #contours
               contour_levels=inargs.contour_levels,
               contour_labels=inargs.contour_labels,
-              #stipples
-              stipple_threshold=inargs.stipple_threshold,
-              stipple_size=inargs.stipple_size,
-              stipple_thin=inargs.stipple_thin,
+              #hatching
+              hatch_bounds=inargs.hatch_bounds,
+              hatch_styles=inargs.hatch_styles,
               #output
               ofile=inargs.ofile)
     
@@ -579,7 +558,7 @@ example:
     parser.add_argument("start", type=str, help="start date in YYYY-MM-DD format (can be none)")
     parser.add_argument("end", type=str, help="end date in YYY-MM-DD, let START=END for single time step (can be None)")
     parser.add_argument("timestep", type=str, help="for data with a time axis of len > 1 pick a timestep (can be None)")
-    parser.add_argument("type", type=str, help="plot type: can be uwind, vwind, contour, colour, stipple")
+    parser.add_argument("type", type=str, help="plot type: can be uwind, vwind, contour, colour, hatching")
     parser.add_argument("plotnum", type=str, help="plot number corresponding to infile (grid is filled top left to bottom right)")
     parser.add_argument("nrows", type=int, help="number of rows in the entire grid of plots")
     parser.add_argument("ncols", type=int, help="number of columns in the entire grid of plots")
@@ -644,14 +623,12 @@ example:
     parser.add_argument("--contour_labels", action="store_true", default=False,
                         help="switch for having contour labels [default: False]")
 
-    # Stippling
+    # Hatching
     
-    parser.add_argument("--stipple_threshold", type=float, default=None,  
-                        help="threshold above which stipples will be plotted [default: None]") 
-    parser.add_argument("--stipple_size", type=float, default=2.0, 
-                        help="size of stipples [default: 2.0]")
-    parser.add_argument("--stipple_thin", type=int, default=1, 
-                        help="thinning factor for plotting stipples [defualt: 1]")  
+    parser.add_argument("--hatch_bounds", type=float, nargs='*', default=(0.95, 1.0),   
+                        help="list of bounds for the hatching [default: 0.95, 1.0]") 
+    parser.add_argument("--hatch_styles", type=str, nargs = '*', default=('.'), 
+                        help="""type of hatching for each bound interval. Choices are . / \\ None \\\\ * [default: .]""")  
 
     # Output options
 
