@@ -42,18 +42,18 @@ def adjust_lon_range(lons, radians=True, start=0.0):
     return lons
 
 
-def get_significance(data_included, data_excluded, 
+def get_significance(data_subset, data_all, 
                      p_var, p_standard_name,
-                     size_included, size_excluded):
+                     size_subset, size_all):
     """Perform significance test.
 
-    size_included and size_included can either be a variable name (and the variable 
+    size_subset and size_all can either be a variable name (and the variable 
     attributes will be returned; useful in cases where the size is an array) or a
     single number (useful in cases where the size is constant and you want it in the
     p_var attributes).
     
-    The approach for the significance test is to compare the mean of the included
-    data sample with that of the excluded data sample via an independent, two-sample,
+    The approach for the significance test is to compare the mean of the subsetted
+    data with that of the entire data sample via an independent, two-sample,
     parametric t-test (for details, see Wilks textbook). 
     
     http://stackoverflow.com/questions/21494141/how-do-i-do-a-f-test-in-python
@@ -81,34 +81,34 @@ def get_significance(data_included, data_excluded,
 #    else:
 #        equal_var = True
 
-    assert type(size_included) == type(size_excluded)
-    assert type(size_included) in [str, float, int]
+    assert type(size_subset) == type(size_all)
+    assert type(size_subset) in [str, float, int]
 
-    t, pvals = stats.mstats.ttest_ind(data_included, data_excluded, axis=0) # stats.ttest_ind has an equal_var option that mstats does not
-    print 'WARNING: Significance test did not account for autocorrelation (and is thus overconfident) and assumed equal variances'
+    t, pvals = stats.mstats.ttest_ind(data_subset, data_all, axis=0) # stats.ttest_ind has an equal_var option that mstats does not
+    print 'WARNING: Significance test assumed equal variances'
 
     pval_atts = {'id': p_var,
                  'standard_name': p_standard_name,
                  'long_name': p_standard_name,
                  'units': ' ',
-                 'notes': """Two-tailed p-value from standard independent two sample t-test comparing the included data sample (size=%s) to a sample containing the remaining data (size=%s)""" %(str(size_included), str(size_excluded)),
+                 'notes': """Two-tailed p-value from standard independent two sample t-test comparing the subsetted data (size=%s) to a sample containing all the data (size=%s)""" %(str(size_subset), str(size_all)),
                  'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=False)'}
 
-    if type(size_included) == str:
+    if type(size_subset) == str:
 
-	size_included_atts = {'id': size_included,
-                              'standard_name': size_included,
-                              'long_name': size_included,
-                              'units': ' ',
-                              'notes': """Size of sample that exceeds the threshold"""}
+	size_subset_atts = {'id': size_subset,
+                            'standard_name': size_subset,
+                            'long_name': size_subset,
+                            'units': ' ',
+                            'notes': """Size of sample that exceeds the threshold"""}
 
-	size_excluded_atts = {'id': size_excluded,
-                              'standard_name': size_excluded,
-                              'long_name': size_excluded,
-                              'units': ' ',
-                              'notes': """Size of sample that does not exceed threshold"""}
+	size_all_atts = {'id': size_all,
+                         'standard_name': size_all,
+                         'long_name': size_all,
+                         'units': ' ',
+                         'notes': """Size of the entire data"""}
 
-	return pvals, pval_atts, size_included_atts, size_excluded_atts
+	return pvals, pval_atts, size_subset_atts, size_all_atts
 
     else:
 

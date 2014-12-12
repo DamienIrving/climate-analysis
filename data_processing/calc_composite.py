@@ -55,14 +55,13 @@ def date_offset(date_list, offset):
 
 
 def filter_dates(data, date_file, offset):
-    """Filter the data into an included (in date_file) and excluded subset. An
+    """Filter the data into a subset that only includes dates in date_file. An
     offset can be applied to the dates in date_file"""
 
     if not date_file:
-        data_included = data
-        data_excluded = numpy.array([])
+        data_filtered = data
         date_metadata = None
-        size_included = False
+        size_filtered = False
         size_excluded = False
     else:
         date_list, date_metadata = gio.read_dates(date_file)
@@ -70,15 +69,12 @@ def filter_dates(data, date_file, offset):
             date_list = date_offset(date_list, offset)
     
         matching_date_indexes = nio.match_dates(date_list, data.getTime().asComponentTime(), invert_matching=False, return_indexes=True)
-        missing_date_indexes = nio.match_dates(date_list, data.getTime().asComponentTime(), invert_matching=True, return_indexes=True)
 
-        data_included = nio.temporal_extract(data, matching_date_indexes, indexes=True, tvar_out=False)
-        data_excluded = nio.temporal_extract(data, missing_date_indexes, indexes=True, tvar_out=False)
+        data_filtered = nio.temporal_extract(data, matching_date_indexes, indexes=True, tvar_out=False)
 
-        size_included = len(matching_date_indexes)
-        size_excluded = len(missing_date_indexes)
+        size_filtered = len(matching_date_indexes)
 
-    return data_included, data_excluded, date_metadata, size_included, size_excluded
+    return data_filtered, date_metadata, size_filtered
 
 
 def get_composite(data, var, long_name, standard_name, units, season):
@@ -120,11 +116,11 @@ def main(inargs):
 
 	# Filter data #
 
-	data_included, data_excluded, date_metadata, size_included, size_excluded = filter_dates(indata.data, inargs.date_file, inargs.offset)
+	data_filtered, date_metadata, size_filtered = filter_dates(indata.data, inargs.date_file, inargs.offset)
 
 	# Calculate composite # 
 
-	composite, composite_atts = get_composite(data_included, inargs.var, 
+	composite, composite_atts = get_composite(data_filtered, inargs.var, 
                                         	  indata.data.long_name, indata.data.standard_name, indata.data.units,
                                         	  season)
 	outdata_list.append(composite)
@@ -133,10 +129,10 @@ def main(inargs):
 
 	# Perform significance test # 
 
-	if data_excluded.any():
-            pval, pval_atts = uconv.get_significance(data_included, data_excluded, 
+	if inargs.date_file:
+            pval, pval_atts = uconv.get_significance(data_filtered, indata.data, 
 	                                             'p_'+season, 'p_value_'+season, 
-						     size_included, size_excluded)
+						     size_filtered, indata.data.shape[0])
             outdata_list.append(pval)
             outvar_atts_list.append(pval_atts)
             outvar_axes_list.append(indata.data.getAxisList()[1:])	
