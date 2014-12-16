@@ -29,6 +29,8 @@ outvar=$4
 
 if [[ "${outvar}" = "zg" ]] ; then
     cdo invertlat -sellonlatbox,0,359.9,-90,90  -divc,9.80665 -daymean ${infile} ${outfile}   # Divude by standard gravity to go from geopotential to geopotential height
+elif [[ "${outvar}" = "pr" ]] ; then
+    cdo invertlat -sellonlatbox,0,359.9,-90,90 -mulc,1000 -daysum -shifttime,-12hour ${infile} ${outfile}
 else
     cdo invertlat -sellonlatbox,0,359.9,-90,90 -daymean ${infile} ${outfile} 
 fi
@@ -46,6 +48,10 @@ elif [[ "${outvar}" = "tas" ]] ; then
     ncatted -O -a standard_name,${outvar},o,c,"surface_air_temperature" ${outfile}
     ncatted -O -a long_name,${outvar},o,c,"surface_air_temperature" ${outfile}
     ncatted -O -a level,${outvar},o,c,"2m" ${outfile}
+elif [[ "${outvar}" = "pr" ]] ; then
+    ncatted -O -a standard_name,${outvar},o,c,"precipitation" ${outfile}
+    ncatted -O -a long_name,${outvar},o,c,"precipitation" ${outfile}
+    ncatted -O -a units,${outvar},o,c,"mm/day" ${outfile}
 elif [[ "${outvar}" = "va" ]] ; then
     ncatted -O -a standard_name,${outvar},o,c,"northward_wind" ${outfile}
     ncatted -O -a long_name,${outvar},o,c,"northward_wind" ${outfile}
