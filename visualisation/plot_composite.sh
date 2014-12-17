@@ -27,6 +27,11 @@ if [ $var == 'tas' ] ; then
     extend=both
     palette=RdBu_r
     significance="--infiles ${varfile} p_annual none none none hatching 1 --infiles ${varfile} p_DJF none none none hatching 3 --infiles ${varfile} p_MAM none none none hatching 4 --infiles ${varfile} p_JJA none none none hatching 5 --infiles ${varfile} p_SON none none none hatching 6"
+elif [ $var == 'pr' ] ; then
+    ticks="-1.0 -0.8 -0.6 -0.4 -0.2 0 0.2 0.4 0.6 0.8 1.0" 
+    extend=both
+    palette=BrBG
+    significance="--infiles ${varfile} p_annual none none none hatching 1 --infiles ${varfile} p_DJF none none none hatching 3 --infiles ${varfile} p_MAM none none none hatching 4 --infiles ${varfile} p_JJA none none none hatching 5 --infiles ${varfile} p_SON none none none hatching 6 --units mm/day"
 elif [ $var == 'envva' ] ; then
     ticks="0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0" 
     extend=max

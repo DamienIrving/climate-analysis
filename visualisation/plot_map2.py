@@ -128,12 +128,13 @@ def get_standard_name(var):
                       'zg' : 'geopotential_height',
                       'ua' : 'eastward_wind',
                       'va' : 'northward_wind',
+                      'pr': 'precipitation',
                       'envva' : 'hilbert_transformed_northward_wind',
                       'tas' : 'surface_air_temperature',
                       'ampmedian': 'zonal_median_of_the_meridional_maximum_hilbert_transformed_northward_wind',
                       'p' : 'p_value'}
 
-    key_matches = [key for key in standard_names.keys() if re.search('^%s' %(key), var)]  
+    key_matches = [key for key in standard_names.keys() if var.split('_')[0] == key]      #re.search('^%s' %(key), var)]
     assert len(key_matches) == 1
 
     standard_name = re.sub(key_matches[0], standard_names[key_matches[0]], var)
