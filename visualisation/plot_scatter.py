@@ -69,7 +69,7 @@ def scatter_plot(x_data, y_data,
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
 
-    plt.savefig(outfile)
+    plt.savefig(outfile, bbox_inches='tight')
 
 
 def main(inargs):
