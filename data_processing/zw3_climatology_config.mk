@@ -7,6 +7,7 @@ ZW3_DIR=${DATA_DIR}/zw3
 MAP_DIR=${ZW3_DIR}/figures/maps
 INDEX_DIR=${ZW3_DIR}/figures/indexes
 COMP_DIR=${ZW3_DIR}/figures/composites
+SPECTRA_DIR=${ZW3_DIR}/figures/spectra
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/local/anaconda/bin/python
 DATA_SCRIPT_DIR=~/phd/data_processing
@@ -65,11 +66,11 @@ METRIC_HIGH_THRESH=90pct
 METRIC_LOW_THRESH=10pct
 
 # Composite
-COMP_VAR=tas
+COMP_VAR=pr
 COMP_THRESH=90pct
 
 # Index comparison
 ENSO_METRIC=nino34_anom
 SAM_METRIC=SAM
 
-TARGET=${INDEX_DIR}/hilbert/${TSCALE_LABEL}/hilbert_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${LAT_LABEL}_${PLOT_DATE1}_${PLOT_DATE2}.png 
+TARGET=${SPECTRA_DIR}/${VAR}-ampspectrum_${DATASET}_${LEVEL}_daily_${GRID}.png

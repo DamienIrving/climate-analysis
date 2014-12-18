@@ -1,6 +1,7 @@
 """
-Filename:     plot_freq_spectra.py
+Filename:     plot_timescale_spectrum.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
+Description:  Plot the density spectrum of a single data file for mutliple timescales
 
 """
 
@@ -53,7 +54,7 @@ def main(inargs):
         indep_var = signal.getLongitude()[:]
 
         sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
-        amp_spectrum = cft.spectrum(sig_fft, scaling='amplitude')
+        amp_spectrum = cft.spectrum(sig_fft, scaling=inargs.scaling)
 	
 	if 'y' in indata.data.getOrder():
             amp_spectrum_lat_mean = numpy.mean(amp_spectrum, axis=1)
@@ -70,10 +71,10 @@ def main(inargs):
         plt.plot(x, y, label=str(step), marker='o', color=colors[index])  # Because I think a freq of 0 makes no sense
 
     plt.xlabel('frequency [cycles / domain]')
-    plt.ylabel('normalised amplitude')
+    plt.ylabel('normalised %s' %(inargs.scaling))
     plt.legend()
     
-    plt.savefig(inargs.outfile)
+    plt.savefig(inargs.outfile, bbox_inches='tight')
     plt.clf()
     metadata = {indata.fname: indata.global_atts['history']}
     gio.write_metadata(inargs.outfile, file_info=metadata)
@@ -94,7 +95,7 @@ author:
 
 """
 
-    description='Plot the average amplitude spectrum'
+    description='Plot the density spectrum of a single data file for mutliple timescales'
     argparser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
@@ -115,6 +116,8 @@ author:
                            help="upper limit on the frequencies included in the plot [default=10]")
     argparser.add_argument("--runmean", type=int, nargs='*',
                            help="running mean windows to include (e.g. 1 5 30 90 180)")
+    argparser.add_argument("--scaling", type=str, choices=('amplitude', 'power'), default='amplitude',
+                           help="scaling applied to the amplitude of the spectal density [default=None]")
   
     args = argparser.parse_args()            
 
