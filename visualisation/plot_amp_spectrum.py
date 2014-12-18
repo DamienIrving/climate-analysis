@@ -53,7 +53,7 @@ def main(inargs):
         indep_var = signal.getLongitude()[:]
 
         sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
-        amp_spectrum = cft.spectrum(sig_fft, output='amplitude')
+        amp_spectrum = cft.spectrum(sig_fft, scaling='amplitude')
 	
 	if 'y' in indata.data.getOrder():
             amp_spectrum_lat_mean = numpy.mean(amp_spectrum, axis=1)

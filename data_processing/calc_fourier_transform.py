@@ -53,10 +53,18 @@ def apply_lon_filter(data, lon_bounds):
     return numpy.where(lon_axis_tiled > lon_max, 0.0, new_data)
 
 
-def spectrum(signal_fft, output='amplitude'):
-    """Calculate the amplitude or power (amplitude squared 
-    spectrum for a given Fourier Transform
+def spectrum(signal_fft, scaling='amplitude', n=None, variance=None):
+    """Calculate the spectral density for a given Fourier Transform.
     
+    The choices for the amplitude scaling for each frequency
+    are as follows (see Wilks 2011, p440):
+    - 'amplitude' : no scaling at all (C)
+    - 'power' : sqaure the amplitude (C^2)
+    - 'R2' : variance explained = [(n/2)*C^2] / (n-1)*variance^2, 
+      where n and variance are the length and variance of the 
+      orignal data series
+      (R2 = the proportion of the variance explained by each harmonic)    
+
     The sample frequencies usually include both the positive
     and negative frequencies (which are identical for real functions
     and maybe other times as well), so when plotting the amplitude
@@ -64,12 +72,18 @@ def spectrum(signal_fft, output='amplitude'):
     
     """
     
-    assert output in ['amplitude', 'power']
+    assert scaling in ['amplitude', 'power', 'R2']
+    if scaling == 'R2':
+        assert n and variance, \
+        "To calculate variance explained must provide n and variance" 
     
-    if output == 'amplitude':
-        result = numpy.abs(signal_fft)
-    elif output == 'power':
-        result = numpy.abs(signal_fft)**2
+    C = numpy.abs(signal_fft)
+    if scaling == 'amplitude':
+        result = C
+    elif scaling == 'power':
+        result = C**2
+    elif scaling == 'R2':
+        result = ((n / 2) * (C**2)) / ((n - 1) * (variance**2))
     
     return result
     
