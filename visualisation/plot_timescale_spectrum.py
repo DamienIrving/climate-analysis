@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
     extra_info =""" 
 example (vortex.earthsci.unimelb.edu.au):
-  /usr/local/uvcdat/1.3.0/bin/cdat plot_freq_spectra.py 
+  /usr/local/anaconda/bin/python plot_timescale_spectrum.py 
   /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/va_Merra_250hPa_daily_r360x181.nc va 
   /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/figures/tscale_anal/amp-spectra-va_Merra_250hPa_daily-2000-2009_r360x181-55S.png 
   --runmean 1 5 10 15 30 60 90 180 365 
