@@ -11,6 +11,7 @@ import os, sys, pdb
 import numpy
 import argparse
 import matplotlib.pyplot as plt
+import math
 
 # Import my modules
 
@@ -43,22 +44,29 @@ def main(inargs):
         infile, var = input_info
 
         indata = nio.InputData(infile, var, **nio.dict_filter(vars(inargs), ['time']))
-    
+        
         signal = indata.data
-        indep_var = signal.getLongitude()[:]
+        indep_var = signal.getTime()[:]
 
-        sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
-        spectrum = cft.spectrum(sig_fft, scaling=inargs.scaling)
- 
-        freq_limit = math.floor(len(indata.data) / 2.0) + 1
+#        sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
+#        spectrum = cft.spectrum(sig_fft, scaling=inargs.scaling, 
+#                                n=len(indep_var), variance=numpy.var(signal))
+# 
+#        freq_limit = math.floor(len(indata.data) / 2.0)
+#        x = sample_freq[1:freq_limit]
+#        y = spectrum[1:freq_limit]
 
-        x = sample_freq[1:freq_limit]
-        y = spectrum[1:freq_limit]
-   
+        amp_and_phase = cft.get_coefficients(signal, indep_var, 1, 500)
+        y = amp_and_phase[::2]        
+        x = range(1, len(y) + 1)
+
         plt.plot(x, y, label='FIXME', marker='o')  # Because I think a freq of 0 makes no sense
 
+    
+    plt.xlim(0, 500)
+
     plt.xlabel('frequency [cycles / domain]')
-    plt.ylabel('normalised %s' %(inargs.scaling))
+    plt.ylabel('%s' %(inargs.scaling))
     plt.legend()
     
     plt.savefig(inargs.outfile, bbox_inches='tight')
@@ -94,7 +102,7 @@ author:
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
     # Output options
-    parser.add_argument("--scaling", type=str, choices=('amplitude', 'power'), default='amplitude',
+    parser.add_argument("--scaling", type=str, choices=('amplitude', 'power', 'R2'), default='amplitude',
                         help="scaling applied to the amplitude of the spectal density [default=None]")
   
     args = parser.parse_args()            

@@ -125,6 +125,11 @@ TSCALE_SPECTRUM=${SPECTRA_DIR}/${VAR}-ampspectrum_${DATASET}_${LEVEL}_daily_${GR
 ${TSCALE_SPECTRUM}: ${V_ORIG}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_timescale_spectrum.py $< ${VAR} $@ --latitude ${LAT_SINGLE} --runmean 1 5 10 15 30 60 90 180 365 --scaling amplitude
 
+# Mutli-file spectrum #
+
+MULTIFILE_SPECTRUM=${SPECTRA_DIR}/${METRIC}-ampspectrum_zw3_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.png
+${MULTIFILE_SPECTRUM} : ${WAVE_STATS}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_multifile_spectrum.py $< ${METRIC} $@ 
 
 
 

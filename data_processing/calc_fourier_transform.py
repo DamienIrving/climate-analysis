@@ -77,7 +77,8 @@ def spectrum(signal_fft, scaling='amplitude', n=None, variance=None):
         assert n and variance, \
         "To calculate variance explained must provide n and variance" 
     
-    C = numpy.abs(signal_fft)
+    C = numpy.abs(numpy.real(signal_fft))   ## CHECKME: Not sure if this should be abs of real 
+                                            ## component or of complex
     if scaling == 'amplitude':
         result = C
     elif scaling == 'power':
