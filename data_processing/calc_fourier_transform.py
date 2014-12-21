@@ -53,7 +53,7 @@ def apply_lon_filter(data, lon_bounds):
     return numpy.where(lon_axis_tiled > lon_max, 0.0, new_data)
 
 
-def spectrum(signal_fft, scaling='amplitude', n=None, variance=None):
+def spectrum(signal_fft, scaling='amplitude', variance=None):
     """Calculate the spectral density for a given Fourier Transform.
     
     The choices for the amplitude scaling for each frequency
@@ -65,26 +65,26 @@ def spectrum(signal_fft, scaling='amplitude', n=None, variance=None):
       orignal data series
       (R2 = the proportion of the variance explained by each harmonic)    
 
-    The sample frequencies usually include both the positive
+    The sample frequencies include both the positive
     and negative frequencies (which are identical for real functions
     and maybe other times as well), so when plotting the amplitude
-    you could just double the positive value??? 
+    or R2 you can just double the positive value 
     
     """
     
     assert scaling in ['amplitude', 'power', 'R2']
     if scaling == 'R2':
-        assert n and variance, \
-        "To calculate variance explained must provide n and variance" 
+        assert variance, \
+        "To calculate variance explained must provide variance value" 
     
-    C = numpy.abs(numpy.real(signal_fft))   ## CHECKME: Not sure if this should be abs of real 
-                                            ## component or of complex
+    n = len(signal_fft)
+    amp = numpy.abs(signal_fft) / n
     if scaling == 'amplitude':
-        result = C
+        result = amp
     elif scaling == 'power':
-        result = C**2
+        result = (amp)**2
     elif scaling == 'R2':
-        result = ((n / 2) * (C**2)) / ((n - 1) * (variance**2))
+        result = ((n / 2) * (amp**2)) / ((n - 1) * (variance**2))
     
     return result
     
@@ -108,8 +108,6 @@ def fourier_transform(signal, indep_var):
     Output:
         sig_fft    ->  Coefficients obtained from the Fourier Transform
         freqs      ->  Wave frequency associated with each coefficient
-        power      ->  Power associated with each frequency (i.e. abs(sig_fft))
-    
     """
     
     spacing = indep_var[1] - indep_var[0]
