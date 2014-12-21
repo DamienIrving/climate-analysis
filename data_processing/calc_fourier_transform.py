@@ -72,6 +72,9 @@ def spectrum(signal_fft, scaling='amplitude', variance=None):
         assert variance, \
         "To calculate variance explained must provide variance value" 
     
+    assert len(signal_fft.shape) == 1, \
+    "This function is only setup to handle one-dimensional signal_fft data"
+    
     # Calculate the entire amplitude spectrum
     n = len(signal_fft)
     amp = numpy.abs(signal_fft) / n
