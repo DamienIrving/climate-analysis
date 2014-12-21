@@ -65,28 +65,31 @@ def spectrum(signal_fft, scaling='amplitude', variance=None):
       orignal data series
       (R2 = the proportion of the variance explained by each harmonic)    
 
-    The sample frequencies include both the positive
-    and negative frequencies (which are identical for real functions
-    and maybe other times as well), so when plotting the amplitude
-    or R2 you can just double the positive value 
-    
     """
-    
+
     assert scaling in ['amplitude', 'power', 'R2']
     if scaling == 'R2':
         assert variance, \
         "To calculate variance explained must provide variance value" 
     
+    # Calculate the entire amplitude spectrum
     n = len(signal_fft)
     amp = numpy.abs(signal_fft) / n
-    if scaling == 'amplitude':
-        result = amp
-    elif scaling == 'power':
-        result = (amp)**2
-    elif scaling == 'R2':
-        result = ((n / 2) * (amp**2)) / ((n - 1) * (variance**2))
     
-    return result
+    # The positive and negative half are identical, so just keep positive
+    # and double its amplitude
+    freq_limit_index = numpy.floor(N/2)
+    pos_amp = 2 * amp[1:freq_limit_index]
+    pos_freqs = sample_freq[1:freq_limit_index]
+    
+    if scaling == 'amplitude':
+        result = pos_amp
+    elif scaling == 'power':
+        result = (pos_amp)**2
+    elif scaling == 'R2':
+        result = ((n / 2) * (pos_amp**2)) / ((n - 1) * (variance))
+    
+    return result, pos_freqs
     
 
 def filter_signal(signal, indep_var, min_freq, max_freq, exclusion):
