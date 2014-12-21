@@ -37,34 +37,21 @@ except ImportError:
 def main(inargs):
     """Run the program."""
     
-    plt.figure() 
-    
+    plt.figure()     
     for index, input_info in enumerate(inargs.infiles):
-        
         infile, var = input_info
-
         indata = nio.InputData(infile, var, **nio.dict_filter(vars(inargs), ['time']))
         
         signal = indata.data
         indep_var = signal.getTime()[:]
 
-#        sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
-#        spectrum = cft.spectrum(sig_fft, scaling=inargs.scaling, 
-#                                n=len(indep_var), variance=numpy.var(signal))
-# 
-#        freq_limit = math.floor(len(indata.data) / 2.0)
-#        x = sample_freq[1:freq_limit]
-#        y = spectrum[1:freq_limit]
+        sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
+        spectrum, spectrum_freqs = cft.spectrum(sig_fft, scaling=inargs.scaling, variance=numpy.var(signal))
 
-        amp_and_phase = cft.get_coefficients(signal, indep_var, 1, 500)
-        y = amp_and_phase[::2]        
-        x = range(1, len(y) + 1)
+        plt.plot(spectrum_freqs, spectrum, label='FIXME', marker='o') 
 
-        plt.plot(x, y, label='FIXME', marker='o')  # Because I think a freq of 0 makes no sense
-
-    
-    plt.xlim(0, 500)
-
+    #plt.yscale('log')
+    #plt.xlim(0, 500)
     plt.xlabel('frequency [cycles / domain]')
     plt.ylabel('%s' %(inargs.scaling))
     plt.legend()
