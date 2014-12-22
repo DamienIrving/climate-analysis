@@ -7,6 +7,8 @@ import operator
 import numpy
 import pandas
 
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from itertools import groupby
