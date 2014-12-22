@@ -46,7 +46,7 @@ def main(inargs):
         indep_var = signal.getTime()[:]
 
         sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
-        spectrum, spectrum_freqs = cft.spectrum(sig_fft, scaling=inargs.scaling, variance=numpy.var(signal))
+        spectrum, spectrum_freqs = cft.spectrum(sig_fft, sample_freq, scaling=inargs.scaling, variance=numpy.var(signal))
 
         plt.plot(spectrum_freqs, spectrum, label='FIXME', marker='o') 
 
