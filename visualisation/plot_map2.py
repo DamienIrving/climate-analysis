@@ -395,10 +395,31 @@ def plot_lines(line_list, input_projection, line_type='lat'):
 
 
 def plot_hatching(cube, hatch_bounds, hatch_styles):
-
     """Plot the hatching"""
 
     iplt.contourf(cube, colors='none', levels=hatch_bounds, hatches=hatch_styles)
+    
+    # An alternative would be:
+    # I found that hatch with contourf only works for certain file formats and can disappear 
+    # when you put it in a pdf. This was a matplotlib bug that may have been fixed?
+
+    # This code does the job for all file formats I have tested:
+    # def stipple(pCube, thresh=0.05, central_long=0):
+    #     """
+    #     Stipple points using plt.scatter for values below thresh in pCube.
+    #     If you have used a central_longitude in the projection, other than 0,
+    #     this must be specified with the central_long keyword
+    #     """
+    #     xOrg = pCube.coord('longitude').points
+    #     yOrg = pCube.coord('latitude').points
+    #     nlon = len(xOrg)
+    #     nlat = len(yOrg)
+    #     xData = np.reshape( np.tile(xOrg, nlat), pCube.shape )
+    #     yData = np.reshape( np.repeat(yOrg, nlon), pCube.shape )
+    #     sigPoints = pCube.data < thresh
+    #     xPoints = xData[sigPoints] - central_long
+    #     yPoints = yData[sigPoints]
+    #     plt.scatter(xPoints,yPoints,s=1, c='k', marker='.', alpha=0.5) 
 
 
 def set_global_colourbar(orientation, span, cf, fig, units):
