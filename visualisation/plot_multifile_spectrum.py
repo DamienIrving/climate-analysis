@@ -8,10 +8,13 @@ Description:  Plot the density spectrum for multiple data files
 # Import general Python modules
 
 import os, sys, pdb
-import numpy
+import numpy, math
 import argparse
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import math
+
 
 # Import my modules
 
@@ -48,13 +51,23 @@ def main(inargs):
         sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
         spectrum, spectrum_freqs = cft.spectrum(sig_fft, sample_freq, scaling=inargs.scaling, variance=numpy.var(signal))
 
-        plt.plot(spectrum_freqs, spectrum, label='FIXME', marker='o') 
+        plt.plot(spectrum_freqs, spectrum, label='FIXME') #marker='o' 
 
-    #plt.yscale('log')
-    #plt.xlim(0, 500)
+    if inargs.yscale == 'log':
+        plt.yscale('log')
+
+    if inargs.xlim:
+        xmin, xmax = inargs.xlim
+        plt.xlim(xmin, xmax)
     plt.xlabel('frequency [cycles / domain]')
-    plt.ylabel('%s' %(inargs.scaling))
-    plt.legend()
+
+    if inargs.scaling == 'R2':
+        ylabel = 'variance explained'
+    else:
+        ylabel = inargs.scaling
+    plt.ylabel(ylabel)
+
+    #plt.legend()
     
     plt.savefig(inargs.outfile, bbox_inches='tight')
     plt.clf()
@@ -91,6 +104,10 @@ author:
     # Output options
     parser.add_argument("--scaling", type=str, choices=('amplitude', 'power', 'R2'), default='amplitude',
                         help="scaling applied to the amplitude of the spectal density [default=None]")
+    parser.add_argument("--xlim", type=float, nargs=2, default=None,
+                        help="limits for the x-axis (min, max) [default=None]")
+    parser.add_argument("--yscale", type=str, choices=('linear', 'log'), default='linear',
+                        help="y-axis scale [default = linear]")
   
     args = parser.parse_args()            
     args.infiles.insert(0, [args.infile, args.variable])

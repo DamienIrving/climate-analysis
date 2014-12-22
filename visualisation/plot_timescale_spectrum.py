@@ -10,6 +10,9 @@ Description:  Plot the density spectrum of a single data file for mutliple times
 import os, sys, pdb
 import numpy
 import argparse
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # Import my modules
@@ -58,14 +61,20 @@ def main(inargs):
                                                 scaling=inargs.scaling, 
                                                 variance=numpy.var(signal))
 	
-	    spectrum_temporal_mean = numpy.mean(spectrum, axis=0)
+        spectrum_temporal_mean = numpy.mean(spectrum, axis=0)
         spectrum_freqs_1D = numpy.mean(spectrum_freqs, axis=0)
         
         plt.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
                  label=str(step), marker='o', color=colors[index])
 
+    plt.xlim(1, inargs.window)
     plt.xlabel('frequency [cycles / domain]')
-    plt.ylabel('normalised %s' %(inargs.scaling))
+    
+    if inargs.scaling == 'R2':
+        ylabel = 'variance explained'
+    else:
+        ylabel = inargs.scaling
+    plt.ylabel('average %s' %(ylabel))
     plt.legend()
     
     plt.savefig(inargs.outfile, bbox_inches='tight')
@@ -110,7 +119,7 @@ author:
                            help="upper limit on the frequencies included in the plot [default=10]")
     argparser.add_argument("--runmean", type=int, nargs='*',
                            help="running mean windows to include (e.g. 1 5 30 90 180)")
-    argparser.add_argument("--scaling", type=str, choices=('amplitude', 'power'), default='amplitude',
+    argparser.add_argument("--scaling", type=str, choices=('amplitude', 'power', 'R2'), default='amplitude',
                            help="scaling applied to the amplitude of the spectal density [default=None]")
   
     args = argparser.parse_args()            

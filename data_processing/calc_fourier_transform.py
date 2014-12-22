@@ -8,7 +8,7 @@ Author:       Damien Irving, d.irving@student.unimelb.edu.au
 
 import sys, os, pdb
 import argparse
-import numpy
+import numpy, math
 from scipy import fftpack
 from scipy import signal
 from copy import deepcopy
