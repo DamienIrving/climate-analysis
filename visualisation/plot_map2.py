@@ -10,6 +10,9 @@ Included functions:
 import os, sys, pdb, re
 import argparse
 
+import matplotlib
+matplotlib.use('Agg')
+
 import iris
 from iris.time import PartialDateTime
 import iris.plot as iplt
