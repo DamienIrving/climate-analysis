@@ -274,9 +274,9 @@ def spectrum(signal_fft, freqs, scaling='amplitude', variance=None):
     
     # The positive and negative half are identical, so just keep positive
     # and double its amplitude
-    freq_limit_index = numpy.floor(n / 2) 
-    pos_amp = 2 * numpy.take(amp, range(1, freq_limit_index+1), axis=-1)
-    pos_freqs = numpy.take(freqs, range(1, freq_limit_index+1), axis=-1)
+    freq_limit_index = int(math.floor(n / 2)) 
+    pos_amp = 2 * numpy.take(amp, range(1, freq_limit_index), axis=-1)
+    pos_freqs = numpy.take(freqs, range(1, freq_limit_index), axis=-1)
     
     if scaling == 'amplitude':
         result = pos_amp
