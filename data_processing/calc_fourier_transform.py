@@ -52,49 +52,7 @@ def apply_lon_filter(data, lon_bounds):
     
     return numpy.where(lon_axis_tiled > lon_max, 0.0, new_data)
 
-
-def spectrum(signal_fft, scaling='amplitude', variance=None):
-    """Calculate the spectral density for a given Fourier Transform.
     
-    The choices for the amplitude scaling for each frequency
-    are as follows (see Wilks 2011, p440):
-    - 'amplitude' : no scaling at all (C)
-    - 'power' : sqaure the amplitude (C^2)
-    - 'R2' : variance explained = [(n/2)*C^2] / (n-1)*variance^2, 
-      where n and variance are the length and variance of the 
-      orignal data series
-      (R2 = the proportion of the variance explained by each harmonic)    
-
-    """
-
-    assert scaling in ['amplitude', 'power', 'R2']
-    if scaling == 'R2':
-        assert variance, \
-        "To calculate variance explained must provide variance value" 
-    
-    assert len(signal_fft.shape) == 1, \
-    "This function is only setup to handle one-dimensional signal_fft data"
-    
-    # Calculate the entire amplitude spectrum
-    n = len(signal_fft)
-    amp = numpy.abs(signal_fft) / n
-    
-    # The positive and negative half are identical, so just keep positive
-    # and double its amplitude
-    freq_limit_index = numpy.floor(N/2)
-    pos_amp = 2 * amp[1:freq_limit_index]
-    pos_freqs = sample_freq[1:freq_limit_index]
-    
-    if scaling == 'amplitude':
-        result = pos_amp
-    elif scaling == 'power':
-        result = (pos_amp)**2
-    elif scaling == 'R2':
-        result = ((n / 2) * (pos_amp**2)) / ((n - 1) * (variance))
-    
-    return result, pos_freqs
-    
-
 def filter_signal(signal, indep_var, min_freq, max_freq, exclusion):
     """Filter a signal by performing a Fourier Tranform and then
     an inverse Fourier Transform for a selected range of frequencies"""
@@ -143,7 +101,7 @@ def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq
     
     coefs = deepcopy(coefficients)  # Deep copy to prevent side effects
                                     # (shallow copy not sufficient for complex
-                    # things like numpy arrays)
+                                    # things like numpy arrays)
     
     if exclude == 'positive':
         coefs[sample_freq > 0] = 0
@@ -284,6 +242,50 @@ def get_filter_text(method, min_freq, max_freq):
         filter_text = '%s with all frequencies retained' %(method)
 
     return filter_text
+
+
+def spectrum(signal_fft, freqs, scaling='amplitude', variance=None):
+    """Calculate the spectral density for a given Fourier Transform.
+    
+    signal_fft and freqs are typically the output of fourier_transform()
+    
+    The choices for the amplitude scaling for each frequency
+    are as follows (see Wilks 2011, p440):
+    - 'amplitude' : no scaling at all (C)
+    - 'power' : sqaure the amplitude (C^2)
+    - 'R2' : variance explained = [(n/2)*C^2] / (n-1)*variance^2, 
+      where n and variance are the length and variance of the 
+      orignal data series
+      (R2 = the proportion of the variance explained by each harmonic)    
+
+    """
+
+    assert scaling in ['amplitude', 'power', 'R2']
+    if scaling == 'R2':
+        assert variance, \
+        "To calculate variance explained must provide variance value" 
+        
+    if len(signal_fft.shape) > 1:
+        print "WARNING: Ensure that frequency is the final axis"
+    
+    # Calculate the entire amplitude spectrum
+    n = signal_fft.shape[-1]
+    amp = numpy.abs(signal_fft) / n
+    
+    # The positive and negative half are identical, so just keep positive
+    # and double its amplitude
+    freq_limit_index = numpy.floor(n / 2) 
+    pos_amp = 2 * numpy.take(amp, range(1, freq_limit_index+1), axis=-1)
+    pos_freqs = numpy.take(freqs, range(1, freq_limit_index+1), axis=-1)
+    
+    if scaling == 'amplitude':
+        result = pos_amp
+    elif scaling == 'power':
+        result = (pos_amp)**2
+    elif scaling == 'R2':
+        result = ((n / 2) * (pos_amp**2)) / ((n - 1) * (variance))
+    
+    return result, pos_freqs
 
 
 def main(inargs):
