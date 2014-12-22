@@ -114,6 +114,7 @@ however a number of simlinks failed because there were other directories that it
 Every time that happened the process stopped, 
 I used `sudo chgrp staff` (and `sudo cdmod q+w` if need be) to fix the relevant permissions, 
 and then started the process again with `brew install cdo` until finally the whole thing installed properly.
+Afterwards, @MacHomebrew suggested `sudo chown -R $USER /usr/local` would fix all of the permissions issues.
 
 ##### Binaries
 
