@@ -54,21 +54,15 @@ def main(inargs):
         indep_var = signal.getLongitude()[:]
 
         sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
-        amp_spectrum = cft.spectrum(sig_fft, scaling=inargs.scaling)
+        spectrum, spectrum_freqs = cft.spectrum(sig_fft, sample_freq, 
+                                                scaling=inargs.scaling, 
+                                                variance=numpy.var(signal))
 	
-	if 'y' in indata.data.getOrder():
-            amp_spectrum_lat_mean = numpy.mean(amp_spectrum, axis=1)
-	    x = sample_freq[0, 0, 1:inargs.window+1]
-        else:
-	    amp_spectrum_lat_mean = amp_spectrum
-	    x = sample_freq[0, 1:inargs.window+1]
-	amp_spectrum_temp_lat_mean = numpy.mean(amp_spectrum_lat_mean, axis=0)
-    
-	amp_mean = numpy.mean(amp_spectrum_temp_lat_mean[1:inargs.window+1])
-	amp_std = numpy.std(amp_spectrum_temp_lat_mean[1:inargs.window+1])
-	y = (amp_spectrum_temp_lat_mean[1:inargs.window+1] - amp_mean) / amp_std
-    
-        plt.plot(x, y, label=str(step), marker='o', color=colors[index])  # Because I think a freq of 0 makes no sense
+	    spectrum_temporal_mean = numpy.mean(spectrum, axis=0)
+        spectrum_freqs_1D = numpy.mean(spectrum_freqs, axis=0)
+        
+        plt.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
+                 label=str(step), marker='o', color=colors[index])
 
     plt.xlabel('frequency [cycles / domain]')
     plt.ylabel('normalised %s' %(inargs.scaling))
