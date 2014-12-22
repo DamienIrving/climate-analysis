@@ -142,15 +142,14 @@ but I haven't tried this.
 
 Installed:  
 
-* `$ /users/damienirving/anaconda/bin/conda install -c https://conda.binstar.org/jklymak iris` (installs cartopy too)
-* `$ /usr/local/anaconda/bin/pip install gitpython`
+* `$ /Users/damienirving/anaconda/bin/conda install -c https://conda.binstar.org/scitools iris` (installs cartopy too)
+* `$ /Users/damienirving/anaconda/bin/conda install -c https://conda.binstar.org/scitools cdat-lite
+* `$ /Users/damienirving/anaconda/bin/pip install gitpython`
 
 Outstanding (i.e. things I still need to install or can't):  
 
 * windspharm & eofs (not able to produce a binstar - see [this disucssion](https://github.com/ajdawson/windspharm/issues/39))
-* cdat-lite (currently no binstar, not available with pip, easy_install fails due to missing dependencies)
 
-(note that soon the latest iris and cartopy binstar files will be stored [here](https://binstar.org/scitools))
 
 ### UV-CDAT
 
