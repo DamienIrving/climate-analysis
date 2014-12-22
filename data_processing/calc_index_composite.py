@@ -119,7 +119,8 @@ def main(inargs):
             subset_indexes = var_indata.data > threshold  # Because True gets masked, and I want the trues included
   
         size_subset_array = subset_indexes.sum(axis=0)
-        assert size_subset_array.min() == size_subset_array.max()
+        print 'size of subset array min = ', size_subset_array.min()  
+        print 'size of subset array max = ', size_subset_array.max()
         
         size_all = var_indata.data.shape[time_index]
         size_subset = size_all - size_subset_array[0, 0]
