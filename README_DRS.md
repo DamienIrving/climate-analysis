@@ -9,7 +9,7 @@ they must have undergone pre-processing
 ## Standard variable abbreviations
 
 This list gives the stardard variable id, followed by the `standard_name` / `long_name` (these both need to be the same and have underscores instead of spaces
-to keep iris/cartopy happy.
+to keep iris/cartopy happy).
 
 * `zg`, `geopotential_height`: Geopotential height
 * `tas`, `surface_air_temperature`: Surface air temperature
@@ -17,6 +17,8 @@ to keep iris/cartopy happy.
 * `sf`: Streamfunction
 * `ua`, `eastward_wind`: Eastward wind velocity
 * `va`, `northward_wind`: Northward wind velocity
+* `pr`, `precipitation`: Precipitation
+* `sic`, `sea_ice_fraction`: Sea ice concentration/fraction
 * `vrot`: Northward wind velocity on a rotated sphere (i.e. the north pole has been shifted and the meridional wind re-calculated accordingly) 
 * `envva`, `hilbert_transformed_northward_wind`: Wave envelope calculated via a Hilbert Transform
 
