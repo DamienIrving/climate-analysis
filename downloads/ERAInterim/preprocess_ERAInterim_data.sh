@@ -30,7 +30,7 @@ outvar=$4
 if [[ "${outvar}" = "zg" ]] ; then
     cdo invertlat -sellonlatbox,0,359.9,-90,90  -divc,9.80665 -daymean ${infile} ${outfile}   # Divude by standard gravity to go from geopotential to geopotential height
 elif [[ "${outvar}" = "pr" ]] ; then
-    cdo invertlat -sellonlatbox,0,359.9,-90,90 -mulc,1000 -daysum -shifttime,-12hour ${infile} ${outfile}
+    cdo invertlat -sellonlatbox,0,359.9,-90,90 -mulc,1000 -daysum -shifttime,-12hour ${infile} ${outfile}  # Get the daily rainfall totals
 else
     cdo invertlat -sellonlatbox,0,359.9,-90,90 -daymean ${infile} ${outfile} 
 fi
@@ -60,4 +60,7 @@ elif [[ "${outvar}" = "va" ]] ; then
     ncatted -O -a standard_name,${outvar},o,c,"eastward_wind" ${outfile}
     ncatted -O -a long_name,${outvar},o,c,"eastward_wind" ${outfile}
     ncatted -O -a level,${outvar},o,c,"500hPa" ${outfile}
+elif [[ "${outvar}" = "sic" ]] ; then
+    ncatted -O -a standard_name,${outvar},o,c,"sea_ice_fraction" ${outfile}
+    ncatted -O -a long_name,${outvar},o,c,"sea_ice_fraction" ${outfile}
 fi
