@@ -16,13 +16,13 @@ all : ${TARGET}
 CONTOUR_ORIG=${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native.nc
 CONTOUR_ZONAL_ANOM=${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc       
 ${CONTOUR_ZONAL_ANOM} : ${CONTOUR_ORIG}
-	${ZONAL_ANOM_METHOD} $< ${CONTOUR_VAR} $@
+	${ZONAL_ANOM_METHOD} $< ${CONTOUR_VAR} $@ ${CDO_FIX_SCRIPT}
 
 ## Step 2: Apply temporal averaging to the zonal contour data ##
 CONTOUR_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${CONTOUR_ZONAL_ANOM_RUNMEAN} : ${CONTOUR_ZONAL_ANOM}
 	cdo ${TSCALE} $< $@
-	bash ${DATA_SCRIPT_DIR}/cdo_fix.sh $@ ${CONTOUR_VAR}
+	bash ${CDO_FIX_SCRIPT} $@ ${CONTOUR_VAR}
 
 ## Step 3: Plot the envelope for a selection of timesteps for publication ##
 ENV_PLOT=${MAP_DIR}/env/${TSCALE_LABEL}/${VAR}/env${VAR}-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}_${PLOT_DATE1}_${PLOT_DATE2}.png 
@@ -142,7 +142,7 @@ COMP_VAR_ORIG=${DATA_DIR}/${COMP_VAR}_${DATASET}_surface_daily_${GRID}.nc
 COMP_VAR_ANOM_RUNMEAN=${DATA_DIR}/${COMP_VAR}_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
 ${COMP_VAR_ANOM_RUNMEAN} : ${COMP_VAR_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
-	bash ${DATA_SCRIPT_DIR}/cdo_fix.sh $@ ${COMP_VAR}
+	bash ${CDO_FIX_SCRIPT} $@ ${COMP_VAR}
 
 ## Step 3: Calculate & plot composite - method 1 ##
 
