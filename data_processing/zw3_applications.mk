@@ -17,13 +17,12 @@ CONTOUR_ORIG=${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native.nc
 CONTOUR_ZONAL_ANOM=${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc       
 ${CONTOUR_ZONAL_ANOM} : ${CONTOUR_ORIG}
 	${ZONAL_ANOM_METHOD} $< ${CONTOUR_VAR} $@
-	ncatted -O -a axis,time,c,c,T $@
 
 ## Step 2: Apply temporal averaging to the zonal contour data ##
 CONTOUR_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${CONTOUR_ZONAL_ANOM_RUNMEAN} : ${CONTOUR_ZONAL_ANOM}
 	cdo ${TSCALE} $< $@
-	ncatted -O -a axis,time,c,c,T $@
+	bash ${DATA_SCRIPT_DIR}/cdo_fix.sh $@ ${CONTOUR_VAR}
 
 ## Step 3: Plot the envelope for a selection of timesteps for publication ##
 ENV_PLOT=${MAP_DIR}/env/${TSCALE_LABEL}/${VAR}/env${VAR}-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}_${PLOT_DATE1}_${PLOT_DATE2}.png 
@@ -143,7 +142,7 @@ COMP_VAR_ORIG=${DATA_DIR}/${COMP_VAR}_${DATASET}_surface_daily_${GRID}.nc
 COMP_VAR_ANOM_RUNMEAN=${DATA_DIR}/${COMP_VAR}_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
 ${COMP_VAR_ANOM_RUNMEAN} : ${COMP_VAR_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
-	ncatted -O -a axis,time,c,c,T $@
+	bash ${DATA_SCRIPT_DIR}/cdo_fix.sh $@ ${COMP_VAR}
 
 ## Step 3: Calculate & plot composite - method 1 ##
 
@@ -241,10 +240,3 @@ MEX_INDEX=${ZW3_DIR}/mex_${COMP_VAR}_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt
 ${MEX_INDEX} : ${COMP_VAR_ANOM_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py MEX $< ${COMP_VAR} $@
 
-
-
-
-#
-## Optional extras ##
-#
-# plot_composite.py   --   plot a composite
