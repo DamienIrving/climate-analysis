@@ -23,11 +23,11 @@ invar=$2
 # Check what the missing value is
 
 missval=$(ncdump -h ${infile} | grep -E -i  "${invar}:_FillValue" | cut -f 2 -d '=' | cut -f 1 -d ';')
-
 if [ -z "${missval}" ]; then
   echo "did not successfully extract the missing value" 
   exit 1
 fi
+missval=`echo ${missval}`  # Trim whitespace from front of variable
 
 # NCO and CDAT need missing_value
 # (e.g. see http://stderr.org/doc/nco/html/Missing-Values.html)
