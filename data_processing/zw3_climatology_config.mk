@@ -15,6 +15,7 @@ VIS_SCRIPT_DIR=~/phd/visualisation
 FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh
 #FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.py   
 ZONAL_ANOM_METHOD=bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
+CDO_FIX_SCRIPT=${DATA_SCRIPT_DIR}/cdo_fix.sh
 
 
 ## Climatology
