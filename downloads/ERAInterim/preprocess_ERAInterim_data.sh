@@ -8,16 +8,17 @@
 #
 
 function usage {
-    echo "USAGE: bash $0 infile invar outfile outvar"
+    echo "USAGE: bash $0 infile invar outfile outvar missval"
     echo "   infile:      Input file name"
     echo "   invar:       Input variable name"
     echo "   outfile:     Output file name"
     echo "   outvar:      Output variable name"
-    echo "   e.g. bash $0 zfile.nc z new-zgfile.nc zg"
+    echo "   missval:     Missing value"
+    echo "   e.g. bash $0 zfile.nc z new-zgfile.nc zg -32767"
     exit 1
 }
 
-nargs=4
+nargs=5
 if [[ $# -ne $nargs ]] ; then
   usage
 fi
@@ -26,6 +27,7 @@ infile=$1
 invar=$2
 outfile=$3
 outvar=$4
+missval=$5
 
 if [[ "${outvar}" = "zg" ]] ; then
     cdo invertlat -sellonlatbox,0,359.9,-90,90  -divc,9.80665 -daymean ${infile} ${outfile}   # Divude by standard gravity to go from geopotential to geopotential height
@@ -35,6 +37,7 @@ else
     cdo invertlat -sellonlatbox,0,359.9,-90,90 -daymean ${infile} ${outfile} 
 fi
 
+ncatted -O -a missing_value,${invar},o,c,${missval} ${outfile}  # CDO strips this, NCO and CDAT need it
 ncrename -O -v ${invar},${outvar} ${outfile}
 ncatted -O -a axis,time,c,c,T ${outfile}
 ncatted -O -a calendar,global,d,, ${outfile}  # Iris does not like this
