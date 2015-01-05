@@ -4,15 +4,16 @@
 #
 
 function usage {
-    echo "USAGE: bash $0 infile invar outfile"
+    echo "USAGE: bash $0 infile invar outfile cdofix"
     echo "   infile:     Input file name"
     echo "   invar:      Input variable name"
     echo "   outfile:    Output file name"
-    echo "   e.g. bash $0 sf_Merra_250hPa_30day-runmean_native.nc sf sf_Merra_250hPa_30day-runmean-zonal-anom_native.nc"
+    echo "   cdofix:      Script for replacing attributes that cdo strips"
+    echo "   e.g. bash $0 sf.nc sf sf-zonal-anom.nc ~/phd/data_processing/cdo_fix.sh"
     exit 1
 }
 
-nargs=3
+nargs=4
 
 if [ $# -ne $nargs ] ; then
   usage
@@ -21,14 +22,14 @@ fi
 infile=$1
 invar=$2
 outfile=$3
+cdofix=$4
+
 temp_dir=/mnt/meteo0/data/simmonds/dbirving/temp
-  
   
 if [ ! -f $infile ] ; then
     echo "Input file doesn't exist: " $infile
     usage
 fi
-
 
 years=(1979 1984 1989 1994 1999 2004 2009 2014)
 temp_files=()
@@ -41,4 +42,4 @@ done
 
 cdo -O mergetime ${temp_files[@]} $outfile
 rm ${temp_files[@]}
-ncatted -O -a axis,time,c,c,T $outfile
+bash ${cdofix} ${outfile} ${invar}      # Put back the required attributes that CDO strips
