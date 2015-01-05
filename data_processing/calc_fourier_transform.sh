@@ -4,10 +4,11 @@
 #
 
 function usage {
-    echo "USAGE: bash $0 infile invar outfile waveopt wavestart waveend typeopt type lonopt lonstart lonend"
+    echo "USAGE: bash $0 infile invar outfile cdofix waveopt wavestart waveend typeopt type lonopt lonstart lonend"
     echo "   infile:     Input file name"
     echo "   invar:      Input variable name"
     echo "   outfile:    Output file name"
+    echo "   cdofix:     Script for replacing attributes that cdo strips"
     echo "   waveopt:    Type --filter so compatable with makefile"
     echo "   wavestart:  Beginning of wavenumber range"
     echo "   waveend:    End of wavenumber range"
@@ -22,8 +23,8 @@ function usage {
     exit 1
 }
 
-narg_min=8
-narg_max=11
+narg_min=9
+narg_max=12
 
 if [[ $# -ne $narg_min && $# -ne $narg_max ]] ; then
   usage
@@ -32,12 +33,13 @@ fi
 infile=$1
 invar=$2
 outfile=$3
-waveselect=($4 $5 $6)
-typeselect=($7 $8)
+cdofix=$4
+waveselect=($5 $6 $7)
+typeselect=($8 $9)
 temp_dir=/mnt/meteo0/data/simmonds/dbirving/temp
 
 if [ $# == $narg_max ] ; then
-  lonselect=($9 ${10} ${11}) 
+  lonselect=($10 ${11} ${12}) 
 else
   lonselect=""
 fi  
@@ -60,4 +62,4 @@ done
 
 cdo -O mergetime ${temp_files[@]} $outfile
 rm ${temp_files[@]}
-ncatted -O -a axis,time,c,c,T $outfile
+bash ${cdofix} ${outfile} env${invar}      # Put back the required attributes that CDO strips
