@@ -719,7 +719,8 @@ def _subset_data(infile, var_id, **kwargs):
 
             #reinstate stripped attributes
             for att in infile.listattribute(vname=var_id):
-                setattr(data, att, infile.getattribute(var_id, att))
+                if not att == 'missing_value':
+                    setattr(data, att, infile.getattribute(var_id, att))
 
         elif valid_trange:
             kwargs['time'] = (kwargs['time'][0]+' 0:0:0.0', kwargs['time'][1]+' 23:59:0.0')
