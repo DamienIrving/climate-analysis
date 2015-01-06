@@ -132,6 +132,7 @@ def get_standard_name(var):
                       'ua' : 'eastward_wind',
                       'va' : 'northward_wind',
                       'pr': 'precipitation',
+                      'sic' : 'sea_ice_fraction',
                       'envva' : 'hilbert_transformed_northward_wind',
                       'tas' : 'surface_air_temperature',
                       'ampmedian': 'zonal_median_of_the_meridional_maximum_hilbert_transformed_northward_wind',
@@ -185,6 +186,7 @@ def multiplot(cube_dict, nrows, ncols,
               box_list=None, lat_line_list=None,
               grid_labels=False,
               blank_plots=[],
+              spstereo_limit=-30,
               #headings
               title=None, subplot_headings=None,
               #colourbar
@@ -230,7 +232,7 @@ def multiplot(cube_dict, nrows, ncols,
 
             # Set limits
             if output_projection == 'SouthPolarStereo':
-                ax.set_extent((0, 360, -90.0, -30.0), crs=projections[input_projection])
+                ax.set_extent((0, 360, -90.0, spstereo_limit), crs=projections[input_projection])
                 grid_labels=False  #iris does not support this yet
             else:
                 plt.gca().set_global()
@@ -530,6 +532,7 @@ def main(inargs):
               box_list=inargs.boxes, lat_line_list=inargs.lat_lines,
               grid_labels=inargs.grid_labels,
               blank_plots=blanks,
+              spstereo_limit=inargs.spstereo_limit,
               #headings
               title=inargs.title,
               subplot_headings=inargs.subplot_headings,
@@ -604,6 +607,8 @@ example:
                         help="output map projection [default: PlateCarree_Dateline]")
     parser.add_argument("--grid_labels", action="store_true", default=False,
                         help="switch for having gird labels [default: False]")
+    parser.add_argument("--spstereo_limit", type=float, default=-30,
+                        help="highest latitude to be plotted if the map projection is South Polar Stereographic")
                         
     # Lines and boxes
 
