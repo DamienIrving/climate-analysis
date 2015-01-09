@@ -28,7 +28,7 @@ if [ $var == 'tas' ] ; then
     palette=RdBu_r
     significance="--infiles ${varfile} p_annual none none none hatching 1 --infiles ${varfile} p_DJF none none none hatching 3 --infiles ${varfile} p_MAM none none none hatching 4 --infiles ${varfile} p_JJA none none none hatching 5 --infiles ${varfile} p_SON none none none hatching 6"
 elif [ $var == 'sic' ] ; then
-    ticks="-0.18 -0.15 -0.12 -0.09 -0.06 -0.03 0 0.03 0.06 0.09 0.12 0.15 0.18"
+    ticks="-0.13 -0.11 -0.09 -0.07 -0.05 -0.03 -0.01 0.01 0.03 0.05 0.07 0.09 0.11 0.13"
     extend=both
     palette=RdBu_r
     significance="--infiles ${varfile} p_annual none none none hatching 1 --infiles ${varfile} p_DJF none none none hatching 3 --infiles ${varfile} p_MAM none none none hatching 4 --infiles ${varfile} p_JJA none none none hatching 5 --infiles ${varfile} p_SON none none none hatching 6 --units ice_fraction --spstereo_limit -50"
