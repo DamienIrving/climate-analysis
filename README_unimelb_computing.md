@@ -2,12 +2,7 @@
 
 ## Help
 
-How to get in touch with IT support (i.e. Doug Morrison):
-
-1. The *preferred way* is through the [Science IT service desk](http://ithelp.science.unimelb.edu.au/servicedesk/)
-
-2. You can also email (support@earthsci.unimelb.edu.au is best), call us (x47222 for Doug), or drop by (room 301). These are less preferable because they don't provide an audit trail, and ultimately might lead to less IT support being provided to Earth Sciences. But it's certainly fine if you just want to ask us something, as opposed to have a problem which needs to be resolved.
-
+How to get in touch with IT support: [Science IT service desk](http://ithelp.science.unimelb.edu.au/servicedesk/)
 
 ## Abyss (abyss.earthsci.unimelb.edu.au)
 
@@ -49,6 +44,10 @@ Note that you can't ssh into vortex from an external machine (need to go via aby
 
 #### Software
 
+Anaconda install:
+`/usr/local/anaconda/bin/python`  
+`/usr/local/anaconda/bin/ipython`
+
 UV-CDAT install:  
 `/usr/local/uvcdat/1.2.0/bin/cdat`  
 `/usr/local/uvcdat/1.3.0/bin/cdat` (is actually version 1.3.1)
@@ -62,7 +61,7 @@ UV-CDAT install:
 
 ## Desktop (irvingnix.earthsci.unimelb.edu.au)
 
-Operating system: Ubuntu 13.04, 64-bit (it's Debian based)  
+Operating system: Ubuntu 14.04, 64-bit (it's Debian based)  
 Memory (RAM): 2GB  
 I have sudo admin access, so I need to type 'sudo' at the command line before any admin commands. e.g. sudo apt-get install git-core
 
