@@ -44,7 +44,7 @@ Note that you can't ssh into vortex from an external machine (need to go via aby
 
 #### Software
 
-Anaconda install:
+Anaconda install:  
 `/usr/local/anaconda/bin/python`  
 `/usr/local/anaconda/bin/ipython`
 
