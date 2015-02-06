@@ -1,21 +1,14 @@
-## High quality re-usable code ##
+## Visualisation code ##
 
-plot_climate_index.py         # For plotting timeseries (could possibly be generalised to be plot_timeseries.py)
-plot_map.py                   # General purpose code for plotting spatial maps
-
-# Implementations of plot_map.py #
-
-plot_EOF.py                   # Could possibly use plot_timeseries.py
-plot_layers.py
-
-
-## Quick, rough scripts
-
-plot_antarctica.py
-plot_gantt.py
-plot_pie.py
-
-
-## Scraps
-
-Everything else!
+| Script | Purpose |
+| :----- | :------ |
+| High quality, versitile code | |
+| `plot_timeseries.py` | General purpose code for plotting timeseries |
+| `plot_map2.py`  |  General purpose code for plotting spatial maps |
+| `plot_scatter.py` | General purpose code for scatter plotss |
+| One-off plots | |
+| `plot_antarctica.py` | Map of Antarctica |
+| `plot_gantt.py` | Gantt chart |
+| `plot_pie.py` | Pie chart |
+| Scraps | |
+| `plot_map.py`  | Old general purpose code for plotting spatial maps (unlike `plot_map2.py`, it does not use Iris or Cartopy) |
