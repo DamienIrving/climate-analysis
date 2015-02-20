@@ -1,16 +1,15 @@
-# Import general Python modules #
+# Import general Python modules
 
 import os, sys, pdb
 import argparse
 
-
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -21,11 +20,9 @@ try:
     import convenient_anaconda as aconv
     import convenient_universal as uconv
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
-
-# Define functions #
-
+# Define functions
 
 def main(inargs):
     """Run the program"""

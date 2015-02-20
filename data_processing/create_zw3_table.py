@@ -1,25 +1,25 @@
 """
 Filename:     create_zw3_table.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Takes all the ZW3 climatology results and puts
+Description:  Take all the ZW3 climatology results and put
               them in a single table
 
 """
 
-# Import general Python modules #
+# Import general Python modules
 
 import sys, os, pdb
 import argparse
 import numpy, pandas
 import netCDF4
 
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -30,20 +30,19 @@ try:
     import netcdf_io as nio
     import convenient_anaconda as aconv
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
-
-# Define functions #
+# Define functions
 
 def find_nearest(array, value):
-    """Find the closest array item to value"""
+    """Find the closest array item to value."""
     
     idx = (numpy.abs(array - value)).argmin()
     return array[idx]
 
 
 def get_fourier(infile, lat_range):
-    """Extract Fourier coefficient data and output to a pandas DataFrame"""
+    """Extract Fourier coefficient data and output to a pandas DataFrame."""
     
     fin = netCDF4.Dataset(infile)   
 
@@ -82,8 +81,7 @@ def get_fourier(infile, lat_range):
 def main(inargs):
     """Run the program."""
 
-    # Read data and check inputs #
-    
+    # Read data and check inputs
     fourier_DataFrame, fourier_history = get_fourier(inargs.fourier_file, inargs.lat_range)
     zw3_DataFrame, zw3_history = aconv.nc_to_df(inargs.zw3_file, ['zw3'])
     env_DataFrame, env_history = aconv.nc_to_df(inargs.env_file, ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon'])
@@ -94,7 +92,7 @@ def main(inargs):
     metadata = {inargs.fourier_file: fourier_history,
                 inargs.zw3_file: zw3_history,
                 inargs.env_file: env_history}
-    gio.write_metadata(inargs.outfile, file_info=metadata)  # You can't write metadata headers with to_csv, hence the need for a separate metadata file
+    gio.write_metadata(inargs.outfile, file_info=metadata)  #Can't write metadata headers with to_csv, hence need for separate metadata file
 
 
 if __name__ == '__main__':

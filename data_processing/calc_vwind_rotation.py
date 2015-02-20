@@ -5,7 +5,7 @@ Description:  Calculate meridional wind according to a new coordinate axis
 
 """
 
-# Import general Python modules #
+# Import general Python modules
 
 import sys, os
 
@@ -16,13 +16,13 @@ import re
 import cdms2
 
 
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -32,10 +32,10 @@ try:
     import netcdf_io as nio
     import coordinate_rotation as rot
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 
-# Define functions #
+# Define functions
 
 def rotate_vwind(dataU, dataV, new_np, pm_point, res=1.0, anomaly=None):
     """Define the new meridional wind field, according to the 
@@ -57,7 +57,6 @@ def rotate_vwind(dataU, dataV, new_np, pm_point, res=1.0, anomaly=None):
     lats, lons = nio.coordinate_pairs(lat_axis, lon_axis)
 
     # Calculate new vwind on the native grid
-
     vwind_rot = calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np) 
 
     if anomaly:
@@ -72,7 +71,6 @@ def rotate_vwind(dataU, dataV, new_np, pm_point, res=1.0, anomaly=None):
 	vwind_rot = nio.temporal_aggregation(vwind_rot, 'ANNUALCYCLE', 'anomaly', time_period=period)  #hard wired to annual cycle
 
     # Rotate the coordinate axis to desired grid
-
     nlats = int((180.0 / res) + 1)
     nlons = int(360.0 / res)
     grid = cdms2.createUniformGrid(-90.0, nlats, res, 0.0, nlons, res)
@@ -88,13 +86,12 @@ def rotate_vwind(dataU, dataV, new_np, pm_point, res=1.0, anomaly=None):
     
     vwind_rot_swtich = cdms2.createVariable(vwind_rot_switch, grid=grid, axes=axis_list)
     
-
     return vwind_rot, vwind_rot_swtich    
         
 
 def calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np, old_np=(90.0, 0.0)):
     """Calculate the new meridional wind field, according to the
-    new position of the north pole"""
+    new position of the north pole."""
     
     lats, lons = nio.coordinate_pairs(lat_axis, lon_axis) 
     theta = rot.rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], 
@@ -107,23 +104,26 @@ def calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np, old_np=(90.0, 0.0)):
     
     
 def vwind_trig(u, v, theta):
-    """Do the trigonometry required to calculate new meridional
-    wind from the old one.
-    
-    u      -  zonal wind data
-    v      -  meridional wind data
-    theta  -  angle through which the x/y coordinate axes must be rotated 
-              (measured anticlockwise starting on the original positive x-axis 
-	      (i.e. at 90 deg in a 360 circle))
-    phi    -  angle that the wind vector makes with original positive x-axis
-              (measured anticlockwise starting on the original positive x-axis)
-    alpha  -  angle that the wind vector makes with the new positive x-axis
-              (measured anticlockwise starting on the new positive x-axis)
+    """Calculate new meridional wind from the old one.
+
+    Args:
+      u (array): zonal wind data
+      v (array): meridional wind data
+      theta (float): angle through which the x/y coordinate axes must 
+        be rotated, measured anticlockwise starting on the original positive 
+        x-axis (i.e. at 90 deg in a 360 circle)
                
     """
     
     wsp = numpy.sqrt(numpy.square(numpy.array(u)) + numpy.square(numpy.array(v)))
-    phi = numpy.arctan2(v, u)
+    
+    # Calculate the angle (phi) that the wind vector makes with the original
+    # positive x-axis (measured anticlockwise starting on the original 
+    # positive x-axis) 
+    phi = numpy.arctan2(v, u) 
+
+    # Calculate the angle (alpha) that the wind vector makes with the new positive 
+    # x-axis (measured anticlockwise starting on the new positive x-axis)
     alpha = phi - theta
     
     return wsp * numpy.sin(alpha)
@@ -132,19 +132,16 @@ def vwind_trig(u, v, theta):
 def main(inargs):
     """Run the program."""
     
-    # Prepate input data #
-
+    # Prepate input data
     indataU = nio.InputData(inargs.infileU, inargs.variableU, 
                            **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude', 'grid']))
     indataV = nio.InputData(inargs.infileV, inargs.variableV, 
                            **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude', 'grid']))
     
-    # Calulate the new vwind #
-
+    # Calulate the new vwind
     vwind_rot, vwind_rot_switch = rotate_vwind(indataU.data, indataV.data, inargs.north_pole, inargs.pm, anomaly=inargs.anomaly)
 
-    # Write the output file #
-
+    # Write the output file
     if inargs.noswitch:
         grid_insert = '(although the data are still stored on a non-rotated grid)'
     else:

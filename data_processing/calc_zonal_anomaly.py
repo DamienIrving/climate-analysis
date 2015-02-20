@@ -5,20 +5,20 @@ Description:  Calculate the zonal anomaly (i.e. subtract the zonal mean at each 
 
 """
 
-# Import general Python modules #
+# Import general Python modules
 
 import os, sys
 import argparse
 import numpy
 import cdutil
 
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -27,10 +27,9 @@ sys.path.append(modules_dir)
 try:
     import netcdf_io as nio
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
     
-    
-# Define fuctions #
+# Define fuctions
 
 def calc_zonal_anomaly(indata):
     """Calculate zonal anomaly."""  
@@ -38,10 +37,10 @@ def calc_zonal_anomaly(indata):
     assert indata.getOrder()[-1] == 'x', \
     'The last dimension must be longitude'
         
-    # Calculate the zonal mean climatology #
+    # Calculate the zonal mean climatology
     zonal_mean = cdutil.averager(indata, axis='x')
     
-    # Broadcast to same shape and subract from data #
+    # Broadcast to same shape and subract from data
     zonal_mean_shape = list(zonal_mean.shape)
     zonal_mean_shape.append(1)
     zonal_mean_added_dim = numpy.reshape(zonal_mean, zonal_mean_shape)
@@ -52,15 +51,15 @@ def calc_zonal_anomaly(indata):
 
 
 def main(inargs):
-    """Run the program"""
+    """Run the program."""
     
-    # Open the input file #
+    # Open the input file
     indata = nio.InputData(inargs.infile, inargs.variable, **nio.dict_filter(vars(inargs), ['time',]))
       
-    # Calculate the zonal anomaly #
+    # Calculate the zonal anomaly
     zonal_anomaly = calc_zonal_anomaly(indata.data)
 
-    # Write output file # 
+    # Write output file
     attributes = {'id': inargs.variable,
                  'long_name': indata.data.long_name,
                  'units': indata.data.units,

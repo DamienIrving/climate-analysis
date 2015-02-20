@@ -6,7 +6,7 @@ Reference:    Uses the windspharm package: ajdawson.github.com/windspharm/index.
 
 """
 
-# Import general Python modules #
+# Import general Python modules
 
 import sys, os
 import argparse
@@ -14,13 +14,13 @@ import numpy
 from windspharm.cdms import VectorWind
 import pdb
 
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -30,9 +30,9 @@ try:
     import netcdf_io as nio
     import coordinate_rotation as rot
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
-
+# Define global variables and functions
 
 var_atts = {}
 
@@ -122,7 +122,11 @@ var_atts['rossbywavesource2'] = {'id': 'rws2',
 
 
 def calc_quantity(uwnd, vwnd, quantity):
-    """Calculates a single wind quantity using windspharm (ajdawson.github.com/windspharm/index.html)"""
+    """Calculate a single wind quantity.
+
+    Uses windspharm (ajdawson.github.com/windspharm/index.html)
+
+    """
     
     w = VectorWind(uwnd, vwnd)
     
@@ -185,26 +189,22 @@ def calc_quantity(uwnd, vwnd, quantity):
 def main(inargs):
     """Run the program"""
 
-    # Read the input data #
-
+    # Read the input data
     data_u = nio.InputData(inargs.infileu, inargs.varu, 
                            **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude']))
     data_v = nio.InputData(inargs.infilev, inargs.varv, 
                            **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude']))
 
-    # Check that the input data are all on the same coordinate axes #
-
+    # Check that the input data are all on the same coordinate axes
     nio.xy_axis_check(data_u.data.getLatitude(), data_v.data.getLatitude())
     nio.xy_axis_check(data_u.data.getLongitude(), data_v.data.getLongitude())
     if 't' in data_u.data.getOrder():
         nio.time_axis_check(data_u.data.getTime(), data_v.data.getTime())
     
-    # Calculate the desired quantity #
-    
+    # Calculate the desired quantity
     data_out = calc_quantity(data_u.data, data_v.data, inargs.quantity)
 
-    # Write output file #
-
+    # Write output file
     indata_list = [data_u, data_v,]
     if (type(data_out) == dict) and ('u' in data_out.keys()):
         outdata_list = [data_out['u'], data_out['v'],]

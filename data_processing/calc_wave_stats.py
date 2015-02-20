@@ -1,25 +1,25 @@
 """
 Filename:     calc_wave_stats.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Calcuates statistics for wave envelope data 
+Description:  Calcuate statistics for wave envelope data 
               presented in Hovmoller format (time, longitude)
 
 """
 
-# Import general Python modules #
+# Import general Python modules
 
 import sys, os, pdb
 import argparse
 import numpy
 import re
 
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -28,13 +28,13 @@ sys.path.append(modules_dir)
 try:
     import netcdf_io as nio
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 
 # Define functions #
     
 def extent_stats(data_double, lons_double, threshold, lons_spacing):
-    """Return key statistics regarding the extent
+    """Return key statistics regarding the extent.
 
     NOTE: An inprovement on the extent statistic might be a simple count 
     of the number of grid cells exceeding the threshold value
@@ -63,7 +63,7 @@ def extent_stats(data_double, lons_double, threshold, lons_spacing):
 
 
 def extent_atts(orig_data, statistic, threshold, outvar_atts_list):
-    """Get the attributes for the extent statistics"""
+    """Get the attributes for the extent statistics."""
 
     assert statistic in ['extent', 'startlon', 'endlon']
 
@@ -79,7 +79,7 @@ def extent_atts(orig_data, statistic, threshold, outvar_atts_list):
 
 def amp_stats(data):
     """Return key statistics regarding the amplitude of the wave 
-    envelope across the entire zonal domain"""
+    envelope across the entire zonal domain."""
     
     amp_mean = numpy.mean(numpy.array(data))
     amp_median = numpy.median(numpy.array(data))
@@ -88,7 +88,7 @@ def amp_stats(data):
 
 
 def amp_atts(orig_data, stat, outvar_atts_list):
-    """Get the attributes for the wave amplitude statistic"""
+    """Get the attributes for the wave amplitude statistic."""
    
     text = 'zonal_%s_of_the_meridional_maximum_' %(stat)
     var_atts = {'id': 'amp'+stat,
@@ -113,7 +113,7 @@ def get_lons(data):
 
 
 def calc_threshold(data, threshold_str):
-    """Provide a default threshold for use in determining the extent of the waveform"""
+    """Provide a default threshold for use in determining the extent of the waveform."""
 
     if 'pct' in threshold_str:
         pct = float(re.sub('pct', '', threshold_str))
