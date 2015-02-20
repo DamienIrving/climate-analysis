@@ -1,15 +1,12 @@
 """
-Filename:     eof_anal.py
+Filename:     calc_eof.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Performs and Empiricial Orthogonal Function (EOF) analysis
+Description:  Perform Empiricial Orthogonal Function (EOF) analysis
 Reference:    Uses eof2 package: https://github.com/ajdawson/eof2
 
-Updates | By | Description
---------+----+------------
-23 October 2012 | Damien Irving | Initial version.
-10 December 2012 | Damien Irving | Switched over to eof2 package
-
 """
+
+# Import general Python modules
 
 import sys
 import os
@@ -19,25 +16,33 @@ import numpy
 
 import eof2
 
-module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
-sys.path.insert(0, module_dir)
-import netcdf_io as nio
+# Import my modules
 
+cwd = os.getcwd()
+repo_dir = '/'
+for directory in cwd.split('/')[1:]:
+    repo_dir = os.path.join(repo_dir, directory)
+    if directory == 'climate-analysis':
+        break
+
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+try:
+    import netcdf_io as nio
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
+
+# Define functions and classes
 
 class EofAnalysis:
     """Perform an EOF analysis. 
     
-    Reference: 
-    https://github.com/ajdawson/eof2
+    Reference: https://github.com/ajdawson/eof2
 
     """
     
     def __init__(self, data, neofs=5):
-        """Perform the EOF analysis and calculate variance explained.
-
-        It is assumed that the input is a nio.InputData instance.
-
-        """
+        """Perform EOF analysis and calculate variance explained."""
         
         assert isinstance(data, nio.InputData), \
         'input must be a nio.InputData instance'        
@@ -110,20 +115,17 @@ class EofAnalysis:
 def main(inargs):
     """Run the program."""
     
-    # Prepate input data #
-
+    # Prepate input data
     indata = nio.InputData(inargs.infile, inargs.variable, 
                            **nio.dict_filter(vars(inargs), ['time', 'agg', 'region']))
     
     # Perform EOF analysis
-
     eof_anal = EofAnalysis(indata, **nio.dict_filter(vars(inargs), nio.list_kwargs(EofAnalysis.__init__)))
     
     eof_data, eof_atts = eof_anal.eof(**nio.dict_filter(vars(inargs), nio.list_kwargs(eof_anal.eof)))
     pc_data, pc_atts = eof_anal.pcs(**nio.dict_filter(vars(inargs), nio.list_kwargs(eof_anal.pcs)))
 
-    # Write output file #
-
+    # Write output file
     neofs = numpy.shape(eof_data)[0]
     outdata_list = []
     outvar_atts_list = []

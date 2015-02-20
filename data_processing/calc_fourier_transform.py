@@ -1,6 +1,7 @@
 """
 Filename:     calc_fourier_transform.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
+Description:  Calculate Fourier transform
 
 """
 
@@ -13,13 +14,13 @@ from scipy import fftpack
 from scipy import signal
 from copy import deepcopy
 
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -29,29 +30,10 @@ try:
     import netcdf_io as nio
     import convenient_universal as uconv
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 
-# Define functions #
-
-def apply_lon_filter(data, lon_bounds):
-    """Set all values outside of the specified longitude range [lon_bounds[0], lon_bounds[1]] to zero."""
-    
-    # Convert to common bounds (0, 360) #
- 
-    lon_min = uconv.adjust_lon_range(lon_bounds[0], radians=False, start=0.0)
-    lon_max = uconv.adjust_lon_range(lon_bounds[1], radians=False, start=0.0)
-    lon_axis = uconv.adjust_lon_range(data.getLongitude()[:], radians=False, start=0.0)
-
-    # Make required values zero #
-    
-    ntimes, nlats, nlons = data.shape
-    lon_axis_tiled = numpy.tile(lon_axis, (ntimes, nlats, 1))
-    
-    new_data = numpy.where(lon_axis_tiled < lon_min, 0.0, data)
-    
-    return numpy.where(lon_axis_tiled > lon_max, 0.0, new_data)
-
+# Define functions
     
 def filter_signal(signal, indep_var, min_freq, max_freq, exclusion):
     """Filter a signal by performing a Fourier Tranform and then
@@ -66,34 +48,37 @@ def filter_signal(signal, indep_var, min_freq, max_freq, exclusion):
 def fourier_transform(signal, indep_var):
     """Calculate the Fourier Transform.
     
-    Input arguments:
-        indep_var  ->  Independent variable (i.e. 1 dimensional time axis or longitude axis)
+    Args:
+      signal (numpy.ndarray): Data to be transformed 
+      indep_var (list/tuple): Independent variable (i.e. 1 dimensional time axis or longitude axis)
     
-    Output:
-        sig_fft    ->  Coefficients obtained from the Fourier Transform
-        freqs      ->  Wave frequency associated with each coefficient
+    Returns:
+      sig_fft (numpy.ndarray): Coefficients obtained from the Fourier Transform
+      freqs (numpy.ndarray): Wave frequency associated with each coefficient
+    
     """
     
     spacing = indep_var[1] - indep_var[0]
     sig_fft = fftpack.fft(signal)
-    sample_freq = fftpack.fftfreq(len(indep_var), d=spacing) * len(indep_var) * spacing  # i.e. in units of cycles per length of domain
+    sample_freq = fftpack.fftfreq(len(indep_var), d=spacing) * len(indep_var) * spacing  #units = cycles per length of domain
     sample_freq = numpy.resize(sample_freq, sig_fft.shape)
     
     return sig_fft, sample_freq
 
 
-def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq=None, exclude='negative'):
+def inverse_fourier_transform(coefficients, sample_freq, 
+                              min_freq=None, max_freq=None, exclude='negative'):
     """Inverse Fourier Transform.
     
-    Input arguments:
-        max_freq, min_freq   ->  Can filter to only include a certain
-                                 frequency range. 
-                                 (Note that this filtering keeps both the positive
-                                 and negative half of the spectrum)
-        exclude              ->  Can exclude either the 'positive' or 
-                                 'negative' half of the Fourier spectrum.
-                                 (A Hilbert transform, for example, excludes the 
-                                 negative part of the spectrum)
+    Args:
+      coefficients (numpy.ndarray): Coefficients obtained from the Fourier Transform
+      sample_freq (numpy.ndarray): Wave frequency associated with each coefficient
+      max_freq, min_freq (float, optional): Exclude values outside [min_freq, max_freq]
+        frequency range. (Note that this filtering keeps both the positive and 
+        negative half of the spectrum)
+      exclude (str, optional): Exclude either the 'positive' or 'negative' 
+        half of the Fourier spectrum. (A Hilbert transform, for example, excludes 
+        the negative part of the spectrum)
                                  
     """
     
@@ -123,8 +108,10 @@ def inverse_fourier_transform(coefficients, sample_freq, min_freq=None, max_freq
 
 
 def first_localmax_index(data):
-    """Return the index of the first local maxima. If there is no local maxima,
-    (e.g. if all the values are zero), then simply return zero
+    """Return index of first local maxima. 
+
+    If there is no local maxima (e.g. if all the values are zero), 
+    it will simply return zero.
 
     """
     localmax_indexes = signal.argrelextrema(data, numpy.greater, mode='wrap')
@@ -136,11 +123,12 @@ def first_localmax_index(data):
 
 
 def get_coefficients(data, lon_axis, min_freq, max_freq):
-    """Return the magnitude and phase coefficient for each frequency in the range [min_freq, max_freq].
+    """Calculate magnitude and phase coefficients for each frequency. 
 
-    Output:
-      - A list: [mag_min_freq, phase_min_freq, ... mag_max_freq, phase_max_freq]
-      - The phase is represented by the location of the first local maxima along the longitude axis
+    Returns:
+      A list [mag_min_freq, phase_min_freq, ... mag_max_freq, phase_max_freq]
+      where the phase is represented by the location of the first local maxima 
+      along the longitude axis
     
     """
 
@@ -163,10 +151,10 @@ def get_coefficients(data, lon_axis, min_freq, max_freq):
 
 
 def get_coefficient_atts(orig_data, min_freq, max_freq):
-    """Get the attributes for the coefficient output file
+    """Get the attributes for the coefficient output file.
 
-    Output:
-      - A list: [mag-atts_min-freq, phase-atts_min-freq, ... mag-atts_max-freq, mag-phase_max-freq] 
+    Returns:
+      A list [mag-atts_min-freq, phase-atts_min-freq, ... mag-atts_max-freq, mag-phase_max-freq] 
 
     """
     
@@ -216,7 +204,7 @@ def hilbert_transform(data, lon_axis, min_freq, max_freq, out_type=None):
 
 
 def get_hilbert_atts(orig_data, min_freq, max_freq):
-    """Get the attributes for the output Hilbert transform file"""
+    """Get the attributes for the output Hilbert transform file."""
    
     method = 'hilbert_transformed'
     filter_text = get_filter_text(method, min_freq, max_freq)
@@ -234,7 +222,7 @@ def get_hilbert_atts(orig_data, min_freq, max_freq):
 
 def get_filter_text(method, min_freq, max_freq):
     """Get the notes attribute text according to the analysis
-    method and frequency range"""
+    method and frequency range."""
 
     if min_freq and max_freq:
         filter_text = '%s with frequency range: %s to %s' %(method, min_freq, max_freq)
@@ -247,16 +235,16 @@ def get_filter_text(method, min_freq, max_freq):
 def spectrum(signal_fft, freqs, scaling='amplitude', variance=None):
     """Calculate the spectral density for a given Fourier Transform.
     
-    signal_fft and freqs are typically the output of fourier_transform()
-    
-    The choices for the amplitude scaling for each frequency
-    are as follows (see Wilks 2011, p440):
-    - 'amplitude' : no scaling at all (C)
-    - 'power' : sqaure the amplitude (C^2)
-    - 'R2' : variance explained = [(n/2)*C^2] / (n-1)*variance^2, 
-      where n and variance are the length and variance of the 
-      orignal data series
-      (R2 = the proportion of the variance explained by each harmonic)    
+    Args:
+      signal_fft, freqs (numpy.ndarray): Typically the output of fourier_transform()
+      scaling (str, optional): Choices for the amplitude scaling for each frequency
+        are as follows (see Wilks 2011, p440):
+         'amplitude': no scaling at all (C)
+         'power': sqaure the amplitude (C^2)
+         'R2': variance explained = [(n/2)*C^2] / (n-1)*variance^2, 
+         where n and variance are the length and variance of the 
+         orignal data series (R2 = the proportion of the variance 
+         explained by each harmonic)    
 
     """
 
@@ -291,17 +279,17 @@ def spectrum(signal_fft, freqs, scaling='amplitude', variance=None):
 def main(inargs):
     """Run the program."""
     
-    # Read input data #
+    # Read input data
     indata = nio.InputData(inargs.infile, inargs.variable, 
                            **nio.dict_filter(vars(inargs), ['time', 'latitude']))
     
     assert indata.data.getOrder()[-1] == 'x', \
     'This script is setup to perform the fourier transform along the longitude axis'
     
-    # Apply longitude filter (i.e. set unwanted longitudes to zero) #
+    # Apply longitude filter (i.e. set unwanted longitudes to zero)
     data_masked = apply_lon_mask(indata.data, inargs.longitude) if inargs.longitude else indata.data
     
-    # Perform task #
+    # Perform task
     min_freq, max_freq = inargs.filter
     if inargs.outtype == 'coefficients':
         outdata_list = get_coefficients(data_masked, indata.data.getLongitude()[:], min_freq, max_freq)
@@ -310,7 +298,7 @@ def main(inargs):
         outdata_list = hilbert_transform(data_masked, indata.data.getLongitude()[:], min_freq, max_freq, out_type=list)
         outvar_atts_list, outvar_axes_list = get_hilbert_atts(indata.data, min_freq, max_freq)
 
-    # Write output file #
+    # Write output file
     nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
                      indata.global_atts, 
                      outdata_list,

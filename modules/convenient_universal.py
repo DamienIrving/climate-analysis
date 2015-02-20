@@ -1,9 +1,10 @@
-"""Collection of convenient functions that will work with my anaconda or uvcdat install
+"""Collection of convenient functions that will work with my anaconda or uvcdat install.
 
 Included functions:
-adjust_lon_range     -- Express longitude values in desired 360 degree interval
-get_threshold        -- Turn the user input threshold into a numeric threshold
-single2list          -- Check if item is a list, then convert if not
+  adjust_lon_range   -- Express longitude values in desired 360 degree interval
+  apply_lon_filter   -- Set values outside of specified longitude range to zero
+  get_threshold      -- Turn the user input threshold into a numeric threshold
+  single2list        -- Check if item is a list, then convert if not
 
 """
 
@@ -16,12 +17,13 @@ def adjust_lon_range(lons, radians=True, start=0.0):
     """Express longitude values in the 360 degree (or 2*pi radians)
     interval that begins at start.
 
-    Arguments:
-       lons      List of longitude axis values (monotonically increasing)
-       radians   Specify whether the input data are in radians (True) or
-                 degrees (False). Output will be the same units.
-       start     Start value for the output axis (add 360 degrees or 2*pi
-                 radians to get the end point)
+    Args:
+      lons (list/tuple): Longitude axis values (monotonically increasing)
+      radians (bool): Specify whether input data are in radians (True) or
+        degrees (False). Output will be the same units.
+      start (float): Start value for the output axis (add 360 degrees or 2*pi
+        radians to get the end point)
+    
     """
     
     lons = single2list(lons, numpy_array=True)    
@@ -40,6 +42,29 @@ def adjust_lon_range(lons, radians=True, start=0.0):
         more_than_end = lons >= end
 
     return lons
+
+
+def apply_lon_filter(data, lon_bounds):
+    """Set values outside of specified longitude range to zero.
+
+    Args:
+      data (numpy.ndarray): Array of longitude values.
+      lon_bounds (list/tuple): Specified longitude range (min, max)
+
+    """
+    
+    # Convert to common bounds (0, 360)
+    lon_min = adjust_lon_range(lon_bounds[0], radians=False, start=0.0)
+    lon_max = adjust_lon_range(lon_bounds[1], radians=False, start=0.0)
+    lon_axis = adjust_lon_range(data.getLongitude()[:], radians=False, start=0.0)
+
+    # Make required values zero
+    ntimes, nlats, nlons = data.shape
+    lon_axis_tiled = numpy.tile(lon_axis, (ntimes, nlats, 1))
+    
+    new_data = numpy.where(lon_axis_tiled < lon_min, 0.0, data)
+    
+    return numpy.where(lon_axis_tiled > lon_max, 0.0, new_data)
 
 
 def get_significance(data_subset, data_all, 

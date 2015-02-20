@@ -5,7 +5,7 @@ Description:  Calculates a composite
 
 """
 
-# Import general Python modules #
+# Import general Python modules
 
 import sys, os, pdb
 import argparse
@@ -16,14 +16,13 @@ from dateutil.relativedelta import relativedelta
 
 import MV2
 
-
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -34,13 +33,12 @@ try:
     import netcdf_io as nio
     import convenient_universal as uconv
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
-
-# Define functions #
+# Define functions
 
 def date_offset(date_list, offset):
-    """Offset a list of dates by the specified number of days"""
+    """Offset a list of dates by the specified number of days."""
     
     dt_list = map(lambda x: datetime.datetime.strptime(x, '%Y-%m-%d'), date_list)
 
@@ -55,8 +53,11 @@ def date_offset(date_list, offset):
 
 
 def filter_dates(data, date_file, offset):
-    """Filter the data into a subset that only includes dates in date_file. An
-    offset can be applied to the dates in date_file"""
+    """Filter the data into a subset that only includes dates in date_file. 
+
+    An offset can be applied to the dates in date_file.
+
+    """
 
     if not date_file:
         data_filtered = data
@@ -78,8 +79,7 @@ def filter_dates(data, date_file, offset):
 
 
 def get_composite(data, var, long_name, standard_name, units, season):
-    """Calculate the composite and it's attributes (using the desired var, long_name
-    units and season"""
+    """Calculate composite and define its attributes."""
 
     composite_mean = numpy.mean(data, axis=0)
 
@@ -95,8 +95,7 @@ def get_composite(data, var, long_name, standard_name, units, season):
 def main(inargs):
     """Run the program."""
     
-    # Initialise output #
-
+    # Initialise output
     outdata_list = []
     outvar_atts_list = []
     outvar_axes_list = []
@@ -108,18 +107,15 @@ def main(inargs):
 
     for season in inargs.seasons:
 
-	# Prepate input data #
-        
+	# Prepate input data
         selector = 'none' if season == 'annual' else season
 	indata = nio.InputData(inargs.infile, inargs.var, time=(start_date, end_date, selector),  **nio.dict_filter(vars(inargs), ['region']))
         assert indata.data.getOrder()[0] == 't', "First axis must be time"
 
-	# Filter data #
-
+	# Filter data
 	data_filtered, date_metadata, size_filtered = filter_dates(indata.data, inargs.date_file, inargs.offset)
 
-	# Calculate composite # 
-
+	# Calculate composite
 	composite, composite_atts = get_composite(data_filtered, inargs.var, 
                                         	  indata.data.long_name, indata.data.standard_name, indata.data.units,
                                         	  season)
@@ -127,8 +123,7 @@ def main(inargs):
 	outvar_atts_list.append(composite_atts)
 	outvar_axes_list.append(indata.data.getAxisList()[1:])
 
-	# Perform significance test # 
-
+	# Perform significance test
 	if inargs.date_file:
             pval, pval_atts = uconv.get_significance(data_filtered, indata.data, 
 	                                             'p_'+season, 'p_value_'+season, 
@@ -138,8 +133,7 @@ def main(inargs):
             outvar_axes_list.append(indata.data.getAxisList()[1:])	
 
 
-    # Write the output file #
-
+    # Write the output file
     if date_metadata:
         infile_insert = 'History of %s:\n' %(inargs.infile)
         date_insert = 'History of %s:\n' %(inargs.date_file)

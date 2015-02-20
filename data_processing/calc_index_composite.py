@@ -5,7 +5,7 @@ Description:  For a given variable, calculate a composite of a related index
 
 """
 
-# Import general Python modules #
+# Import general Python modules
 
 import sys, os, pdb, operator
 import argparse
@@ -13,13 +13,13 @@ import numpy
 import MV2
 
 
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -29,10 +29,10 @@ try:
     import netcdf_io as nio
     import convenient_universal as uconv
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 
-# Define functions #
+# Define functions
 
 def check_time_axis(var_indata, metric_indata):
     """Check that the time axes are the same and trim to 
@@ -68,7 +68,7 @@ def check_time_axis(var_indata, metric_indata):
 
 
 def extract_data(inargs, start_date, end_date, selector):
-    """Extract the data"""
+    """Extract the data."""
 
     var_indata = nio.InputData(inargs.varfile, inargs.var, time=(start_date, end_date, selector),  **nio.dict_filter(vars(inargs), ['region']))
 
@@ -83,8 +83,7 @@ def extract_data(inargs, start_date, end_date, selector):
 def main(inargs):
     """Run the program."""
     
-    # Initialise output #
-
+    # Initialise output
     outdata_list = []
     outvar_atts_list = []
     outvar_axes_list = []
@@ -96,8 +95,7 @@ def main(inargs):
 
     for season in inargs.seasons:
 
-	# Prepate input data #
-        
+	# Prepate input data
         selector = 'none' if season == 'annual' else season
         var_indata, metric_indata, time_index = extract_data(inargs, start_date, end_date, selector)
         new_start_date, new_end_date, diff_flag = check_time_axis(var_indata, metric_indata)
@@ -108,15 +106,14 @@ def main(inargs):
         if inargs.absolute:
             var_indata.data = MV2.absolute(var_indata.data)
 
-        # Find threshold for variable and get boolean index array for samples > and <= the threshold #
-        
+        # Find threshold for variable and get boolean index array for samples > and <= the threshold
         threshold = uconv.get_threshold(var_indata.data, inargs.threshold, axis=time_index)
         threshold = numpy.resize(threshold, var_indata.data.shape)
 
         if inargs.include == 'above':
-            subset_indexes = var_indata.data < threshold  # Because True gets masked, and I want the trues included
+            subset_indexes = var_indata.data < threshold  #Because True gets masked, and I want the trues included
         else:
-            subset_indexes = var_indata.data > threshold  # Because True gets masked, and I want the trues included
+            subset_indexes = var_indata.data > threshold  #Because True gets masked, and I want the trues included
   
         size_subset_array = subset_indexes.sum(axis=0)
         print 'size of subset array min = ', size_subset_array.min()  
@@ -125,8 +122,7 @@ def main(inargs):
         size_all = var_indata.data.shape[time_index]
         size_subset = size_all - size_subset_array[0, 0]
 
-        # Create masked metric arrays #
-
+        # Create masked metric arrays
         if len(var_indata.data.shape) > 1:
             dim_size = reduce(operator.mul, var_indata.data.shape[1:], 1)
             metric_data = numpy.repeat(metric_indata.data, dim_size)
@@ -136,8 +132,7 @@ def main(inargs):
 
         metric_data_subset = numpy.ma.masked_array(metric_data, mask=subset_indexes)
  
-	# Calculate composite # 
-	
+	# Calculate composite
         composite_mean = metric_data_subset.mean(axis=time_index)
 
         composite_atts = {'id': inargs.metric+'_'+season,
@@ -150,8 +145,7 @@ def main(inargs):
 	outvar_atts_list.append(composite_atts)
 	outvar_axes_list.append(var_indata.data.getAxisList()[1:])  #exclude time axis
 
-	# Perform significance test # 
-
+	# Perform significance test
         pval, pval_atts = uconv.get_significance(metric_data_subset, metric_data,
                                                  'p_'+season, 'p_value_'+season,
                                                  size_subset, size_all)
@@ -161,8 +155,7 @@ def main(inargs):
         outvar_axes_list.append(var_indata.data.getAxisList()[1:]) #exclude time axis	
 
 
-    # Write the output file #
-
+    # Write the output file
     var_insert = 'History of %s:\n' %(inargs.varfile)
     metric_insert = 'History of %s:\n' %(inargs.metricfile)
     var_indata.global_atts['history'] = '%s %s \n %s %s' %(var_insert, var_indata.global_atts['history'], 

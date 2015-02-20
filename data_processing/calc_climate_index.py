@@ -3,9 +3,6 @@ Filename:     calc_climate_index.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
 Description:  Calculates the selected climate index
 
-Input:        List of netCDF files to plot
-Output:       Text file
-
 """
 
 # Import general Python modules
@@ -18,13 +15,13 @@ cdo = Cdo()
 import pdb
 import cdms2, cdutil
 
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -33,9 +30,9 @@ sys.path.append(modules_dir)
 try:
     import netcdf_io as nio
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
-
+# Define functions
 
 def calc_monthly_climatology(base_timeseries, months):
     """Calcuate the monthly climatology.
@@ -75,11 +72,7 @@ def calc_monthly_anomaly(complete_timeseries, base_timeseries, months):
 def monthly_normalisation(complete_timeseries, base_timeseries, months):
     """Normalise the monthly timeseries: (x - mean) / stdev."""  
     
-    # Calculate the monthly climatology #
-    
     monthly_climatology_mean, monthly_climatology_std = calc_monthly_climatology(base_timeseries, months)
-
-    # Normalise the entire timeseries #
     
     ntime_complete = len(complete_timeseries)
     monthly_normalised = numpy.ma.zeros(ntime_complete)
@@ -92,11 +85,7 @@ def monthly_normalisation(complete_timeseries, base_timeseries, months):
 
 
 def calc_reg_anomaly_timeseries(data_complete, data_base):
-    """Calculate the monthly anomaly timeseries for a given region.
-
-    Input arguments must be netcdf_io.InputData instances.
-
-    """
+    """Calculate the monthly anomaly timeseries for a given region."""
 
     assert isinstance(data_complete, nio.InputData), \
     'input arguments must be nio.InputData instances'
@@ -107,11 +96,11 @@ def calc_reg_anomaly_timeseries(data_complete, data_base):
     ntime_complete, nlats, nlons = numpy.shape(data_complete.data)
     ntime_base, nlats, nlons = numpy.shape(data_base.data)
 
-    data_complete_flat = numpy.ma.reshape(data_complete.data, (int(ntime_complete), int(nlats * nlons)))    # Flattens the spatial dimension
+    # Flatten spatial dimension
+    data_complete_flat = numpy.ma.reshape(data_complete.data, (int(ntime_complete), int(nlats * nlons)))
     data_base_flat = numpy.ma.reshape(data_base.data, (int(ntime_base), int(nlats * nlons)))
 
-    # Calculate the anomalies #
-
+    # Calculate anomalies
     complete_timeseries = numpy.ma.mean(data_complete_flat, axis=1)
     base_timeseries = numpy.ma.mean(data_base_flat, axis=1)
 
@@ -122,8 +111,8 @@ def calc_reg_anomaly_timeseries(data_complete, data_base):
     
 
 def map_std(stds, data, timescale):
-   """Takes the array of stardard deviations and map it
-   to the size of the data array (matching the correct month/day"""
+   """Take an array of stardard deviations and map it
+   to the size of the data array (matching the correct month/day)."""
    
    assert timescale in ['daily', 'monthly']
    
@@ -141,7 +130,7 @@ def map_std(stds, data, timescale):
 
 
 def calc_zw3(index, ifile, var_id, base_period):
-    """Calculate an index of the SH ZW3 pattern
+    """Calculate an index of the SH ZW3 pattern.
     
     Method as per Raphael (2004)
     
@@ -162,7 +151,6 @@ def calc_zw3(index, ifile, var_id, base_period):
     """
 
     # Determine the timescale
-
     indata_complete = nio.InputData(ifile, var_id, region='small') 
     time_axis = indata_complete.data.getTime().asComponentTime()
     timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
@@ -171,7 +159,6 @@ def calc_zw3(index, ifile, var_id, base_period):
     tscale_abbrev = 'day' if timescale == 'daily' else 'mon' 
 
     # Calculate the index
-
     index = {}
     for region in ['zw31', 'zw32', 'zw33']: 
         south_lat, north_lat = nio.regions[region][0][0: 2]
@@ -197,7 +184,6 @@ def calc_zw3(index, ifile, var_id, base_period):
     zw3_timeseries = (index['zw31'] + index['zw32'] + index['zw33']) / 3.0
  
     # Define the output attributes
-    	
     notes = 'Ref: ZW3 index of Raphael (2004)'
     var_atts = {'id': 'zw3',
                 'long_name': 'zonal_wave_3_index',
@@ -209,10 +195,10 @@ def calc_zw3(index, ifile, var_id, base_period):
 
 
 def calc_mex(index, ifile, var_id, base_period):
-    """Calculate the mid-latitude extreme index (MEX)
+    """Calculate the mid-latitude extreme index (MEX).
     
     Method similar to Coumou (2014). Differences include:
-      - They detrend their data first 
+      They detrend their data first 
     
     This function uses cdo instead of CDAT because the
     cdutil library doesn't have routines for calculating 
@@ -222,7 +208,7 @@ def calc_mex(index, ifile, var_id, base_period):
     input data beforehand. 
 
     Possible improvements:
-      - A weighted mean?
+      A weighted mean?
         
     """
 
@@ -232,7 +218,6 @@ def calc_mex(index, ifile, var_id, base_period):
     north_lat = -40
 
     # Determine the timescale
-
     indata_complete = nio.InputData(ifile, var_id, latitude=(south_lat, north_lat)) 
     time_axis = indata_complete.data.getTime().asComponentTime()
     timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
@@ -241,7 +226,6 @@ def calc_mex(index, ifile, var_id, base_period):
     tscale_abbrev = 'day' if timescale == 'daily' else 'mon' 
 
     # Calculate the index
-	
     div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
     div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
     sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
@@ -269,7 +253,6 @@ def calc_mex(index, ifile, var_id, base_period):
     mex_timeseries_normalised = (mex_timeseries_raw - mex_avg) / mex_std
 
     # Define the output attributes
-    	
     hx = 'Ref: MEX index of Coumou (2014)'
     var_atts = {'id': 'mex',
                 'long_name': 'midlatitude_extreme_index',
@@ -287,8 +270,7 @@ def calc_sam(index, ifile, var_id, base_period):
 
     """
     
-    # Read data, extract the required latitudes, calculate zonal mean anomalies #
-             
+    # Read data, extract the required latitudes, calculate zonal mean anomalies
     indata_complete = nio.InputData(ifile, var_id) 
     indata_base = nio.InputData(ifile, var_id, time=base_period)    
     
@@ -307,8 +289,7 @@ def calc_sam(index, ifile, var_id, base_period):
 
     sami_timeseries = numpy.ma.subtract(monthly_normalised_timeseries[-40], monthly_normalised_timeseries[-65])
 
-    # Determine the attributes #   
-
+    # Determine the attributes
     hx = 'Ref: Marshall (2003) and Gong & Wang (1999). Base period: %s to %s' %(base_period[0], 
                                                                                 base_period[1])
     var_atts = {'id': 'sam',
@@ -323,8 +304,6 @@ def calc_sam(index, ifile, var_id, base_period):
 def calc_iemi(index, ifile, var_id, base_period):
     """Calculate the Improved ENSO Modoki Index of Li et al (2010)."""
     
-    # Calculate the index #
-    
     regions = ['emia', 'emib', 'emic']
     anomaly_timeseries = {}
     for reg in regions: 
@@ -334,8 +313,6 @@ def calc_iemi(index, ifile, var_id, base_period):
     
     iemi_timeseries = numpy.ma.subtract(numpy.ma.subtract(numpy.ma.multiply(anomaly_timeseries['emia'], 3.0),
                       numpy.ma.multiply(anomaly_timeseries['emib'],2.0)), anomaly_timeseries['emic'])
-
-    # Determine the attributes #  
 
     hx = 'Ref: Li et al 2010, Adv Atmos Sci, 27, 1210-20. Base period: %s to %s' %(base_period[0], 
                                                                                    base_period[1])
@@ -350,18 +327,12 @@ def calc_iemi(index, ifile, var_id, base_period):
 
 def calc_nino(index, ifile, var_id, base_period):
     """Calculate a NINO SST index."""
-    
-    # Read the input data #
-    
+        
     indata_complete = nio.InputData(ifile, var_id, region='nino'+index[4:])
     indata_base = nio.InputData(ifile, var_id, region='nino'+index[4:], time=base_period)  
     
-    # Calculate the NINO index #
-    
     nino_timeseries = calc_reg_anomaly_timeseries(indata_complete, indata_base)
     
-    # Determine the attributes #
-
     hx = 'lat: %s to %s, lon: %s to %s, base: %s to %s' %(indata_complete.minlat,
                                                           indata_complete.maxlat,
                                                           indata_complete.minlon,
@@ -380,15 +351,13 @@ def calc_nino(index, ifile, var_id, base_period):
 def calc_nino_new(index, ifile, var_id, base_period):
     """Calculate a new Nino index of Ren & Jin (2011)"""
     
-    # Calculate the traditional NINO3 and NINO4 indices #
-    
+    # Calculate the traditional NINO3 and NINO4 indices
     regions = ['NINO3','NINO4']
     anomaly_timeseries = {}
     for reg in regions: 
         anomaly_timeseries[reg], temp, indata_complete = calc_nino(reg, ifile, var_id, base_period)       
 
-    # Calculate the new Ren & Jin index #
-
+    # Calculate the new Ren & Jin index
     ntime = len(anomaly_timeseries['NINO3'])
     
     nino_new_timeseries = numpy.ma.zeros(ntime)
@@ -404,8 +373,7 @@ def calc_nino_new(index, ifile, var_id, base_period):
 	elif index == 'NINOWP':
 	    nino_new_timeseries[i] = numpy.ma.subtract(nino4_val, (numpy.ma.multiply(nino3_val, alpha)))
     
-    # Determine the attributes #   
-
+    # Determine the attributes
     hx = 'Ref: Ren & Jin 2011, GRL, 38, L04704. Base period: %s to %s'  %(base_period[0], 
                                                                           base_period[1])
     long_name = {}
@@ -424,8 +392,7 @@ def calc_nino_new(index, ifile, var_id, base_period):
 def main(inargs):
     """Run the program."""
         
-    # Initialise relevant index function #
-    
+    # Initialise relevant index function
     function_for_index = {'NINO': calc_nino,
                           'NINO_new': calc_nino_new,
                           'IEMI': calc_iemi,
@@ -441,15 +408,13 @@ def main(inargs):
     else:
         calc_index = function_for_index[inargs.index]
 
-    # Calculate the index #  
-
+    # Calculate the index
     index_data, var_atts, global_atts, time_axis = calc_index(inargs.index, 
                                                               inargs.infile, 
                                                               inargs.variable, 
                                                               inargs.base)
     
-    # Write the outfile #
- 
+    # Write the outfile
     outdata_list = [index_data,]
     outvar_atts_list = [var_atts,]
     outvar_axes_list = [(time_axis,),]
@@ -461,8 +426,6 @@ def main(inargs):
                      outvar_axes_list)
 
 
-
-        
 if __name__ == '__main__':
 
     extra_info ="""
@@ -497,12 +460,14 @@ planned enhancements:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     
     parser.add_argument("index", type=str, help="Index to calculate",
-                        choices=['NINO12', 'NINO3', 'NINO4', 'NINO34', 'NINOCT', 'NINOWP', 'IEMI', 'SAM', 'ZW3', 'MEX'])
+                        choices=['NINO12', 'NINO3', 'NINO4', 'NINO34', 'NINOCT',
+                                 'NINOWP', 'IEMI', 'SAM', 'ZW3', 'MEX'])
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
     
-    parser.add_argument("--base", nargs=2, type=str, default=('1981-01-01', '2010-12-31'), metavar=('START_DATE', 'END_DATE'), 
+    parser.add_argument("--base", nargs=2, type=str, default=('1981-01-01', '2010-12-31'), 
+                        metavar=('START_DATE', 'END_DATE'), 
                         help="Start and end date for base period [default: %(default)s]")
   
     args = parser.parse_args()
