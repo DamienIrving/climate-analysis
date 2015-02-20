@@ -1,4 +1,4 @@
-# Import general Python modules #
+# Import general Python modules
 
 import os, sys, re, pdb
 from collections import OrderedDict
@@ -22,14 +22,13 @@ import calendar
 
 import argparse
 
-
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -41,14 +40,15 @@ try:
     import convenient_anaconda as aconv
     import convenient_universal as uconv
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
-
-# Define functions #
+# Define functions
 
 def add_duration(DataFrame, metric, metric_threshold):
-    """Add a duration column to the input DataFrame, where an event is defined by
-    the number of consecutive timesteps greater than the metric_threshold.
+    """Add a duration column to the input DataFrame. 
+
+    An event is defined by the number of consecutive timesteps greater than 
+    the metric_threshold.
     
     Note that every timestep is assigned a duration value equal to the number of
     days in the entire event.
@@ -74,7 +74,7 @@ def add_duration(DataFrame, metric, metric_threshold):
     
 
 def basic_stats(DataFrame, stats, before_filtering=True):
-    """Return basic statistics (for printing to the screen)"""
+    """Return basic statistics (for printing to the screen)."""
     
     if before_filtering:
         stats.append('# Before filtering')     
@@ -89,10 +89,7 @@ def basic_stats(DataFrame, stats, before_filtering=True):
 
 
 def bin_dates(date_list, start_year, start_month, end_year, end_month):
-    """Take a list of dates and return totals in bins, according to 
-    the requested timescale.
-    
-    """
+    """Take a list of dates and return totals in bins."""
     
     dt_list = map(lambda x: datetime.strptime(x, '%Y-%m-%d'), date_list)
     num_list = map(date2num, dt_list)
@@ -123,7 +120,7 @@ def bin_dates(date_list, start_year, start_month, end_year, end_month):
 
 
 def calc_seasonal_values(monthly_values, month_years):
-    """Calculate the seasonal values from the monthly values"""
+    """Calculate the seasonal values from the monthly values."""
     
     months = {'DJF': [12, 1, 2], 'MAM': [3, 4, 5],
               'JJA': [6, 7, 8], 'SON': [9, 10, 11],
@@ -150,7 +147,7 @@ def calc_seasonal_values(monthly_values, month_years):
 
 def create_histogram(data, bin_width=1, min_val=None, max_val=None, 
                      cumulative=False, percentage=False, duration=False):
-    """Create the histogram"""
+    """Create the histogram."""
     
     low_bound = numpy.min(data) if not min_val else min_val
     high_bound = numpy.max(data) if not max_val else max_val
@@ -175,7 +172,7 @@ def create_histogram(data, bin_width=1, min_val=None, max_val=None,
 
 
 def crop_dates(start_date, end_date):
-    """Adjust a start and end date so the data only includes complete months"""
+    """Adjust a start and end date so the data only includes complete months."""
     
     # Crop to complete month
     if start_date.day != 1:
@@ -192,12 +189,11 @@ def crop_dates(start_date, end_date):
     for date in date_list:
         month_years[date.month].append(date.year)
 
-    
     return start_date, end_date, month_years
 
 
 def duration_stats(duration_list, stats_list):
-    """Append some duration data to a list of statistics"""
+    """Append some duration data to a list of statistics."""
 
     bin_counts, bin_centres, bin_edges = create_histogram(duration_list, duration=True)
     nevents = sum(bin_counts[1:]) if bin_centres[0] == 0.0 else sum(bin_counts)
@@ -212,9 +208,7 @@ def duration_stats(duration_list, stats_list):
 def get_date_bounds(indata, dt_selection):
     """For a given list of dates, return the year/month bounds for 
     months of complete data (i.e. incomplete start or end 
-    months are not included)
-    
-    """
+    months are not included)."""
         
     temp_data = indata[dt_selection]
     date_list = temp_data.index.tolist()
@@ -228,7 +222,7 @@ def get_date_bounds(indata, dt_selection):
 
 
 def get_intersection(dictionary, key_list):
-    """Return the common values from a dictionary of lists"""
+    """Return the common values from a dictionary of lists."""
   
     base_key = key_list[0]
     result = set(dictionary[base_key])
@@ -239,7 +233,7 @@ def get_intersection(dictionary, key_list):
 
 
 def get_years(date_list):
-    """Return a list of integer years"""
+    """Return a list of integer years."""
     
     start_year = int(date_list[0][0:4])
     end_year = int(date_list[-1][0:4])
@@ -248,7 +242,7 @@ def get_years(date_list):
 
 
 def plot_duration_histogram(data):
-    """Plot a duration histogram"""
+    """Plot a duration histogram."""
 
     bin_counts, bin_centres, bin_edges = create_histogram(data, duration=True)
   
@@ -261,7 +255,7 @@ def plot_duration_histogram(data):
 
 
 def plot_monthly_totals(ax, data, start_year, start_month, end_year, end_month, month_years):
-    """Plot a bar chart showing the totals for each month"""
+    """Plot a bar chart showing the totals for each month."""
 
     date_list = data.index.tolist()
     monthly_totals, monthly_values = bin_dates(date_list, start_year, start_month, end_year, end_month)
@@ -275,8 +269,8 @@ def plot_monthly_totals(ax, data, start_year, start_month, end_year, end_month, 
             ndays = ndays + nleap
         monthly_pct[i] = (monthly_totals[i+1] / float(ndays)) * 100     
 
-    ind = numpy.arange(12)    # the x locations for the bars
-    width = 0.8               # the width of the bars
+    ind = numpy.arange(12)    #the x locations for the bars
+    width = 0.8               #the width of the bars
     p1 = plt.bar(ind, monthly_pct, width)
 
     plt.ylabel('Percentage of days')
@@ -286,7 +280,7 @@ def plot_monthly_totals(ax, data, start_year, start_month, end_year, end_month, 
 def plot_seasonal_values(ax, data, 
                          start_year, start_month, end_year, end_month, month_years,
                          leg_loc=7, scale_annual=1.0):
-    """Plot a line graph showing the seasonal values for each year"""
+    """Plot a line graph showing the seasonal values for each year."""
     
     for month, years in month_years.iteritems():
         assert len(years) > 1, \
@@ -316,7 +310,7 @@ def plot_seasonal_values(ax, data,
 
 
 def main(inargs):
-    """Run the program"""
+    """Run the program."""
    
     # Read data 
     indata, metadata = aconv.nc_to_df(inargs.infile, ['ampmean', 'ampmedian', 'extent', 'startlon', 'endlon'])
