@@ -11,6 +11,8 @@ The most important and/or common aspects of the process are as follows:
 ```
 # Longitude
 
+(% denotes 'whatever it comes as')
+
 Must go from 0 to 360 and include the following attributes:  
  
   * standard_name = "longitude"  
