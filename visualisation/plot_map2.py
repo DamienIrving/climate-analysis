@@ -33,7 +33,7 @@ cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
