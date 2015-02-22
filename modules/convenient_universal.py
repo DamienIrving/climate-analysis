@@ -1,6 +1,6 @@
 """Collection of convenient functions that will work with my anaconda or uvcdat install.
 
-Included functions:
+Functions:
   adjust_lon_range   -- Express longitude values in desired 360 degree interval
   apply_lon_filter   -- Set values outside of specified longitude range to zero
   get_threshold      -- Turn the user input threshold into a numeric threshold
@@ -14,14 +14,13 @@ import pdb, re
 
 
 def adjust_lon_range(lons, radians=True, start=0.0):
-    """Express longitude values in the 360 degree (or 2*pi radians)
-    interval that begins at start.
+    """Express longitude values in a 360 degree (or 2*pi radians) interval.
 
     Args:
       lons (list/tuple): Longitude axis values (monotonically increasing)
       radians (bool): Specify whether input data are in radians (True) or
         degrees (False). Output will be the same units.
-      start (float): Start value for the output axis (add 360 degrees or 2*pi
+      start (float, optional): Start value for the output interval (add 360 degrees or 2*pi
         radians to get the end point)
     
     """
@@ -121,19 +120,19 @@ def get_significance(data_subset, data_all,
 
     if type(size_subset) == str:
 
-	size_subset_atts = {'id': size_subset,
+    size_subset_atts = {'id': size_subset,
                             'standard_name': size_subset,
                             'long_name': size_subset,
                             'units': ' ',
                             'notes': """Size of sample that exceeds the threshold"""}
 
-	size_all_atts = {'id': size_all,
+    size_all_atts = {'id': size_all,
                          'standard_name': size_all,
                          'long_name': size_all,
                          'units': ' ',
                          'notes': """Size of the entire data"""}
 
-	return pvals, pval_atts, size_subset_atts, size_all_atts
+    return pvals, pval_atts, size_subset_atts, size_all_atts
 
     else:
 
@@ -141,7 +140,7 @@ def get_significance(data_subset, data_all,
 
 
 def get_threshold(data, threshold_str, axis=None):
-    """Turn the user input threshold into a numeric threshold"""
+    """Turn the user input threshold into a numeric threshold."""
     
     if 'pct' in threshold_str:
         value = float(re.sub('pct', '', threshold_str))
@@ -153,7 +152,7 @@ def get_threshold(data, threshold_str, axis=None):
 
 
 def single2list(item, numpy_array=False):
-    """Check if item is a list, then convert if not"""
+    """Check if item is a list, then convert if not."""
     
     try:
         test = len(item)

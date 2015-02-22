@@ -1,30 +1,29 @@
 """
 Collection of commonly used convenience functions that will work with
 my anaconda install but not uvcdat (because uvcdat doesn't play nice with 
-pandas or netCDF4
+pandas or netCDF4).
 
-Included functions:
-pandas_dt_selector  --  Create a datetime selector for a Pandas DataFrame
-get_time_axis       --  Get the time axis using the netCDF4 module
-nc_to_df            --  Takes a netCDF file and returns the output in a Pandas DataFrame
+Functions:
+  pandas_dt_selector -- Create a datetime selector for a Pandas DataFrame
+  get_time_axis      -- Get the time axis using the netCDF4 module
+  nc_to_df           -- Take a netCDF file and return the output in a Pandas DataFrame
 
 """
 
+# Import general Python modules
+
 import os, sys, pdb
-
 import numpy
-
 import pandas
 import netCDF4
 
-
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -34,12 +33,12 @@ try:
     import netcdf_io as nio
     import general_io as gio
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 # Functions
 
 def pandas_dt_selector(times_str, season=None, start=None, end=None):
-    """Define a Pandas datetime selector based on the supplied datetime column""" 
+    """Define a Pandas datetime selector based on the supplied datetime column.""" 
     
     #note that selections can be as complex as:
     #((3 <= month) & (month <= 5)) | ((20 <= month) & (month <= 23))
@@ -73,7 +72,7 @@ def pandas_dt_selector(times_str, season=None, start=None, end=None):
 
 
 def get_time_axis(time_variable):
-    """Get the time axis using the netCDF4 module"""
+    """Get the time axis using the netCDF4 module."""
 
     units = time_variable.units
     calendar = time_variable.calendar
@@ -83,15 +82,20 @@ def get_time_axis(time_variable):
 
 
 def nc_to_df(infile, var_list, lat=None):
-    """Extract the variables in var_list from the netCDF infile and place them in a pandas DataFrame
+    """Convert netCDF to pandas DataFrame.
     
-    Keyword arguments
-    lat --  (min, max, method), where method can be mermax or spatave
+    Args:
+      infile (str): Input netCDF file
+      var_list (list/tuple): List of variables to extract from infile
+      lat (list/tuple, optional): Specify latitude details - (min, max, method), 
+        where method can be meridional maximum ("mermax") or spatial average ("spatave")
+    
+    Returns:
+      A pandas DataFrame and the global attributes of the input netCDF file.
     
     """
 
     # Define data selection options
-
     options = {}
     if lat:
         if lat[0] == lat[1]:
@@ -102,7 +106,6 @@ def nc_to_df(infile, var_list, lat=None):
             options[lat[2]] = True
         
     # Extract data
-    
     indata = nio.InputData(infile, var_list[0], 
                            **nio.dict_filter(options, ['latitude', 'mermax', 'spatave']))
 
