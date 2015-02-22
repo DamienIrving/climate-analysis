@@ -5,7 +5,7 @@
 | Remove directory | `rm -r -f` |
 |                  | `-r` recursive (do all directories underneath) |
 |                  | `-f` supresses prompt for write protected files (useful for deleting a git repo) |
-| Git    | `git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch data_processing/seas_vars.sh' --prune-empty --tag-name-filter cat -- --all` then `git push origin --force --all` to remove history of sensitive files |
+| Git    | `git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch file.py' --prune-empty --tag-name-filter cat -- --all` then `git push origin --force --all` to remove history of sensitive files |
 | Checking jobs | `top` |
 |               | `-u STUDENT\\dbirving` (shows just my jobs) |
 |               | `-r` (renice the job) |
