@@ -10,7 +10,7 @@ makefiles related to that workflow
 (`-n` is a dry run where what would have been executed is just printed to the screen)
 (`-B` forces all the steps to be executed, not just the ones that need updating)  
 
-### Zonal wave analysis
+#### Zonal wave analysis
 
 *Reference:* Irving DB, Simmonds I (in preparation).
 Southern Hemisphere planetary wave activity and its influence on weather and climate extremes.
@@ -23,7 +23,7 @@ Note that `zw_tscale_analysis.mk` and `zw_tscale_analysis_config.mk`
 were used in the initial scoping for the zonal wave analysis
 but were not used to produce any of the results in the reference above
 
-### PSA pattern analysis
+#### PSA pattern analysis
 
 *Reference:* Irving DB, Simmonds I (in preparation).
 The Pacific-South America Pattern: a climatology
