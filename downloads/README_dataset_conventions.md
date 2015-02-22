@@ -1,36 +1,15 @@
-# Conventions for observational datasets
+## Data download and pre-processing
 
-Note that where possible, the Climate and Forecast Metadata Convention should be followed (CF compliance; 
-see [here](http://cf-pcmdi.llnl.gov/) and [here](http://badc.nerc.ac.uk/help/formats/netcdf/index_cf.html) for details)
+The pre-processing scripts in this directory ensure that the downloaded data are 
+compliant with the Climate and Forecast Metadata Convention 
+(see [here](http://cf-pcmdi.llnl.gov/) and 
+[here](http://badc.nerc.ac.uk/help/formats/netcdf/index_cf.html) for details) and also
+my data reference syntax (see `../data_reference_syntax.md`).
 
-## File name format
+The most important and/or common aspects of the process are as follows:
 
-Downloaded data are processed into the following format (all original downloaded datafiles are then deleted):  
-
-```%variable%_%dataset%_%level%_%timescale%_%grid%.nc```  
-
-
-```%variable%```  
-Consistent with the CMIP convention (unless variable is not a CMIP one):  
-
-  * tas = surface air temperature  
-  * tos = sea surface temperature  
-  * ts = surface skin temperature  
-  * z = geopotential  
-  * zg = geopotential height  
-  * ua = eastward wind component  
-  * va = northward wind component  
-  * psl = sea level pressure 
-  * sic = sea ice area fraction 
-  * sftlf = land area fraction  
-  * sftof = sea area fraction  
-  * sf = streamfunction  
-  * vp = velocity potential  
-
-## Variables and dimensions  
-(% denotes 'whatever it comes as')
-
-### Longitude
+```
+# Longitude
 
 Must go from 0 to 360 and include the following attributes:  
  
@@ -40,7 +19,7 @@ Must go from 0 to 360 and include the following attributes:
   * axis = "X"  
   * bounds = "lon_bnds"  
  
-### Latitude
+# Latitude
 
 Must go from -90 to 90 and include the following attributes:  
 
@@ -50,7 +29,7 @@ Must go from -90 to 90 and include the following attributes:
   * axis = "Y"  
   * bounds = "lat_bnds" 
  
-### Time
+# Time
 
   * standard_name = "time"  
   * bounds = "time_bnds"  
@@ -58,7 +37,7 @@ Must go from -90 to 90 and include the following attributes:
   * units = %  
   * calendar = %  
 
-### Variable
+# Variable
 
 Remove offsets and scale factors and have attributes like the following:  
 
@@ -68,3 +47,5 @@ Remove offsets and scale factors and have attributes like the following:
   * units = "kg m-2 s-1"  
   * _FillValue = %  
   * missing_value =   
+
+```

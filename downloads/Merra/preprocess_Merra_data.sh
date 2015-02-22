@@ -28,3 +28,7 @@ ncatted -O -a comments,${outvar},d,, ${outfile}
 ncatted -O -a units,${ourvar},c,c,"${units}" ${outfile}
 ncatted -O -a axis,time,c,c,T ${outfile}
 
+
+# Extra steps for streamfunction
+#   cdo divc,1000000   # For converting the sf units to something more manageable.
+#   ncatted -O -a units,sf,m,c,"1.e+6 m2 s-1"
