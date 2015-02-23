@@ -1,15 +1,17 @@
 function usage {
-    echo "USAGE: bash $0 varfile var contfile contvar outfile"
-    echo "   varfile:    Input file name for colour plot"
-    echo "   var:        Variable for colour plot"
-    echo "   contfile:   Input file name for contour plot"
-    echo "   contvar:    Variable for contour plot"
-    echo "   outfile:    Output file name"
-    echo "   e.g. bash $0 tas_data.nc tas zg_data.nc zg plot.png"
+    echo "USAGE: bash $0 varfile var contfile contvar outfile python_exe code_dir"
+    echo "   varfile:     Input file name for colour plot"
+    echo "   var:         Variable for colour plot"
+    echo "   contfile:    Input file name for contour plot"
+    echo "   contvar:     Variable for contour plot"
+    echo "   outfile:     Output file name"
+    echo "   python_exe:  Python executable"
+    echo "   code_dir:    Directory that plot_map.py is in"
+    echo "   e.g. bash $0 tas_data.nc tas zg_data.nc zg plot.png /usr/local/anaconda/bin/python ~/climate-analysis/visualisation"
     exit 1
 }
 
-nargs=5
+nargs=7
 
 if [ $# -ne $nargs ] ; then
   usage
@@ -20,6 +22,8 @@ var=$2
 contfile=$3
 contvar=$4
 outfile=$5
+python_exe=$6
+code_dir=$7
   
 
 if [ $var == 'tas' ] ; then
@@ -54,5 +58,23 @@ else
 fi
 
 
-/usr/local/anaconda/bin/python ~/phd/visualisation/plot_map2.py ${varfile} ${var}_annual none none none colour 1 3 2 --infiles ${varfile} ${var}_DJF none none none colour 3 --infiles ${varfile} ${var}_MAM none none none colour 4 --infiles ${varfile} ${var}_JJA none none none colour 5 --infiles ${varfile} ${var}_SON none none none colour 6 --palette ${palette} --colourbar_ticks ${ticks} --output_projection SouthPolarStereo --subplot_headings Annual none DJF MAM JJA SON --infiles ${contfile} ${contvar}_annual none none none contour 1 --infiles ${contfile} ${contvar}_DJF none none none contour 3 --infiles ${contfile} ${contvar}_MAM none none none contour 4 --infiles ${contfile} ${contvar}_JJA none none none contour 5 --infiles ${contfile} ${contvar}_SON none none none contour 6 --contour_levels ${levels} --figure_size 9 16 --extend ${extend} --ofile ${outfile} --hatch_bounds 0.0 0.01 --hatch_styles \\\\  ${significance}
-
+${python_exe} ${code_dir}/plot_map.py ${varfile} ${var}_annual none none none colour 1 3 2 \
+--infiles ${varfile} ${var}_DJF none none none colour 3 \
+--infiles ${varfile} ${var}_MAM none none none colour 4 \
+--infiles ${varfile} ${var}_JJA none none none colour 5 \
+--infiles ${varfile} ${var}_SON none none none colour 6 \
+--palette ${palette} \
+--colourbar_ticks ${ticks} \
+--output_projection SouthPolarStereo \
+--subplot_headings Annual none DJF MAM JJA SON \
+--infiles ${contfile} ${contvar}_annual none none none contour 1 \
+--infiles ${contfile} ${contvar}_DJF none none none contour 3 \
+--infiles ${contfile} ${contvar}_MAM none none none contour 4 \
+--infiles ${contfile} ${contvar}_JJA none none none contour 5 \
+--infiles ${contfile} ${contvar}_SON none none none contour 6 \
+--contour_levels ${levels} \
+--figure_size 9 16 \
+--extend ${extend} \
+--ofile ${outfile} \
+--hatch_bounds 0.0 0.01 \
+--hatch_styles bwdlines_tight ${significance}

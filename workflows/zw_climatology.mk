@@ -1,7 +1,7 @@
-# zw3_climatology.mk
+# zw_climatology.mk
 #
 # To execute:
-#   make -n -B -f zw3_climatology.mk  (-n is a dry run) (-B is a force make)
+#   make -n -B -f zw_climatology.mk  (-n is a dry run) (-B is a force make)
 
 # Pre-processing:
 #   The regirdding (if required) needs to be done beforehand 
@@ -10,7 +10,7 @@
 
 
 ## Define marcos ##
-include zw3_climatology_config.mk
+include zw_climatology_config.mk
 
 
 all : ${TARGET}

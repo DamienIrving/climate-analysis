@@ -1,4 +1,4 @@
-# zw3_climatology_config.mk
+# zw_climatology_config.mk
 
 # System configuration
 DATA_HOME=/mnt/meteo0/data/simmonds/dbirving
@@ -10,8 +10,8 @@ COMP_DIR=${ZW3_DIR}/figures/composites
 SPECTRA_DIR=${ZW3_DIR}/figures/spectra
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/local/anaconda/bin/python
-DATA_SCRIPT_DIR=~/phd/data_processing
-VIS_SCRIPT_DIR=~/phd/visualisation
+DATA_SCRIPT_DIR=~/climate-analysis/data_processing
+VIS_SCRIPT_DIR=~/climate-analysis/visualisation
 FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh
 #FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.py   
 ZONAL_ANOM_METHOD=bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
@@ -74,4 +74,4 @@ COMP_THRESH=90pct
 ENSO_METRIC=nino34_anom
 SAM_METRIC=SAM
 
-TARGET=${SPECTRA_DIR}/${VAR}-ampspectrum_${DATASET}_${LEVEL}_daily_${GRID}.png
+TARGET=${COMP_DIR}/${COMP_VAR}-composite_zw3_${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png

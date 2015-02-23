@@ -1,11 +1,11 @@
-# zw3_applications.mk
+# zw_applications.mk
 #
 # To execute:
-#   make -n -B -f zw3_applications.mk  (-n is a dry run) (-B is a force make)
+#   make -n -B -f zw_applications.mk  (-n is a dry run) (-B is a force make)
 
 ## Define marcos ##
-include zw3_climatology_config.mk
-include zw3_climatology.mk
+include zw_climatology_config.mk
+include zw_climatology.mk
 
 
 all : ${TARGET}
