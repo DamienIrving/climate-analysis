@@ -58,12 +58,19 @@ projections = {'PlateCarree_Greenwich': ccrs.PlateCarree(), # Centred on Greenwi
 units_dict = {'ms-1': '$m s^{-1}$',
               'm.s-1': '$m s^{-1}$'}
 
-styles = {'dashed': '--',
-          'solid': '-'}
+line_style_dict = {'dashed': '--',
+                   'solid': '-'}
+
+hatch_style_dict = {'dots': '.',
+                    'fwdlines_wide': '/',
+                    'bwdlines_normal': '\\',
+                    'bwdlines_tight': '\\\\',
+                    'stars': '*'}
+
 
 
 def check_projection(cube, input_projection):
-    """Check that the specified input projection is correct"""
+    """Check that the specified input projection is correct."""
 
     coord_names = [coord.name() for coord in cube.coords()]
     lon_name = next(obj for obj in coord_names if 'lon' in obj)
@@ -77,7 +84,7 @@ def check_projection(cube, input_projection):
 
 
 def collapse_time(cube, ntimes, timestep):
-    """Select the desired timestep from the time axis"""
+    """Select the desired timestep from the time axis."""
 
     if timestep == None:
         print 'Averaging over the %s time points' %(str(ntimes))
@@ -89,7 +96,7 @@ def collapse_time(cube, ntimes, timestep):
 
 
 def extract_data(infile_list, input_projection, output_projection):
-    """Extract data"""
+    """Extract data."""
 
     if output_projection == 'SouthPolarStereo':
         lat_constraint = iris.Constraint(latitude=lambda y: y <= 0.0)
@@ -125,7 +132,7 @@ def extract_data(infile_list, input_projection, output_projection):
 
 
 def get_standard_name(var):
-    """For a given var, get the corresponding standard name"""
+    """For a given variable, get the corresponding standard name."""
 
     standard_names = {'sf' : 'streamfunction',
                       'zg' : 'geopotential_height',
@@ -147,7 +154,7 @@ def get_standard_name(var):
 
 
 def get_time_constraint(start, end):
-    """Set the time constraint"""
+    """Set the time constraint."""
     
     date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
     if start.lower() == 'none':
@@ -199,7 +206,7 @@ def multiplot(cube_dict, nrows, ncols,
               contour_labels=False,
               #hatching
               hatch_bounds=(0.0, 0.05),
-              hatch_styles=('\\\\'),
+              hatch_styles=('bwdlines_tight'),
               #output
               ofile='test.png'):
     """Create the plot."""
@@ -303,7 +310,7 @@ def plot_boxes(box_list, input_projection):
         region, color, style = box
     
         assert region in nio.regions.keys()
-        assert style in styles.keys()
+        assert style in line_style_dict.keys()
 
         south_lat, north_lat = nio.regions[region][0][0: 2]
         west_lon, east_lon = nio.regions[region][1][0: 2]
@@ -328,13 +335,13 @@ def plot_boxes(box_list, input_projection):
 
         for side in ['north', 'south', 'east', 'west']:
             x, y = borders[side+'_lons'], borders[side+'_lats']
-            plt.plot(x, y, linestyle=style, color=color, transform=projections[input_projection])
+            plt.plot(x, y, linestyle=line_style_dict[style], color=color, transform=projections[input_projection])
 
 
 def plot_colour(cube, 
                 colour_type, colourbar_type, 
                 palette, extend, ticks):
-    """Plot the colour plot"""
+    """Plot the colour plot."""
 
     assert colour_type in ['smooth', 'pixels']
 
@@ -358,7 +365,7 @@ def plot_colour(cube,
 
 
 def plot_contour(cube, levels, labels_switch):
-    """Plot the contours"""
+    """Plot the contours."""
 
     contour_plot = iplt.contour(cube, colors='k', linewidths=1.5, levels=levels)
     if labels_switch:
@@ -366,7 +373,7 @@ def plot_contour(cube, levels, labels_switch):
 
     
 def plot_flow(x, y, u, v, ax, flow_type, input_projection):
-    """Plot quivers or streamlines"""
+    """Plot quivers or streamlines."""
 
     assert flow_type in ['streamlines', 'quivers']
 
@@ -378,13 +385,13 @@ def plot_flow(x, y, u, v, ax, flow_type, input_projection):
 
 
 def plot_lines(line_list, input_projection, line_type='lat'):
-    """Highlight certain lines of latitude or longitude"""
+    """Highlight certain lines of latitude or longitude."""
 
     assert line_type in ['lat', 'lon']
 
     for line in line_list: 
         value, color, style = line
-        assert style in styles.keys()
+        assert style in line_style_dict.keys()
 
         if line_type == 'lat':
             x = numpy.arange(0, 360, 1)
@@ -393,13 +400,17 @@ def plot_lines(line_list, input_projection, line_type='lat'):
             y = numpy.arange(-90, 91, 1)
             x = numpy.repeat(float(value), y.shape[0])
 
-        plt.plot(x, y, linestyle=style, color=color, transform=projections[input_projection])
+        plt.plot(x, y, linestyle=line_style_dict[style], color=color, transform=projections[input_projection])
 
 
 def plot_hatching(cube, hatch_bounds, hatch_styles):
-    """Plot the hatching"""
+    """Plot the hatching."""
 
-    iplt.contourf(cube, colors='none', levels=hatch_bounds, hatches=hatch_styles)
+    hatch_styles_converted = []
+    for style in hatch_styles:
+        hatch_styles_converted.append(hatch_style_dict[style])
+
+    iplt.contourf(cube, colors='none', levels=hatch_bounds, hatches=hatch_styles_converted)
     
     # An alternative would be:
     # I found that hatch with contourf only works for certain file formats and can disappear 
@@ -425,7 +436,7 @@ def plot_hatching(cube, hatch_bounds, hatch_styles):
 
 
 def set_global_colourbar(orientation, span, cf, fig, units):
-    """Define the global colourbar"""
+    """Define the global colourbar."""
 
     assert orientation in ('horizontal', 'vertical')
 
@@ -455,7 +466,7 @@ def set_global_colourbar(orientation, span, cf, fig, units):
 
 
 def set_individual_colourbar(orientation, cf, units):
-    """Define the colourbar for an individual plot"""
+    """Define the colourbar for an individual plot."""
 
     cbar = plt.colorbar(cf, orientation=orientation)
 
@@ -502,7 +513,7 @@ def set_spacing(colourbar_type, colourbar_orientation, subplot_spacing):
         
 
 def get_blanks(nrows, ncols, plot_set):
-    """Return a list of plot locations that should remain blank"""
+    """Return a list of plot locations that should remain blank."""
 
     assert type(plot_set) == set
 
@@ -657,8 +668,8 @@ example:
     
     parser.add_argument("--hatch_bounds", type=float, nargs='*', default=(0.0, 0.05),   
                         help="list of bounds for the hatching [default: 0.0, 0.05]") 
-    parser.add_argument("--hatch_styles", type=str, nargs = '*', default=('\\\\'), 
-                        help="""type of hatching for each bound interval. Choices are . / \\ None \\\\ * [default: .]""")  
+    parser.add_argument("--hatch_styles", type=str, nargs = '*', default=('bwdlines_tight'), choices=hatch_style_dict.keys(), 
+                        help="type of hatching for each bound interval [default: bwdlines_tight]")  
 
     # Output options
 
