@@ -22,7 +22,7 @@ cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -34,7 +34,7 @@ try:
     import general_io as gio
     import calc_fourier_transform as cft
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
   
 
 def main(inargs):

@@ -1,4 +1,11 @@
-# Import general Python modules #
+"""
+Filename: plot_scatter.py
+Author: Damien Irving, d.irving@student.unimelb.edu.au
+Description: Create a scatterplot
+
+"""
+
+# Import general Python modules
 
 import os, sys, pdb
 
@@ -11,13 +18,13 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -28,14 +35,17 @@ try:
     import convenient_anaconda as aconv
     import convenient_universal as uconv
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 
-# Define functions #
+# Define functions
 
 def normalise_series(series):
-    """Normalise a Pandas data series by subtracting the
-    mean and dividing by the stdev"""
+    """Normalise a Pandas data series. 
+
+    i.e. subtract the mean and divide by the standard deviation
+
+    """
 
     ave = series.mean()
     stdev = series.std()
@@ -78,7 +88,6 @@ def main(inargs):
     """Run program."""
 
     # Read input data into a single pandas DataFrame
-    
     x_dataframe, x_metadata = aconv.nc_to_df(inargs.xfile, [inargs.xvar], lat=inargs.xlat)
     y_dataframe, y_metadata = aconv.nc_to_df(inargs.yfile, [inargs.yvar], lat=inargs.ylat)
     dataframe_list = [y_dataframe]
@@ -96,7 +105,6 @@ def main(inargs):
     dataframe = dataframe.dropna()
 
     # Normalise data 
-
     if inargs.normalise:
         target_xvar = inargs.xvar+'_norm'
         target_yvar = inargs.yvar+'_norm'
@@ -107,14 +115,12 @@ def main(inargs):
         target_yvar = inargs.yvar
 
     # Filter data
-
     if inargs.filter:
         threshold = uconv.get_threshold(dataframe[inargs.filter[0]], inargs.filter[1])
         selector = dataframe[inargs.filter[0]] >= threshold
         dataframe = dataframe[selector]
 
     # Generate plot
-    
     c_data = dataframe[inargs.colour[1]] if inargs.colour else None
     xlabel = inargs.xlabel.replace('_',' ') if inargs.xlabel else inargs.xvar
     ylabel = inargs.ylabel.replace('_',' ') if inargs.ylabel else inargs.yvar

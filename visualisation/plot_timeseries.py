@@ -25,13 +25,13 @@ import numpy.ma as ma
 import math
 
 
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -41,9 +41,9 @@ try:
     import netcdf_io as nio
     import general_io as gio
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
-
+# Define classes and functions
 
 class YaxisElement:    
     """Element to be plotted on yaxis."""

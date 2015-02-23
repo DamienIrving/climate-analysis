@@ -1,11 +1,11 @@
 """
 Filename:     plot_hilbert.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Produce a number of plots for testing and 
-              understanding the Hilbert Transform
+Description:  Plot the components of a Hilbert transform
+
 """
 
-# Import general Python modules #
+# Import general Python modules
 
 import sys, os, pdb
 import argparse
@@ -16,13 +16,13 @@ import cdms2, cdutil
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -35,13 +35,12 @@ try:
     import general_io as gio
     import calc_fourier_transform as cft
 except ImportError:
-    raise ImportError('Must run this script from within phd git repo')
+    raise ImportError('Must run this script from within the climate-analysis git repo')
 
-
-# Define functions #
+# Define functions
 
 def get_hemisphere(lat):
-    """For a given latitude, return N or S"""
+    """For a given latitude, return N or S."""
 
     if lat < 0.0:
         return 'S'
@@ -50,7 +49,7 @@ def get_hemisphere(lat):
 
 
 def get_lat_target(fname, lat_desired):
-    """Identify the latitude closest to the desired"""
+    """Identify the latitude closest to the desired."""
 
     fin = cdms2.open(fname)
     lat_name = next(dim for dim in fin.listdimension() if 'lat' in dim)
@@ -61,7 +60,7 @@ def get_lat_target(fname, lat_desired):
 
 
 def extract_data(fname, var, lat, dates):
-    """Extract the data for the given latitude and dates""" 
+    """Extract data for the given latitude and dates.""" 
 
     lat_target = get_lat_target(fname, lat)
     data_dict = {}
@@ -83,7 +82,7 @@ def plot_hilbert(data_dict, date_list,
                  outfile='test.png',
                  ybounds=None,
                  figure_size=None):
-    """Create the plot"""
+    """Create the plot."""
 
     fig = plt.figure(figsize=figure_size)
     if not figure_size:
@@ -182,7 +181,7 @@ author:
 
 """
 
-    description = 'Explore the Hilbert transform'
+    description = 'Plot the components of a Hilbert transform.'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,

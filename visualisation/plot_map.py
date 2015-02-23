@@ -5,7 +5,7 @@ Included functions:
 
 """
 
-# Import general Python modules #
+# Import general Python modules
 
 import os, sys, pdb, re
 import argparse
@@ -26,8 +26,7 @@ import cartopy.crs as ccrs
 
 import numpy
 
-
-# Import my modules #
+# Import my modules
 
 cwd = os.getcwd()
 repo_dir = '/'
@@ -45,9 +44,7 @@ try:
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
-
-# Define functions
-
+# Define functions and global lists/dicts
 
 plot_types = ['colour', 'contour', 'uwind', 'vwind', 'hatching']
 
@@ -66,7 +63,6 @@ hatch_style_dict = {'dots': '.',
                     'bwdlines_normal': '\\',
                     'bwdlines_tight': '\\\\',
                     'stars': '*'}
-
 
 
 def check_projection(cube, input_projection):
@@ -145,7 +141,7 @@ def get_standard_name(var):
                       'ampmedian': 'zonal_median_of_the_meridional_maximum_hilbert_transformed_northward_wind',
                       'p' : 'p_value'}
 
-    key_matches = [key for key in standard_names.keys() if var.split('_')[0] == key]      #re.search('^%s' %(key), var)]
+    key_matches = [key for key in standard_names.keys() if var.split('_')[0] == key]   #re.search('^%s' %(key), var)]
     assert len(key_matches) == 1
 
     standard_name = re.sub(key_matches[0], standard_names[key_matches[0]], var)
@@ -526,13 +522,11 @@ def get_blanks(nrows, ncols, plot_set):
 def main(inargs):
     """Run program."""
 
-    # Extract data #
-    
+    # Extract data
     cube_dict, metadata_dict, plot_set = extract_data(inargs.infiles, inargs.input_projection, inargs.output_projection)
     blanks = get_blanks(inargs.nrows, inargs.ncols, plot_set)    
 
     # Creat the plot
-
     multiplot(cube_dict, inargs.nrows, inargs.ncols,
               input_projection=inargs.input_projection,
               #broad plot options
@@ -591,7 +585,6 @@ example:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     # Input data
-
     parser.add_argument("infile", type=str, help="input file name")
     parser.add_argument("variable", type=str, help="input file variable")
     parser.add_argument("start", type=str, help="start date in YYYY-MM-DD format (can be none)")
@@ -609,7 +602,6 @@ example:
                         help="input map projection [default: PlateCarree_Greenwich]") 
 
     # Broad plot options
-    
     parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
     parser.add_argument("--subplot_spacing", type=float, default=0.05,
@@ -622,7 +614,6 @@ example:
                         help="highest latitude to be plotted if the map projection is South Polar Stereographic")
                         
     # Lines and boxes
-
     parser.add_argument("--flow_type", type=str, default='quivers', choices=('quivers', 'streamlines'),
                         help="what to do with the uwind and vwind data [default=quiver]")
     parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
@@ -631,14 +622,12 @@ example:
                         help="""highlight a particular line of latitude - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
 
     # Headings
-
     parser.add_argument("--title", type=str, default=None,
                         help="plot title [default: None]")
     parser.add_argument("--subplot_headings", type=str, nargs='*', default=None,
                         help="list of subplot headings (in order from top left to bottom right, write none for a blank)")
 
     # Colourbar
-
     parser.add_argument("--colour_type", type=str, default='smooth', choices=('smooth', 'pixels'),
                         help="how to present the colours [default=smooth]")
     parser.add_argument("--colourbar_type", type=str, default='global', choices=('individual', 'global'),
@@ -658,21 +647,18 @@ example:
                         help="Units (recognised units: ms-1)")
 
     # Contour lines
-
     parser.add_argument("--contour_levels", type=float, nargs='*', default=None,
                         help="list of contour levels to plot [default = auto]")
     parser.add_argument("--contour_labels", action="store_true", default=False,
                         help="switch for having contour labels [default: False]")
 
     # Hatching
-    
     parser.add_argument("--hatch_bounds", type=float, nargs='*', default=(0.0, 0.05),   
                         help="list of bounds for the hatching [default: 0.0, 0.05]") 
     parser.add_argument("--hatch_styles", type=str, nargs = '*', default=('bwdlines_tight'), choices=hatch_style_dict.keys(), 
                         help="type of hatching for each bound interval [default: bwdlines_tight]")  
 
     # Output options
-
     parser.add_argument("--ofile", type=str, default='test.png',
                         help="name of output file [default: test.png]")
     
