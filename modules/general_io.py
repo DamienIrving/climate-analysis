@@ -1,19 +1,16 @@
 """
-Collection of commonly used functions for general file input
-and output
+Collection of commonly used functions for general file input and output.
 
-To import:
-module_dir = os.path.join(os.environ['HOME'], 'phd', 'modules')
-sys.path.insert(0, module_dir)
-
-Included functions:
-find_duplicates   -- Find duplicates in a list
-read_dates        -- Read in a list of dates
-set_outfile_date  -- Take an outfile name and replace existing date with new one
-standard_datetime -- Convert any arbitrary date/time to standard format: YYYY-MM-DD
-write_dates       -- Write a list of dates
+Functions:
+  find_duplicates   -- Find duplicates in a list
+  read_dates        -- Read in a list of dates
+  set_outfile_date  -- Take an outfile name and replace existing date with new one
+  standard_datetime -- Convert any arbitrary date/time to standard format: YYYY-MM-DD
+  write_dates       -- Write a list of dates
 
 """
+
+# Import general Python modules
 
 import os, sys, pdb
 from datetime import datetime
@@ -21,13 +18,15 @@ from dateutil import parser
 from collections import defaultdict
 import re
 
+# Import my modules
+
 try:
     from git import Repo 
     cwd = os.getcwd()
     repo_dir = '/'
     for directory in cwd.split('/')[1:]:
         repo_dir = os.path.join(repo_dir, directory)
-        if directory == 'phd':
+        if directory == 'climate-analysis':
             break
     try:
         MODULE_HASH = Repo(repo_dir).head.commit.hexsha
@@ -36,9 +35,10 @@ try:
 except ImportError:
     MODULE_HASH = 'unknown'
 
+# Define functions
 
 def find_duplicates(inlist):
-    """Return list of duplicates in a list"""
+    """Return list of duplicates in a list."""
     
     D = defaultdict(list)
     for i,item in enumerate(mylist):
@@ -49,9 +49,12 @@ def find_duplicates(inlist):
     
 
 def get_timestamp():
-    """Return time stamp that incuded the command line entry"""
+    """Return a time stamp that includes the command line entry."""
     
-    time_stamp = """%s: %s %s (Git hash: %s)""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"), sys.executable, " ".join(sys.argv), MODULE_HASH[0:7])
+    time_stamp = """%s: %s %s (Git hash: %s)""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"), 
+                                                  sys.executable, 
+                                                  " ".join(sys.argv), 
+                                                  MODULE_HASH[0:7])
 
     return time_stamp
 
@@ -79,7 +82,7 @@ def read_dates(infile):
 
 def set_outfile_date(outfile, new_date):
     """Take an outfile name and replace the existing date
-    (in YYYY-MM-DD format) with new_date"""
+    (in YYYY-MM-DD format) with new_date."""
 
     new_dt = parser.parse(str(new_date))
     
@@ -92,7 +95,7 @@ def set_outfile_date(outfile, new_date):
 
 def standard_datetime(dt):
     """Take any arbitrarty date/time and convert to the standard
-    I use for all outputs: YYYY-MM-DD"""
+    I use for all outputs: YYYY-MM-DD."""
 
     new_dt = parser.parse(str(dt))
 
@@ -100,7 +103,7 @@ def standard_datetime(dt):
 
 
 def write_dates(outfile, date_list):
-    """Write a list of dates to file"""
+    """Write a list of dates to file."""
     
     fout = open(outfile, 'w')
     for date in date_list:
@@ -109,13 +112,15 @@ def write_dates(outfile, date_list):
 
 
 def write_metadata(ofile=None, file_info=None, extra_notes=None):
-    """Write a metadata output file
+    """Write a metadata output file.
     
-    Arguments:
-      ofile        --  name of output file that we want to create a .met file
-                       alongside (i.e. new file with .met extension will be created)
-      file_info    --  a dictionary where keys are filenames and values are the global attribute history
-      extra_notes  --  list containing character strings of extra information (output is one list item per line)
+    Args:
+      ofile (str, optional): Name of output file that we want to create a .met file 
+        alongside (i.e. new file with .met extension will be created)
+      file_info (dict, optional): A dictionary where keys are filenames and values are 
+        the global attribute history
+      extra_notes (list, optional): List containing character strings of extra information 
+        (output is one list item per line)
       
     """
     

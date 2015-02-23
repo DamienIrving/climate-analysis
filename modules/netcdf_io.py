@@ -1,37 +1,33 @@
 """
 Collection of commonly used classes, functions and global variables
-for reading/writing variables to a netCDF file
+for reading/writing variables to a netCDF file.
 
-To import:
-module_dir = os.path.join(os.environ['HOME'], 'modules')
-sys.path.insert(0, module_dir)
+Functions:
+  convert_units        -- Convert units
+  coordinate_pairs     -- Produce all lat/lon pairs for a given grid
+  day_of_year_366      -- Convert a datetime instance to a day of the year (all years assumed 366)
+  dict_filter          -- Filter dictionary 
+  get_datetime         -- Return datetime instances for list of dates/times
+  hi_lo                -- Update highest and lowest value
+  list_kwargs          -- List keyword arguments of a function
+  match_dates          -- Take simple list of dates and match with corresponding more verbose list
+  normalise_data       -- Normalise data ((x - mean) / std) along the time axis
+  regrid_uniform       -- Regrid data to a uniform output grid
+  running_average      -- Calculate running average
+  scale_offset         -- Apply scaling and offset factors
+  get_cdms2_tbounds    -- Get time bounds for cdms2 data extraction   
+  split_dt             -- Split a getTime().asComponentTime() date/time into year, month and day parts
+  temporal_aggregation -- Create a temporal aggregate of the input data (i.e. raw, climatology or anomaly)
+  time_axis_check      -- Check whether 2 time axes are the same
+  write_netcdf         -- Write an output netCDF file
+  xy_axis_check        -- Check whether 2 lat or lon axes are the same
 
-Included functions:
-convert_units        -- Convert units
-coordinate_pairs     -- Produce all lat/lon pairs for a given grid
-day_of_year_366      -- Convert a datetime instance to a day of the year (all years assumed 366)
-dict_filter          -- Filter dictionary 
-get_datetime         -- Return datetime instances for list of dates/times
-hi_lo                -- Update highest and lowest value
-list_kwargs          -- List keyword arguments of a function
-match_dates          -- Take simple list of dates and match with corresponding more verbose list
-normalise_data       -- Normalise data ((x - mean) / std) along the time axis
-regrid_uniform       -- Regrid data to a uniform output grid
-running_average      -- Calculate running average
-scale_offset         -- Apply scaling and offset factors
-get_cdms2_tbounds    -- Get time bounds for cdms2 data extraction   
-split_dt             -- Split a getTime().asComponentTime() date/time into year, month and day parts
-temporal_aggregation -- Create a temporal aggregate of the input data (i.e. raw, climatology or anomaly)
-time_axis_check      -- Check whether 2 time axes are the same
-write_netcdf         -- Write an output netCDF file
-xy_axis_check        -- Check whether 2 lat or lon axes are the same
-
-Included classes:
-InputData            -- Extract and subset data
+Classes:
+  InputData            -- Extract and subset data
 
 """
 
-## Import general Python modules ##
+# Import general Python modules
 
 import os, sys, pdb
 import re
@@ -55,14 +51,13 @@ cdms2.setNetcdfDeflateLevelFlag(0)
 import MV2
 import regrid2
 
-
-## Import my modules ##
+# Import my modules #
 
 cwd = os.getcwd()
 repo_dir = '/'
 for directory in cwd.split('/')[1:]:
     repo_dir = os.path.join(repo_dir, directory)
-    if directory == 'phd':
+    if directory == 'climate-analysis':
         break
 
 modules_dir = os.path.join(repo_dir, 'modules')
@@ -71,10 +66,9 @@ sys.path.append(modules_dir)
 try:
     import general_io as gio
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
-  
-## Define regions ##
+# Define regions #
 
 # The 3rd argument here works as follows:
 # - First two letters: 'c' or 'o' for closed or open upper/loweer bounds
@@ -114,60 +108,58 @@ regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
            'zw33': [(-50, -45, 'cc'), (279, 289, 'cc')],
            }
 
-
-## Classes/functions ##
+# Classes/functions
 
 class InputData:
-    """Extract and subset data."""
+    """Input data.
+    
+    Attributes:
+      fname (str): Input file name
+      id (str): Variable id
+      global_atts (dict): Global attributes of the input file 
+      data (cdms2.tvariable.TransientVariable): Has all the members and methods of a 
+        typical cdms2 transient variable. e.g. self.data.getLatitude(), 
+        self.data.attributes (_FillValue, units etc)
+        
+    
+    """
 
     def __init__(self, fname, var_id, convert=False, normalise=False, **kwargs):
         """Extract desired data from an input file.
     
-        Keyword arguments (with examples):
-    
-        SUBSETTORS
-        latitude  -- (-30, 30)
-        level     -- (1000.)
-        longitude -- (120, 165)
-        region    -- aus
-        time      -- ('1979-01-01', '2000-12-31', 'MONTH/SEASON'), 
-                     MONTH/SEASON (optional 3rd argument): 
-                     'JAN', 'FEB', ..., 'DEC'
-                     'DJF', ... 'SON'   
-
-        MANIPULATORS
-        agg       -- (quantity, season, lower_time_bound, upper_time_bound)
-                     quantity: 'raw', 'climatology' or 'anomaly'
-                     season: ANNUALCYCLE, SEASONALCYCLE, DJF, MJJASO etc
-                     time_bounds (optional):
-                     e.g. '1979-01-01', '1980-12-31'
-        convert   -- True or False (for converting units)
-        grid      -- (startLat, nlat, deltaLat, startLon, nlon, deltaLon)
-        runave    -- window size for the running average 
-        mermax    -- True (take the meridional maximum of the data)
-        spatave   -- True (for returning average over all spatial dimensions)
-        normalise -- True (normalise data along the time axis)
-
         The order of operations is as follows: subset data, 
         spatial averaging (mermax, spatave), temporal aggregation (agg), 
         running average (runave), regrid (grid), convert units, 
         normalise 
-            
-        self.data has all the attributes and methods
-        of a typical cdms2 variable. For instance:
-        - self.data.getLatitude()
-        - self.data.getLatitude()
-        - self.data.getTime()
-        - self.data.attributes (dictionary incl. _FillValue, units etc)       
     
+        Args:
+          fname (str): Input file name
+          var_id (str): Variable to extract from the input file
+          convert (bool, optional): Convert the units of the input data (default = False)
+          normalise (bool, optional): Normalise the input data (default = False)
+          **kwargs:          
+            latitude (list): e.g (-30, 30)
+            level (list): (1000.)
+            longitude (list of float): (120, 165)
+            region (str): aus
+            time (list of str): ('1979-01-01', '2000-12-31', 'month/seas'), 
+              month/seas (optional 3rd argument): 'JAN', 'FEB', ..., 'DEC' or 'DJF', ... 'SON'   
+            agg (list of str): (quantity, season, lower_time_bound, upper_time_bound)
+              quantity: 'raw', 'climatology' or 'anomaly'
+              season: ANNUALCYCLE, SEASONALCYCLE, DJF, MJJASO etc
+              time_bounds (optional): e.g. '1979-01-01', '1980-12-31'
+            grid (list): (startLat, nlat, deltaLat, startLon, nlon, deltaLon)
+            runave (int): window size for the running average 
+            mermax (bool): take the meridional maximum of the data
+            spatave (bool): return average over all spatial dimensions
+
         """
 
         infile = cdms2.open(fname)          
         _infile_attribute_check(infile, var_id)
         kwargs['order'] = _define_order(infile, var_id)
 
-        # Subset input data #
-
+        # Subset input data
         if kwargs.has_key('region'):   
             try:
                 kwargs['latitude'], kwargs['longitude'] = regions[kwargs['region']]
@@ -191,8 +183,7 @@ class InputData:
 
         data = _subset_data(infile, var_id, **subset_kwargs)        
        
-        # Manipulate the subsetted data #  
-
+        # Manipulate the subsetted data
         if kwargs.has_key('mermax'):
             lat_index = data.getOrder().index('y')
             data = MV2.max(data, axis=lat_index)
@@ -220,8 +211,7 @@ class InputData:
         if normalise:
             data = normalise_data(data, sub_mean=True)
 
-        # Set object attributes #
-        
+        # Set object attributes
         if 'x' in data.getOrder():
             if not (data.getLongitude()[0] - (data.getLongitude()[-1] - 360)) > 0:
                 print 'WARNING: There are duplicate longitude values (can be problematic for some applications)'  
@@ -241,7 +231,7 @@ class InputData:
         
 
     def months(self):
-        """Return array containing the months"""        
+        """Return array containing the months."""        
  
         datetimes = self.data.getTime().asComponentTime()
         
@@ -255,11 +245,12 @@ class InputData:
     def picker(self, **kwargs):
         """Select data based on non-contiguous axis values.
     
-        Keyword arguments (with examples)
-        latitude  -- (-30, -15, 5, 30)
-        level     -- (1000.)
-        longitude -- (120, 165, 190)
-        time      -- ('1979-01', '1983-02', '2000-12-31', )
+        Args:
+          **kwargs:
+            latitude (list/tuple): e.g. (-30, -15, 5, 30)
+            level (list/tuple): (1000.)
+            longitude (list/tuple): (120, 165, 190)
+            time (list/tuple): ('1979-01', '1983-02', '2000-12-31', )
              
         """
 
@@ -269,7 +260,7 @@ class InputData:
 
 
     def years(self):
-        """Return array containing the years"""        
+        """Return array containing the years."""        
  
         datetimes = self.data.getTime().asComponentTime()
         
@@ -283,12 +274,11 @@ class InputData:
 def convert_units(data):
     """Convert units.
         
-    kg m-2 s-1 or K will be converted to 
-    mm/day or Celsius.
+    kg m-2 s-1 or K will be converted to mm/day or Celsius.
 
-    Arguments:
-    data -- InputData instance or cdms2 transient variable
-            (i.e. must have a 'units' attribute)
+    Args:
+      data (cdms2.tvariable.TransientVariable or InputData instance): Must have a 'units' 
+        attribute
 
     """
     #There would be scope to use the genutil udunits module
@@ -318,9 +308,7 @@ def convert_units(data):
 def coordinate_pairs(lat_axis, lon_axis):
     """Take the latitude and longitude values from given grid axes
     and produce a flattened lat and lon array, with element-wise pairs 
-    corresponding to every grid point.
-    
-    """
+    corresponding to every grid point."""
     
     lon_mesh, lat_mesh = numpy.meshgrid(lon_axis, lat_axis)  # This is the correct order
     
@@ -332,6 +320,7 @@ def day_of_year_366(dt):
     relative to a 366 day year.
     
     e.g. Dec 31 in 2013 would be day 366, not day 365
+    
     """
     
     day_of_year = dt.timetuple().tm_yday
@@ -344,11 +333,11 @@ def day_of_year_366(dt):
 
 
 def _define_order(infile, var_id, template='tyxz'):
-    """Take an input file and output the desired order,
-    according to the template.
+    """Define the axis order.
 
     e.g. for (lat, lon) input data, output = 'yx'
          for (time, lon) input data, output = 'tx'
+         
     """
 
     assert type(infile) == cdms2.dataset.CdmsFile
@@ -374,7 +363,7 @@ def dict_filter(indict, key_list):
 
 def get_cdms2_tbounds(date, timescale):
     """Return the appropriate time bounds and date abbreviation for 
-    a given timescale and single date extracted using getTime().asComponentTime()"""
+    a given timescale and single date extracted using getTime().asComponentTime()."""
 
     year, month, day = str(date).split(' ')[0].split('-')
     if timescale == 'monthly':
@@ -390,11 +379,9 @@ def get_cdms2_tbounds(date, timescale):
 def get_datetime(datetime_list):
     """Return a datetime instance for a given list of dates/times.
     
-    Arguments:
-
-    times -- List values must be expressed in component time, 
-             consistent with the cdat asComponentTime() method
-             e.g. 1979-01-01 12:00:0.0  
+    Args:
+      times (list/tuple): List values must be expressed in component time, consistent 
+        with the cdat asComponentTime() method. e.g. 1979-01-01 12:00:0.0  
 
     """
 
@@ -414,10 +401,9 @@ def get_datetime(datetime_list):
 def get_timescale(times):
     """Get the timescale.
     
-    Arguments:
-    times -- Tuple containing two datetime instances.
-             The difference between them is used to 
-             determine the timescale. 
+    Args:
+      times (list/tuple): Tuple containing two datetime instances. The difference between
+        them is used to determine the timescale. 
 
     """
 
@@ -448,7 +434,7 @@ def get_timescale(times):
 
 
 def hi_lo(data_series, current_max, current_min):
-    """Determines the new highest and lowest value"""
+    """Determine the new highest and lowest value."""
     
     try:
         highest = MV2.max(data_series)
@@ -474,24 +460,21 @@ def hi_lo(data_series, current_max, current_min):
 
 
 def _infile_attribute_check(infile, var_id):
-    """Check for criticial attriutes in the input file"""
+    """Check for criticial attriutes in the input file."""
 
     assert type(infile) == cdms2.dataset.CdmsFile
 
-    # Global file attributes #
-    
+    # Global file attributes 
     assert hasattr(infile, 'history'), \
     'Input file must have history global attribute'
 
-    # File dimension attributes #
-    
+    # File dimension attributes
     for dimension in infile.listdimension():
         if not dimension in ['bound', 'nv', 'nb2', 'time_bnds', 'tbnds']:
             assert 'axis' in infile.getAxis(dimension).attributes.keys(), \
             'Input dimensions must have an axis attribute that is X, Y, Z or T'
 
-    # Variable attributes #
-
+    # Variable attributes
     var_atts = infile.listattribute(vname=var_id)
     assert 'missing_value' in var_atts, \
     'Input variable must have missing_value attribute'
@@ -511,18 +494,19 @@ def list_kwargs(func):
 
 
 def match_dates(dates, time_axis, invert_matching=False, return_indexes=False):
-    """Take a simple list of dates (e.g. 1979-01-01) and match with the corresponding
-    times in a more detailed time axis (e.g. 1979-01-01 12:00:0.0).
+    """Take simple list of dates and match with the corresponding times in a detailed time axis.
     
-    (for the genutil picker to work correctly in nio.temporal_extract, the
+    (For the genutil picker to work correctly in nio.temporal_extract, the
     date list must match perfectly)
  
-    Arguments:   
-      invert_matching = True  => return a list of time_axis values that aren't in dates
-                        False => return a list of time_axis values that are in dates
-
-      return_indexes =  True  => the returned time_axis values are index numbers
-                        False => the returned time_axis values are actual dates
+    Args:   
+      dates (list/tuple): List of dates in a simple format (e.g. 1979-01-01)
+      time_axis (list/tuple): Time axis with detailed date format (e.g. 1979-01-01 12:00:0.0)
+      invert_matching (bool, optional): Return a list of time_axis values that aren't 
+        (True) or are (False; default) in dates
+      return_indexes (bool, optional): Returned time_axis values are index numbers (True)
+        or actual dates (False; default)
+        
     """
     
     dates_split = map(split_dt, dates)
@@ -558,8 +542,7 @@ def match_dates(dates, time_axis, invert_matching=False, return_indexes=False):
 def normalise_data(indata, sub_mean=False):
     """Normalise data.
     
-    Method is (x - mean) / std,
-    where removing the mean is optional
+    Method is (x - mean) / std, where removing the mean is optional.
     
     """
     
@@ -577,7 +560,7 @@ def normalise_data(indata, sub_mean=False):
 
 
 def regrid_uniform(data, target_grid):
-    """Regrid data to a uniform output grid"""
+    """Regrid data to a uniform output grid."""
 
     ingrid = data.getGrid()
     
@@ -585,7 +568,7 @@ def regrid_uniform(data, target_grid):
         outgrid = target_grid
     else:
         assert isinstance(target_grid, (list, tuple)) and len(target_grid) == 6, \
-    'Target grid must be a cdms2.grid.TransientRectGrid or list specifying: startLat, nlat, deltaLat, startLon, nlon, deltaLon'
+        'Target grid must be a cdms2.grid.TransientRectGrid or list specifying: startLat, nlat, deltaLat, startLon, nlon, deltaLon'
     
     startLat, nlat, deltaLat, startLon, nlon, deltaLon = target_grid
     outgrid = cdms2.createUniformGrid(startLat, nlat, deltaLat, startLon, nlon, deltaLon)
@@ -618,7 +601,7 @@ def scale_offset(data, scale=1.0, offset=0.0):
 
 
 def split_dt(dt):
-    """Split a getTime().asComponentTime() date/time into year, month and day parts"""
+    """Split a getTime().asComponentTime() date/time into year, month and day parts."""
     
     date = str(dt).split()[0]
     year, month, day = date.split('-')
@@ -627,24 +610,18 @@ def split_dt(dt):
 
 
 def find_nearest(array, value):
-    """Find the closest array item to value"""
+    """Find the closest array item to value."""
     
     idx = (numpy.abs(array - value)).argmin()
     return array[idx]
 
 
 def _subset_data(infile, var_id, **kwargs):
-    """Take a subset of the infile data
+    """Take a subset of the infile data.
     
-    Valid kwargs (with examples)
-    
-    latitude  -- (-30, 30) or 30
-    level     -- (1000.)
-    longitude -- (120, 165) or 230
-    region    -- aus
-    time      -- ('1979-01-01', '2000-12-31', 'MONTH/SEASON'), 
-                  options: 'JAN', 'FEB', ..., 'DEC'
-                           'DJF', ... 'SON'
+    Args:
+      **kwargs: latitude, level, longitude, region, time
+      
     """     
 
     assert type(infile) == cdms2.dataset.CdmsFile      
@@ -739,30 +716,20 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
     """Create a temporal aggregate of the input data, or further process it
     to produce a climatology or anomaly timeseries.
 
-    Arguments:
-    output_timescale options: 
-    - SEASONALCYCLE (i.e. DJF/MAM/JJA/SON)
-    - ANNUALCYCLE (i.e. JAN/FEB/MAR/.../DEC)
-    - YEAR
-    - DJF,MAM,JJA,SON
-    - JAN,FEB,MAR,...,DEC
-    - Any custom season (e.g. MJJASO, DJFM)
+    Reference: http://www2-pcmdi.llnl.gov/cdat/source/api-reference/cdutil.times.html
+    
+    The cdutil season averager is smart and accounts for the number of days in each 
+    month (i.e. months with more days are weighted more heavily in the average)
 
-    output_product options: 
-    - 'raw', 'climatology' or 'anomaly'
-    
-    time_period (for climatology used in calculating the anomaly)
-    - ['lower_bound', 'upper_bound']
-    e.g. ['1979-01-01', '1980-12-31']
-
-    Reference:
-    http://www2-pcmdi.llnl.gov/cdat/source/api-reference/cdutil.times.html
-    
-    Notes:
-    - The cdutil season averager is smart and accounts for the number of days
-      in each month (i.e. months with more days are weighted more heavily in
-      the average)
-    
+    Args:
+      data (cdms2.tvariable.TransientVariable): Input data
+      output_timescale (str): Can be SEASONALCYCLE (i.e. DJF/MAM/JJA/SON), ANNUALCYCLE 
+        (i.e. JAN/FEB/MAR/.../DEC), year, season(DJF,MAM,JJA,SON), month (JAN,...,DEC) or
+        any custom season (e.g. MJJASO, DJFM)
+      output_quantity (str): Can be 'raw', 'climatology' or 'anomaly'
+      time_period (list of str, optional): For climatology used in calculating the anomaly
+        ['lower_bound', 'upper_bound'] e.g. ['1979-01-01', '1980-12-31']
+        
     """
 
     assert isinstance(data, cdms2.tvariable.TransientVariable)
@@ -784,8 +751,7 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
     time_axis = data.getTime().asComponentTime()
     input_timescale = get_timescale(get_datetime(time_axis[0:2]))
    
-    # Set time bounds #
-    
+    # Set time bounds
     daily_freq = {'hourly': 24, '6hourly': 4, '12hourly': 2, 'daily': 1}
     if input_timescale in daily_freq.keys():
         cdutil.setTimeBoundsDaily(data, frequency=daily_freq[input_timescale])
@@ -798,8 +764,7 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
         print 'Must be daily, monthly or yearly.'
         sys.exit(1)
 
-    # Extract subset of interest #
-    
+    # Extract subset of interest
     if output_timescale in accepted_timescales:
         season = eval('cdutil.' + output_timescale)
     elif output_timescale in double_alphabet:
@@ -824,46 +789,41 @@ def temporal_aggregation(data, output_timescale, output_quantity, time_period=No
 def temporal_extract(data, selection, indexes=True, tvar_out=True):
     """Extract the data corresponding to the supplied selection.
     
-    indexes = True   ->  the input selection is a list of indexes to be selected
-    indexes = False  ->  the input selection is a list of dates: YYYY-MM-DD
-    
-    tvar_out = True  ->  the output is a cdms2 transient variable
-    tvar_out = False ->  the output is a numpy array
-
-    Note that for large arrays, this function will run MUCH faster if the output
-    is a numpy array (the genutil.picker is slow)
+    Args:
+      data (cdms2.tvariable.TransientVariable): Input data
+      selection (list): The indices of the values to extract
+      indexes (bool, optional): The input selection is a list of indexes (True, default) 
+        or dates (False, YYYY-MM-DD) to be selected
+      tvar_out (bool, optional): The output is a cdms2 transient variable (True, default)
+        or numpy array (False). For large arrays, this function will run MUCH faster if 
+        the output is a numpy array (the genutil.picker is slow)
  
     """
     
     assert isinstance(data, cdms2.tvariable.TransientVariable)
-    assert data.getOrder()[0] == 't', \
-    "The first dimension must be time"
+    assert data.getOrder()[0] == 't', "The first dimension must be time"
     assert indexes or tvar_out, \
     "At the moment temporal extract cannot take a list of dates and return a numpy array"  
 
     if tvar_out:
-
-	if indexes:
+        if indexes:
             times = numpy.take(data.getTime().asComponentTime(), selection)
             times_str = str(times).strip('[').strip(']').split()
-
             dt_list = []
             for i in range(0, len(times_str), 2):            
-        	dt_list.append(times_str[i]+' '+times_str[i+1])
-	else:
+                dt_list.append(times_str[i]+' '+times_str[i+1])
+        else:
             dt_list = selection
-
-	pick = genutil.picker(time=dt_list)
+        pick = genutil.picker(time=dt_list)
         output = data(pick)
-
     else:
-        
         output = numpy.take(data, selection, axis=0)
 
     return output 
 
+
 def time_axis_check(axis1, axis2):
-    """Checks whether the time axes of the input files are the same"""
+    """Checks whether the time axes of the input files are the same."""
     
     start_time1 = axis1.asComponentTime()[0]
     start_time1 = str(start_time1)
@@ -890,35 +850,27 @@ def write_netcdf(outfile_name, history_entry, global_atts,
                  clear_history=False, extra_history=' '):
     """Write an output netCDF file.
     
-    Intended for use with a calculated quantity.
-    Many attributes and axes are copied from the
-    existing input files.
+    Intended for use with a calculated quantity. Many attributes and axes are copied 
+    from the existing input files.
     
     All output variables must have the axes.
     
-    Positional arguments (incl. type/description):
-      outfile_name  -- string
-      out_quantity  -- e.g. entry for the global history attribute
-                       (usually generated from " ".join(sys.argv))
-      global_atts   -- Dictionary of global attributes for output file
-                       (usually obtained from InputData instances via
-                       the .global_atts attribute)
-      outdata       -- List or tuple of numpy arrays, containing 
-                       the data for each output variable
-      outvar_atts   -- List or tuple of dictionaries, containing 
-                       the attriubtes for each output variable
-                       Suggested minumum attributes include: id, 
-                       long_name, missing_value, units, notes
-      outvar_axes   -- List or tuple of axis lists or tuples for 
-                       each outdata element (must be in order tyx)
-                       Should be generated using the cdat getTime(),
-                       getLatitude() or getLongitude() methods
-                    
-    Keyword arguments:
-      clear_history -- True = do not append the global 'history' attribute 
-                       to the corresponding attribute in the output file
-      extra_history -- string of extra info to be added to the standard
-                       global 'history' attribute output     
+    Args:
+      outfile_name (str): Name of output file
+      history_entry (str): Entry for the global history attribute (usually generated 
+        from " ".join(sys.argv))
+      global_atts (dict): Global attributes for output file (usually obtained from 
+        InputData instances via the .global_atts attribute)
+      outdata (list of numpy.ndarray): Data for each output variable
+      outvar_atts (list of dict): Attributes for each output variable. Suggested minumum 
+        attributes include: id, long_name, missing_value, units, notes
+      outvar_axes (list of lists): Axis lists for each outdata element (must be in order 
+        tyx). Should be generated using the cdat getTime(), getLatitude() or 
+        getLongitude() methods
+      clear_history (bool, optional): Set true to not append the global 'history' 
+        attribute to the corresponding attribute in the output file
+      extra_history (str, optional): String of extra info to be added to the standard
+        global 'history' attribute output     
 
     """
 
@@ -934,8 +886,8 @@ def write_netcdf(outfile_name, history_entry, global_atts,
     '6th argument (outvar_axes) must be a list or tuple of axis lists or tuples, e.g. (data.getTime(),)'
     
     for axes in outvar_axes:
-	index = 0
-	for axis in axes:
+        index = 0
+        for axis in axes:
             test = (axis.isTime(), axis.isLatitude(), axis.isLongitude())
             assert sum(test) == 1 and test.index(1) >= index, \
             '6th argument (outvar_axes) elements must a time, latitude or longitude axis, in that order'
@@ -943,8 +895,7 @@ def write_netcdf(outfile_name, history_entry, global_atts,
 
     outfile = cdms2.open(outfile_name, 'w')
     
-    # Global attributes #
-    
+    # Global attributes
     for att_name in global_atts.keys():
         if att_name not in ["history", "calendar"]:  # Calendar excluded because iris doesn't like it
             setattr(outfile, att_name, global_atts[att_name])
@@ -959,29 +910,23 @@ def write_netcdf(outfile_name, history_entry, global_atts,
     setattr(outfile, 'history', 
     """%s [format=NETCDF3_CLASSIC]. %s\n%s""" %(timestamp, extra_history, old_history))
 
-    # Variables #
-
+    # Variables
     nvars = len(outdata)
     for index in range(0, nvars):
-
         outvar_axis_list = []
         for axis in outvar_axes[index]:
             outvar_axis_list.append(outfile.copyAxis(axis))
-
         var = cdms2.MV2.array(outdata[index])
         var = var.astype(numpy.float32)
         var.setAxisList(outvar_axis_list)
-
         for key, value in outvar_atts[index].iteritems():
             setattr(var, key, value)
-
         outfile.write(var)  
-
     outfile.close()
 
 
 def xy_axis_check(axis1, axis2):
-    """Checks whether the lat or lon axes of the input files are the same""" 
+    """Checks whether the lat or lon axes of the input files are the same.""" 
    
     if (len(axis1) != len(axis2)):
         sys.exit('Input files do not all have the same %s axis' %(axis1.id))
