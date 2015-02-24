@@ -3,28 +3,31 @@
 # (on abyss and/or vortex.earthsci.unimelb.edu.au) 
 #
 
-nargs=15
 function usage {
-    echo "USAGE: bash $0 ufile uvar vfile vvar outfile npopt nplat nplon gridopt latstart nlat latstep lonstart nlon lonstep"
-    echo "   ufile:     Input zonal wind file"
-    echo "   uvar:      Input zonal wind variable"
-    echo "   vfile:     Input meridional wind file"
-    echo "   vvar:      Input zonal wind variable"
-    echo "   outfile:   Output file name"
-    echo "   npopt:     Type --north_pole so compatable with makefile"
-    echo "   nplat:     Latitude of north pole"
-    echo "   nplat:     Longitude of north pole"
-    echo "   gridopt:   Type --grid so compatable with makefile"
-    echo "   latstart:  Start latitude for new grid"
-    echo "   nlat:      Number of latitude points"
-    echo "   latstep:   Size of latitude step"
-    echo "   lonstart:  Start longitude for new grid"
-    echo "   nlon:      Number of longitude points"
-    echo "   lonstep:   Size of latitude step"
-    echo "   e.g. bash $0 ua_Merra_250hPa_daily_native.nc ua va_Merra_250hPa_daily_native.nc va vrot_Merra_250hPa_daily_y181x360-np20N260E.nc --north_pole 20 260 --grid -90.0 181 1.0 0.0 360 1.0"
+    echo "USAGE: bash $0 ufile uvar vfile vvar outfile npopt nplat nplon gridopt latstart nlat latstep lonstart nlon lonstep python_exe code_dir temp_dir"
+    echo "   ufile:       Input zonal wind file"
+    echo "   uvar:        Input zonal wind variable"
+    echo "   vfile:       Input meridional wind file"
+    echo "   vvar:        Input zonal wind variable"
+    echo "   outfile:     Output file name"
+    echo "   npopt:       Type --north_pole so compatable with makefile"
+    echo "   nplat:       Latitude of north pole"
+    echo "   nplat:       Longitude of north pole"
+    echo "   gridopt:     Type --grid so compatable with makefile"
+    echo "   latstart:    Start latitude for new grid"
+    echo "   nlat:        Number of latitude points"
+    echo "   latstep:     Size of latitude step"
+    echo "   lonstart:    Start longitude for new grid"
+    echo "   nlon:        Number of longitude points"
+    echo "   lonstep:     Size of latitude step"
+    echo "   python_exe:  Python executable"
+    echo "   code_dir:    Directory that plot_map.py is in"
+    echo "   temp_dir:    Directory to store temporary data files"
+    echo "   e.g. bash $0 ua_Merra_250hPa_daily_native.nc ua va_Merra_250hPa_daily_native.nc va vrot_Merra_250hPa_daily_y181x360-np20N260E.nc --north_pole 20 260 --grid -90.0 181 1.0 0.0 360 1.0 /usr/local/anaconda/bin/python ~/climate-analysis/data_processing /mnt/meteo0/data/simmonds/dbirving/temp"
     exit 1
 }
 
+nargs=18
 if [ $nargs -ne $# ] ; then
   usage
 fi
@@ -44,7 +47,9 @@ latstep=${12}
 lonstart=${13} 
 nlon=${14} 
 lonstep=${15}
-temp_dir=/mnt/meteo0/data/simmonds/dbirving/temp
+python_exe=${16}
+code_dir=${17}
+temp_dir=${18}
 
 if [ ! -f $ufile ] ; then
     echo "Zonal wind file doesn't exist: " $ufile
@@ -62,7 +67,10 @@ temp_files=()
 for year in "${years[@]}"; do
     end=`expr $year + 4`
     temp_file=${temp_dir}/temp-vrot_${year}-${end}.nc
-    /usr/local/uvcdat/1.3.0/bin/cdat ~/phd/data_processing/calc_vwind_rotation.py $ufile $uvar $vfile $vvar ${temp_file} --north_pole $nplat $nplon --grid $latstart $nlat $latstep $lonstart $nlon $lonstep --time ${year}-01-01 ${end}-12-31 none
+    ${python_exe} ${code_dir}/calc_vwind_rotation.py $ufile $uvar $vfile $vvar ${temp_file} \
+    --north_pole $nplat $nplon \
+    --grid $latstart $nlat $latstep $lonstart $nlon $lonstep \
+    --time ${year}-01-01 ${end}-12-31 none
     temp_files+=(${temp_file})
 done
 
