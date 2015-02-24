@@ -4,16 +4,19 @@
 #
 
 function usage {
-    echo "USAGE: bash $0 infile invar outfile cdofix"
-    echo "   infile:     Input file name"
-    echo "   invar:      Input variable name"
-    echo "   outfile:    Output file name"
+    echo "USAGE: bash $0 infile invar outfile cdofix python_exe code_dir temp_dir"
+    echo "   infile:      Input file name"
+    echo "   invar:       Input variable name"
+    echo "   outfile:     Output file name"
     echo "   cdofix:      Script for replacing attributes that cdo strips"
-    echo "   e.g. bash $0 sf.nc sf sf-zonal-anom.nc ~/phd/data_processing/cdo_fix.sh"
+    echo "   python_exe:  Python executable"
+    echo "   code_dir:    Directory that plot_map.py is in"
+    echo "   temp_dir:    Directory to store temporary data files"
+    echo "   e.g. bash $0 sf.nc sf sf-zonal-anom.nc ~/climate-analysis/data_processing/cdo_fix.sh /usr/local/anaconda/bin/python ~/climate-analysis/data_processing /mnt/meteo0/data/simmonds/dbirving/temp"
     exit 1
 }
 
-nargs=4
+nargs=7
 
 if [ $# -ne $nargs ] ; then
   usage
@@ -23,8 +26,9 @@ infile=$1
 invar=$2
 outfile=$3
 cdofix=$4
-
-temp_dir=/mnt/meteo0/data/simmonds/dbirving/temp
+python_exe=$5
+code_dir=$6
+temp_dir=$7
   
 if [ ! -f $infile ] ; then
     echo "Input file doesn't exist: " $infile
@@ -36,7 +40,7 @@ temp_files=()
 for year in "${years[@]}"; do
     end=`expr $year + 4`
     temp_file=${temp_dir}/temp-zonal-anom_${year}-${end}.nc
-    /usr/local/anaconda/bin/python ~/phd/data_processing/calc_zonal_anomaly.py $infile $invar ${temp_file} --time ${year}-01-01 ${end}-12-31 none 
+    ${python_exe} ${code_dir}/calc_zonal_anomaly.py $infile $invar ${temp_file} --time ${year}-01-01 ${end}-12-31 none 
     temp_files+=(${temp_file})
 done
 

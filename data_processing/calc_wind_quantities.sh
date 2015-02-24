@@ -4,18 +4,21 @@
 #
 
 function usage {
-    echo "USAGE: bash $0 ufile uvar vfile vvar outfile quantity"
-    echo "   quantity:   Name of quantity to calculate"
-    echo "   ufile:      Input zonal wind file name"
-    echo "   uvar:       Input zonal wind variable name"
-    echo "   vfile:      Input zonal wind file name"
-    echo "   vvar:       Input zonal wind variable name"
-    echo "   outfile:    Output file name"
-    echo "   e.g. bash $0 streamfunction ua_Merra_250hPa_daily_native.nc ua va_Merra_250hPa_daily_native.nc va sf_Merra_250hPa_daily_native.nc"
+    echo "USAGE: bash $0 ufile uvar vfile vvar outfile quantity python_exe code_dir temp_dir"
+    echo "   quantity:    Name of quantity to calculate"
+    echo "   ufile:       Input zonal wind file name"
+    echo "   uvar:        Input zonal wind variable name"
+    echo "   vfile:       Input zonal wind file name"
+    echo "   vvar:        Input zonal wind variable name"
+    echo "   outfile:     Output file name"
+    echo "   python_exe:  Python executable"
+    echo "   code_dir:    Directory that plot_map.py is in"
+    echo "   temp_dir:    Directory to store temporary data files"
+    echo "   e.g. bash $0 streamfunction ua_Merra_250hPa_daily_native.nc ua va_Merra_250hPa_daily_native.nc va sf_Merra_250hPa_daily_native.nc /usr/local/anaconda/bin/python ~/climate-analysis/data_processing /mnt/meteo0/data/simmonds/dbirving/temp"
     exit 1
 }
 
-nargs=6
+nargs=9
 
 if [ $# -ne $nargs ] ; then
   usage
@@ -27,7 +30,9 @@ uvar=$3
 vfile=$4
 vvar=$5
 outfile=$6
-temp_dir=/mnt/meteo0/data/simmonds/dbirving/temp
+python_exe=$7
+code_dir=$8
+temp_dir=$9
 
 if [ ! -f $ufile ] ; then
     echo "Input U file doesn't exist: " $ufile
@@ -44,7 +49,7 @@ temp_files=()
 for year in "${years[@]}"; do
     end=`expr $year + 2`
     temp_file=${temp_dir}/temp-${quantity}_${year}-${end}.nc
-    /usr/local/uvcdat/1.3.0/bin/cdat ~/phd/data_processing/calc_wind_quantities.py ${quantity} $ufile $uvar $vfile $vvar ${temp_file} --time ${year}-01-01 ${end}-12-31 none 
+    ${python_exe} ${code_dir}/calc_wind_quantities.py ${quantity} $ufile $uvar $vfile $vvar ${temp_file} --time ${year}-01-01 ${end}-12-31 none 
     temp_files+=(${temp_file})
 done
 
