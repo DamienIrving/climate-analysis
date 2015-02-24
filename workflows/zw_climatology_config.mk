@@ -2,6 +2,7 @@
 
 # System configuration
 DATA_HOME=/mnt/meteo0/data/simmonds/dbirving
+TEMP_DATA_DIR=${DATA_HOME}/temp
 DATA_DIR=${DATA_HOME}/${DATASET}/data
 ZW3_DIR=${DATA_DIR}/zw3
 MAP_DIR=${ZW3_DIR}/figures/maps
@@ -12,10 +13,8 @@ CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/local/anaconda/bin/python
 DATA_SCRIPT_DIR=~/climate-analysis/data_processing
 VIS_SCRIPT_DIR=~/climate-analysis/visualisation
-FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh
-#FOURIER_METHOD=bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.py   
-ZONAL_ANOM_METHOD=bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh
 CDO_FIX_SCRIPT=${DATA_SCRIPT_DIR}/cdo_fix.sh
+
 
 
 ## Climatology
@@ -36,11 +35,9 @@ LAT_SEARCH_MAX=-40
 LAT_LABEL=lat70S40S
 WAVE_MIN=1
 WAVE_MAX=9
-ENV_SEARCH=--filter ${WAVE_MIN} ${WAVE_MAX} --outtype hilbert
 ENV_WAVE_LABEL=w${WAVE_MIN}${WAVE_MAX}
 
 # Fourier coefficients
-COE_SEARCH=--filter ${WAVE_MIN} ${WAVE_MAX} --outtype coefficients
 COE_WAVE_LABEL=w${WAVE_MIN}${WAVE_MAX}
 LAT_RANGE=-70 -40
 LAT_SINGLE=-55

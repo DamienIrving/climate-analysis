@@ -29,7 +29,7 @@ ${V_RUNMEAN} : ${V_ORIG}
 
 ENV_3D=${ZW3_DIR}/env${VAR}_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 ${ENV_3D} : ${V_RUNMEAN}
-	${FOURIER_METHOD} $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${ENV_SEARCH}
+	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} hilbert ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMP_DATA_DIR}
 
 ## Step 3: Collapse the meridional dimension ##
 
@@ -51,7 +51,7 @@ ${WAVE_STATS} : ${ENV_2D}
 
 FOURIER_INFO=${ZW3_DIR}/fourier_zw3_${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc 
 ${FOURIER_INFO} : ${V_RUNMEAN}
-	${FOURIER_METHOD} $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${COE_SEARCH}
+	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} coefficients ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMP_DATA_DIR}
 
 ## Step 3: Calculate the ZW3 index of Raphael (2004) ## 
 
@@ -67,7 +67,7 @@ ${ZG_ZONAL_ANOM_RUNMEAN} : ${ZG_ZONAL_ANOM}
 
 ZW3_INDEX=${ZW3_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${ZW3_INDEX} : ${ZG_ZONAL_ANOM_RUNMEAN}
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
 
 ## Step 4: Put it all in a common table/database ##
 
