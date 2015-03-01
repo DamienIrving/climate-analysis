@@ -69,10 +69,10 @@ def main(inargs):
                  label=str(step), marker='o', color=colors[index])
 
     plt.xlim(1, inargs.window)
-    plt.xlabel('frequency [cycles / domain]')
+    plt.xlabel('wavenumber ($k$)')
     
     if inargs.scaling == 'R2':
-        ylabel = 'variance explained'
+        ylabel = 'variance explained ($R_k^2$)'
     else:
         ylabel = inargs.scaling
     plt.ylabel('average %s' %(ylabel))
