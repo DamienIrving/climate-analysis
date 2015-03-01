@@ -58,7 +58,7 @@ ${FOURIER_INFO} : ${V_RUNMEAN}
 ZG_ORIG=${DATA_DIR}/zg_${DATASET}_500hPa_daily_native.nc
 ZG_ZONAL_ANOM=${DATA_DIR}/zg_${DATASET}_500hPa_daily_native-zonal-anom.nc
 ${ZG_ZONAL_ANOM} : ${ZG_ORIG}       
-	${ZONAL_ANOM_METHOD} $< zg $@ ${CDO_FIX_SCRIPT}
+	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< zg $@ ${CDO_FIX_SCRIPT} ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMP_DATA_DIR}
 
 ZG_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${ZG_ZONAL_ANOM_RUNMEAN} : ${ZG_ZONAL_ANOM}
