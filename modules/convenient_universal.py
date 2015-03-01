@@ -82,8 +82,8 @@ def get_significance(data_subset, data_all,
     
     http://stackoverflow.com/questions/21494141/how-do-i-do-a-f-test-in-python
 
-    FIXME: If equal_var=False then it will perform a Welch's t-test, which is for samples
-    with unequal variance (early versions of scipy don't have this option). To test whether
+    FIXME: If equal_var=False then it will perform a Welch t-test, which is for samples
+    with unequal variance (early versions of scipy do not have this option). To test whether
     the variances are equal or not you use an F-test (i.e. do the test at each grid point and
     then assign equal_var accordingly). If your data is close to normally distributed you can 
     use the Barlett test (scipy.stats.bartlett), otherwise the Levene test (scipy.stats.levene).
@@ -91,7 +91,7 @@ def get_significance(data_subset, data_all,
     FIXME: I need to account for autocorrelation in the data by calculating an effective
     sample size (see Wilkes, p 147). I can get the autocorrelation using either
     genutil.autocorrelation or the acf function in the statsmodels time series analysis
-    python library, however I can't see how to alter the sample size in stats.ttest_ind.
+    python library, however I cannot see how to alter the sample size in stats.ttest_ind.
 
     FIXME: I also need to consider whether a parametric t-test is appropriate. One of my samples
     might be very non-normally distributed, which means a non-parametric test might be better. 
@@ -120,19 +120,19 @@ def get_significance(data_subset, data_all,
 
     if type(size_subset) == str:
 
-    size_subset_atts = {'id': size_subset,
+        size_subset_atts = {'id': size_subset,
                             'standard_name': size_subset,
                             'long_name': size_subset,
                             'units': ' ',
                             'notes': """Size of sample that exceeds the threshold"""}
 
-    size_all_atts = {'id': size_all,
+        size_all_atts = {'id': size_all,
                          'standard_name': size_all,
                          'long_name': size_all,
                          'units': ' ',
                          'notes': """Size of the entire data"""}
 
-    return pvals, pval_atts, size_subset_atts, size_all_atts
+        return pvals, pval_atts, size_subset_atts, size_all_atts
 
     else:
 
