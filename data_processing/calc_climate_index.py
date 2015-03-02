@@ -389,6 +389,56 @@ def calc_nino_new(index, ifile, var_id, base_period):
     return nino_new_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
 
 
+def calc_asl(index, ifile, var_id):
+    """Calculate the Amundsen Sea Low index
+
+    Ref: Turner et al (2013). The Amundsen Sea Low. 
+         International Journal of Climatology. 
+         DOI: 10.1002/joc.3558 
+
+    """
+
+    # Read data
+    indata = nio.InputData(ifile, var_id, region='asl')
+    assert indata.data.getOrder() == 'tyx', "Order of the data must be time, lon, lat"
+
+    # Get axis information
+    lat_axis = indata.data.getLatitude()[:]
+    lon_axis = indata.data.getLongitude()[:]
+    time_axis = indata.data.getTime()
+    lats, lons = nio.coordinate_pairs(lat_axis, lon_axis)
+
+    # Reshape data
+    ntimes, nlats, nlons = indata.data.shape
+    reshaped_indata = numpy.reshape(indata.data, (ntimes, nlats*nlons))
+
+    # Get the ASL index info (min value for each timestep and its lat/lon)
+    min_values = numpy.amin(indata_reshaped, axis=1)
+    min_indexes = numpy.argmin(indata_reshaped, axis=1)
+    min_lats = numpy.take(lats, min_indexes)
+    min_lons = numpy.take(lons, min_indexes)
+
+    # Output file info
+    values_atts = {'id': 'asl_value,
+                   'long_name': 'asl_minimum_pressure',
+                   'standard_name': 'asl_minimum_pressure',
+                   'units': 'Pa'}
+    lats_atts = {'id': 'asl_lat,
+                 'long_name': 'asl_latitude',
+                 'standard_name': 'asl_latitude',
+                 'units': 'degrees_north'}
+    lons_atts = {'id': 'asl_lon,
+                 'long_name': 'asl_longitude',
+                 'standard_name': 'asl_longitude',
+                 'units': 'degrees_east'}
+
+    outdata_list = [min_values, min_lats, min_lons]
+    outvar_atts_list = [values_atts, lats_atts, lons_atts]
+    outvar_axes_list = [(time_axis,), (time_axis,), (time_axis,)]
+    
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
+
+
 def main(inargs):
     """Run the program."""
         
@@ -398,7 +448,8 @@ def main(inargs):
                           'IEMI': calc_iemi,
                           'SAM': calc_sam,
 			  'ZW3': calc_zw3,
-                          'MEX': calc_mex}   
+                          'MEX': calc_mex,
+                          'ASL': calc_asl}   
     
     if inargs.index[0:4] == 'NINO':
         if inargs.index == 'NINOCT' or inargs.index == 'NINOWP':
@@ -461,7 +512,7 @@ planned enhancements:
     
     parser.add_argument("index", type=str, help="Index to calculate",
                         choices=['NINO12', 'NINO3', 'NINO4', 'NINO34', 'NINOCT',
-                                 'NINOWP', 'IEMI', 'SAM', 'ZW3', 'MEX'])
+                                 'NINOWP', 'IEMI', 'SAM', 'ZW3', 'MEX', 'ASL'])
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
