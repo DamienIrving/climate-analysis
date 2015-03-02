@@ -49,7 +49,7 @@ def calc_monthly_climatology(base_timeseries, months):
     monthly_climatology_std = numpy.ma.zeros(12)
     for i in range(0, 12):
         monthly_climatology_mean[i] = numpy.ma.mean(base_timeseries[i:ntime_base:12])
-	monthly_climatology_std[i] = numpy.ma.std(base_timeseries[i:ntime_base:12])
+        monthly_climatology_std[i] = numpy.ma.std(base_timeseries[i:ntime_base:12])
 
     return monthly_climatology_mean, monthly_climatology_std
 
@@ -62,9 +62,9 @@ def calc_monthly_anomaly(complete_timeseries, base_timeseries, months):
     ntime_complete = len(complete_timeseries)
     monthly_anomaly = numpy.ma.zeros(ntime_complete)
     for i in range(0, ntime_complete):
-	month_index = months[i]
-	monthly_anomaly[i] = numpy.ma.subtract(complete_timeseries[i], 
-	                                       monthly_climatology_mean[month_index-1])
+        month_index = months[i]
+        monthly_anomaly[i] = numpy.ma.subtract(complete_timeseries[i], 
+                                               monthly_climatology_mean[month_index-1])
     
     return monthly_anomaly 
 
@@ -77,9 +77,9 @@ def monthly_normalisation(complete_timeseries, base_timeseries, months):
     ntime_complete = len(complete_timeseries)
     monthly_normalised = numpy.ma.zeros(ntime_complete)
     for i in range(0, ntime_complete):
-	month_index = months[i]
-	monthly_normalised[i] = numpy.ma.divide((numpy.ma.subtract(complete_timeseries[i], 
-	                        monthly_climatology_mean[month_index-1])), monthly_climatology_std[month_index-1])
+        month_index = months[i]
+        monthly_normalised[i] = numpy.ma.divide((numpy.ma.subtract(complete_timeseries[i], 
+                                monthly_climatology_mean[month_index-1])), monthly_climatology_std[month_index-1])
     
     return monthly_normalised
 
@@ -163,23 +163,21 @@ def calc_zw3(index, ifile, var_id, base_period):
     for region in ['zw31', 'zw32', 'zw33']: 
         south_lat, north_lat = nio.regions[region][0][0: 2]
         west_lon, east_lon = nio.regions[region][1][0: 2]
-	
-	div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
-	div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
-	sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
-	avg_operator_text = ' -y%savg ' %(tscale_abbrev)
-	std_operator_text = ' -y%sstd ' %(tscale_abbrev)
-	
-	selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, 
-	                                              south_lat, north_lat, 
-						      ifile)
+    
+        div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
+        div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
+        sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
+        avg_operator_text = ' -y%savg ' %(tscale_abbrev)
+        std_operator_text = ' -y%sstd ' %(tscale_abbrev)
+    
+        selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
         fldmean = "-fldmean "+selregion
         anomaly = sub_operator_text + fldmean + avg_operator_text + fldmean
         std = std_operator_text + fldmean
-	
-	print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
+    
+        print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
         result = div_operator_func(input=anomaly + std, returnArray=var_id)
-	index[region] = numpy.squeeze(result)
+        index[region] = numpy.squeeze(result)
 
     zw3_timeseries = (index['zw31'] + index['zw32'] + index['zw33']) / 3.0
  
@@ -232,9 +230,7 @@ def calc_mex(index, ifile, var_id, base_period):
     avg_operator_text = ' -y%savg ' %(tscale_abbrev)
     std_operator_text = ' -y%sstd ' %(tscale_abbrev)
 
-    selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, 
-	                                          south_lat, north_lat, 
-						  ifile)
+    selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
 
     anomaly = sub_operator_text + selregion + avg_operator_text + selregion
     std = std_operator_text + selregion
@@ -279,11 +275,11 @@ def calc_sam(index, ifile, var_id, base_period):
 
     monthly_normalised_timeseries = {}    
     for lat in lats: 
-	index, value = min(enumerate(latitude), key=lambda x: abs(x[1]-float(lat)))  #Pick closest latitude
-	print 'File latitude for', lat, '=', value
+        index, value = min(enumerate(latitude), key=lambda x: abs(x[1]-float(lat)))  #Pick closest latitude
+        print 'File latitude for', lat, '=', value
 
-	complete_timeseries = numpy.ma.mean(indata_complete.data[:, index, :], axis=1)
-	base_timeseries = numpy.ma.mean(indata_base.data[:, index, :], axis=1)
+        complete_timeseries = numpy.ma.mean(indata_complete.data[:, index, :], axis=1)
+        base_timeseries = numpy.ma.mean(indata_base.data[:, index, :], axis=1)
 
         monthly_normalised_timeseries[lat] = monthly_normalisation(complete_timeseries, base_timeseries, indata_complete.months())
 
@@ -307,7 +303,7 @@ def calc_iemi(index, ifile, var_id, base_period):
     regions = ['emia', 'emib', 'emic']
     anomaly_timeseries = {}
     for reg in regions: 
-	indata_complete = nio.InputData(ifile, var_id, region=reg)
+        indata_complete = nio.InputData(ifile, var_id, region=reg)
         indata_base = nio.InputData(ifile, var_id, region=reg, time=base_period) 
         anomaly_timeseries[reg] = calc_reg_anomaly_timeseries(indata_complete, indata_base)
     
@@ -363,15 +359,15 @@ def calc_nino_new(index, ifile, var_id, base_period):
     nino_new_timeseries = numpy.ma.zeros(ntime)
     for i in range(0, ntime):
         nino3_val = anomaly_timeseries['NINO3'][i]
-	nino4_val = anomaly_timeseries['NINO4'][i]
+        nino4_val = anomaly_timeseries['NINO4'][i]
         product = nino3_val * nino4_val
-	
-	alpha = 0.4 if product > 0 else 0.0
-	
-	if index == 'NINOCT':
-	    nino_new_timeseries[i] = numpy.ma.subtract(nino3_val, (numpy.ma.multiply(nino4_val, alpha)))
-	elif index == 'NINOWP':
-	    nino_new_timeseries[i] = numpy.ma.subtract(nino4_val, (numpy.ma.multiply(nino3_val, alpha)))
+    
+        alpha = 0.4 if product > 0 else 0.0
+    
+        if index == 'NINOCT':
+            nino_new_timeseries[i] = numpy.ma.subtract(nino3_val, (numpy.ma.multiply(nino4_val, alpha)))
+        elif index == 'NINOWP':
+            nino_new_timeseries[i] = numpy.ma.subtract(nino4_val, (numpy.ma.multiply(nino3_val, alpha)))
     
     # Determine the attributes
     hx = 'Ref: Ren & Jin 2011, GRL, 38, L04704. Base period: %s to %s'  %(base_period[0], 
@@ -391,6 +387,8 @@ def calc_nino_new(index, ifile, var_id, base_period):
 
 def calc_asl(index, ifile, var_id):
     """Calculate the Amundsen Sea Low index
+
+    Expected input: Mean sea level pressure data.
 
     Ref: Turner et al (2013). The Amundsen Sea Low. 
          International Journal of Climatology. 
@@ -447,15 +445,15 @@ def main(inargs):
                           'NINO_new': calc_nino_new,
                           'IEMI': calc_iemi,
                           'SAM': calc_sam,
-			  'ZW3': calc_zw3,
+                          'ZW3': calc_zw3,
                           'MEX': calc_mex,
                           'ASL': calc_asl}   
     
     if inargs.index[0:4] == 'NINO':
         if inargs.index == 'NINOCT' or inargs.index == 'NINOWP':
-	    calc_index = function_for_index['NINO_new']
-	else:
-	    calc_index = function_for_index['NINO']
+            calc_index = function_for_index['NINO_new']
+        else:
+            calc_index = function_for_index['NINO']
     else:
         calc_index = function_for_index[inargs.index]
 
@@ -485,7 +483,7 @@ example:
   /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_climate_index.py NINO34 
   /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly_native-ocean.nc ts 
   /work/dbirving/processed/indices/data/ts_Merra_surface_NINO34_monthly_native-ocean.nc
-	    
+        
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
 
@@ -500,7 +498,7 @@ planned enhancements:
   to use the S method described by Wang & Shen (1999). J Clim, 12, 1280-91.
   Once you get the standard error for the area average, you can use it to
   define confidence intervals. For example, 1.96 times stardard error for 
-  the 95% confidence.   	
+  the 95% confidence.       
 
     """
 
