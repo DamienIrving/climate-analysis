@@ -121,7 +121,7 @@ def get_timescale(indata):
 
     """
 
-    time_axis = indata_complete.data.getTime().asComponentTime()
+    time_axis = indata.getTime().asComponentTime()
     timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
         
     assert timescale in ['daily', 'monthly']
