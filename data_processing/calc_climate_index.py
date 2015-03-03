@@ -266,7 +266,7 @@ def calc_mex(index, ifile, var_id, base_period):
 
     mex_timeseries_normalised = (mex_timeseries_raw - mex_avg) / mex_std
 
-    # Define the output attributes
+    # Output file info
     hx = 'Ref: MEX index of Coumou (2014) doi:10.1073/pnas.1412797111'
     var_atts = {'id': 'mex',
                 'long_name': 'midlatitude_extreme_index',
@@ -295,26 +295,36 @@ def calc_sam(index, ifile, var_id, base_period):
 
     """
     
-    # Read data, extract the required latitudes, calculate zonal mean anomalies
-    indata_complete = nio.InputData(ifile, var_id) 
-    indata_base = nio.InputData(ifile, var_id, time=base_period)    
+    # Determine the timescale
+    indata = nio.InputData(ifile, var_id, longitude=(10,12))
+    tscale_abbrev = get_timescale(indata.data)
     
-    latitude = indata_complete.data.getLatitude()
-    lats = [-40, -65]
+    # Determine latitude range (cdo requires exact latitude value)
+    lat_axis = indata.data.getLatitude()[:]
+    north_lat = nio.find_nearest(lat_axis, -40)
+    south_lat = nio.find_nearest(lat_axis, -65)
 
-    monthly_normalised_timeseries = {}    
-    for lat in lats: 
-        index, value = min(enumerate(latitude), key=lambda x: abs(x[1]-float(lat)))  #Pick closest latitude
-        print 'File latitude for', lat, '=', value
+    # Calculate the index
+    normalised_zonal_mean_mslp = {}
+    for lat in [north_lat, south_lat]: 
+        div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
+        div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
+        sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
+        avg_operator_text = ' -y%savg ' %(tscale_abbrev)
+        std_operator_text = ' -y%sstd ' %(tscale_abbrev)
+    
+        sellat = "-sellonlatbox,0,360,%d,%d %s " %(lat, lat, ifile)
+        zonmean = "-zonmean "+sellat
+        anomaly = sub_operator_text + zonmean + avg_operator_text + zonmean
+        std = std_operator_text + zonmean
+    
+        print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
+        result = div_operator_func(input=anomaly + std, returnArray=var_id)
+        normalised_zonal_mean_mslp[lat] = numpy.squeeze(result)
 
-        complete_timeseries = numpy.ma.mean(indata_complete.data[:, index, :], axis=1)
-        base_timeseries = numpy.ma.mean(indata_base.data[:, index, :], axis=1)
+    sam_timeseries = normalised_zonal_mean_mslp[north_lat] - normalised_zonal_mean_mslp[south_lat]
 
-        monthly_normalised_timeseries[lat] = monthly_normalisation(complete_timeseries, base_timeseries, indata_complete.months())
-
-    sami_timeseries = numpy.ma.subtract(monthly_normalised_timeseries[-40], monthly_normalised_timeseries[-65])
-
-    # Determine the attributes
+    # Output file info
     hx = 'Ref: Gong & Wang (1999). GRL, 26, 459-462. doi:10.1029/1999GL900003. Base period: %s to %s' %(base_period[0], base_period[1])
     var_atts = {'id': 'sam',
                 'long_name': 'Southern_Annular_Mode_Index',
@@ -322,12 +332,11 @@ def calc_sam(index, ifile, var_id, base_period):
                 'units': '',
                 'notes': hx}
 
-
-    outdata_list = [sami_timeseries,]
+    outdata_list = [sam_timeseries,]
     outvar_atts_list = [var_atts,]
-    outvar_axes_list = [(indata_complete.data.getTime(),),]
+    outvar_axes_list = [(indata.data.getTime(),),]
     
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata_complete.global_atts 
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
 
 
 def calc_iemi(index, ifile, var_id, base_period):
