@@ -343,8 +343,8 @@ def calc_iemi(index, ifile, var_id, base_period):
     """Calculate the Improved ENSO Modoki Index. 
 
     Ref: Li et al (2010). Indices of El Nino and El Nino Modoki:
-      An improved El Niño Modoki index. 
-      Advances in Atmospheric Sciences, 27(5), 1210–1220.
+      An improved El Nino Modoki index. 
+      Advances in Atmospheric Sciences, 27(5), 1210-1220.
       doi:10.1007/s00376-010-9173-5.
 
     Expected input: Sea surface temperature data.
@@ -464,7 +464,7 @@ def calc_asl(index, ifile, var_id):
     """Calculate the Amundsen Sea Low index.
 
     Ref: Turner et al (2013). The Amundsen Sea Low. 
-      International Journal of Climatology. 33(7), 1818–1829.
+      International Journal of Climatology. 33(7), 1818-1829
       doi:10.1002/joc.3558.
 
     Expected input: Mean sea level pressure data.
@@ -495,21 +495,21 @@ def calc_asl(index, ifile, var_id):
     min_lons = numpy.take(lons, min_indexes)
 
     # Output file info
-    values_atts = {'id': 'asl_value,
+    values_atts = {'id': 'asl_value',
                    'long_name': 'asl_minimum_pressure',
                    'standard_name': 'asl_minimum_pressure',
                    'units': 'Pa',
-                   'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818–1829. doi:10.1002/joc.3558.'}
-    lats_atts = {'id': 'asl_lat,
+                   'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818-1829. doi:10.1002/joc.3558.'}
+    lats_atts = {'id': 'asl_lat',
                  'long_name': 'asl_latitude',
                  'standard_name': 'asl_latitude',
                  'units': 'degrees_north',
-                 'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818–1829. doi:10.1002/joc.3558.'}
-    lons_atts = {'id': 'asl_lon,
+                 'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818-1829. doi:10.1002/joc.3558.'}
+    lons_atts = {'id': 'asl_lon',
                  'long_name': 'asl_longitude',
                  'standard_name': 'asl_longitude',
                  'units': 'degrees_east',
-                 'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818–1829. doi:10.1002/joc.3558.'}
+                 'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818-1829. doi:10.1002/joc.3558.'}
 
     outdata_list = [min_values, min_lats, min_lons]
     outvar_atts_list = [values_atts, lats_atts, lons_atts]
