@@ -110,6 +110,26 @@ def calc_reg_anomaly_timeseries(data_complete, data_base):
     return anomaly_timeseries
     
 
+def get_timescale(indata):
+    """Find the timescale of the data.
+
+    Args:
+      indata (cdms2.Tvariable.transientvariable): Input data
+
+    Returns:
+      'day' or 'mon' to signify daily or monthly timescale data
+
+    """
+
+    time_axis = indata_complete.data.getTime().asComponentTime()
+    timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
+        
+    assert timescale in ['daily', 'monthly']
+    tscale_abbrev = 'day' if timescale == 'daily' else 'mon'
+
+    return tscale_abbrev
+
+
 def map_std(stds, data, timescale):
    """Take an array of stardard deviations and map it
    to the size of the data array (matching the correct month/day)."""
@@ -150,12 +170,8 @@ def calc_zw3(index, ifile, var_id, base_period):
     """
 
     # Determine the timescale
-    indata_complete = nio.InputData(ifile, var_id, region='small') 
-    time_axis = indata_complete.data.getTime().asComponentTime()
-    timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
-        
-    assert timescale in ['daily', 'monthly']
-    tscale_abbrev = 'day' if timescale == 'daily' else 'mon' 
+    indata = nio.InputData(ifile, var_id, region='small')
+    tscale_abbrev = get_timescale(indata.data)
 
     # Calculate the index
     index = {}
@@ -190,9 +206,9 @@ def calc_zw3(index, ifile, var_id, base_period):
 
     outdata_list = [zw3_timeseries,]
     outvar_atts_list = [var_atts,]
-    outvar_axes_list = [(indata_complete.data.getTime(),),]
+    outvar_axes_list = [(indata.data.getTime(),),]
     
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata_complete.global_atts 
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
 
 
 def calc_mex(index, ifile, var_id, base_period):
@@ -223,11 +239,7 @@ def calc_mex(index, ifile, var_id, base_period):
 
     # Determine the timescale
     indata_complete = nio.InputData(ifile, var_id, latitude=(south_lat, north_lat)) 
-    time_axis = indata_complete.data.getTime().asComponentTime()
-    timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
-        
-    assert timescale in ['daily', 'monthly']
-    tscale_abbrev = 'day' if timescale == 'daily' else 'mon' 
+    tscale_abbrev = get_timescale(indata.data) 
 
     # Calculate the index
     div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
@@ -244,7 +256,7 @@ def calc_mex(index, ifile, var_id, base_period):
     print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
     cdo_result = div_operator_func(input=anomaly + std, returnArray=var_id)
     square_term = numpy.square(cdo_result)
-    square_term = cdms2.createVariable(square_term, grid=indata_complete.data.getGrid(), axes=indata_complete.data.getAxisList())
+    square_term = cdms2.createVariable(square_term, grid=indata.data.getGrid(), axes=indata.data.getAxisList())
 
     ave_axes = square_term.getOrder().translate(None, 't')  #all but the time axis
     mex_timeseries_raw = cdutil.averager(square_term, axis=ave_axes, weights=['weighted']*len(ave_axes))
@@ -264,9 +276,9 @@ def calc_mex(index, ifile, var_id, base_period):
 
     outdata_list = [mex_timeseries_normalised,]
     outvar_atts_list = [var_atts,]
-    outvar_axes_list = [(indata_complete.data.getTime(),),]
+    outvar_axes_list = [(indata.data.getTime(),),]
     
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata_complete.global_atts 
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
 
     
 def calc_sam(index, ifile, var_id, base_period):
