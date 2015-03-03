@@ -382,18 +382,32 @@ def calc_nino(index, ifile, var_id, base_period):
     Expected input: Sea surface temperature data.
 
     """
-        
-    indata_complete = nio.InputData(ifile, var_id, region='nino'+index[4:])
-    indata_base = nio.InputData(ifile, var_id, region='nino'+index[4:], time=base_period)  
+
+    # Determine the timescale
+    indata = nio.InputData(ifile, var_id, region='small')
+    tscale_abbrev = get_timescale(indata.data)
+
+    # Calculate the index
+    south_lat, north_lat = nio.regions['nino'+index[4:]][0][0: 2]
+    west_lon, east_lon = nio.regions['nino'+index[4:]][1][0: 2]
     
-    nino_timeseries = calc_reg_anomaly_timeseries(indata_complete, indata_base)
+    sub_operator_text = 'cdo y%ssub ' %(tscale_abbrev)
+    sub_operator_func = eval(sub_operator_text.replace(' ', '.', 1)) 
+    avg_operator_text = ' -y%savg ' %(tscale_abbrev)
     
-    hx = 'lat: %s to %s, lon: %s to %s, base: %s to %s' %(indata_complete.minlat,
-                                                          indata_complete.maxlat,
-                                                          indata_complete.minlon,
-                                                          indata_complete.maxlon,
-                                                          base_period[0],
-                                                          base_period[1])
+    selregion = "-sellonlatbox,%5.2f,%5.2f,%5.2f,%5.2f %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
+    seldate = "-seldate,%s,%s " %(base_period[0], base_period[1])
+    raw_data = "-fldmean "+selregion
+    climatology = avg_operator_text + seldate + raw_data
+    
+    print sub_operator_text + raw_data + climatology
+    result = sub_operator_func(input=raw_data + climatology, returnArray=var_id)
+    nino_timeseries = numpy.squeeze(result)
+
+    # Output file info
+    hx = 'lat: %s to %s, lon: %s to %s, base: %s to %s' %(south_lat, north_lat,
+                                                          west_lon, east_lon,
+                                                          base_period[0], base_period[1])
     var_atts = {'id': 'nino'+index[4:],
                 'long_name': 'nino'+index[4:]+'_index',
                 'standard_name': 'nino'+index[4:]+'_index',
