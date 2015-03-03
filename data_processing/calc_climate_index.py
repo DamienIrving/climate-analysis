@@ -130,23 +130,22 @@ def map_std(stds, data, timescale):
 
 
 def calc_zw3(index, ifile, var_id, base_period):
-    """Calculate an index of the SH ZW3 pattern.
+    """Calculate an index of the Southern Hemisphere ZW3 pattern.
     
-    Method as per Raphael (2004)
-    
-    This function uses cdo instead of CDAT because the
-    cdutil library doesn't have routines for calculating 
-    the daily climatology or stdev.
-    
-    The running mean (and zonal mean too - see below) should 
-    have been applied to the input data beforehand. Raphael 
-    (2004) uses a 3-month running mean.
-    
-    Input data that Raphael (2004) uses is the 500hPa 
-    geopotential height, the sea level pressure or
-    from 500hPa zonal anomalies which are constructed by 
-    removing the zonal mean of the geopotential height from
-    each grid point (preferred). 
+    Ref: Raphael (2004). A zonal wave 3 index for the Southern Hemisphere. 
+      Geophysical Research Letters, 31(23), L23212. 
+      doi:10.1029/2004GL020365.
+
+    Expected input: Raphael (2004) uses is the 500hPa geopotential height, 
+      sea level pressure or 500hPa zonal anomalies which are constructed by 
+      removing the zonal mean of the geopotential height from each grid point 
+      (preferred). The running mean (and zonal mean too if using it) should 
+      have been applied to the input data beforehand. Raphael (2004) uses a 
+      3-month running mean.
+
+    Design notes: This function uses cdo instead of CDAT because the
+      cdutil library doesn't have routines for calculating the daily 
+      climatology or stdev.
     
     """
 
@@ -189,24 +188,31 @@ def calc_zw3(index, ifile, var_id, base_period):
                 'units': '',
                 'notes': notes}
 
-    return zw3_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
+    outdata_list = [zw3_timeseries,]
+    outvar_atts_list = [var_atts,]
+    outvar_axes_list = [(indata_complete.data.getTime(),),]
+    
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata_complete.global_atts 
 
 
 def calc_mex(index, ifile, var_id, base_period):
     """Calculate the mid-latitude extreme index (MEX).
     
-    Method similar to Coumou (2014). Differences include:
-      They detrend their data first 
+    Ref: Coumou et al (2014). Quasi-resonant circulation regimes and hemispheric 
+      synchronization of extreme weather in boreal summer. 
+      Proceedings of the National Academy of Sciences. 
+      doi:10.1073/pnas.1412797111
+      (Only difference between their method and that implemented here is that 
+      they detrend their data first.) 
     
-    This function uses cdo instead of CDAT because the
-    cdutil library doesn't have routines for calculating 
-    the daily climatology or stdev.
+    Expected input: Any running mean should have been applied to the 
+      input data beforehand. 
     
-    Any running mean should have been applied to the 
-    input data beforehand. 
-
-    Possible improvements:
-      A weighted mean?
+    Design notes: This function uses cdo instead of CDAT because the
+      cdutil library doesn't have routines for calculating the daily 
+      climatology or standard deviation.
+    
+    Possible improvements: A weighted mean?
         
     """
 
@@ -249,20 +255,31 @@ def calc_mex(index, ifile, var_id, base_period):
     mex_timeseries_normalised = (mex_timeseries_raw - mex_avg) / mex_std
 
     # Define the output attributes
-    hx = 'Ref: MEX index of Coumou (2014)'
+    hx = 'Ref: MEX index of Coumou (2014) doi:10.1073/pnas.1412797111'
     var_atts = {'id': 'mex',
                 'long_name': 'midlatitude_extreme_index',
                 'standard_name': 'midlatitude_extreme_index',
                 'units': '',
                 'notes': hx}
 
-    return mex_timeseries_normalised, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
+    outdata_list = [mex_timeseries_normalised,]
+    outvar_atts_list = [var_atts,]
+    outvar_axes_list = [(indata_complete.data.getTime(),),]
+    
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata_complete.global_atts 
 
     
 def calc_sam(index, ifile, var_id, base_period):
     """Calculate an index of the Southern Annular Mode.
 
-    Method as per Marshall (2003) and Gong & Wang (1999).    
+    Ref: Gong & Wang (1999). Definition of Antarctic Oscillation index. 
+      Geophysical Research Letters, 26(4), 459-462.
+      doi:10.1029/1999GL900003
+
+    Expected input: Mean sea level pressure data.
+
+    Concept: Difference between the normalised zonal mean pressure 
+      difference between 40S and 65S.
 
     """
     
@@ -286,19 +303,32 @@ def calc_sam(index, ifile, var_id, base_period):
     sami_timeseries = numpy.ma.subtract(monthly_normalised_timeseries[-40], monthly_normalised_timeseries[-65])
 
     # Determine the attributes
-    hx = 'Ref: Marshall (2003) and Gong & Wang (1999). Base period: %s to %s' %(base_period[0], 
-                                                                                base_period[1])
+    hx = 'Ref: Gong & Wang (1999). GRL, 26, 459-462. doi:10.1029/1999GL900003. Base period: %s to %s' %(base_period[0], base_period[1])
     var_atts = {'id': 'sam',
                 'long_name': 'Southern_Annular_Mode_Index',
                 'standard_name': 'Southern_Annular_Mode_Index',
                 'units': '',
                 'notes': hx}
 
-    return sami_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
+
+    outdata_list = [sami_timeseries,]
+    outvar_atts_list = [var_atts,]
+    outvar_axes_list = [(indata_complete.data.getTime(),),]
     
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata_complete.global_atts 
+
 
 def calc_iemi(index, ifile, var_id, base_period):
-    """Calculate the Improved ENSO Modoki Index of Li et al (2010)."""
+    """Calculate the Improved ENSO Modoki Index. 
+
+    Ref: Li et al (2010). Indices of El Nino and El Nino Modoki:
+      An improved El Niño Modoki index. 
+      Advances in Atmospheric Sciences, 27(5), 1210–1220.
+      doi:10.1007/s00376-010-9173-5.
+
+    Expected input: Sea surface temperature data.
+
+    """
     
     regions = ['emia', 'emib', 'emic']
     anomaly_timeseries = {}
@@ -310,19 +340,27 @@ def calc_iemi(index, ifile, var_id, base_period):
     iemi_timeseries = numpy.ma.subtract(numpy.ma.subtract(numpy.ma.multiply(anomaly_timeseries['emia'], 3.0),
                       numpy.ma.multiply(anomaly_timeseries['emib'],2.0)), anomaly_timeseries['emic'])
 
-    hx = 'Ref: Li et al 2010, Adv Atmos Sci, 27, 1210-20. Base period: %s to %s' %(base_period[0], 
-                                                                                   base_period[1])
+    hx = 'Ref: Li et al 2010, Adv Atmos Sci, 27, 1210-20. doi:10.1007/s00376-010-9173-5. Base period: %s to %s' %(base_period[0], base_period[1])
+
     var_atts = {'id': 'iemi',
                 'long_name': 'improved_ENSO_Modoki_Index',
                 'standard_name': 'improved_ENSO_Modoki_Index',
                 'units': 'Celsius',
                 'notes': hx}
 
-    return iemi_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
+    outdata_list = [iemi_timeseries,]
+    outvar_atts_list = [var_atts,]
+    outvar_axes_list = [(indata_complete.data.getTime(),),]
+    
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata_complete.global_atts 
  
 
 def calc_nino(index, ifile, var_id, base_period):
-    """Calculate a NINO SST index."""
+    """Calculate a Nino index.
+
+    Expected input: Sea surface temperature data.
+
+    """
         
     indata_complete = nio.InputData(ifile, var_id, region='nino'+index[4:])
     indata_base = nio.InputData(ifile, var_id, region='nino'+index[4:], time=base_period)  
@@ -341,18 +379,31 @@ def calc_nino(index, ifile, var_id, base_period):
                 'units': 'Celsius',
                 'notes': hx}
     
-    return nino_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
+    outdata_list = [nino_timeseries,]
+    outvar_atts_list = [var_atts,]
+    outvar_axes_list = [(indata_complete.data.getTime(),),]
     
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata_complete.global_atts 
+
 
 def calc_nino_new(index, ifile, var_id, base_period):
-    """Calculate a new Nino index of Ren & Jin (2011)"""
+    """Calculate a new Nino index.
+
+    Ref: Ren & Jin (2011). Nino indices for two types of ENSO. 
+      Geophysical Research Letters, 38(4), L04704. 
+      doi:10.1029/2010GL046031.
+
+    Expected input: Sea surface temperature data.
+
+    """
     
     # Calculate the traditional NINO3 and NINO4 indices
     regions = ['NINO3','NINO4']
     anomaly_timeseries = {}
     for reg in regions: 
-        anomaly_timeseries[reg], temp, indata_complete = calc_nino(reg, ifile, var_id, base_period)       
-
+        outdata_list, temp_atts_list, outvar_axes_list, global_atts = calc_nino(reg, ifile, var_id, base_period)       
+        anomaly_timeseries[reg] = outdata_list[0]      
+ 
     # Calculate the new Ren & Jin index
     ntime = len(anomaly_timeseries['NINO3'])
     
@@ -376,23 +427,29 @@ def calc_nino_new(index, ifile, var_id, base_period):
     long_name['NINOCT'] = 'nino_cold_tongue_index'
     long_name['NINOWP'] = 'nino_warm_pool_index'    
 
-    attributes = {'id': 'nino'+index[4:],
-                  'long_name': long_name[index],
-                  'standard_name': long_name[index],
-                  'units': 'Celsius',
-                  'notes': hx}
+    var_atts = {'id': 'nino'+index[4:],
+                'long_name': long_name[index],
+                'standard_name': long_name[index],
+                'units': 'Celsius',
+                'notes': hx}
 
-    return nino_new_timeseries, var_atts, indata_complete.global_atts, indata_complete.data.getTime()
+    outdata_list = [nino_new_timeseries,]
+    outvar_atts_list = [var_atts,]
+    
+    return outdata_list, outvar_atts_list, outvar_axes_list, global_atts 
 
 
 def calc_asl(index, ifile, var_id):
-    """Calculate the Amundsen Sea Low index
+    """Calculate the Amundsen Sea Low index.
+
+    Ref: Turner et al (2013). The Amundsen Sea Low. 
+      International Journal of Climatology. 33(7), 1818–1829.
+      doi:10.1002/joc.3558.
 
     Expected input: Mean sea level pressure data.
 
-    Ref: Turner et al (2013). The Amundsen Sea Low. 
-         International Journal of Climatology. 
-         DOI: 10.1002/joc.3558 
+    Concept: Location and value of minimum MSLP is the region
+      bounded by 60-75S and 180-310E.   
 
     """
 
@@ -420,15 +477,18 @@ def calc_asl(index, ifile, var_id):
     values_atts = {'id': 'asl_value,
                    'long_name': 'asl_minimum_pressure',
                    'standard_name': 'asl_minimum_pressure',
-                   'units': 'Pa'}
+                   'units': 'Pa',
+                   'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818–1829. doi:10.1002/joc.3558.'}
     lats_atts = {'id': 'asl_lat,
                  'long_name': 'asl_latitude',
                  'standard_name': 'asl_latitude',
-                 'units': 'degrees_north'}
+                 'units': 'degrees_north',
+                 'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818–1829. doi:10.1002/joc.3558.'}
     lons_atts = {'id': 'asl_lon,
                  'long_name': 'asl_longitude',
                  'standard_name': 'asl_longitude',
-                 'units': 'degrees_east'}
+                 'units': 'degrees_east',
+                 'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818–1829. doi:10.1002/joc.3558.'}
 
     outdata_list = [min_values, min_lats, min_lons]
     outvar_atts_list = [values_atts, lats_atts, lons_atts]
@@ -458,16 +518,12 @@ def main(inargs):
         calc_index = function_for_index[inargs.index]
 
     # Calculate the index
-    index_data, var_atts, global_atts, time_axis = calc_index(inargs.index, 
-                                                              inargs.infile, 
-                                                              inargs.variable, 
-                                                              inargs.base)
+    outdata_list, outvar_atts_list, outvar_axes_list, global_atts = calc_index(inargs.index, 
+                                                                               inargs.infile, 
+                                                                               inargs.variable, 
+                                                                               inargs.base)
     
     # Write the outfile
-    outdata_list = [index_data,]
-    outvar_atts_list = [var_atts,]
-    outvar_axes_list = [(time_axis,),]
-
     nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
                      global_atts,  
                      outdata_list,
