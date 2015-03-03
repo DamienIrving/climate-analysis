@@ -313,7 +313,7 @@ def calc_sam(index, ifile, var_id, base_period):
         avg_operator_text = ' -y%savg ' %(tscale_abbrev)
         std_operator_text = ' -y%sstd ' %(tscale_abbrev)
     
-        sellat = "-sellonlatbox,0,360,%d,%d %s " %(lat, lat, ifile)
+        sellat = "-sellonlatbox,0,360,%4.2f,%4.2f %s" %(lat, lat, ifile)
         zonmean = "-zonmean "+sellat
         anomaly = sub_operator_text + zonmean + avg_operator_text + zonmean
         std = std_operator_text + zonmean

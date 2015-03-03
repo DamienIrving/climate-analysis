@@ -613,7 +613,7 @@ def split_dt(dt):
 def find_nearest(array, value):
     """Find the closest array item to value."""
     
-    idx = (numpy.abs(array - value)).argmin()
+    idx = (numpy.abs(numpy.array(array) - value)).argmin()
     return array[idx]
 
 
