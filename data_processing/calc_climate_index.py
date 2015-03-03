@@ -460,7 +460,7 @@ def calc_nino_new(index, ifile, var_id, base_period):
     return outdata_list, outvar_atts_list, outvar_axes_list, global_atts 
 
 
-def calc_asl(index, ifile, var_id):
+def calc_asl(index, ifile, var_id, base_period):
     """Calculate the Amundsen Sea Low index.
 
     Ref: Turner et al (2013). The Amundsen Sea Low. 
@@ -486,7 +486,7 @@ def calc_asl(index, ifile, var_id):
 
     # Reshape data
     ntimes, nlats, nlons = indata.data.shape
-    reshaped_indata = numpy.reshape(indata.data, (ntimes, nlats*nlons))
+    indata_reshaped = numpy.reshape(indata.data, (ntimes, nlats*nlons))
 
     # Get the ASL index info (min value for each timestep and its lat/lon)
     min_values = numpy.amin(indata_reshaped, axis=1)
