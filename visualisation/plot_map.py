@@ -14,7 +14,6 @@ import matplotlib
 matplotlib.use('Agg')
 
 import iris
-from iris.time import PartialDateTime
 import iris.plot as iplt
 import iris.quickplot as qplt
 
@@ -174,7 +173,7 @@ def get_time_constraint(start, end):
     else:  
         start_year, start_month, start_day = start.split('-') 
         end_year, end_month, end_day = end.split('-')
-        time_constraint = iris.Constraint(time=lambda t: PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)) <= t <= PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)))
+        time_constraint = iris.Constraint(time=lambda t: iris.time.PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)) <= t <= iris.time.PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)))
 
     return time_constraint
 
