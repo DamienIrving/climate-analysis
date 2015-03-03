@@ -313,7 +313,7 @@ def calc_sam(index, ifile, var_id, base_period):
         avg_operator_text = ' -y%savg ' %(tscale_abbrev)
         std_operator_text = ' -y%sstd ' %(tscale_abbrev)
     
-        sellat = "-sellonlatbox,0,360,%4.2f,%4.2f %s" %(lat, lat, ifile)
+        sellat = "-sellonlatbox,0,360,%3.2f,%3.2f %s" %(lat, lat, ifile)
         zonmean = "-zonmean "+sellat
         anomaly = sub_operator_text + zonmean + avg_operator_text + zonmean
         std = std_operator_text + zonmean
@@ -384,7 +384,7 @@ def calc_nino(index, ifile, var_id, base_period):
     """
 
     # Determine the timescale
-    indata = nio.InputData(ifile, var_id, region='small')
+    indata = nio.InputData(ifile, var_id, region='nino'+index[4:])
     tscale_abbrev = get_timescale(indata.data)
 
     # Calculate the index
@@ -395,7 +395,7 @@ def calc_nino(index, ifile, var_id, base_period):
     sub_operator_func = eval(sub_operator_text.replace(' ', '.', 1)) 
     avg_operator_text = ' -y%savg ' %(tscale_abbrev)
     
-    selregion = "-sellonlatbox,%5.2f,%5.2f,%5.2f,%5.2f %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
+    selregion = "-sellonlatbox,%3.2f,%3.2f,%3.2f,%3.2f %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
     seldate = "-seldate,%s,%s " %(base_period[0], base_period[1])
     raw_data = "-fldmean "+selregion
     climatology = avg_operator_text + seldate + raw_data
@@ -416,9 +416,9 @@ def calc_nino(index, ifile, var_id, base_period):
     
     outdata_list = [nino_timeseries,]
     outvar_atts_list = [var_atts,]
-    outvar_axes_list = [(indata_complete.data.getTime(),),]
+    outvar_axes_list = [(indata.data.getTime(),),]
     
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata_complete.global_atts 
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
 
 
 def calc_nino_new(index, ifile, var_id, base_period):
