@@ -77,7 +77,8 @@ except ImportError:
 
 # [(minlat, maxlat), (minlon, maxlon)]
 
-regions = {'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
+regions = {'asl': [(-75, -60, 'cc'), (180, 310, 'cc')],
+           'aus': [(-45, -10, 'cc'), (110, 160, 'cc')],
            'ausnz': [(-50, 0, 'cc'), (100, 185, 'cc')],
            'emia': [(-10, 10, 'cc'), (165, 220, 'cc')],
            'emib': [(-15, 5, 'cc'), (250, 290, 'cc')],
