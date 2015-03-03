@@ -14,7 +14,7 @@ function usage {
     echo "   outfile:     Output file name"
     echo "   outvar:      Output variable name"
     echo "   cdofix:      Script for replacing attributes that cdo strips"
-    echo "   e.g. bash $0 zfile.nc z new-zgfile.nc zg ~/phd/data_processing/cdo_fix.sh"
+    echo "   e.g. bash $0 zfile.nc z new-zgfile.nc zg ~/climate-analysis/data_processing/cdo_fix.sh"
     exit 1
 }
 
@@ -66,4 +66,10 @@ elif [[ "${outvar}" = "va" ]] ; then
 elif [[ "${outvar}" = "sic" ]] ; then
     ncatted -O -a standard_name,${outvar},o,c,"sea_ice_fraction" ${outfile}
     ncatted -O -a long_name,${outvar},o,c,"sea_ice_fraction" ${outfile}
+elif [[ "${outvar}" = "psl" ]] ; then
+    ncatted -O -a standard_name,${outvar},o,c,"mean_sea_level_pressure" ${outfile}
+    ncatted -O -a long_name,${outvar},o,c,"mean_sea_level_pressure" ${outfile}
+elif [[ "${outvar}" = "tos" ]] ; then
+    ncatted -O -a standard_name,${outvar},o,c,"sea_surface_temperature" ${outfile}
+    ncatted -O -a long_name,${outvar},o,c,"sea_surface_temperature" ${outfile}
 fi
