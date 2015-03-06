@@ -34,7 +34,7 @@ except ImportError:
 
 # Define functions
 
-def calc_asl(index, ifile, var_id, base_period):
+def calc_asl(ifile, var_id):
     """Calculate the Amundsen Sea Low index.
 
     Ref: Turner et al (2013). The Amundsen Sea Low. 
@@ -92,7 +92,7 @@ def calc_asl(index, ifile, var_id, base_period):
     return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
 
 
-def calc_mex(index, ifile, var_id, base_period):
+def calc_mex(ifile, var_id):
     """Calculate the mid-latitude extreme index (MEX).
     
     Ref: Coumou et al (2014). Quasi-resonant circulation regimes and hemispheric 
@@ -260,7 +260,7 @@ def calc_nino_new(index, ifile, var_id, base_period):
     return outdata_list, outvar_atts_list, outvar_axes_list, global_atts 
 
 
-def calc_sam(index, ifile, var_id, base_period):
+def calc_sam(ifile, var_id):
     """Calculate an index of the Southern Annular Mode.
 
     Ref: Gong & Wang (1999). Definition of Antarctic Oscillation index. 
@@ -304,7 +304,7 @@ def calc_sam(index, ifile, var_id, base_period):
     sam_timeseries = normalised_zonal_mean_mslp[north_lat] - normalised_zonal_mean_mslp[south_lat]
 
     # Output file info
-    hx = 'Ref: Gong & Wang (1999). GRL, 26, 459-462. doi:10.1029/1999GL900003. Base period: %s to %s' %(base_period[0], base_period[1])
+    hx = 'Ref: Gong & Wang (1999). GRL, 26, 459-462. doi:10.1029/1999GL900003'
     var_atts = {'id': 'sam',
                 'long_name': 'Southern_Annular_Mode_Index',
                 'standard_name': 'Southern_Annular_Mode_Index',
@@ -318,7 +318,7 @@ def calc_sam(index, ifile, var_id, base_period):
     return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
 
 
-def calc_zw3(index, ifile, var_id, base_period):
+def calc_zw3(ifile, var_id):
     """Calculate an index of the Southern Hemisphere ZW3 pattern.
     
     Ref: Raphael (2004). A zonal wave 3 index for the Southern Hemisphere. 
@@ -403,7 +403,7 @@ def get_timescale(indata):
 def main(inargs):
     """Run the program."""
         
-    # Initialise relevant index function
+    # Identify relevant function and calculate index
     function_for_index = {'NINO': calc_nino,
                           'NINO_new': calc_nino_new,
                           'SAM': calc_sam,
@@ -416,14 +416,15 @@ def main(inargs):
             calc_index = function_for_index['NINO_new']
         else:
             calc_index = function_for_index['NINO']
+
+        outdata_list, outvar_atts_list, outvar_axes_list, global_atts = calc_index(inargs.index, 
+                                                                                   inargs.infile, 
+                                                                                   inargs.variable, 
+                                                                                   inargs.base)            
     else:
         calc_index = function_for_index[inargs.index]
-
-    # Calculate the index
-    outdata_list, outvar_atts_list, outvar_axes_list, global_atts = calc_index(inargs.index, 
-                                                                               inargs.infile, 
-                                                                               inargs.variable, 
-                                                                               inargs.base)
+        outdata_list, outvar_atts_list, outvar_axes_list, global_atts = calc_index(inargs.infile, 
+                                                                                   inargs.variable)
     
     # Write the outfile
     nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
