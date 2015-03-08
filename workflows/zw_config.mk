@@ -2,13 +2,13 @@
 
 # System configuration
 DATA_HOME=/mnt/meteo0/data/simmonds/dbirving
-TEMP_DATA_DIR=${DATA_HOME}/temp
+TEMPDATA_DIR=${DATA_HOME}/temp
 DATA_DIR=${DATA_HOME}/${DATASET}/data
-ZW3_DIR=${DATA_DIR}/zw3
-MAP_DIR=${ZW3_DIR}/figures/maps
-INDEX_DIR=${ZW3_DIR}/figures/indexes
-COMP_DIR=${ZW3_DIR}/figures/composites
-SPECTRA_DIR=${ZW3_DIR}/figures/spectra
+ZW_DIR=${DATA_DIR}/zw
+MAP_DIR=${ZW_DIR}/figures/maps
+INDEX_DIR=${ZW_DIR}/figures/indexes
+COMP_DIR=${ZW_DIR}/figures/composites
+SPECTRA_DIR=${ZW_DIR}/figures/spectra
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/local/anaconda/bin/python
 DATA_SCRIPT_DIR=~/climate-analysis/data_processing

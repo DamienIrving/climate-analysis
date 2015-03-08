@@ -27,23 +27,23 @@ ${V_RUNMEAN} : ${V_ORIG}
 	bash ${CDO_FIX_SCRIPT} $@ ${VAR}
 
 ## Step 2: Extract the wave envelope (for the entire globe)
-ENV_3D=${ZW3_DIR}/env${VAR}_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+ENV_3D=${ZW_DIR}/env${VAR}_zw_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
 ${ENV_3D} : ${V_RUNMEAN}
-	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} hilbert ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMP_DATA_DIR}
+	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} hilbert ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## Step 3: Collapse the meridional dimension
-ENV_2D=${ZW3_DIR}/env${VAR}_zw3_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
+ENV_2D=${ZW_DIR}/env${VAR}_zw_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
 ${ENV_2D} : ${ENV_3D}
 	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
 	bash ${CDO_FIX_SCRIPT} $@ env${VAR}
 
 ## Step 4: Calculate the PWI and other wave statistics (mean & max, extent/coverage, etc)
-WAVE_STATS=${ZW3_DIR}/wavestats_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc 
+WAVE_STATS=${ZW_DIR}/wavestats_zw_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc 
 ${WAVE_STATS} : ${ENV_2D}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< env${VAR} $@ --threshold ${EXTENT_THRESH}
 
 ## Step 5: Generate list of dates exceeding some PWI threshold (for later use in composite creation)
-DATE_LIST=${COMP_DIR}/dates_zw3_${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.txt 
+DATE_LIST=${COMP_DIR}/dates_zw_${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.txt 
 ${DATE_LIST}: ${WAVE_STATS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --date_list $@ --metric_threshold ${METRIC_HIGH_THRESH}
 
@@ -51,22 +51,22 @@ ${DATE_LIST}: ${WAVE_STATS}
 # Common indices
 
 ## Phase and amplitude of each Fourier component
-FOURIER_INFO=${ZW3_DIR}/fourier_zw3_${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc 
+FOURIER_INFO=${ZW_DIR}/fourier_zw_${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc 
 ${FOURIER_INFO} : ${V_RUNMEAN}
-	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} coefficients ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMP_DATA_DIR}
+	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} coefficients ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## ZW3 index 
 ZG_ORIG=${DATA_DIR}/zg_${DATASET}_500hPa_daily_native.nc
 ZG_ZONAL_ANOM=${DATA_DIR}/zg_${DATASET}_500hPa_daily_native-zonal-anom.nc
 ${ZG_ZONAL_ANOM} : ${ZG_ORIG}       
-	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< zg $@ ${CDO_FIX_SCRIPT} ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMP_DATA_DIR}
+	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< zg $@ ${CDO_FIX_SCRIPT} ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ZG_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${ZG_ZONAL_ANOM_RUNMEAN} : ${ZG_ZONAL_ANOM}
 	cdo ${TSCALE} $< $@
 	bash ${CDO_FIX_SCRIPT} $@ zg
 
-ZW3_INDEX=${ZW3_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
+ZW3_INDEX=${ZW_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${ZW3_INDEX} : ${ZG_ZONAL_ANOM_RUNMEAN}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
 
@@ -77,7 +77,7 @@ ${ZW3_INDEX} : ${ZG_ZONAL_ANOM_RUNMEAN}
 CONTOUR_ORIG=${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native.nc
 CONTOUR_ZONAL_ANOM=${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc       
 ${CONTOUR_ZONAL_ANOM} : ${CONTOUR_ORIG}
-	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< ${CONTOUR_VAR} $@ ${CDO_FIX_SCRIPT} ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMP_DATA_DIR}
+	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< ${CONTOUR_VAR} $@ ${CDO_FIX_SCRIPT} ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## Step 2: Apply temporal averaging to the zonal contour data
 CONTOUR_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
@@ -88,7 +88,7 @@ ${CONTOUR_ZONAL_ANOM_RUNMEAN} : ${CONTOUR_ZONAL_ANOM}
 
 # Common table/database
 
-TABLE=${ZW3_DIR}/table_zw3_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv 
+TABLE=${ZW_DIR}/table_zw_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv 
 ${TABLE} : ${WAVE_STATS} ${ZW3_INDEX} ${FOURIER_INFO}
-	${PYTHON} ${DATA_SCRIPT_DIR}/create_zw3_table.py $(word 1,$^) $(word 2,$^) $(word 3,$^) $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/create_zw_table.py $(word 1,$^) $(word 2,$^) $(word 3,$^) $@
 
