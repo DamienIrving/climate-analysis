@@ -30,7 +30,7 @@ ${ENV_CLIM_PLOT} : ${ENV_CLIM}
 	bash ${VIS_SCRIPT_DIR}/plot_seasonal_climatology.sh $< env${VAR} $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 ## Plot the Hilbert transform
-HILBERT_PLOT=${INDEX_DIR}/hilbert/${TSCALE_LABEL}/hilbert_zw_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${LAT_LABEL}_${PLOT_DATE1}_${PLOT_DATE2}.png 
+HILBERT_PLOT=${ZWINDEX_DIR}/hilbert/${TSCALE_LABEL}/hilbert_zw_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${LAT_LABEL}_${PLOT_DATE1}_${PLOT_DATE2}.png 
 ${HILBERT_PLOT}: ${V_RUNMEAN}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< ${VAR} $@ ${PLOT_DIMS} --latitude ${LAT_SINGLE} --dates ${PLOT_DATE1} ${PLOT_DATE2} --wavenumbers ${WAVE_MIN} ${WAVE_MAX} --figure_size 15 6
 
@@ -38,7 +38,7 @@ ${HILBERT_PLOT}: ${V_RUNMEAN}
 # PWI climatology stats
 
 ## Seasonal and monthly summaries
-SEAS_MON_SUMMARY_PLOT=${INDEX_DIR}/clim/montots-seasvals_zw_${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png 
+SEAS_MON_SUMMARY_PLOT=${ZWINDEX_DIR}/clim/montots-seasvals_zw_${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png 
 ${SEAS_MON_SUMMARY_PLOT} : ${WAVE_STATS} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --plot_name $@ --plot_types monthly_totals_histogram seasonal_values_line --metric_threshold ${METRIC_HIGH_THRESH} --scale_annual 0.25 --figure_size 16 6
 

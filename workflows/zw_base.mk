@@ -56,19 +56,44 @@ ${FOURIER_INFO} : ${V_RUNMEAN}
 	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} coefficients ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## ZW3 index 
+### Step 1: Calculate zonal anomaly
 ZG_ORIG=${DATA_DIR}/zg_${DATASET}_500hPa_daily_native.nc
 ZG_ZONAL_ANOM=${DATA_DIR}/zg_${DATASET}_500hPa_daily_native-zonal-anom.nc
 ${ZG_ZONAL_ANOM} : ${ZG_ORIG}       
 	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< zg $@ ${CDO_FIX_SCRIPT} ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
-
+### Step 2: Apply running mean
 ZG_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${ZG_ZONAL_ANOM_RUNMEAN} : ${ZG_ZONAL_ANOM}
 	cdo ${TSCALE} $< $@
 	bash ${CDO_FIX_SCRIPT} $@ zg
-
+### Step 3: Calculate index
 ZW3_INDEX=${ZW_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${ZW3_INDEX} : ${ZG_ZONAL_ANOM_RUNMEAN}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
+
+## Nino 3.4
+### Step 1: Apply running mean
+TOS_ORIG=${DATA_DIR}/tos_${DATASET}_surface_daily_native-tropicalpacific.nc
+TOS_RUNMEAN=${DATA_DIR}/tos_${DATASET}_surface_${TSCALE_LABEL}_native-tropicalpacific.nc
+${TOS_RUNMEAN} : ${TOS_ORIG}
+	cdo ${TSCALE} $< $@
+	bash ${CDO_FIX_SCRIPT} $@ tos
+### Step 2: Calculate index
+NINO34_INDEX=${INDEX_DIR}/nino34_tos_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
+${NINO34_INDEX} : ${TOS_RUNMEAN}
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py NINO34 $< tos $@
+
+## SAM
+### Step 1: Apply running mean
+PSL_ORIG=${DATA_DIR}/psl_${DATASET}_surface_daily_native-sh.nc
+PSL_RUNMEAN=${DATA_DIR}/psl_${DATASET}_surface_${TSCALE_LABEL}_native-sh.nc
+${PSL_RUNMEAN} : ${PSL_ORIG}
+	cdo ${TSCALE} $< $@
+	bash ${CDO_FIX_SCRIPT} $@ psl
+### Step 2: Calculate index
+SAM_INDEX=${INDEX_DIR}/sam_psl_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
+${SAM_INDEX} : ${PSL_RUNMEAN}
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py SAM $< psl $@
 
 
 # Data for contours on plots
