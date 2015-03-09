@@ -29,13 +29,18 @@ def main(inargs):
    
     # Read data 
     indata, metadata = aconv.nc_to_df(inargs.infile, [inargs.metric])
-    metric_threshold = uconv.get_threshold(indata[inargs.metric], inargs.metric_filter) 
+    metric_threshold = uconv.get_threshold(indata[inargs.metric], inargs.metric_threshold) 
     
     # Apply filters
     dt_selector = aconv.pandas_dt_selector(indata.index, inargs.season, inargs.start, inargs.end)
     selector = dt_selector
     
-    metric_selection = indata[inargs.metric] >= metric_threshold
+    assert inargs.threshold_direction in ['greater', 'less']
+    if inargs.threshold_direction == 'greater':
+        metric_selection = indata[inargs.metric] >= metric_threshold
+    elif inargs.threshold_direction == 'less':
+        metric_selection = indata[inargs.metric] <= metric_threshold
+
     selector = selector & metric_selection 
  
     data = indata[selector]
@@ -72,8 +77,10 @@ author:
     parser.add_argument("--season", type=str, choices=('DJF', 'MAM', 'JJA', 'SON'), default=None,
                         help="Season selector [default = all]")
 
-    parser.add_argument("--metric_filter", type=str, default='90pct', 
-                        help="Minimum metric value that will be included as an event. Can be percentile (e.g. 90pct) or raw value.")
+    parser.add_argument("--metric_threshold", type=str, default='75pct', 
+                        help="Threshold metric value. Can be percentile (e.g. 75pct) or raw value.")
+    parser.add_argument("--threshold_direction", type=str, choices=('greater', 'less'), default='greater', 
+                        help="Keep values greater or less than the threshold.")
 
     args = parser.parse_args()            
     main(args)
