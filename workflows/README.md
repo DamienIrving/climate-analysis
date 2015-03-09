@@ -16,8 +16,10 @@ makefiles related to that workflow
 Southern Hemisphere planetary wave activity and its influence on weather and climate extremes.
 
 * Config file: `zw_config.mk`
-* Workflow for basic climatology: `zw_climatology.mk`
-* Workflow for detailed analysis of that climatology: `zw_applications.mk`
+* Basic analyses that underpin the rest: `zw_base.mk`
+* Wave envelope and Fourier transform analysis: `zw_envelope.mk`
+* Composite creation and plotting: `zw_composites.mk`
+* Compare various indices: `zw_index_comparison.mk`
 
 Note that `zw_tscale_analysis.mk` and `zw_tscale_analysis_config.mk`
 were used in the initial scoping for the zonal wave analysis
