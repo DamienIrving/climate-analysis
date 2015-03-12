@@ -32,23 +32,24 @@ else
     exit 1
 fi
 
-${python_exe} ${code_dir}/plot_map.py ${posfile} ${var}_annual none none none contour 1 3 2 \
---infiles ${posfile} ${var}_DJF none none none contour 3 \
---infiles ${posfile} ${var}_MAM none none none contour 4 \
---infiles ${posfile} ${var}_JJA none none none contour 5 \
---infiles ${posfile} ${var}_SON none none none contour 6 \
+${python_exe} ${code_dir}/plot_map.py ${posfile} ${var}_annual none none none contour0 1 3 2 \
+--infiles ${posfile} ${var}_DJF none none none contour0 3 \
+--infiles ${posfile} ${var}_MAM none none none contour0 4 \
+--infiles ${posfile} ${var}_JJA none none none contour0 5 \
+--infiles ${posfile} ${var}_SON none none none contour0 6 \
 --output_projection SouthPolarStereo \
 --subplot_headings Annual none DJF MAM JJA SON \
---infiles ${neutralfile} ${var}_annual none none none contour 1 \
---infiles ${neutralfile} ${var}_DJF none none none contour 3 \
---infiles ${neutralfile} ${var}_MAM none none none contour 4 \
---infiles ${neutralfile} ${var}_JJA none none none contour 5 \
---infiles ${neutralfile} ${var}_SON none none none contour 6 \
---infiles ${negfile} ${var}_annual none none none contour 1 \
---infiles ${negfile} ${var}_DJF none none none contour 3 \
---infiles ${negfile} ${var}_MAM none none none contour 4 \
---infiles ${negfile} ${var}_JJA none none none contour 5 \
---infiles ${negfile} ${var}_SON none none none contour 6 \
+--infiles ${neutralfile} ${var}_annual none none none contour1 1 \
+--infiles ${neutralfile} ${var}_DJF none none none contour1 3 \
+--infiles ${neutralfile} ${var}_MAM none none none contour1 4 \
+--infiles ${neutralfile} ${var}_JJA none none none contour1 5 \
+--infiles ${neutralfile} ${var}_SON none none none contour1 6 \
+--infiles ${negfile} ${var}_annual none none none contour2 1 \
+--infiles ${negfile} ${var}_DJF none none none contour2 3 \
+--infiles ${negfile} ${var}_MAM none none none contour2 4 \
+--infiles ${negfile} ${var}_JJA none none none contour2 5 \
+--infiles ${negfile} ${var}_SON none none none contour2 6 \
 --contour_levels ${levels} \
 --figure_size 9 16 \
 --ofile ${outfile} \
+--contour_colours red 0.5 blue

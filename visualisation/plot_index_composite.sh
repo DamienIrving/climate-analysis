@@ -34,11 +34,11 @@ else
     exit 1
 fi
 
-${python_exe} ${code_dir}/plot_map.py ${varfile} ${var}_annual none none none colour 1 3 2 \
---infiles ${varfile} ${var}_DJF none none none colour 3 \
---infiles ${varfile} ${var}_MAM none none none colour 4 \
---infiles ${varfile} ${var}_JJA none none none colour 5 \
---infiles ${varfile} ${var}_SON none none none colour 6 \
+${python_exe} ${code_dir}/plot_map.py ${varfile} ${var}_annual none none none colour0 1 3 2 \
+--infiles ${varfile} ${var}_DJF none none none colour0 3 \
+--infiles ${varfile} ${var}_MAM none none none colour0 4 \
+--infiles ${varfile} ${var}_JJA none none none colour0 5 \
+--infiles ${varfile} ${var}_SON none none none colour0 6 \
 --palette ${palette} \
 --output_projection SouthPolarStereo \
 --subplot_headings Annual none DJF MAM JJA SON \
@@ -46,11 +46,11 @@ ${python_exe} ${code_dir}/plot_map.py ${varfile} ${var}_annual none none none co
 --colourbar_type individual \
 --ofile ${outfile} \
 --subplot_spacing 0.15 \
---infiles ${varfile} p_annual none none none hatching 1 \
---infiles ${varfile} p_DJF none none none hatching 3 \
---infiles ${varfile} p_MAM none none none hatching 4 \
---infiles ${varfile} p_JJA none none none hatching 5 \
---infiles ${varfile} p_SON none none none hatching 6 \
+--infiles ${varfile} p_annual none none none hatching0 1 \
+--infiles ${varfile} p_DJF none none none hatching0 3 \
+--infiles ${varfile} p_MAM none none none hatching0 4 \
+--infiles ${varfile} p_JJA none none none hatching0 5 \
+--infiles ${varfile} p_SON none none none hatching0 6 \
 --hatch_bounds 0.0 0.01 \
 --hatch_styles bwdlines_tight
 

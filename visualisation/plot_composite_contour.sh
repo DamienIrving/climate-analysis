@@ -30,13 +30,13 @@ else
 fi
 
 
-${python_exe} ${code_dir}/plot_map.py ${contfile} ${contvar}_annual none none none contour 1 3 2 \
+${python_exe} ${code_dir}/plot_map.py ${contfile} ${contvar}_annual none none none contour0 1 3 2 \
 --output_projection SouthPolarStereo \
 --subplot_headings Annual none DJF MAM JJA SON \
---infiles ${contfile} ${contvar}_DJF none none none contour 3 \
---infiles ${contfile} ${contvar}_MAM none none none contour 4 \
---infiles ${contfile} ${contvar}_JJA none none none contour 5 \
---infiles ${contfile} ${contvar}_SON none none none contour 6 \
+--infiles ${contfile} ${contvar}_DJF none none none contour0 3 \
+--infiles ${contfile} ${contvar}_MAM none none none contour0 4 \
+--infiles ${contfile} ${contvar}_JJA none none none contour0 5 \
+--infiles ${contfile} ${contvar}_SON none none none contour0 6 \
 --contour_levels ${levels} \
 --figure_size 9 16 \
 --ofile ${outfile} \

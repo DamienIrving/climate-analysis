@@ -38,13 +38,13 @@ palette=hot_r
 #levels="-150 -120 -90 -60 -30 0 30 60 90 120 150" 
 
 
-${python_exe} ${code_dir}/plot_map.py ${envfile} ${var} ${date1} ${date1} none colour 1 1 2 \
---infiles ${envfile} ${var} ${date2} ${date2} none colour 2 \
+${python_exe} ${code_dir}/plot_map.py ${envfile} ${var} ${date1} ${date1} none colour0 1 1 2 \
+--infiles ${envfile} ${var} ${date2} ${date2} none colour0 2 \
 --palette ${palette} \
 --output_projection SouthPolarStereo \
 --subplot_headings ${date1} ${date2} \
---infiles ${contfile} ${contvar} ${date1} ${date1} none contour 1 \
---infiles ${contfile} ${contvar} ${date2} ${date2} none contour 2 \
+--infiles ${contfile} ${contvar} ${date1} ${date1} none contour0 1 \
+--infiles ${contfile} ${contvar} ${date2} ${date2} none contour0 2 \
 --ofile ${outfile} \
 --lat_lines ${lat} 0.5 dashed
 #--colourbar_ticks ${ticks}
