@@ -101,8 +101,13 @@ def extract_data(infile_list, input_projection, output_projection):
     cube_dict = {} 
     metadata_dict = {}
     plot_numbers = []
+    max_layers=0
     for infile, var, start_date, end_date, timestep, plot_type, plot_number in infile_list:
-        assert plot_type in plot_types
+        assert plot_type[:-1] in plot_types
+        layer = int(plot_type[-1])
+        if layer > max_layers:
+            max_layers = layer
+        
         time_constraint = get_time_constraint(start_date, end_date)
         standard_name = get_standard_name(var)
         with iris.FUTURE.context(cell_datetime_objects=True):
@@ -123,7 +128,7 @@ def extract_data(infile_list, input_projection, output_projection):
         metadata_dict[infile] = new_cube.attributes['history']
         plot_numbers.append(int(plot_number))
 
-    return cube_dict, metadata_dict, set(plot_numbers)
+    return cube_dict, metadata_dict, set(plot_numbers), max_layers
 
 
 def get_standard_name(var):
@@ -189,6 +194,7 @@ def multiplot(cube_dict, nrows, ncols,
               grid_labels=False,
               blank_plots=[],
               spstereo_limit=-30,
+              max_layers=0,
               #headings
               title=None, subplot_headings=None,
               #colourbar
@@ -217,7 +223,8 @@ def multiplot(cube_dict, nrows, ncols,
         fig.suptitle(inargs.title.replace('_',' '))
 
     axis_list = []
-    colour_plot_switch = False
+    layers = range(0, max_layers + 1)
+    colour_plot_switch = False    
     for plotnum in range(1, nrows*ncols + 1):
 
         if not plotnum in blank_plots:
@@ -239,43 +246,50 @@ def multiplot(cube_dict, nrows, ncols,
             else:
                 plt.gca().set_global()
 
-            # Add colour plot
-            try:
-                colour_cube = cube_dict[('colour', plotnum)]
-                cf = plot_colour(colour_cube, colour_type, colourbar_type, 
-                                 palette, extend, colourbar_ticks)
-                units = global_units if global_units else colour_cube.units.symbol
-                if colourbar_type == 'individual':
-                    set_individual_colourbar(colourbar_orientation, cf, units)
-                colour_plot_switch = True
-            except KeyError:
-                pass
+            for layer in layers:
 
-            # Add streamline or quiverplot
-            try:
-                u_cube = cube_dict[('uwind', plotnum)]
-                v_cube = cube_dict[('vwind', plotnum)]
-                x = u_cube.coords('longitude')[0].points
-                y = u_cube.coords('latitude')[0].points
-                u = u_cube.data
-                v = v_cube.data
-                plot_flow(x, y, u, v, ax, flow_type, input_projection)
-            except KeyError:
-                pass
+                # Add colour plot
+                colour_label = 'colour'+str(layer)
+                try:
+                    colour_cube = cube_dict[(colour_label, plotnum)]
+                    cf = plot_colour(colour_cube, colour_type, colourbar_type, 
+                                     palette, extend, colourbar_ticks)
+                    units = global_units if global_units else colour_cube.units.symbol
+                    if colourbar_type == 'individual':
+                        set_individual_colourbar(colourbar_orientation, cf, units)
+                    colour_plot_switch = True
+                except KeyError:
+                    pass
 
-            # Add contour lines
-            try:
-                contour_cube = cube_dict[('contour', plotnum)]
-                plot_contour(contour_cube, contour_levels, contour_labels)
-            except KeyError:
-                pass
+                # Add streamline or quiverplot
+                uwind_label = 'uwind'+str(layer)
+                vwind_label = 'vwind'+str(layer)
+                try:
+                    u_cube = cube_dict[(uwind_label, plotnum)]
+                    v_cube = cube_dict[(vwind_label, plotnum)]
+                    x = u_cube.coords('longitude')[0].points
+                    y = u_cube.coords('latitude')[0].points
+                    u = u_cube.data
+                    v = v_cube.data
+                    plot_flow(x, y, u, v, ax, flow_type, input_projection)
+                except KeyError:
+                    pass
 
-            # Add hatching
-            try:
-                hatch_cube = cube_dict[('hatching', plotnum)]
-                plot_hatching(hatch_cube, hatch_bounds, hatch_styles)
-            except KeyError:
-                pass
+                # Add contour lines
+                contour_label = 'contour'+str(layer)
+                try:
+                    contour_cube = cube_dict[(contour_label, plotnum)]
+                    plot_contour(contour_cube, contour_levels, contour_labels)
+                except KeyError:
+                    pass
+
+                # Add hatching
+                hatching_label = 'hatching'+str(layer)
+                try:
+                    hatch_cube = cube_dict[(hatching_label, plotnum)]
+                    plot_hatching(hatch_cube, hatch_bounds, hatch_styles)
+                except KeyError:
+                    pass
 
             # Add boxes and lines
             if box_list:
@@ -522,7 +536,7 @@ def main(inargs):
     """Run program."""
 
     # Extract data
-    cube_dict, metadata_dict, plot_set = extract_data(inargs.infiles, inargs.input_projection, inargs.output_projection)
+    cube_dict, metadata_dict, plot_set, max_layers = extract_data(inargs.infiles, inargs.input_projection, inargs.output_projection)
     blanks = get_blanks(inargs.nrows, inargs.ncols, plot_set)    
 
     # Creat the plot
@@ -537,6 +551,7 @@ def main(inargs):
               grid_labels=inargs.grid_labels,
               blank_plots=blanks,
               spstereo_limit=inargs.spstereo_limit,
+              max_layers=max_layers,
               #headings
               title=inargs.title,
               subplot_headings=inargs.subplot_headings,
@@ -566,13 +581,13 @@ if __name__ == '__main__':
 example:
   /usr/local/anaconda/bin/python plot_map2.py 
   /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw3/figures/composites/tas-composite_zw3_ampmedian90pct-w19_env-va_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native.nc 
-  tas_DJF none none none colour 1 1 1 
+  tas_DJF none none none colour0 1 1 1 
   --palette RdBu_r 
   --colourbar_ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0 
   --output_projection SouthPolarStereo 
   --subplot_headings DJF 
   --infiles /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw3/figures/composites/zg-composite_zw3_ampmedian90pct-w19_env-va_ERAInterim_500hPa_030day-runmean_native-zonal-anom.nc 
-  zg_DJF none none none contour 1 
+  zg_DJF none none none contour0 1 
   --contour_levels -150 -120 -90 -60 -30 0 30 60 90 120 150
 
 """
@@ -589,7 +604,7 @@ example:
     parser.add_argument("start", type=str, help="start date in YYYY-MM-DD format (can be none)")
     parser.add_argument("end", type=str, help="end date in YYY-MM-DD, let START=END for single time step (can be None)")
     parser.add_argument("timestep", type=str, help="for data with a time axis of len > 1 pick a timestep (can be None)")
-    parser.add_argument("type", type=str, help="plot type: can be uwind, vwind, contour, colour, hatching")
+    parser.add_argument("type", type=str, help="plot type: can be uwind, vwind, contour, colour, hatching followed by layer number: e.g. uwind0")
     parser.add_argument("plotnum", type=str, help="plot number corresponding to infile (grid is filled top left to bottom right)")
     parser.add_argument("nrows", type=int, help="number of rows in the entire grid of plots")
     parser.add_argument("ncols", type=int, help="number of columns in the entire grid of plots")
