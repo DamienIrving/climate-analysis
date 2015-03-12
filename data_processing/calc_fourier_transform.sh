@@ -56,7 +56,7 @@ years=(1979 1984 1989 1994 1999 2004 2009 2014)
 temp_files=()
 for year in "${years[@]}"; do
     end=`expr $year + 4`
-    temp_file=${temp_dir}/temp-${8}_${year}-${end}.nc
+    temp_file=${temp_dir}/temp-${type}_${year}-${end}.nc
     ${python_exe} ${code_dir}/calc_fourier_transform.py $infile $invar ${temp_file} \
     --filter ${waveselect[@]} \
     --outtype ${type} \

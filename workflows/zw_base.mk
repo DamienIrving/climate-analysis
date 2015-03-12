@@ -87,7 +87,7 @@ ELNINO_DATES=${INDEX_DIR}/dates_nino34elnino_tos_${DATASET}_surface_${TSCALE_LAB
 ${ELNINO_DATES} : ${NINO34_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< nino34 $@ --metric_threshold 0.5 --threshold_direction greater
 ### Step 4: Generate La Nina date list
-ELNINO_DATES=${INDEX_DIR}/dates_nino34lanina_tos_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+LANINA_DATES=${INDEX_DIR}/dates_nino34lanina_tos_${DATASET}_surface_${TSCALE_LABEL}_native.txt
 ${LANINA_DATES} : ${NINO34_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< nino34 $@ --metric_threshold -0.5 --threshold_direction less
 
