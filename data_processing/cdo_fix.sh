@@ -29,10 +29,17 @@ if [ -z "${missval}" ]; then
 fi
 missval=`echo ${missval}`  # Trim whitespace from front of variable
 
+# Remove the f if the value is in scientific notation (e.g. 1e+20)
+missval_rev=`echo ${missval} | rev`
+last_value=`echo ${missval_rev:0:1}`
+if [ ${last_value} == 'f' ] ; then
+    missval=`echo ${missval_rev:1} | rev`
+fi     
+
 # NCO and CDAT need missing_value
 # (e.g. see http://stderr.org/doc/nco/html/Missing-Values.html)
 
-ncatted -O -a missing_value,${invar},o,c,${missval} ${infile}  
+ncatted -O -a missing_value,${invar},o,f,${missval} ${infile}  
 
 # My netcdf_io module needs axis=T
 
