@@ -205,6 +205,8 @@ def multiplot(cube_dict, nrows, ncols,
               #contours
               contour_levels=None,
               contour_labels=False,
+              contour_colours=[],
+              contour_width=1.5,
               #hatching
               hatch_bounds=(0.0, 0.05),
               hatch_styles=('bwdlines_tight'),
@@ -258,6 +260,8 @@ def multiplot(cube_dict, nrows, ncols,
                     if colourbar_type == 'individual':
                         set_individual_colourbar(colourbar_orientation, cf, units)
                     colour_plot_switch = True
+                    if layer > 0:
+                        print "WARNING: More than one colour layer. Only the uppermost will show."
                 except KeyError:
                     pass
 
@@ -277,9 +281,19 @@ def multiplot(cube_dict, nrows, ncols,
 
                 # Add contour lines
                 contour_label = 'contour'+str(layer)
+                if contour_colours:
+                    try:
+                        contour_colour=contour_colours[layer]
+                    except IndexError:
+                        contour_colour='k'
+                else:
+                    contour_colour='k'
+
                 try:
                     contour_cube = cube_dict[(contour_label, plotnum)]
-                    plot_contour(contour_cube, contour_levels, contour_labels)
+                    plot_contour(contour_cube, contour_levels, contour_labels, 
+                                 width=contour_width,
+                                 colour=contour_colour)
                 except KeyError:
                     pass
 
@@ -373,10 +387,11 @@ def plot_colour(cube,
     return cf
 
 
-def plot_contour(cube, levels, labels_switch):
+def plot_contour(cube, levels, labels_switch,
+                 width=1.5, colour='k'):
     """Plot the contours."""
 
-    contour_plot = iplt.contour(cube, colors='k', linewidths=1.5, levels=levels)
+    contour_plot = iplt.contour(cube, colors=colour, linewidths=width, levels=levels)
     if labels_switch:
         plt.clabel(contour_plot, fmt='%.1f')
 
@@ -566,6 +581,8 @@ def main(inargs):
               #contours
               contour_levels=inargs.contour_levels,
               contour_labels=inargs.contour_labels,
+              contour_colours=inargs.contour_colours,
+              contour_width=inargs.contour_width,
               #hatching
               hatch_bounds=inargs.hatch_bounds,
               hatch_styles=inargs.hatch_styles,
@@ -665,6 +682,10 @@ example:
                         help="list of contour levels to plot [default = auto]")
     parser.add_argument("--contour_labels", action="store_true", default=False,
                         help="switch for having contour labels [default: False]")
+    parser.add_argument("--contour_colours", type=str, nargs='*', default=[],
+                        help="list of contour colours in layer order [default = black]")
+    parser.add_argument("--contour_width", type=float, default=1.5,
+                        help="contour line width [default = 1.5]")
 
     # Hatching
     parser.add_argument("--hatch_bounds", type=float, nargs='*', default=(0.0, 0.05),   
