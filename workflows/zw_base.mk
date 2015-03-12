@@ -83,11 +83,11 @@ NINO34_INDEX=${INDEX_DIR}/nino34_tos_${DATASET}_surface_${TSCALE_LABEL}_native.n
 ${NINO34_INDEX} : ${TOS_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py NINO34 $< tos $@
 ### Step 3: Generate El Nino date list
-ELNINO_DATES=${INDEX_DIR}/dates_nino34-elnino_tos_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+ELNINO_DATES=${INDEX_DIR}/dates_nino34elnino_tos_${DATASET}_surface_${TSCALE_LABEL}_native.txt
 ${ELNINO_DATES} : ${NINO34_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< nino34 $@ --metric_threshold 0.5 --threshold_direction greater
 ### Step 4: Generate La Nina date list
-ELNINO_DATES=${INDEX_DIR}/dates_nino34-lanina_tos_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+ELNINO_DATES=${INDEX_DIR}/dates_nino34lanina_tos_${DATASET}_surface_${TSCALE_LABEL}_native.txt
 ${LANINA_DATES} : ${NINO34_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< nino34 $@ --metric_threshold -0.5 --threshold_direction less
 
@@ -103,11 +103,11 @@ SAM_INDEX=${INDEX_DIR}/sam_psl_${DATASET}_surface_${TSCALE_LABEL}_native.nc
 ${SAM_INDEX} : ${PSL_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py SAM $< psl $@
 ### Step 3: Generate positive SAM date list
-SAM_POS_DATES=${INDEX_DIR}/dates_sam-gt75pct_psl_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+SAM_POS_DATES=${INDEX_DIR}/dates_samgt75pct_psl_${DATASET}_surface_${TSCALE_LABEL}_native.txt
 ${SAM_POS_DATES} : ${SAM_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< sam $@ --metric_threshold 75pct --threshold_direction greater
 ### Step 4: Generate negative SAM date list
-SAM_NEG_DATES=${INDEX_DIR}/dates_sam-lt25pct_psl_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+SAM_NEG_DATES=${INDEX_DIR}/dates_samlt25pct_psl_${DATASET}_surface_${TSCALE_LABEL}_native.txt
 ${SAM_NEG_DATES} : ${SAM_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< sam $@ --metric_threshold 25pct --threshold_direction less
 
