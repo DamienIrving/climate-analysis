@@ -78,13 +78,39 @@ CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_ELNINO_COMP=${COMP_DIR}/${CONTOUR_VAR}-composite_
 ${CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_ELNINO_COMP} : ${CONTOUR_ZONAL_ANOM_RUNMEAN} ${PWI_ELNINO_DATES} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${CONTOUR_VAR} $@ --date_file $(word 2,$^)
 
-CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_LANINA_COMP=${COMP_DIR}/${CONTOUR_VAR}-composite_zw_nino34lanina-${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
+CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_LANINA_COMP=${COMP_DIR}/${CONTOUR_VAR}-composite_zw_nino34lanina-${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc
 ${CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_LANINA_COMP} : ${CONTOUR_ZONAL_ANOM_RUNMEAN} ${PWI_LANINA_DATES} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${CONTOUR_VAR} $@ --date_file $(word 2,$^)
 
 ## Step 3: Plot
 COMP_PWI_NINO_PLOT=${COMP_DIR}/${CONTOUR_VAR}-composite_zw_nino-${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
 ${COMP_PWI_NINO_PLOT} : ${CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_ELNINO_COMP} ${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP} ${CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_LANINA_COMP}
+	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) ${CONTOUR_VAR} $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+
+
+# Variable composite, upper threshold of PWI + SAM phases
+
+## Step 1: Combine the PWI and SAM date lists
+PWI_SAM_POS_DATES=${INDEX_DIR}/dates_samgt75pct-${METRIC}${METRIC_HIGH_THRESH}_tos_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+${PWI_SAM_POS_DATES} : ${SAM_POS_DATES} ${DATE_LIST}
+	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
+
+PWI_SAM_NEG_DATES=${INDEX_DIR}/dates_samlt25pct-${METRIC}${METRIC_HIGH_THRESH}_tos_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+${PWI_SAM_NEG_DATES} : ${SAM_NEG_DATES} ${DATE_LIST}
+	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
+
+## Step 2: Calculate the SAM contour composites
+CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_SAM_POS_COMP=${COMP_DIR}/${CONTOUR_VAR}-composite_zw_samgt75pct-${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
+${CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_SAM_POS_COMP} : ${CONTOUR_ZONAL_ANOM_RUNMEAN} ${PWI_SAM_POS_DATES} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${CONTOUR_VAR} $@ --date_file $(word 2,$^)
+
+CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_SAM_NEG_COMP=${COMP_DIR}/${CONTOUR_VAR}-composite_zw_samlt25pct-${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc
+${CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_SAM_NEG_COMP} : ${CONTOUR_ZONAL_ANOM_RUNMEAN} ${PWI_SAM_NEG_DATES} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${CONTOUR_VAR} $@ --date_file $(word 2,$^)
+
+## Step 3: Plot
+COMP_PWI_SAM_PLOT=${COMP_DIR}/${CONTOUR_VAR}-composite_zw_sam-${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}-${CONTOUR_VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_${GRID}.png
+${COMP_PWI_SAM_PLOT} : ${CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_SAM_POS_COMP} ${CONTOUR_ZONAL_ANOM_RUNMEAN_COMP} ${CONTOUR_ZONAL_ANOM_RUNMEAN_PWI_SAM_NEG_COMP}
 	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) ${CONTOUR_VAR} $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
