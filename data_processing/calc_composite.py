@@ -52,7 +52,7 @@ def date_offset(date_list, offset):
     return edited_date_list
 
 
-def filter_dates(data, date_file, offset):
+def filter_dates(data, date_file, offset, invert=False):
     """Filter the data into a subset that only includes dates in date_file. 
 
     An offset can be applied to the dates in date_file.
@@ -69,7 +69,7 @@ def filter_dates(data, date_file, offset):
         if offset:
             date_list = date_offset(date_list, offset)
     
-        matching_date_indexes = nio.match_dates(date_list, data.getTime().asComponentTime(), invert_matching=False, return_indexes=True)
+        matching_date_indexes = nio.match_dates(date_list, data.getTime().asComponentTime(), invert_matching=invert, return_indexes=True)
 
         data_filtered = nio.temporal_extract(data, matching_date_indexes, indexes=True, tvar_out=False)
 
@@ -113,7 +113,7 @@ def main(inargs):
         assert indata.data.getOrder()[0] == 't', "First axis must be time"
 
 	# Filter data
-	data_filtered, date_metadata, size_filtered = filter_dates(indata.data, inargs.date_file, inargs.offset)
+	data_filtered, date_metadata, size_filtered = filter_dates(indata.data, inargs.date_file, inargs.offset, invert=inargs.invert)
 
 	# Calculate composite
 	composite, composite_atts = get_composite(data_filtered, inargs.var, 
@@ -189,6 +189,8 @@ author:
 
     parser.add_argument("--offset", type=int, default=None,
                         help="Number of days to offset the input dates by (from date_file) [default = None]")
+    parser.add_argument("--invert", action="store_true", default=False,
+                        help="switch for creating composite of dates that are not in date_file [default: False]")
 
     args = parser.parse_args()            
 

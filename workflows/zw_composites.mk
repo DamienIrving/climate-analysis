@@ -176,4 +176,6 @@ ${COMP_METRIC_90PCTABS_PLOT} : ${COMP_METRIC_90PCTABS_FILE}
 	bash ${VIS_SCRIPT_DIR}/plot_index_composite.sh $< ${METRIC} 90pctabs $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
-
+# ASL composite, upper threshold of PWI
+ 
+# bash calc_asl_composite.sh
