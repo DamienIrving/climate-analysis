@@ -55,7 +55,7 @@ FOURIER_INFO=${ZW_DIR}/fourier_zw_${COE_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_$
 ${FOURIER_INFO} : ${V_RUNMEAN}
 	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} coefficients ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
-## ZW3 index 
+## Geopotential height indices (ZW3 index) 
 ### Step 1: Calculate zonal anomaly
 ZG_ORIG=${DATA_DIR}/zg_${DATASET}_500hPa_daily_native.nc
 ZG_ZONAL_ANOM=${DATA_DIR}/zg_${DATASET}_500hPa_daily_native-zonal-anom.nc
@@ -71,7 +71,7 @@ ZW3_INDEX=${ZW_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-a
 ${ZW3_INDEX} : ${ZG_ZONAL_ANOM_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
 
-## Nino 3.4
+## SST indices (Nino 3.4)
 ### Step 1: Apply running mean
 TOS_ORIG=${DATA_DIR}/tos_${DATASET}_surface_daily_native-tropicalpacific.nc
 TOS_RUNMEAN=${DATA_DIR}/tos_${DATASET}_surface_${TSCALE_LABEL}_native-tropicalpacific.nc
@@ -91,14 +91,14 @@ LANINA_DATES=${INDEX_DIR}/dates_nino34lanina_tos_${DATASET}_surface_${TSCALE_LAB
 ${LANINA_DATES} : ${NINO34_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< nino34 $@ --metric_threshold -0.5 --threshold_direction less
 
-## SAM
+## Mean sea level indices (SAM, Amundsen Sea Low)
 ### Step 1: Apply running mean
 PSL_ORIG=${DATA_DIR}/psl_${DATASET}_surface_daily_native-shextropics30.nc
 PSL_RUNMEAN=${DATA_DIR}/psl_${DATASET}_surface_${TSCALE_LABEL}_native-shextropics30.nc
 ${PSL_RUNMEAN} : ${PSL_ORIG}
 	cdo ${TSCALE} $< $@
 	bash ${CDO_FIX_SCRIPT} $@ psl
-### Step 2: Calculate index
+### Step 2: Calculate SAM index
 SAM_INDEX=${INDEX_DIR}/sam_psl_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
 ${SAM_INDEX} : ${PSL_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py SAM $< psl $@
@@ -110,6 +110,11 @@ ${SAM_POS_DATES} : ${SAM_INDEX}
 SAM_NEG_DATES=${INDEX_DIR}/dates_samlt25pct_psl_${DATASET}_surface_${TSCALE_LABEL}_native.txt
 ${SAM_NEG_DATES} : ${SAM_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< sam $@ --metric_threshold 25pct --threshold_direction less
+### Step 2: Calculate ASL index
+ASL_INDEX=${INDEX_DIR}/asl_psl_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
+${ASL_INDEX} : ${PSL_RUNMEAN}
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ASL $< psl $@
+
 
 # Data for contours on plots
 

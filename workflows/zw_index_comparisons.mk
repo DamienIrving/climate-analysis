@@ -41,6 +41,14 @@ ${METRIC_VS_ENSO_VS_SAM_PLOT} : ${NINO34_INDEX} ${SAM_INDEX} ${WAVE_STATS}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) nino34 $(word 2,$^) sam $@ --colour $(word 3,$^) ${METRIC} --trend_line --zero_lines
 
 
+# PWI vs ASL
+
+METRIC_VS_ASL_PLOT=${ZWINDEX_DIR}/${METRIC}-vs-asl_zw_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
+${METRIC_VS_ASL_PLOT} : ${WAVE_STATS} ${ASL_INDEX}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${METRIC} $(word 2,$^) asl $@ --trend_line --zero_lines --ylabel amundsen_sea_low --xlabel planetary_wave_index
+
+
+
 # Composite circulation for the ZW3 index
 
 ## Step 1: Generate list of dates for use in composite creation
