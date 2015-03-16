@@ -13,7 +13,7 @@ import numpy
 from cdo import *
 cdo = Cdo()
 import pdb
-import cdms2, cdutil
+import cdms2, cdutil, MV2
 
 # Import my modules
 
@@ -393,15 +393,15 @@ def calc_vwind(ifile, var_id):
     time_axis = indata.data.getTime()
     
     # v mean
-    v_mean = cdutil.averager(indata, axis='yx', weights=['unweighted']*2)
+    v_mean = cdutil.averager(indata.data, axis='yx', weights=['unweighted']*2)
 
     # amp(v) mean
-    v_amp = MV2.absolute(indata)
+    v_amp = MV2.absolute(indata.data)
     v_amp_mean = cdutil.averager(v_amp, axis='yx', weights=['unweighted']*2)
 
     # v mermax zonmedian
-    v_amp_mermax = MV2.max(v_amp, axis=1)
-    v_amp_mermax_zonmedian = MV2.median(v_mermax, axis=0)
+    v_amp_mermax = numpy.max(v_amp, axis=1)
+    v_amp_mermax_zonmedian = numpy.median(v_amp_mermax, axis=-1)
 
     # Output file info
     v_mean_atts = {'id': 'v_mean',
@@ -413,9 +413,9 @@ def calc_vwind(ifile, var_id):
                        'standard_name': 'v_amp_mean',
                        'units': indata.data.units}
     v_amp_mermax_zonmedian_atts = {'id': 'v_amp_mermax_zonmedian',
-                               'long_name': 'v_amp_mermax_zonmedian',
-                               'standard_name': 'v_amp_mermax_zonmedian',
-                               'units': indata.data.units}
+                                   'long_name': 'v_amp_mermax_zonmedian',
+                                   'standard_name': 'v_amp_mermax_zonmedian',
+                                   'units': indata.data.units}
 
     outdata_list = [v_mean, v_amp_mean, v_amp_mermax_zonmedian]
     outvar_atts_list = [v_mean_atts, v_amp_mean_atts, v_amp_mermax_zonmedian_atts]
