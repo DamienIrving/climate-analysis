@@ -48,6 +48,17 @@ ${METRIC_VS_ASL_PLOT} : ${WAVE_STATS} ${ASL_INDEX}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${METRIC} $(word 2,$^) asl_value $@ --trend_line --zero_lines --ylabel amundsen_sea_low --xlabel planetary_wave_index --normalise
 
 
+# PWI vs vwind
+
+METRIC_VS_VWINDAMP_PLOT=${ZWINDEX_DIR}/${METRIC}-vs-vwindamp_zw_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
+${METRIC_VS_VWINDAMP_PLOT} : ${WAVE_STATS} ${VWIND_INDEX}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${METRIC} $(word 2,$^) v_amp_mean $@ --trend_line --zero_lines --ylabel v_amp_mean --xlabel planetary_wave_index --normalise
+
+METRIC_VS_VWINDAMPMZ_PLOT=${ZWINDEX_DIR}/${METRIC}-vs-vwindampmz_zw_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
+${METRIC_VS_VWINDAMPMZ_PLOT} : ${WAVE_STATS} ${VWIND_INDEX}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) ${METRIC} $(word 2,$^) v_amp_mermax_zonmedian $@ --trend_line --zero_lines --ylabel v_amp_mermax_zonmedian --xlabel planetary_wave_index --normalise
+
+
 
 # Composite circulation for the ZW3 index
 

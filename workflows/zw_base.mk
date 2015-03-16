@@ -115,6 +115,11 @@ ASL_INDEX=${INDEX_DIR}/asl_psl_${DATASET}_surface_${TSCALE_LABEL}_native.nc
 ${ASL_INDEX} : ${PSL_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ASL $< psl $@
 
+## Meridional wind indices
+VWIND_INDEX=${INDEX_DIR}/vwind_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc 
+${VWIND_INDEX} : ${V_RUNMEAN}
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py vwind $< ${VAR} $@
+
 
 # Data for contours on plots
 
