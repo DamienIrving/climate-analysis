@@ -13,6 +13,48 @@ include psa_climatology_config.mk
 ## Phony target
 all : ${TARGET}
 
+
+# Old ZW process
+#
+## Wave envelope & PWI
+#
+## Step 1: Apply temporal averaging to the meridional wind data
+#V_ORIG=${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_daily_${GRID}.nc
+#V_RUNMEAN=${DATA_DIR}/${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+#${V_RUNMEAN} : ${V_ORIG}
+#	cdo ${TSCALE} $< $@
+#	bash ${CDO_FIX_SCRIPT} $@ ${VAR}
+#
+### Step 2: Extract the wave envelope (for the entire globe)
+#ENV_3D=${ZW_DIR}/env${VAR}_zw_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
+#${ENV_3D} : ${V_RUNMEAN}
+#	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} hilbert ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+#
+### Step 3: Collapse the meridional dimension
+#ENV_2D=${ZW_DIR}/env${VAR}_zw_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc
+#${ENV_2D} : ${ENV_3D}
+#	cdo ${MER_METHOD} -sellonlatbox,0,360,${LAT_SEARCH_MIN},${LAT_SEARCH_MAX} $< $@
+#	bash ${CDO_FIX_SCRIPT} $@ env${VAR}
+#
+### Step 4: Calculate the PWI and other wave statistics (mean & max, extent/coverage, etc)
+#WAVE_STATS=${ZW_DIR}/wavestats_zw_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.nc 
+#${WAVE_STATS} : ${ENV_2D}
+#	${PYTHON} ${DATA_SCRIPT_DIR}/calc_wave_stats.py $< env${VAR} $@ --threshold ${EXTENT_THRESH}
+#
+### Step 5: Generate list of dates exceeding some PWI threshold (for later use in composite creation)
+#DATE_LIST=${COMP_DIR}/dates_zw_${METRIC}${METRIC_HIGH_THRESH}-${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.txt 
+#${DATE_LIST}: ${WAVE_STATS}
+#	${PYTHON} ${DATA_SCRIPT_DIR}/parse_wave_stats.py $< ${METRIC} --date_list $@ --metric_threshold ${METRIC_HIGH_THRESH}
+#
+## Common table/database
+#
+#TABLE=${ZW_DIR}/table_zw_${ENV_WAVE_LABEL}-extent${EXTENT_THRESH}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}-${LAT_LABEL}.csv 
+#${TABLE} : ${WAVE_STATS} ${ZW3_INDEX} ${FOURIER_INFO}
+#	${PYTHON} ${DATA_SCRIPT_DIR}/create_zw_table.py $(word 1,$^) $(word 2,$^) $(word 3,$^) $@
+
+
+
+
 ## Step 1: Calculate the rotated meridional wind
 ${RWID_DIR}/vrot_Merra_250hPa_daily_${GRID_LABEL}-${NP_LABEL}.nc : ${DATA_DIR}/ua_Merra_250hPa_daily_native.nc ${DATA_DIR}/va_Merra_250hPa_daily_native.nc
 	${VROT_METHOD} $< ua $(word 2,$^) va $@ ${NP} ${GRID}
