@@ -162,6 +162,45 @@ def calc_mex(ifile, var_id):
     return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
 
 
+def calc_mi(ifile, var_id):
+    """Calculate the meridional index.
+
+    Expected input: Meridional wind data.
+    
+    Returns: Meridional index (average meridional wind amplitude from 40-70S)
+      and the average meridional wind (to check if close to zero).
+
+    """
+
+    # Read data
+    indata = nio.InputData(ifile, var_id, latitude=(-70, -40))
+    time_axis = indata.data.getTime()
+    
+    # v mean
+    v_mean = cdutil.averager(indata.data, axis='yx', weights=['unweighted']*2)
+
+    # amp(v) mean
+    v_amp = MV2.absolute(indata.data)
+    v_amp_mean = cdutil.averager(v_amp, axis='yx', weights=['unweighted']*2)
+
+    # Output file info
+    v_mean_atts = {'id': 'v_mean',
+                   'long_name': 'v_mean',
+                   'standard_name': 'v_mean',
+                   'units': indata.data.units}
+    v_amp_mean_atts = {'id': 'mi',
+                       'long_name': 'meridional_index',
+                       'standard_name': 'meridional_index',
+                       'units': indata.data.units,
+                       'notes': 'Average amplitude of the meridional wind from 40-70S'}
+
+    outdata_list = [v_mean, v_amp_mean]
+    outvar_atts_list = [v_mean_atts, v_amp_mean_atts]
+    outvar_axes_list = [(time_axis,), (time_axis,)]
+    
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
+
+
 def calc_nino(index, ifile, var_id, base_period):
     """Calculate a Nino index.
 
@@ -380,50 +419,6 @@ def calc_zw3(ifile, var_id):
     return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
 
 
-def calc_vwind(ifile, var_id):
-    """Calculate some meridional wind indices.
-
-    Expected input: Meridional wind data.
-
-    """
-
-    # Read data
-    indata = nio.InputData(ifile, var_id, latitude=(-70, -40))
-    assert indata.data.getOrder() == 'tyx', "Order of the data must be time, lon, lat"
-    time_axis = indata.data.getTime()
-    
-    # v mean
-    v_mean = cdutil.averager(indata.data, axis='yx', weights=['unweighted']*2)
-
-    # amp(v) mean
-    v_amp = MV2.absolute(indata.data)
-    v_amp_mean = cdutil.averager(v_amp, axis='yx', weights=['unweighted']*2)
-
-    # v mermax zonmedian
-    v_amp_mermax = numpy.max(v_amp, axis=1)
-    v_amp_mermax_zonmedian = numpy.median(v_amp_mermax, axis=-1)
-
-    # Output file info
-    v_mean_atts = {'id': 'v_mean',
-                   'long_name': 'v_mean',
-                   'standard_name': 'v_mean',
-                   'units': indata.data.units}
-    v_amp_mean_atts = {'id': 'v_amp_mean',
-                       'long_name': 'v_amp_mean',
-                       'standard_name': 'v_amp_mean',
-                       'units': indata.data.units}
-    v_amp_mermax_zonmedian_atts = {'id': 'v_amp_mermax_zonmedian',
-                                   'long_name': 'v_amp_mermax_zonmedian',
-                                   'standard_name': 'v_amp_mermax_zonmedian',
-                                   'units': indata.data.units}
-
-    outdata_list = [v_mean, v_amp_mean, v_amp_mermax_zonmedian]
-    outvar_atts_list = [v_mean_atts, v_amp_mean_atts, v_amp_mermax_zonmedian_atts]
-    outvar_axes_list = [(time_axis,), (time_axis,), (time_axis,)]
-    
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
-
-
 def get_timescale(indata):
     """Find the timescale of the data.
 
@@ -454,7 +449,7 @@ def main(inargs):
                           'ZW3': calc_zw3,
                           'MEX': calc_mex,
                           'ASL': calc_asl,
-                          'vwind': calc_vwind}   
+                          'MI': calc_mi}   
     
     if inargs.index[0:4] == 'NINO':
         if inargs.index == 'NINOCT' or inargs.index == 'NINOWP':
@@ -514,7 +509,7 @@ planned enhancements:
     
     parser.add_argument("index", type=str, help="Index to calculate",
                         choices=['NINO12', 'NINO3', 'NINO4', 'NINO34', 'NINOCT',
-                                 'NINOWP', 'SAM', 'ZW3', 'MEX', 'ASL', 'vwind'])
+                                 'NINOWP', 'SAM', 'ZW3', 'MEX', 'ASL', 'MI'])
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
