@@ -116,7 +116,7 @@ ${ASL_INDEX} : ${PSL_RUNMEAN}
 
 MI_INDEX=${INDEX_DIR}/mi_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc 
 ${MI_INDEX} : ${V_RUNMEAN}
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py mi $< va $@
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py MI $< va $@
 
 DATES_MI_HIGH=${INDEX_DIR}/dates_mi-${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
 ${DATES_MI_HIGH} : ${MI_INDEX}
