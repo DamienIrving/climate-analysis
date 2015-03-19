@@ -8,7 +8,6 @@ DATA_DIR=${DATA_HOME}/${DATASET}/data
 ZW_DIR=${DATA_DIR}/zw
 INDEX_DIR=${DATA_DIR}/indexes
 MAP_DIR=${ZW_DIR}/figures/maps
-ZWINDEX_DIR=${ZW_DIR}/figures/indexes
 COMP_DIR=${ZW_DIR}/figures/composites
 SPECTRA_DIR=${ZW_DIR}/figures/spectra
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
@@ -33,6 +32,7 @@ LAT_SEARCH_MAX=-40
 LAT_LABEL=lat70S40S
 WAVE_MIN=1
 WAVE_MAX=9
+ENV_WAVE_LABEL=w${WAVE_MIN}${WAVE_MAX}
 
 ## Fourier coefficients
 COE_WAVE_LABEL=w${WAVE_MIN}${WAVE_MAX}
@@ -59,4 +59,4 @@ METRIC_LOW_THRESH=10pct
 COMP_VAR=pr
 COMP_THRESH=90pct
 
-TARGET=${COMP_DIR}/zg-composite_zw_mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.png
+TARGET=${COMP_DIR}/zg-composite_mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.png
