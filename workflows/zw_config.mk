@@ -8,7 +8,6 @@ DATA_DIR=${DATA_HOME}/${DATASET}/data
 ZW_DIR=${DATA_DIR}/zw
 INDEX_DIR=${DATA_DIR}/indexes
 MAP_DIR=${ZW_DIR}/figures/maps
-ZWINDEX_DIR=${ZW_DIR}/figures/indexes
 COMP_DIR=${ZW_DIR}/figures/composites
 SPECTRA_DIR=${ZW_DIR}/figures/spectra
 CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
@@ -21,16 +20,13 @@ CDO_FIX_SCRIPT=${DATA_SCRIPT_DIR}/cdo_fix.sh
 # Analysis details
 
 ## Dataset
-VAR=va
 DATASET=ERAInterim
 LEVEL=500hPa
-GRID=native
 TSTEP=daily
 TSCALE=runmean,30
 TSCALE_LABEL=030day-runmean
 
 ## Envelope extraction
-MER_METHOD=mermax
 LAT_SEARCH_MIN=-70
 LAT_SEARCH_MAX=-40
 LAT_LABEL=lat70S40S
@@ -53,11 +49,9 @@ PLOT_END=2005-12-31
 PLOT_DATE1=1986-05-22
 PLOT_DATE2=2006-07-29
 PLOT_DIMS=1 2
-CONTOUR_VAR=zg
 STRIDE=2
 
 ## Climatology
-METRIC=ampmedian
 METRIC_HIGH_THRESH=90pct
 METRIC_LOW_THRESH=10pct
 
@@ -65,4 +59,4 @@ METRIC_LOW_THRESH=10pct
 COMP_VAR=pr
 COMP_THRESH=90pct
 
-TARGET=${ZWINDEX_DIR}/${METRIC}-vs-vwindamp_zw_${ENV_WAVE_LABEL}_env-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${MER_METHOD}.png
+TARGET=${COMP_DIR}/zg-composite_mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.png
