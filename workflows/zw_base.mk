@@ -120,9 +120,9 @@ ${MI_INDEX} : ${V_RUNMEAN}
 
 DATES_MI_HIGH=${INDEX_DIR}/dates_mi-${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
 ${DATES_MI_HIGH} : ${MI_INDEX}
-	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< MI $@ --metric_threshold ${METRIC_HIGH_THRESH} --threshold_direction greater
+	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< mi $@ --metric_threshold ${METRIC_HIGH_THRESH} --threshold_direction greater
 
 DATES_MI_LOW=${INDEX_DIR}/dates_mi-${METRIC_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
 ${DATES_MI_LOW} : ${MI_INDEX}
-	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< MI $@ --metric_threshold ${METRIC_LOW_THRESH} --threshold_direction less
+	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< mi $@ --metric_threshold ${METRIC_LOW_THRESH} --threshold_direction less
 
