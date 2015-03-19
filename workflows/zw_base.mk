@@ -74,55 +74,55 @@ ${FOURIER_INFO} : ${V_RUNMEAN}
 
 ## ZW3 index 
 
-ZW3_INDEX=${ZW_DIR}/zw3index_zg_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
+ZW3_INDEX=${ZW_DIR}/zw3index_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${ZW3_INDEX} : ${ZG_ZONAL_ANOM_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
 
 ## Nino 3.4
 
-NINO34_INDEX=${INDEX_DIR}/nino34_tos_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
+NINO34_INDEX=${INDEX_DIR}/nino34_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
 ${NINO34_INDEX} : ${TOS_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py NINO34 $< tos $@
 
-ELNINO_DATES=${INDEX_DIR}/dates_nino34elnino_tos_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${ELNINO_DATES} : ${NINO34_INDEX}
+DATES_ELNINO=${INDEX_DIR}/dates_nino34elnino_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+${DATES_ELNINO} : ${NINO34_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< nino34 $@ --metric_threshold 0.5 --threshold_direction greater
 
-LANINA_DATES=${INDEX_DIR}/dates_nino34lanina_tos_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${LANINA_DATES} : ${NINO34_INDEX}
+DATES_LANINA=${INDEX_DIR}/dates_nino34lanina_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+${DATES_LANINA} : ${NINO34_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< nino34 $@ --metric_threshold -0.5 --threshold_direction less
 
 ## Southern Annular Mode
 
-SAM_INDEX=${INDEX_DIR}/sam_psl_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
+SAM_INDEX=${INDEX_DIR}/sam_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
 ${SAM_INDEX} : ${PSL_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py SAM $< psl $@
 
-SAM_POS_DATES=${INDEX_DIR}/dates_samgt75pct_psl_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${SAM_POS_DATES} : ${SAM_INDEX}
+DATES_SAM_POS=${INDEX_DIR}/dates_samgt75pct_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+${DATES_SAM_POS} : ${SAM_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< sam $@ --metric_threshold 75pct --threshold_direction greater
 
-SAM_NEG_DATES=${INDEX_DIR}/dates_samlt25pct_psl_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${SAM_NEG_DATES} : ${SAM_INDEX}
+DATES_SAM_NEG=${INDEX_DIR}/dates_samlt25pct_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+${DATES_SAM_NEG} : ${SAM_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< sam $@ --metric_threshold 25pct --threshold_direction less
 
 ## Amundsen Sea Low
 
-ASL_INDEX=${INDEX_DIR}/asl_psl_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
+ASL_INDEX=${INDEX_DIR}/asl_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
 ${ASL_INDEX} : ${PSL_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ASL $< psl $@
 
 ## Meridional index (average amplitude of the v wind)
 
-MI_INDEX=${INDEX_DIR}/mi_va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc 
+MI_INDEX=${INDEX_DIR}/mi_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc 
 ${MI_INDEX} : ${V_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py mi $< va $@
 
-MI_HIGH_DATES=${INDEX_DIR}/dates_mi-${METRIC_HIGH_THRESH}_va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
-${MI_HIGH_DATES} : ${MI_INDEX}
+DATES_MI_HIGH=${INDEX_DIR}/dates_mi-${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
+${DATES_MI_HIGH} : ${MI_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< MI $@ --metric_threshold ${METRIC_HIGH_THRESH} --threshold_direction greater
 
-MI_LOW_DATES=${INDEX_DIR}/dates_mi-${METRIC_LOW_THRESH}_va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
-${MI_LOW_DATES} : ${MI_INDEX}
+DATES_MI_LOW=${INDEX_DIR}/dates_mi-${METRIC_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
+${DATES_MI_LOW} : ${MI_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< MI $@ --metric_threshold ${METRIC_LOW_THRESH} --threshold_direction less
 
