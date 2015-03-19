@@ -45,6 +45,10 @@ ${COMP_ZG_ZONAL_ANOM_RUNMEAN_MI_LOW} : ${ZG_ZONAL_ANOM_RUNMEAN} ${DATES_MI_LOW}
 
 ## All timesteps
 
+COMP_ZG_ZONAL_ANOM_RUNMEAN=${COMP_DIR}/zg-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.nc 
+${COMP_ZG_ZONAL_ANOM_RUNMEAN} : ${ZG_ZONAL_ANOM_RUNMEAN} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< zg $@ --region sh
+
 COMP_V_RUNMEAN=${COMP_DIR}/va-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
 ${COMP_V_RUNMEAN} : ${V_RUNMEAN} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< va $@ --region sh
