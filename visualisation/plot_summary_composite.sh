@@ -1,7 +1,7 @@
 function usage {
-    echo "USAGE: bash $0 zgfile zgvar contfile contvar outfile python_exe code_dir"
-    echo "   zgfile:      Input file for zg zonal anomaly"
-    echo "   zgvar:       Variable for zg zonal anomaly"
+    echo "USAGE: bash $0 colourfile colourvar contfile contvar outfile python_exe code_dir"
+    echo "   colourfile:  Input file for colour plot"
+    echo "   colourvar:   Variable for colour plot"
     echo "   ufile:       Input file name for zonal wind"
     echo "   uvar:        Variable for zonal wind"
     echo "   vfile:       Input file name for meridional wind"
@@ -19,8 +19,8 @@ if [ $# -ne $nargs ] ; then
   usage
 fi
 
-zgfile=$1
-zgvar=$2
+cfile=$1
+cvar=$2
 ufile=$3
 uvar=$4
 vfile=$5
@@ -29,18 +29,25 @@ outfile=$7
 python_exe=$8
 code_dir=$9
   
+if [[ $cvar == 'zg' ]] ; then
+    ticks="-150 -120 -90 -60 -30 0 30 60 90 120 150"     
+elif [[ $cvar == 'sf' ]] ; then
+    ticks="-6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6"
+else
+    echo "Unknown variable: $cvar"
+    exit 1
+fi
 
-ticks="-150 -120 -90 -60 -30 0 30 60 90 120 150" 
 extend=both
 palette=RdBu_r
 
-${python_exe} ${code_dir}/plot_map.py ${zgfile} ${zgvar}_annual none none none colour0 1 3 2 \
---infiles ${zgfile} ${zgvar}_DJF none none none colour0 3 \
---infiles ${zgfile} ${zgvar}_MAM none none none colour0 4 \
---infiles ${zgfile} ${zgvar}_JJA none none none colour0 5 \
---infiles ${zgfile} ${zgvar}_SON none none none colour0 6 \
+
+${python_exe} ${code_dir}/plot_map.py ${cfile} ${cvar}_annual none none none colour0 1 3 2 \
+--infiles ${cfile} ${cvar}_DJF none none none colour0 3 \
+--infiles ${cfile} ${cvar}_MAM none none none colour0 4 \
+--infiles ${cfile} ${cvar}_JJA none none none colour0 5 \
+--infiles ${cfile} ${cvar}_SON none none none colour0 6 \
 --palette ${palette} \
---colourbar_ticks ${ticks} \
 --extend ${extend} \
 --output_projection SouthPolarStereo \
 --subplot_headings Annual none DJF MAM JJA SON \
@@ -56,3 +63,4 @@ ${python_exe} ${code_dir}/plot_map.py ${zgfile} ${zgvar}_annual none none none c
 --infiles ${vfile} ${vvar}_JJA none none none vwind0 5 \
 --infiles ${vfile} ${vvar}_SON none none none vwind0 6 \
 --ofile ${outfile} \
+--colourbar_ticks ${ticks}

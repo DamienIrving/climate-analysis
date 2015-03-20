@@ -52,7 +52,8 @@ projections = {'PlateCarree_Greenwich': ccrs.PlateCarree(), # Centred on Greenwi
                'SouthPolarStereo': ccrs.SouthPolarStereo()}
 
 units_dict = {'ms-1': '$m s^{-1}$',
-              'm.s-1': '$m s^{-1}$'}
+              'm.s-1': '$m s^{-1}$',
+              '1000000 m2.s-1': '$10^6$m$^2$s$^{-1}$'}
 
 line_style_dict = {'dashed': '--',
                    'solid': '-'}
