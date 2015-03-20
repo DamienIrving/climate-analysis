@@ -147,8 +147,8 @@ def calc_quantity(uwnd, vwnd, quantity, lat_axis, lon_axis, axis_order):
     check_global(lat_axis, lon_axis)
 
     # Make latitude and longitude the leading coordinates
-    uwnd, uwnd_info = prep_data(numpy.array(uwnd), order)
-    vwnd, vwnd_info = prep_data(numpy.array(vwnd), order)
+    uwnd, uwnd_info = prep_data(numpy.array(uwnd), axis_order)
+    vwnd, vwnd_info = prep_data(numpy.array(vwnd), axis_order)
 
     # Make sure latitude dimension is north-to-south
     lats, uwnd, vwnd = order_latdim(lat_axis, uwnd, vwnd)
