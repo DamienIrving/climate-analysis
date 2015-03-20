@@ -11,7 +11,8 @@ Reference:    Uses the windspharm package: ajdawson.github.com/windspharm/index.
 import sys, os
 import argparse
 import numpy
-from windspharm.cdms import VectorWind
+from windspharm.standard import VectorWind
+from windspharm.tools import prep_data, recover_data, order_latdim
 import pdb
 
 # Import my modules
@@ -38,95 +39,120 @@ var_atts = {}
 
 var_atts['magnitude'] = {'id': 'spd',
     'standard_name': 'wind_speed',
-    'long_name': 'Wind Speed',
-    'units': 'm s-1',
-    'notes': 'windspharm magnitude() function - http://ajdawson.github.com/windspharm/index.html'}
+    'long_name': 'wind_speed',
+    'units': 'm s-1'}
 
 var_atts['vorticity'] = {'id': 'vrt',
     'standard_name': 'relative_vorticity',
-    'long_name': 'Relative Vorticity',
-    'units': 's-1',   
-    'notes': 'windspharm vorticity(), http://ajdawson.github.com/windspharm/index.html'}
+    'long_name': 'relative_vorticity',
+    'units': 's-1'}
 
 var_atts['divergence'] = {'id': 'div',
     'standard_name': 'divergence',
-    'long_name': 'Divergence',
-    'units': '1.e-6 s-1',   
-    'notes': 'windspharm divergence(), http://ajdawson.github.com/windspharm/index.html'}
+    'long_name': 'divergence',
+    'units': '1.e-6 s-1'}
 
 var_atts['absolutevorticity'] = {'id': 'avrt',
     'standard_name': 'absolute_vorticity',
-    'long_name': 'Absolute Vorticity (sum of relative and planetary)',
+    'long_name': 'absolute_vorticity',
     'units': '1.e-5 s-1',
-    'notes': 'windspharm absolutevorticity(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'absolute vorticity = sum of relative and planetary vorticity'}
 
 var_atts['planetaryvorticity'] = {'id': 'pvrt',
     'standard_name': 'planetary_vorticity',
-    'long_name': 'Planetary Vorticity (Coriolis parameter)',
+    'long_name': 'planetary_vorticity',
     'units': 's-1',
-    'notes': 'windspharm planetaryvorticity(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'planetary vorticity = Coriolis parameter'}
 
 var_atts['irrotationalcomponent','u'] = {'id': 'uchi',
     'standard_name': 'irrotational_zonal_wind',
-    'long_name': 'Zonal irrotational (divergent) component of the vector wind (from Helmholtz decomposition)',
+    'long_name': 'irrotational_zonal_wind',
     'units': 'm s-1',
-    'notes': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'Zonal irrotational (divergent) component of the vector wind (from Helmholtz decomposition)'}
 
 var_atts['irrotationalcomponent','v'] = {'id': 'vchi',
     'standard_name': 'irrotational_meridional_wind',
-    'long_name': 'Meridional irrotational (divergent) component of the vector wind (from Helmholtz decomposition)',
+    'long_name': 'irrotational_meridional_wind',
     'units': 'm s-1',
-    'notes': 'windspharm irrotationalcomponent() - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'Meridional irrotational (divergent) component of the vector wind (from Helmholtz decomposition)'}
 
 var_atts['nondivergentcomponent','u'] = {'id': 'upsi',
     'standard_name': 'non_divergent_zonal_wind',
-    'long_name': 'Zonal non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)',
+    'long_name': 'non_divergent_zonal_wind',
     'units': 'm s-1',
-    'notes': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'Zonal non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)'}
 
 var_atts['nondivergentcomponent','v'] = {'id': 'vpsi',
-    'standard_name': 'non-divergent meridional wind',
-    'long_name': 'meridional non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)',
+    'standard_name': 'non_divergent_meridional_wind',
+    'long_name': 'non_divergent_meridional_wind',
     'units': 'm s-1',
-    'notes': 'windspharm irrotationalcomponent(), http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'meridional non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)'}
 
 var_atts['streamfunction'] = {'id': 'sf',
     'standard_name': 'streamfunction',
-    'long_name': 'Streamfunction (rotational wind blows along streamfunction contours, speed proportional to gradient)',
+    'long_name': 'streamfunction',
     'units': '1.e+6 m2 s-1',  
-    'notes': 'windspharm streamfunction() - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'rotational wind blows along streamfunction contours, speed proportional to gradient'}
 
 var_atts['velocitypotential'] = {'id':'vp',
     'standard_name': 'velocity_potential',
-    'long_name': 'Velocity Potential (divergent wind blows along velocity potential contours, speed proportional to gradient)',
+    'long_name': 'velocity_potential',
     'units': '1.e+6 m2 s-1',  
-    'notes': 'windspharm velocitypotential() - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'velocity potential (divergent wind blows along velocity potential contours, speed proportional to gradient)'}
 
 var_atts['rossbywavesource'] = {'id': 'rws',
     'standard_name': 'rossby_wave_source',
-    'long_name': 'Rossby Wave Source',
-    'units': '1.e-11 s-2',  
-    'notes': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
+    'long_name': 'rossby_wave_source',
+    'units': '1.e-11 s-2'}
 
 var_atts['rossbywavesource1'] = {'id': 'rws1',
     'standard_name': 'rossby_wave_source_vortex',
-    'long_name': 'Rossby wave source, vortex stretching term',
+    'long_name': 'rossby_wave_source_vortex',
     'units': '1.e-11 s-2',  
-    'notes': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'Rossby wave source, vortex stretching term'}
 
 var_atts['rossbywavesource2'] = {'id': 'rws2',
     'standard_name': 'rossby_wave_source_advection',
-    'long_name': 'Rossby wave source, advection of absolute vorticity by divergent flow term',
+    'long_name': 'rossby_wave_source_advection',
     'units': '1.e-11 s-2',  
-    'notes': 'calculated using windspharm - http://ajdawson.github.com/windspharm/index.html'}
+    'notes': 'Rossby wave source, advection of absolute vorticity by divergent flow term'}
 
 
-def calc_quantity(uwnd, vwnd, quantity):
+def calc_quantity(uwnd, vwnd, quantity, lat_axis, lon_axis, axis_order):
     """Calculate a single wind quantity.
 
-    Uses windspharm (ajdawson.github.com/windspharm/index.html)
+    Args:
+      uwnd (numpy.ndarray): Zonal wind
+      vwnd (numpy.ndarray): Meridional wind
+      quantity (str): Quantity to be calculated
+      lat_axis (list): Latitude axis values
+      lon_axis (list): Longitude axis values
+      axis_order (str): e.g. tyx
+
+    Design:
+      windsparm requires the input data to be on a global grid
+        (due to the spherical harmonic representation used),
+        latitude and longitude to be the leading axes and the
+        latitude axis must go from 90 to -90. The cdms2 interface
+        is supposed to adjust for these things but I've found that
+        things come back upsidedown if the lat axis isn't right, so
+        I've just used the standard interface here instead.
+       
+
+    Reference: 
+        ajdawson.github.io/windspharm
 
     """
+    
+    check_global(lat_axis, lon_axis)
+
+    # Make latitude and longitude the leading coordinates
+    uwnd, uwnd_info = prep_data(numpy.array(uwnd), order)
+    vwnd, vwnd_info = prep_data(numpy.array(vwnd), order)
+
+    # Make sure latitude dimension is north-to-south
+    lats, uwnd, vwnd = order_latdim(lat_axis, uwnd, vwnd)
+    flip_lat = False if lats[0] == lat_axis[0] else True 
     
     w = VectorWind(uwnd, vwnd)
     
@@ -183,11 +209,49 @@ def calc_quantity(uwnd, vwnd, quantity):
     else:
 	sys.exit('Wind quantity not recognised')
 
+    # Return data to its original shape
+    if type(data_out) == dict:
+        for key in data_out.keys():
+            data_out[key] = recover_structure(data_out[key], flip_lat, uwnd_info) 
+    else:
+        data_out = recover_structure(data_out, flip_lat, uwnd_info)
+
+
     return data_out
+
+
+def check_global(lat_axis, lon_axis):
+    """Check that the data are on a global grid.
+
+    Windspharm requires a global grid due to the spherical harmonic 
+      representation used.
+
+    """
+
+    assert numpy.abs(lat_axis[0] - lat_axis[-1]) > 179, "Data must be on a global grid"
+    assert numpy.abs(lon_axis[0] - lon_axis[-1]) > 359, "Data must be on a global grid"
+
+
+def recover_structure(data, flip_lat, orig_info):
+    """Return data to its original structure.
+
+    Args:
+      data (numpy.ndarray): Data
+      flip_lat (bool): Flag for flipping latitude axis (axis 0)
+      orig_info: Obtained from windspharm.tools.prep_data
+
+    """
+
+    if flip_lat:
+        data = data[::-1, ...]
+
+    data = recover_data(data, orig_info)
+
+    return data
 
     
 def main(inargs):
-    """Run the program"""
+    """Run the program."""
 
     # Read the input data
     data_u = nio.InputData(inargs.infileu, inargs.varu, 
@@ -195,14 +259,13 @@ def main(inargs):
     data_v = nio.InputData(inargs.infilev, inargs.varv, 
                            **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude']))
 
-    # Check that the input data are all on the same coordinate axes
-    nio.xy_axis_check(data_u.data.getLatitude(), data_v.data.getLatitude())
-    nio.xy_axis_check(data_u.data.getLongitude(), data_v.data.getLongitude())
-    if 't' in data_u.data.getOrder():
-        nio.time_axis_check(data_u.data.getTime(), data_v.data.getTime())
+    lat_axis = data_u.data.getLatitude()[:]
+    lon_axis = data_u.data.getLongitude()[:]    
+    axis_order = data_u.data.getOrder()
     
     # Calculate the desired quantity
-    data_out = calc_quantity(data_u.data, data_v.data, inargs.quantity)
+    data_out = calc_quantity(data_u.data, data_v.data, inargs.quantity,
+                             lat_axis, lon_axis, axis_order)
 
     # Write output file
     indata_list = [data_u, data_v,]
