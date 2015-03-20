@@ -29,25 +29,32 @@ ${CVAR_ANOM_RUNMEAN} : ${CVAR_ORIG}
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
 	bash ${CDO_FIX_SCRIPT} $@ ${COMP_VAR}
 
+## Streamfunction (for contours)
 
-# Contour composites (zg zonal anomaly)
+SF_ANOM_RUNMEAN=${DATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native.nc
+${SF_ANOM_RUNMEAN} : ${SF_ORIG} 
+	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
+	bash ${CDO_FIX_SCRIPT} $@ sf
 
-COMP_ZG_ZONAL_ANOM_RUNMEAN_MI_HIGH=${COMP_DIR}/zg-composite_mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.nc 
-${COMP_ZG_ZONAL_ANOM_RUNMEAN_MI_HIGH} : ${ZG_ZONAL_ANOM_RUNMEAN} ${DATES_MI_HIGH} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< zg $@ --date_file $(word 2,$^) --region sh
 
-COMP_ZG_ZONAL_ANOM_RUNMEAN_MI_LOW=${COMP_DIR}/zg-composite_mi${METRIC_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.nc 
-${COMP_ZG_ZONAL_ANOM_RUNMEAN_MI_LOW} : ${ZG_ZONAL_ANOM_RUNMEAN} ${DATES_MI_LOW} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< zg $@ --date_file $(word 2,$^) --region sh
+# Streamfunction composites (for contours)
+
+COMP_SF_ANOM_RUNMEAN=${COMP_DIR}/sf-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_SF_ANOM_RUNMEAN} : ${SF_ANOM_RUNMEAN} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --region sh
+
+COMP_SF_ANOM_RUNMEAN_MI_HIGH=${COMP_DIR}/sf-composite_mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_SF_ANOM_RUNMEAN_MI_HIGH} : ${SF_ANOM_RUNMEAN} ${DATES_MI_HIGH} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
+
+COMP_SF_ANOM_RUNMEAN_MI_LOW=${COMP_DIR}/sf-composite_mi${METRIC_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_SF_ANOM_RUNMEAN_MI_LOW} : ${SF_ANOM_RUNMEAN} ${DATES_MI_LOW} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
 
 # Summary composites
 
 ## All timesteps
-
-COMP_ZG_ZONAL_ANOM_RUNMEAN=${COMP_DIR}/zg-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.nc 
-${COMP_ZG_ZONAL_ANOM_RUNMEAN} : ${ZG_ZONAL_ANOM_RUNMEAN} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< zg $@ --region sh
 
 COMP_V_RUNMEAN=${COMP_DIR}/va-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
 ${COMP_V_RUNMEAN} : ${V_RUNMEAN} 
@@ -57,9 +64,9 @@ COMP_U_RUNMEAN=${COMP_DIR}/ua-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_nati
 ${COMP_U_RUNMEAN} : ${U_RUNMEAN} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ua $@ --region sh
 
-COMP_SUMMARY_PLOT=${COMP_DIR}/zg-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.png
-${COMP_SUMMARY_PLOT} : ${COMP_ZG_ZONAL_ANOM_RUNMEAN} ${COMP_U_RUNMEAN} ${COMP_V_RUNMEAN}
-	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) zg $(word 2,$^) ua $(word 3,$^) va $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+COMP_SUMMARY_PLOT=${COMP_DIR}/sf-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.png
+${COMP_SUMMARY_PLOT} : ${COMP_SF_ANOM_RUNMEAN} ${COMP_U_RUNMEAN} ${COMP_V_RUNMEAN}
+	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) sf $(word 2,$^) ua $(word 3,$^) va $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 ## MI > 90pct
 
@@ -71,9 +78,9 @@ COMP_U_RUNMEAN_MI_HIGH=${COMP_DIR}/ua-composite_mi${METRIC_HIGH_THRESH}_${DATASE
 ${COMP_U_RUNMEAN_MI_HIGH} : ${U_RUNMEAN} ${DATES_MI_HIGH} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ua $@ --date_file $(word 2,$^) --region sh
 
-COMP_SUMMARY_PLOT_MI_HIGH=${COMP_DIR}/zg-composite_mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.png
-${COMP_SUMMARY_PLOT_MI_HIGH} : ${COMP_ZG_ZONAL_ANOM_RUNMEAN_MI_HIGH} ${COMP_U_RUNMEAN_MI_HIGH} ${COMP_V_RUNMEAN_MI_HIGH}
-	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) zg $(word 2,$^) ua $(word 3,$^) va $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+COMP_SUMMARY_PLOT_MI_HIGH=${COMP_DIR}/sf-composite_mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.png
+${COMP_SUMMARY_PLOT_MI_HIGH} : ${COMP_SF_ANOM_RUNMEAN_MI_HIGH} ${COMP_U_RUNMEAN_MI_HIGH} ${COMP_V_RUNMEAN_MI_HIGH}
+	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) sf $(word 2,$^) ua $(word 3,$^) va $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
 # Variable composite, upper threshold of MI
@@ -83,8 +90,8 @@ ${COMP_CVAR_ANOM_RUNMEAN_MI_HIGH} : ${CVAR_ANOM_RUNMEAN} ${DATES_MI_HIGH}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) --region sh 
 
 COMP_CVAR_ANOM_RUNMEAN_MI_HIGH_PLOT=${COMP_DIR}/${COMP_VAR}-composite_mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
-${COMP_CVAR_ANOM_RUNMEAN_MI_HIGH_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_MI_HIGH} ${COMP_ZG_ZONAL_ANOM_RUNMEAN_MI_HIGH}
-	bash ${VIS_SCRIPT_DIR}/plot_composite.sh $(word 1,$^) ${COMP_VAR} $(word 2,$^) zg $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+${COMP_CVAR_ANOM_RUNMEAN_MI_HIGH_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_MI_HIGH} ${COMP_SF_ANOM_RUNMEAN_MI_HIGH}
+	bash ${VIS_SCRIPT_DIR}/plot_composite.sh $(word 1,$^) ${COMP_VAR} $(word 2,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
 # Variable composite, upper threshold of MI + Nino phases
@@ -99,18 +106,18 @@ ${DATES_MI_HIGH_LANINA} : ${DATES_LANINA} ${DATES_MI_HIGH}
 	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
 
 ## Step 2: Calculate the Nino contour composites
-COMP_ZG_ANOM_RUNMEAN_MI_HIGH_ELNINO=${COMP_DIR}/zg-composite_nino34elnino-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.nc 
-${COMP_ZG_ANOM_RUNMEAN_MI_HIGH_ELNINO} : ${ZG_ZONAL_ANOM_RUNMEAN} ${DATES_MI_HIGH_ELNINO} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< zg $@ --date_file $(word 2,$^) --region sh
+COMP_sf_ANOM_RUNMEAN_MI_HIGH_ELNINO=${COMP_DIR}/sf-composite_nino34elnino-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_sf_ANOM_RUNMEAN_MI_HIGH_ELNINO} : ${SF_ANOM_RUNMEAN} ${DATES_MI_HIGH_ELNINO} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
-COMP_ZG_ANOM_RUNMEAN_MI_HIGH_LANINA=${COMP_DIR}/zg-composite_nino34lanina-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.nc 
-${COMP_ZG_ANOM_RUNMEAN_MI_HIGH_LANINA} : ${ZG_ZONAL_ANOM_RUNMEAN} ${DATES_MI_HIGH_LANINA} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< zg $@ --date_file $(word 2,$^) --region sh
+COMP_sf_ANOM_RUNMEAN_MI_HIGH_LANINA=${COMP_DIR}/sf-composite_nino34lanina-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_sf_ANOM_RUNMEAN_MI_HIGH_LANINA} : ${SF_ANOM_RUNMEAN} ${DATES_MI_HIGH_LANINA} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
 ## Step 3: Plot
-COMP_CVAR_ANOM_RUNMEAN_MI_HIGH_NINO_PLOT=${COMP_DIR}/zg-composite_nino-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
-${COMP_CVAR_ANOM_RUNMEAN_MI_HIGH_NINO_PLOT} : ${COMP_ZG_ANOM_RUNMEAN_MI_HIGH_ELNINO} ${COMP_ZG_ANOM_RUNMEAN_MI_HIGH} ${COMP_ZG_ANOM_RUNMEAN_MI_HIGH_LANINA}
-	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) zg $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+COMP_CVAR_ANOM_RUNMEAN_MI_HIGH_NINO_PLOT=${COMP_DIR}/sf-composite_nino-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
+${COMP_CVAR_ANOM_RUNMEAN_MI_HIGH_NINO_PLOT} : ${COMP_sf_ANOM_RUNMEAN_MI_HIGH_ELNINO} ${COMP_sf_ANOM_RUNMEAN_MI_HIGH} ${COMP_sf_ANOM_RUNMEAN_MI_HIGH_LANINA}
+	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
 # Variable composite, upper threshold of PWI + SAM phases
@@ -125,18 +132,18 @@ ${DATES_MI_HIGH_SAM_NEG} : ${DATES_SAM_NEG} ${DATES_MI_HIGH}
 	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
 
 ## Step 2: Calculate the SAM contour composites
-COMP_ZG_ANOM_RUNMEAN_MI_HIGH_SAM_POS=${COMP_DIR}/zg-composite_samgt75pct-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.nc 
-${COMP_ZG_ANOM_RUNMEAN_MI_HIGH_SAM_POS} : ${ZG_ZONAL_ANOM_RUNMEAN} ${DATES_MI_HIGH_SAM_POS} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< zg $@ --date_file $(word 2,$^) --region sh
+COMP_sf_ANOM_RUNMEAN_MI_HIGH_SAM_POS=${COMP_DIR}/sf-composite_samgt75pct-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_sf_ANOM_RUNMEAN_MI_HIGH_SAM_POS} : ${SF_ANOM_RUNMEAN} ${DATES_MI_HIGH_SAM_POS} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
-COMP_ZG_ANOM_RUNMEAN_MI_HIGH_SAM_NEG=${COMP_DIR}/zg-composite_samlt25pct-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.nc 
-${COMP_ZG_ANOM_RUNMEAN_MI_HIGH_SAM_NEG} : ${ZG_ZONAL_ANOM_RUNMEAN} ${DATES_MI_HIGH_SAM_NEG} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< zg $@ --date_file $(word 2,$^) --region sh
+COMP_sf_ANOM_RUNMEAN_MI_HIGH_SAM_NEG=${COMP_DIR}/sf-composite_samlt25pct-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_sf_ANOM_RUNMEAN_MI_HIGH_SAM_NEG} : ${SF_ANOM_RUNMEAN} ${DATES_MI_HIGH_SAM_NEG} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
 ## Step 3: Plot
-COMP_CVAR_ANOM_RUNMEAN_MI_HIGH_SAM_PLOT=${COMP_DIR}/zg-composite_sam-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
-${COMP_CVAR_ANOM_RUNMEAN_MI_HIGH_SAM_PLOT} : ${COMP_ZG_ANOM_RUNMEAN_MI_HIGH_SAM_POS} ${COMP_ZG_ANOM_RUNMEAN_MI_HIGH} ${COMP_ZG_ANOM_RUNMEAN_MI_HIGH_SAM_NEG}
-	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) zg $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+COMP_CVAR_ANOM_RUNMEAN_MI_HIGH_SAM_PLOT=${COMP_DIR}/sf-composite_sam-mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
+${COMP_CVAR_ANOM_RUNMEAN_MI_HIGH_SAM_PLOT} : ${COMP_sf_ANOM_RUNMEAN_MI_HIGH_SAM_POS} ${COMP_sf_ANOM_RUNMEAN_MI_HIGH} ${COMP_sf_ANOM_RUNMEAN_MI_HIGH_SAM_NEG}
+	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
 # Variable composite, lower threshold of PWI
@@ -146,8 +153,8 @@ ${COMP_CVAR_ANOM_RUNMEAN_MI_LOW} : ${CVAR_ANOM_RUNMEAN} ${DATES_MI_LOW}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) --region sh 
 
 COMP_CVAR_ANOM_RUNMEAN_MI_LOW_PLOT=${COMP_DIR}/${COMP_VAR}-composite_mi${METRIC_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
-${COMP_CVAR_ANOM_RUNMEAN_MI_LOW_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_MI_LOW} ${COMP_ZG_ZONAL_ANOM_RUNMEAN_MI_LOW}
-	bash ${VIS_SCRIPT_DIR}/plot_composite.sh $(word 1,$^) ${COMP_VAR} $(word 2,$^) zg $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+${COMP_CVAR_ANOM_RUNMEAN_MI_LOW_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_MI_LOW} ${COMP_SF_ANOM_RUNMEAN_MI_LOW}
+	bash ${VIS_SCRIPT_DIR}/plot_composite.sh $(word 1,$^) ${COMP_VAR} $(word 2,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
 # Index composite, upper threshold
