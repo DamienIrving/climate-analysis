@@ -66,7 +66,7 @@ ${COMP_U_RUNMEAN} : ${U_RUNMEAN}
 
 COMP_SUMMARY_PLOT=${COMP_DIR}/sf-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.png
 ${COMP_SUMMARY_PLOT} : ${COMP_SF_ANOM_RUNMEAN} ${COMP_U_RUNMEAN} ${COMP_V_RUNMEAN}
-	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) sf $(word 2,$^) ua $(word 3,$^) va $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) sf $(word 2,$^) ua $(word 3,$^) va $@ streamlines ${PYTHON} ${VIS_SCRIPT_DIR}
 
 ## MI > 90pct
 
@@ -80,7 +80,21 @@ ${COMP_U_RUNMEAN_MI_HIGH} : ${U_RUNMEAN} ${DATES_MI_HIGH}
 
 COMP_SUMMARY_PLOT_MI_HIGH=${COMP_DIR}/sf-composite_mi${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.png
 ${COMP_SUMMARY_PLOT_MI_HIGH} : ${COMP_SF_ANOM_RUNMEAN_MI_HIGH} ${COMP_U_RUNMEAN_MI_HIGH} ${COMP_V_RUNMEAN_MI_HIGH}
-	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) sf $(word 2,$^) ua $(word 3,$^) va $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) sf $(word 2,$^) ua $(word 3,$^) va $@ streamlines ${PYTHON} ${VIS_SCRIPT_DIR}
+
+## MI < 10pct
+
+COMP_V_RUNMEAN_MI_LOW=${COMP_DIR}/va-composite_mi${METRIC_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_V_RUNMEAN_MI_LOW} : ${V_RUNMEAN} ${DATES_MI_LOW} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< va $@ --date_file $(word 2,$^) --region sh
+
+COMP_U_RUNMEAN_MI_LOW=${COMP_DIR}/ua-composite_mi${METRIC_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_U_RUNMEAN_MI_LOW} : ${U_RUNMEAN} ${DATES_MI_LOW} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ua $@ --date_file $(word 2,$^) --region sh
+
+COMP_SUMMARY_PLOT_MI_LOW=${COMP_DIR}/sf-composite_mi${METRIC_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.png
+${COMP_SUMMARY_PLOT_MI_LOW} : ${COMP_SF_ANOM_RUNMEAN_MI_LOW} ${COMP_U_RUNMEAN_MI_LOW} ${COMP_V_RUNMEAN_MI_LOW}
+	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) sf $(word 2,$^) ua $(word 3,$^) va $@ streamlines ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
 # Variable composite, upper threshold of MI
