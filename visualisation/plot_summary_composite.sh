@@ -90,7 +90,9 @@ elif [[ $plot_type == 'streamlines' ]] ; then
 --infiles ${vfile} ${vvar}_SON none none none vwind0 6 \
 --ofile ${outfile} \
 --flow_type streamlines \
+--streamline_bounds 0 30 \
 --contour_levels ${ticks}
+
 
 else
     echo "Unknown plot type: ${plot_type}"

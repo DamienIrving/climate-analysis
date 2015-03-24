@@ -132,6 +132,18 @@ def extract_data(infile_list, input_projection, output_projection):
     return cube_dict, metadata_dict, set(plot_numbers), max_layers
 
 
+def get_palette(palette_name):
+    """Take a palette name and return the corresponding colourmap."""
+
+    if hasattr(plt.cm, palette_name):
+        cmap = getattr(plt.cm, palette_name)
+    else:
+        print "Error, color option '", palette_name, "' not a valid option"
+        sys.exit(1)
+
+    return cmap
+
+
 def get_standard_name(var):
     """For a given variable, get the corresponding standard name."""
 
@@ -190,12 +202,13 @@ def multiplot(cube_dict, nrows, ncols,
               figure_size=None,
               subplot_spacing=0.05,
               output_projection='PlateCarree_Dateline',
-              flow_type='quiver',
-              box_list=None, lat_line_list=None,
               grid_labels=False,
               blank_plots=[],
               spstereo_limit=-30,
               max_layers=0,
+              #boxes/lines
+              box_list=None,
+              lat_line_list=None,
               #headings
               title=None, subplot_headings=None,
               #colourbar
@@ -208,6 +221,10 @@ def multiplot(cube_dict, nrows, ncols,
               contour_labels=False,
               contour_colours=[],
               contour_width=1.5,
+              #flow
+              flow_type='quiver',
+              streamline_palette='YlGnBu',
+              streamline_bounds=None,
               #hatching
               hatch_bounds=(0.0, 0.05),
               hatch_styles=('bwdlines_tight'),
@@ -276,7 +293,8 @@ def multiplot(cube_dict, nrows, ncols,
                     y = u_cube.coords('latitude')[0].points
                     u = u_cube.data
                     v = v_cube.data
-                    plot_flow(x, y, u, v, ax, flow_type, input_projection)
+                    plot_flow(x, y, u, v, ax, flow_type, input_projection,
+                              palette=streamline_palette, colour_bounds=streamline_bounds)
                 except KeyError:
                     pass
 
@@ -369,19 +387,11 @@ def plot_colour(cube,
 
     assert colour_type in ['smooth', 'pixels']
 
-    if palette:
-        if hasattr(plt.cm, palette):
-            cmap = getattr(plt.cm, palette)
-            colors = None
-        else:
-            print "Error, color option '", palette, "' not a valid option"
-            sys.exit(1)
-
+    cmap = get_palette(palette) if palette else None
     if colour_type == 'smooth':
-        cf = iplt.contourf(cube, cmap=cmap, colors=colors, levels=ticks, extend=extend)
-        # colors is the option where you can give a list of hex strings
-        # I haven't been able to figure out how to get extent to work with that
-
+        cf = iplt.contourf(cube, cmap=cmap, levels=ticks, extend=extend)
+        #colors is the option where you can give a list of hex strings
+        #haven't been able to figure out how to get extent to work with that
     elif colour_type == 'pixels':
         cf = iplt.pcolormesh(cube, cmap=cmap)
 
@@ -397,14 +407,23 @@ def plot_contour(cube, levels, labels_switch,
         plt.clabel(contour_plot, fmt='%.1f')
 
     
-def plot_flow(x, y, u, v, ax, flow_type, input_projection):
+def plot_flow(x, y, u, v, ax, flow_type, input_projection, palette=None, colour_bounds=None):
     """Plot quivers or streamlines."""
 
     assert flow_type in ['streamlines', 'quivers']
 
+    cmap = get_palette(palette) if palette else None
+
+    if colour_bounds:
+        vmin, vmax = colour_bounds
+        norm = matplotlib.colors.Normalize(vmin=0, vmax=30)
+    else:
+        norm = None
+
     if flow_type == 'streamlines':
         magnitude = (u ** 2 + v ** 2) ** 0.5
-        ax.streamplot(x, y, u, v, transform=projections[input_projection], linewidth=2, density=2, color=magnitude)
+        ax.streamplot(x, y, u, v, transform=projections[input_projection], linewidth=2, density=2,
+                      color=magnitude, cmap=cmap, norm=norm)
     elif flow_type == 'quivers':
         ax.quiver(x, y, u, v, transform=projections[input_projection], regrid_shape=40) 
 
@@ -562,12 +581,13 @@ def main(inargs):
               output_projection=inargs.output_projection,
               figure_size=inargs.figure_size,
               subplot_spacing=inargs.subplot_spacing,
-              flow_type=inargs.flow_type,
-              box_list=inargs.boxes, lat_line_list=inargs.lat_lines,
               grid_labels=inargs.grid_labels,
               blank_plots=blanks,
               spstereo_limit=inargs.spstereo_limit,
               max_layers=max_layers,
+              #boxes/lines
+              box_list=inargs.boxes,
+              lat_line_list=inargs.lat_lines,
               #headings
               title=inargs.title,
               subplot_headings=inargs.subplot_headings,
@@ -584,6 +604,10 @@ def main(inargs):
               contour_labels=inargs.contour_labels,
               contour_colours=inargs.contour_colours,
               contour_width=inargs.contour_width,
+              #flow
+              flow_type=inargs.flow_type,
+              streamline_palette=inargs.streamline_palette,
+              streamline_bounds=inargs.streamline_bounds,
               #hatching
               hatch_bounds=inargs.hatch_bounds,
               hatch_styles=inargs.hatch_styles,
@@ -646,8 +670,6 @@ example:
                         help="highest latitude to be plotted if the map projection is South Polar Stereographic")
                         
     # Lines and boxes
-    parser.add_argument("--flow_type", type=str, default='quivers', choices=('quivers', 'streamlines'),
-                        help="what to do with the uwind and vwind data [default=quiver]")
     parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
                         help="""draw a box - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
     parser.add_argument("--lat_lines", type=str, action='append', default=None, nargs=3, metavar=('LAT', 'COLOUR', 'STYLE'),
@@ -687,6 +709,15 @@ example:
                         help="list of contour colours in layer order [default = black]")
     parser.add_argument("--contour_width", type=float, default=1.5,
                         help="contour line width [default = 1.5]")
+
+    # Flow
+    parser.add_argument("--flow_type", type=str, default='quivers', choices=('quivers', 'streamlines'),
+                        help="what to do with the uwind and vwind data [default=quiver]")
+    parser.add_argument("--streamline_palette", type=str, default='YlGnBu',
+                        choices=('hot_r', 'YlGnBu'),
+                        help="streamline colour palette [default = YlGnBu]")
+    parser.add_argument("--streamline_bounds", type=float, nargs=2, metavar=('MIN', 'MAX'), default=None,
+                        help="min and max for streamline colours [default = auto]")
 
     # Hatching
     parser.add_argument("--hatch_bounds", type=float, nargs='*', default=(0.0, 0.05),   
