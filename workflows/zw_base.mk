@@ -67,6 +67,24 @@ FOURIER_INFO=${ZW_DIR}/fourier_zw_${COE_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSC
 ${FOURIER_INFO} : ${V_RUNMEAN}
 	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< va $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} coefficients ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
+## Planetary Wave Index
+
+ENV_RUNMEAN=${ZW_DIR}/envva_${ENV_WAVE_LABEL}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc
+${ENV_RUNMEAN} : ${V_RUNMEAN}
+	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} hilbert ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+
+PWI_INDEX=${INDEX_DIR}/pwi_va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc 
+${PWI_INDEX} : ${ENV_RUNMEAN}
+	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py PWI $< envva $@
+
+DATES_PWI_HIGH=${INDEX_DIR}/dates_pwi-${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
+${DATES_PWI_HIGH} : ${PWI_INDEX}
+	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< pwi $@ --metric_threshold ${INDEX_HIGH_THRESH} --threshold_direction greater
+
+DATES_PWI_LOW=${INDEX_DIR}/dates_pwi-${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
+${DATES_PWI_LOW} : ${PWI_INDEX}
+	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< pwi $@ --metric_threshold ${INDEX_LOW_THRESH} --threshold_direction less
+
 ## ZW3 index 
 
 ZW3_INDEX=${ZW_DIR}/zw3index_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
@@ -113,11 +131,11 @@ MI_INDEX=${INDEX_DIR}/mi_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc
 ${MI_INDEX} : ${V_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py MI $< va $@
 
-DATES_MI_HIGH=${INDEX_DIR}/dates_mi-${METRIC_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
+DATES_MI_HIGH=${INDEX_DIR}/dates_mi-${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
 ${DATES_MI_HIGH} : ${MI_INDEX}
-	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< mi $@ --metric_threshold ${METRIC_HIGH_THRESH} --threshold_direction greater
+	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< mi $@ --metric_threshold ${INDEX_HIGH_THRESH} --threshold_direction greater
 
-DATES_MI_LOW=${INDEX_DIR}/dates_mi-${METRIC_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
+DATES_MI_LOW=${INDEX_DIR}/dates_mi-${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
 ${DATES_MI_LOW} : ${MI_INDEX}
-	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< mi $@ --metric_threshold ${METRIC_LOW_THRESH} --threshold_direction less
+	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< mi $@ --metric_threshold ${INDEX_LOW_THRESH} --threshold_direction less
 

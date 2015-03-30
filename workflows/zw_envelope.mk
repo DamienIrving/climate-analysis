@@ -13,13 +13,6 @@ include zw_base.mk
 all : ${TARGET}
 
 
-# Envelope extraction
-
-ENV_3D=${ZW_DIR}/env${VAR}_zw_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}.nc
-${ENV_3D} : ${V_RUNMEAN}
-	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} hilbert ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
-
-
 # Planetary wave index and other wave stats
 
 ## Collapse the meridional dimension
