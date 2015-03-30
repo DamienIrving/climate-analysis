@@ -87,7 +87,7 @@ ${DATES_PWI_LOW} : ${PWI_INDEX}
 
 ## ZW3 index 
 
-ZW3_INDEX=${ZW_DIR}/zw3index_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
+ZW3_INDEX=${INDEX_DIR}/zw3index_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${ZW3_INDEX} : ${ZG_ZONAL_ANOM_RUNMEAN}
 	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
 
