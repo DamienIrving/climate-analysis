@@ -299,6 +299,40 @@ def calc_nino_new(index, ifile, var_id, base_period):
     return outdata_list, outvar_atts_list, outvar_axes_list, global_atts 
 
 
+def calc_pwi(ifile, var_id):
+    """Calculate the Planetary Wave Index.
+
+    Ref: Irving & Simmonds (2015). Southern Hemisphere planetary wave 
+      activity and its influence on weather and climate extremes. 
+      https://www.authorea.com/users/5641/articles/12197/_show_article
+
+    Expected input: Wave envelope.   
+
+    """
+    
+    # Read data
+    indata = nio.InputData(ifile, var_id, latitude=(-70, -40))
+    assert indata.data.getOrder() == 'tyx', "Order of the data must be time, lon, lat"
+
+    # Calulcate the index
+    pdb.set_trace()
+    mermax = numpy.max(indata.data, axis=1)
+    pwi_timeseries = numpy.median(mermax, axis=-1)
+
+    # Output file info
+    pwi_atts = {'id': 'pwi',
+                'long_name': 'planetary_wave_index',
+                'standard_name': 'planetary_wave_index',
+                'units': indata.data.units,
+                'notes': 'Ref: https://www.authorea.com/users/5641/articles/12197/_show_article'}
+
+    outdata_list = [pwi_timeseries,]
+    outvar_atts_list = [pwi_atts,]
+    outvar_axes_list = [(indata.data.getTime(),),]
+    
+    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
+
+
 def calc_sam(ifile, var_id):
     """Calculate an index of the Southern Annular Mode.
 
@@ -449,7 +483,8 @@ def main(inargs):
                           'ZW3': calc_zw3,
                           'MEX': calc_mex,
                           'ASL': calc_asl,
-                          'MI': calc_mi}   
+                          'MI': calc_mi,
+                          'PWI': calc_pwi}   
     
     if inargs.index[0:4] == 'NINO':
         if inargs.index == 'NINOCT' or inargs.index == 'NINOWP':
@@ -509,7 +544,7 @@ planned enhancements:
     
     parser.add_argument("index", type=str, help="Index to calculate",
                         choices=['NINO12', 'NINO3', 'NINO4', 'NINO34', 'NINOCT',
-                                 'NINOWP', 'SAM', 'ZW3', 'MEX', 'ASL', 'MI'])
+                                 'NINOWP', 'SAM', 'ZW3', 'MEX', 'ASL', 'MI', 'PWI'])
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
