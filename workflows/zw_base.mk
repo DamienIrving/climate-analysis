@@ -27,6 +27,12 @@ ${V_RUNMEAN} : ${V_ORIG}
 	cdo ${TSCALE} $< $@
 	bash ${CDO_FIX_SCRIPT} $@ va
 
+## Wave envelope
+
+ENV_RUNMEAN=${ZW_DIR}/envva_${ENV_WAVE_LABEL}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc
+${ENV_RUNMEAN} : ${V_RUNMEAN}
+	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} hilbert ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+
 ## Zonal wind
 
 U_ORIG=${DATA_DIR}/ua_${DATASET}_${LEVEL}_daily_native.nc
@@ -68,10 +74,6 @@ ${FOURIER_INFO} : ${V_RUNMEAN}
 	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< va $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} coefficients ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## Planetary Wave Index
-
-ENV_RUNMEAN=${ZW_DIR}/envva_${ENV_WAVE_LABEL}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc
-${ENV_RUNMEAN} : ${V_RUNMEAN}
-	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< ${VAR} $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} hilbert ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 PWI_INDEX=${INDEX_DIR}/pwi_va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc 
 ${PWI_INDEX} : ${ENV_RUNMEAN}

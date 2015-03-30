@@ -64,9 +64,14 @@ COMP_U_RUNMEAN=${COMP_DIR}/ua-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_nati
 ${COMP_U_RUNMEAN} : ${U_RUNMEAN} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ua $@ --region sh
 
+COMP_ENV_RUNMEAN=${COMP_DIR}/envva-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_ENV_RUNMEAN} : ${ENV_RUNMEAN} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< envva $@ --region sh
+
 COMP_SUMMARY_PLOT=${COMP_DIR}/sf-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.png
 ${COMP_SUMMARY_PLOT} : ${COMP_SF_ANOM_RUNMEAN} ${COMP_U_RUNMEAN} ${COMP_V_RUNMEAN}
 	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) sf $(word 2,$^) ua $(word 3,$^) va $@ streamlines ${PYTHON} ${VIS_SCRIPT_DIR}
+
 
 ## Index > high threshold
 
@@ -147,11 +152,11 @@ ${DATES_INDEX_HIGH_SAM_NEG} : ${DATES_SAM_NEG} ${DATES_${INDEX}_HIGH}
 
 ## Step 2: Calculate the SAM contour composites
 COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS=${COMP_DIR}/sf-composite_samgt75pct-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
-${COMP_sf_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_SAM_POS} 
+${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_SAM_POS} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
 COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG=${COMP_DIR}/sf-composite_samlt25pct-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
-${COMP_sf_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_SAM_NEG} 
+${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_SAM_NEG} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
 ## Step 3: Plot
