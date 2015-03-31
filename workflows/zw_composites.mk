@@ -43,12 +43,12 @@ COMP_SF_ANOM_RUNMEAN=${COMP_DIR}/sf-composite_${DATASET}_${LEVEL}_${TSCALE_LABEL
 ${COMP_SF_ANOM_RUNMEAN} : ${SF_ANOM_RUNMEAN} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --region sh
 
-COMP_SF_ANOM_RUNMEAN_INDEX_HIGH=${COMP_DIR}/sf-composite_${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
-${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH} : ${SF_ANOM_RUNMEAN} ${DATES_${INDEX}_HIGH} 
+COMP_SF_ANOM_RUNMEAN_INDEX_HIGH=${COMP_DIR}/sf-composite_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH} : ${SF_ANOM_RUNMEAN} ${DATES_${INDEX_CAPS}_HIGH} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
-COMP_SF_ANOM_RUNMEAN_INDEX_LOW=${COMP_DIR}/sf-composite_${INDEX}${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
-${COMP_SF_ANOM_RUNMEAN_INDEX_LOW} : ${SF_ANOM_RUNMEAN} ${DATES_${INDEX}_LOW} 
+COMP_SF_ANOM_RUNMEAN_INDEX_LOW=${COMP_DIR}/sf-composite_${INDEX}lt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_SF_ANOM_RUNMEAN_INDEX_LOW} : ${SF_ANOM_RUNMEAN} ${DATES_${INDEX_CAPS}_LOW} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
 
@@ -75,40 +75,40 @@ ${COMP_SUMMARY_PLOT} : ${COMP_SF_ANOM_RUNMEAN} ${COMP_U_RUNMEAN} ${COMP_V_RUNMEA
 
 ## Index > high threshold
 
-COMP_V_RUNMEAN_INDEX_HIGH=${COMP_DIR}/va-composite_${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
-${COMP_V_RUNMEAN_INDEX_HIGH} : ${V_RUNMEAN} ${DATES_${INDEX}_HIGH} 
+COMP_V_RUNMEAN_INDEX_HIGH=${COMP_DIR}/va-composite_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_V_RUNMEAN_INDEX_HIGH} : ${V_RUNMEAN} ${DATES_${INDEX_CAPS}_HIGH} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< va $@ --date_file $(word 2,$^) --region sh
 
-COMP_U_RUNMEAN_INDEX_HIGH=${COMP_DIR}/ua-composite_${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
-${COMP_U_RUNMEAN_INDEX_HIGH} : ${U_RUNMEAN} ${DATES_${INDEX}_HIGH} 
+COMP_U_RUNMEAN_INDEX_HIGH=${COMP_DIR}/ua-composite_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_U_RUNMEAN_INDEX_HIGH} : ${U_RUNMEAN} ${DATES_${INDEX_CAPS}_HIGH} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ua $@ --date_file $(word 2,$^) --region sh
 
-COMP_SUMMARY_PLOT_INDEX_HIGH=${COMP_DIR}/sf-composite_${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.png
+COMP_SUMMARY_PLOT_INDEX_HIGH=${COMP_DIR}/sf-composite_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.png
 ${COMP_SUMMARY_PLOT_INDEX_HIGH} : ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH} ${COMP_U_RUNMEAN_INDEX_HIGH} ${COMP_V_RUNMEAN_INDEX_HIGH}
 	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) sf $(word 2,$^) ua $(word 3,$^) va $@ streamlines ${PYTHON} ${VIS_SCRIPT_DIR}
 
 ## Index < low threshold
 
-COMP_V_RUNMEAN_INDEX_LOW=${COMP_DIR}/va-composite_${INDEX}${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
-${COMP_V_RUNMEAN_INDEX_LOW} : ${V_RUNMEAN} ${DATES_${INDEX}_LOW} 
+COMP_V_RUNMEAN_INDEX_LOW=${COMP_DIR}/va-composite_${INDEX}lt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_V_RUNMEAN_INDEX_LOW} : ${V_RUNMEAN} ${DATES_${INDEX_CAPS}_LOW} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< va $@ --date_file $(word 2,$^) --region sh
 
-COMP_U_RUNMEAN_INDEX_LOW=${COMP_DIR}/ua-composite_${INDEX}${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
-${COMP_U_RUNMEAN_INDEX_LOW} : ${U_RUNMEAN} ${DATES_${INDEX}_LOW} 
+COMP_U_RUNMEAN_INDEX_LOW=${COMP_DIR}/ua-composite_${INDEX}lt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+${COMP_U_RUNMEAN_INDEX_LOW} : ${U_RUNMEAN} ${DATES_${INDEX_CAPS}_LOW} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ua $@ --date_file $(word 2,$^) --region sh
 
-COMP_SUMMARY_PLOT_INDEX_LOW=${COMP_DIR}/sf-composite_${INDEX}${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.png
+COMP_SUMMARY_PLOT_INDEX_LOW=${COMP_DIR}/sf-composite_${INDEX}lt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.png
 ${COMP_SUMMARY_PLOT_INDEX_LOW} : ${COMP_SF_ANOM_RUNMEAN_INDEX_LOW} ${COMP_U_RUNMEAN_INDEX_LOW} ${COMP_V_RUNMEAN_INDEX_LOW}
 	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) sf $(word 2,$^) ua $(word 3,$^) va $@ streamlines ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
 # Variable composite, upper threshold of index
 
-COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH=${COMP_DIR}/${COMP_VAR}-composite_${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.nc 
-${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH} : ${CVAR_ANOM_RUNMEAN} ${DATES_${INDEX}_HIGH} 
+COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH=${COMP_DIR}/${COMP_VAR}-composite_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.nc 
+${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH} : ${CVAR_ANOM_RUNMEAN} ${DATES_${INDEX_CAPS}_HIGH} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) --region sh 
 
-COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_PLOT=${COMP_DIR}/${COMP_VAR}-composite_${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
+COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_PLOT=${COMP_DIR}/${COMP_VAR}-composite_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
 ${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH} ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH}
 	bash ${VIS_SCRIPT_DIR}/plot_composite.sh $(word 1,$^) ${COMP_VAR} $(word 2,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
@@ -116,25 +116,25 @@ ${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH}
 # Variable composite, upper threshold of index + Nino phases
 
 ## Step 1: Combine the index and nino date lists
-DATES_INDEX_HIGH_ELNINO=${INDEX_DIR}/dates_nino34elnino-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${DATES_INDEX_HIGH_ELNINO} : ${DATES_ELNINO} ${DATES_${INDEX}_HIGH}
+DATES_INDEX_HIGH_ELNINO=${INDEX_DIR}/dates_nino34elnino-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+${DATES_INDEX_HIGH_ELNINO} : ${DATES_ELNINO} ${DATES_${INDEX_CAPS}_HIGH}
 	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
 
-DATES_INDEX_HIGH_LANINA=${INDEX_DIR}/dates_nino34lanina-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${DATES_INDEX_HIGH_LANINA} : ${DATES_LANINA} ${DATES_${INDEX}_HIGH}
+DATES_INDEX_HIGH_LANINA=${INDEX_DIR}/dates_nino34lanina-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+${DATES_INDEX_HIGH_LANINA} : ${DATES_LANINA} ${DATES_${INDEX_CAPS}_HIGH}
 	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
 
 ## Step 2: Calculate the Nino contour composites
-COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_ELNINO=${COMP_DIR}/sf-composite_nino34elnino-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_ELNINO=${COMP_DIR}/sf-composite_nino34elnino-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
 ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_ELNINO} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_ELNINO} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
-COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_LANINA=${COMP_DIR}/sf-composite_nino34lanina-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_LANINA=${COMP_DIR}/sf-composite_nino34lanina-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
 ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_LANINA} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_LANINA} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
 ## Step 3: Plot
-COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_NINO_PLOT=${COMP_DIR}/sf-composite_nino-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
+COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_NINO_PLOT=${COMP_DIR}/sf-composite_nino-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
 ${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_NINO_PLOT} : ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_ELNINO} ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH} ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_LANINA}
 	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
@@ -142,36 +142,36 @@ ${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_NINO_PLOT} : ${COMP_SF_ANOM_RUNMEAN_INDEX_HI
 # Variable composite, upper threshold of index + SAM phases
 
 ## Step 1: Combine the index and SAM date lists
-DATES_INDEX_HIGH_SAM_POS=${INDEX_DIR}/dates_samgt75pct-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${DATES_INDEX_HIGH_SAM_POS} : ${DATES_SAM_POS} ${DATES_${INDEX}_HIGH}
+DATES_INDEX_HIGH_SAM_POS=${INDEX_DIR}/dates_samgt75pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+${DATES_INDEX_HIGH_SAM_POS} : ${DATES_SAM_POS} ${DATES_${INDEX_CAPS}_HIGH}
 	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
 
-DATES_INDEX_HIGH_SAM_NEG=${INDEX_DIR}/dates_samlt75pct-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${DATES_INDEX_HIGH_SAM_NEG} : ${DATES_SAM_NEG} ${DATES_${INDEX}_HIGH}
+DATES_INDEX_HIGH_SAM_NEG=${INDEX_DIR}/dates_samlt75pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+${DATES_INDEX_HIGH_SAM_NEG} : ${DATES_SAM_NEG} ${DATES_${INDEX_CAPS}_HIGH}
 	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
 
 ## Step 2: Calculate the SAM contour composites
-COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS=${COMP_DIR}/sf-composite_samgt75pct-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS=${COMP_DIR}/sf-composite_samgt75pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
 ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_SAM_POS} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
-COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG=${COMP_DIR}/sf-composite_samlt25pct-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
+COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG=${COMP_DIR}/sf-composite_samlt25pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
 ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_SAM_NEG} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region sh
 
 ## Step 3: Plot
-COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_SAM_PLOT=${COMP_DIR}/sf-composite_sam-${INDEX}${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
+COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_SAM_PLOT=${COMP_DIR}/sf-composite_sam-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
 ${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_SAM_PLOT} : ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS} ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH} ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG}
 	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
 # Variable composite, lower threshold of index
 
-COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW=${COMP_DIR}/${COMP_VAR}-composite_${INDEX}${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.nc 
-${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW} : ${CVAR_ANOM_RUNMEAN} ${DATES_${INDEX}_LOW} 
+COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW=${COMP_DIR}/${COMP_VAR}-composite_${INDEX}lt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.nc 
+${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW} : ${CVAR_ANOM_RUNMEAN} ${DATES_${INDEX_CAPS}_LOW} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) --region sh 
 
-COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW_PLOT=${COMP_DIR}/${COMP_VAR}-composite_${INDEX}${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
+COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW_PLOT=${COMP_DIR}/${COMP_VAR}-composite_${INDEX}lt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
 ${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW} ${COMP_SF_ANOM_RUNMEAN_INDEX_LOW}
 	bash ${VIS_SCRIPT_DIR}/plot_composite.sh $(word 1,$^) ${COMP_VAR} $(word 2,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
@@ -179,7 +179,7 @@ ${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW} $
 # Index composite, upper threshold
 
 COMP_INDEX_CVAR_ANOM_RUNMEAN_HIGH=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}90pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.nc
-${COMP_INDEX_CVAR_ANOM_RUNMEAN_HIGH} : ${CVAR_ANOM_RUNMEAN} ${${INDEX}_INDEX}
+${COMP_INDEX_CVAR_ANOM_RUNMEAN_HIGH} : ${CVAR_ANOM_RUNMEAN} ${${INDEX_CAPS}_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${INDEX} 90pct $@ --region sh
 
 COMP_INDEX_CVAR_ANOM_RUNMEAN_HIGH_PLOT=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}90pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
@@ -190,7 +190,7 @@ ${COMP_INDEX_CVAR_ANOM_RUNMEAN_HIGH_PLOT} : ${COMP_INDEX_CVAR_ANOM_RUNMEAN_HIGH}
 # Index composite, lower threshold
 
 COMP_INDEX_CVAR_ANOM_RUNMEAN_LOW=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}10pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.nc
-${COMP_INDEX_CVAR_ANOM_RUNMEAN_LOW} : ${CVAR_ANOM_RUNMEAN} ${${INDEX}_INDEX}
+${COMP_INDEX_CVAR_ANOM_RUNMEAN_LOW} : ${CVAR_ANOM_RUNMEAN} ${${INDEX_CAPS}_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${INDEX} 90pct $@ --region sh --include below
 
 COMP_INDEX_CVAR_ANOM_RUNMEAN_LOW_PLOT=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}10pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
@@ -201,7 +201,7 @@ ${COMP_INDEX_CVAR_ANOM_RUNMEAN_LOW_PLOT} : ${COMP_INDEX_CVAR_ANOM_RUNMEAN_LOW}
 # Index composite, upper threshold (absolute value anomalies)
 
 COMP_INDEX_CVAR_ANOM_RUNMEAN_ABS_HIGH=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}abs90pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.nc
-${COMP_INDEX_CVAR_ANOM_RUNMEAN_ABS_HIGH} : ${CVAR_ANOM_RUNMEAN} ${${INDEX}_INDEX}
+${COMP_INDEX_CVAR_ANOM_RUNMEAN_ABS_HIGH} : ${CVAR_ANOM_RUNMEAN} ${${INDEX_CAPS}_INDEX}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${INDEX} 90pct $@ --region sh --absolute
 
 COMP_INDEX_CVAR_ANOM_RUNMEAN_ABS_HIGH_PLOT=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}abs90pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-sh.png
