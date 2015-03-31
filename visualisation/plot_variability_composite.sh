@@ -27,6 +27,8 @@ code_dir=$7
   
 if [ $var == 'zg' ] ; then
     levels="-150 -120 -90 -60 -30 0 30 60 90 120 150" 
+elif [[ $var == 'sf' ]] ; then
+    levels="-6 -4.5 -3 -1.5 0 1.5 3 4.5 6"
 else
     echo "Unknown variable: $var"
     exit 1
