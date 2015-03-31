@@ -52,6 +52,8 @@ fi
 
 if [ $contvar == 'zg' ] ; then
     levels="-150 -120 -90 -60 -30 0 30 60 90 120 150" 
+elif [ $contvar == 'sf' ] ; then
+    levels="-6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6" 
 else
     echo "Unknown variable: $contvar"
     exit 1
