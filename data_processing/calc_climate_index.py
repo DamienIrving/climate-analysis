@@ -315,7 +315,6 @@ def calc_pwi(ifile, var_id):
     assert indata.data.getOrder() == 'tyx', "Order of the data must be time, lon, lat"
 
     # Calulcate the index
-    pdb.set_trace()
     mermax = numpy.max(indata.data, axis=1)
     pwi_timeseries = numpy.median(mermax, axis=-1)
 
