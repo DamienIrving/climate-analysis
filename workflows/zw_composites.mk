@@ -75,6 +75,7 @@ ${COMP_SUMMARY_PLOT} : ${COMP_SF_ANOM_RUNMEAN} ${COMP_U_RUNMEAN} ${COMP_V_RUNMEA
 
 ## Index > high threshold
 
+### Spatial composite
 COMP_V_RUNMEAN_INDEX_HIGH=${COMP_DIR}/va-composite_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.nc 
 ${COMP_V_RUNMEAN_INDEX_HIGH} : ${V_RUNMEAN} ${DATES_${INDEX_CAPS}_HIGH} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< va $@ --date_file $(word 2,$^) --region sh
@@ -86,6 +87,11 @@ ${COMP_U_RUNMEAN_INDEX_HIGH} : ${U_RUNMEAN} ${DATES_${INDEX_CAPS}_HIGH}
 COMP_SUMMARY_PLOT_INDEX_HIGH=${COMP_DIR}/sf-composite_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh.png
 ${COMP_SUMMARY_PLOT_INDEX_HIGH} : ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH} ${COMP_U_RUNMEAN_INDEX_HIGH} ${COMP_V_RUNMEAN_INDEX_HIGH}
 	bash ${VIS_SCRIPT_DIR}/plot_summary_composite.sh $(word 1,$^) sf $(word 2,$^) ua $(word 3,$^) va $@ streamlines ${PYTHON} ${VIS_SCRIPT_DIR}
+
+### Temporal histograms
+DATES_INDEX_HIGH_PLOT=${INDEX_DIR}/dates-summary_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.png
+${DATES_INDEX_HIGH_PLOT} : ${DATES_${INDEX_CAPS}_HIGH}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_date_list.py $< $@ --start ${START} --end ${END}
 
 ## Index < low threshold
 
