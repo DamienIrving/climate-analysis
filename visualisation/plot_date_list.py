@@ -1,26 +1,14 @@
 # Import general Python modules
 
-import os, sys, re, pdb
-from collections import OrderedDict
-
-import operator
-import numpy
-import pandas
+import os, sys, pdb
+from datetime import datetime
+import argparse, numpy, pandas
+from pandas.tseries.resample import TimeGrouper
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from itertools import groupby
-from operator import itemgetter
-
-from datetime import datetime
-from dateutil.rrule import *
-from dateutil.relativedelta import relativedelta
-from matplotlib.dates import date2num
-import calendar
-
-import argparse
 
 # Import my modules
 
@@ -36,89 +24,13 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
-    import netcdf_io as nio
-    import convenient_anaconda as aconv
-    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 # Define functions
 
-def bin_dates(date_list, start_year, start_month, end_year, end_month):
-    """Take a list of dates and return totals in bins."""
-    
-    dt_list = map(lambda x: datetime.strptime(x, '%Y-%m-%d'), date_list)
-    num_list = map(date2num, dt_list)
-    
-    start_dt = datetime(start_year, start_month, 1)
-    end_dt = datetime(end_year, end_month, 1) + relativedelta(months=1)
-    dt_bin_edges = list(rrule(MONTHLY, dtstart=start_dt, until=end_dt)) #interval=1
-    num_bin_edges = date2num(dt_bin_edges)
-    
-    hist_data, edges = numpy.histogram(num_list, bins=num_bin_edges)
-    assert len(hist_data) == len(dt_bin_edges[:-1])
-
-    histogram = {}
-    for i in range(0, len(hist_data)):
-        histogram[dt_bin_edges[i]] = hist_data[i]
-    
-    bins_dict = OrderedDict(sorted(histogram.items(), key=lambda t: t[0])) 
-    #t[1] would sort by value instead of key  
-
-    # Calculate monthly totals and values
-    monthly_totals = dict((month, 0) for month in range(1,13))
-    monthly_values = dict((month, []) for month in range(1,13))
-    for key, value in histogram.iteritems():
-        monthly_totals[key.month] = monthly_totals[key.month] + value
-        monthly_values[key.month].append(value)
-
-    return monthly_totals, monthly_values
 
 
-def calc_seasonal_values(monthly_values, month_years):
-    """Calculate the seasonal values from the monthly values."""
-    
-    months = {'DJF': [12, 1, 2], 'MAM': [3, 4, 5],
-              'JJA': [6, 7, 8], 'SON': [9, 10, 11]}
-    
-    seasonal_values = {}
-    for season in months.keys():
-        seasonal_values[season] = []
-    
-    year_lists = {}
-    for season, months in months.iteritems():    
-        years = get_intersection(month_years, months)
-        for year in years:
-            season_total = 0
-            for month in months:
-                index = month_years[month].index(year)
-                month_total = monthly_values[month][index]
-                season_total = season_total + month_total
-            seasonal_values[season].append(season_total)
-        year_lists[season] = years
-
-    return seasonal_values, year_lists
-
-
-def crop_dates(start_date, end_date):
-    """Adjust a start and end date so the data only includes complete months."""
-    
-    # Crop to complete month
-    if start_date.day != 1:
-        start_date = start_date + relativedelta(months=1)
-    
-    if end_date.day != calendar.monthrange(end_date.year, end_date.month)[1]:
-        end_date = end_date - relativedelta(months=1)
-    
-    # Get the year corresponding to each month
-    month_years = {}
-    for month in range(1,13):
-        month_years[month] = []
-    date_list = list(rrule(MONTHLY, dtstart=start_date, until=end_date))
-    for date in date_list:
-        month_years[date.month].append(date.year)
-
-    return start_date, end_date, month_years
 
 
 def get_date_bounds(date_list):
@@ -129,82 +41,121 @@ def get_date_bounds(date_list):
     start_date = datetime.strptime(date_list[0], '%Y-%m-%d')
     end_date = datetime.strptime(date_list[-1], '%Y-%m-%d')
     
-    start_date, end_date, month_years = crop_dates(start_date, end_date)
-
-    return start_date.year, start_date.month, end_date.year, end_date.month, month_years
-
-
-def get_intersection(dictionary, key_list):
-    """Return the common values from a dictionary of lists."""
-  
-    base_key = key_list[0]
-    result = set(dictionary[base_key])
-    for key in key_list[1:]:
-        result.intersection_update(dictionary[key])
-
-    return list(result)
-
-
-def get_years(date_list):
-    """Return a list of integer years."""
+    monthly_start = inargs.start
     
-    start_year = int(date_list[0][0:4])
-    end_year = int(date_list[-1][0:4])
-    
-    return numpy.arange(start_year, end_year + 1, 1)
+
+    return 
 
 
-def plot_monthly_totals(ax, date_list, start_year, start_month, end_year, end_month, month_years):
+def plot_monthly_totals(ax, dates_df):
     """Plot a bar chart showing the totals for each month."""
 
-    monthly_totals, monthly_values = bin_dates(date_list, start_year, start_month, end_year, end_month)
-    monthly_pct = numpy.zeros(12)
-    for i in range(0, 12):
-        ndays = calendar.mdays[i+1] * len(month_years[i+1])
-        if i == 1:
-            start = start_year if start_month <= 2 else start_year + 1
-            end = end_year if end_month >= 2 else end_year - 1
-            nleap = calendar.leapdays(start, end)
-            ndays = ndays + nleap
-        monthly_pct[i] = (monthly_totals[i+1] / float(ndays)) * 100     
+    # Prepare data
+    monthly_data = dates_df.groupby(TimeGrouper(freq='1M', closed='left')).sum()
+    monthly_data = monthly_data.drop(monthly_data.index[-1])
 
-    ind = numpy.arange(12)    #the x locations for the bars
-    width = 0.8               #the width of the bars
-    p1 = plt.bar(ind, monthly_pct, width)
+    # Group the data and count up
+    grouped_data = monthly_data.groupby(lambda x: x.month)
+    monthly_totals = grouped_data.sum()
 
-    plt.ylabel('Percentage of days')
-    plt.xticks(ind+width/2., calendar.month_abbr[1:])
+    # Plot
 
 
-def plot_seasonal_values(ax, date_list, 
-                         start_year, start_month, end_year, end_month, month_years,
-                         leg_loc=7):
-    """Plot a line graph showing the seasonal values for each year."""
+def plot_seasonal_stackplot(ax, dates_df, leg_loc=7):
+    """Plot a stacked histogram showing the seasonal values for each year."""
+     
+    # Prepare data
+    seasonal_data = dates_df.groupby(TimeGrouper(freq='3M', closed='left')).sum()
+    seasonal_data = seasonal_data.drop(seasonal_data.index[-1])
     
-    for month, years in month_years.iteritems():
-        assert len(years) > 1, \
-        """Must have more than one year of data for each season or plot_seasonal_values() won't work""" 
+    # Count up 
+    assert len(seasonal_data['count']) % 4.0 == 0, "Date range must ensure each season is equally represented"
 
-    monthly_totals, monthly_values = bin_dates(date_list, start_year, start_month, end_year, end_month)
-    seasonal_values, years = calc_seasonal_values(monthly_values, month_years)
+    season_keys = {2: 'DJF', 5: 'MAM', 8: 'JJA', 11: 'SON'}
+    season_counts = {}
+    for i in range(0,4):
+        month = seasonal_data.index[i].month
+        season_counts[season_keys[month]] = seasonal_data['count'][i::4]
+    
+    # Plot
+    start_year = season_counts['MAM'].index[0].year
+    end_year = season_counts['MAM'].index[-1].year
 
-    colors = {'DJF': 'red', 'MAM': 'orange',
-             'JJA': 'blue', 'SON': 'green'}
+    x = numpy.arange(start_year, end_year + 1)
 
-    ax.stackplot(x, seasonal_values['DJF'], seasonal_values['MAM'], seasonal_values['JJA'], seasonal_values['SON'])
+    pdjf = ax.bar(x, season_counts['DJF'], color='yellow')
+    pmam = ax.bar(x, season_counts['MAM'], color='orange', bottom=season_counts['DJF'])
+    pjja = ax.bar(x, season_counts['JJA'], color='blue', bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix())
+    pson = ax.bar(x, season_counts['SON'], color='green', bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix()+season_counts['JJA'].as_matrix())
 
-    ax.set_xlim(start_year, end_year)
-    ax.set_xlabel('year')
-    ax.set_ylabel('total days')
-    ax.legend(loc=leg_loc, fontsize='small', ncol=5)
+    ax.legend( (pdjf[0], pmam[0], pjja[0], pson[0]), ('DJF', 'MAM', 'JJA', 'SON') )
+
+
+def time_filter(df, start_date, end_date):
+    """Remove times that are not within the start/end bounds."""
+
+    datetime_start = datetime.strptime(start_date, '%Y-%m-%d')
+    start_selection = dates_df.index >= datetime_start
+
+    datetime_end = datetime.strptime(end_date, '%Y-%m-%d')
+    end_selection = dates_df.index <= datetime_end
+
+    combined_selection = start_selection & end_selection
+
+    filtered_df = df[combined_selection] 
+
+    return filtered_df
+
+
+def fill_out_dates(df, start_date, end_date):
+    """Put a zero entry in a pandas df for all missing dates."""
+
+    date_range = pandas.date_range(start_dates, end_dates)
+    filled_df = df.reindex(date_range, fill_value=0)
+
+    return filled_df
+
+
+def get_seasonal_bounds(start_date, end_date):
+    """Set the start and end date for seasonal analysis.
+
+    Ensures that only full years (Dec-Nov) are included.    
+
+    """
+
+    start_date_dt = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date_dt = datetime.strptime(end_date, '%Y-%m-%d')
+
+    if start_date_dt.month == 12:
+        new_start_date = datetime(start_date_dt.year + 1, 12, 1)
+    else:
+        new_start_date = datetime(start_date_dt.year, 12, 1)
+
+    if end_date_dt.month < 12:
+        new_end_date = datetime(end_date_dt.year - 1, 11, 30)
+    else:
+        new_end_date = datetime(end_date_dt.year, 11, 30)
+        
+    return new_start_date.strftime('%Y-%m-%d'), new_end_date.strftime('%Y-%m-%d')
 
 
 def main(inargs):
     """Run the program."""
-   
-    date_list, date_metadata = gio.read_dates(inargs.date_file)
-    start_year, start_month, end_year, end_month, month_years = get_date_bounds(date_list)
 
+    # Read the data into a pandas data frame   
+    date_list, date_metadata = gio.read_dates(inargs.date_file)
+
+    ones = numpy.ones(len(date_list))
+    dates_df = pandas.DataFrame(ones, index=map(lambda x: datetime.strptime(x, '%Y-%m-%d'), date_list), columns=['count'])
+    filtered_dates_df = time_filter(dates_df, inargs.start, inargs.end)
+
+    # Fill out the date list for monthly and seasonal analyses
+    monthly_filtered_dates_df = fill_out_dates(filtered_dates_df, inargs.start, inargs.end)
+    
+    seasonal_start, seasonal_end = get_seasonal_bounds(inargs.start, inargs.end)
+    seasonal_filtered_dates_df = fill_out_dates(filtered_dates_df, seasonal_start, seasonal_end)
+
+    
     fig = plt.figure(figsize=inargs.figure_size)
     if not inargs.figure_size:
         print 'figure width: %s' %(str(fig.get_figwidth()))
@@ -224,12 +175,9 @@ def main(inargs):
         plt.sca(ax)
 
         if plot_type == 'monthly_totals_histogram':
-            plot_monthly_totals(ax, date_list, 
-                                start_year, start_month, end_year, end_month, month_years)
+            plot_monthly_totals(ax, monthly_filtered_dates_df)
         elif plot_type == 'seasonal_values_stackplot':
-            plot_seasonal_values(ax, date_list, 
-                                 start_year, start_month, end_year, end_month, month_years,
-                                 leg_loc=inargs.leg_loc)
+            plot_seasonal_stackplot(ax, seasonal_filtered_dates_df, leg_loc=inargs.leg_loc)
 
     fig.savefig(inargs.outfile, bbox_inches='tight')
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)
