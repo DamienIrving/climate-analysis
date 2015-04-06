@@ -34,7 +34,8 @@ code_dir=${10}
 if [[ $cvar == 'zg' ]] ; then
     ticks="-150 -120 -90 -60 -30 0 30 60 90 120 150"     
 elif [[ $cvar == 'sf' ]] ; then
-    ticks="-6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6"
+    #ticks="-6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6"
+    ticks="-12.5 -10 -7.5 -5 -2.5 0 2.5 5 7.5 10 12.5"
 else
     echo "Unknown variable: $cvar"
     exit 1
@@ -91,7 +92,8 @@ elif [[ $plot_type == 'streamlines' ]] ; then
 --ofile ${outfile} \
 --flow_type streamlines \
 --streamline_bounds 0 30 \
---contour_levels ${ticks}
+--contour_levels ${ticks} \
+--contour_colours 0.3
 
 
 else
