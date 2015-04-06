@@ -47,7 +47,6 @@ SF_ORIG=${DATA_DIR}/sf_${DATASET}_${LEVEL}_daily_native.nc
 ${SF_ORIG} : ${U_ORIG} ${V_ORIG}
 	bash ${DATA_SCRIPT_DIR}/calc_wind_quantities.sh streamfunction $< ua $(word 2,$^) va $@ ${CDO_FIX_SCRIPT} ${CDAT} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
-
 ## Sea surface temperature
 
 TOS_ORIG=${DATA_DIR}/tos_${DATASET}_surface_daily_native-tropicalpacific.nc
