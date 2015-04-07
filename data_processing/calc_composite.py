@@ -52,7 +52,7 @@ def date_offset(date_list, offset):
     return edited_date_list
 
 
-def filter_dates(data, date_file, offset, invert=False):
+def filter_dates(data, date_file, offset=None, invert=False):
     """Filter the data into a subset that only includes dates in date_file. 
 
     An offset can be applied to the dates in date_file.
@@ -113,7 +113,7 @@ def main(inargs):
         assert indata.data.getOrder()[0] == 't', "First axis must be time"
 
 	# Filter data
-	data_filtered, date_metadata, size_filtered = filter_dates(indata.data, inargs.date_file, inargs.offset, invert=inargs.invert)
+	data_filtered, date_metadata, size_filtered = filter_dates(indata.data, inargs.date_file, offset=inargs.offset, invert=inargs.invert)
 
 	# Calculate composite
 	composite, composite_atts = get_composite(data_filtered, inargs.var, 

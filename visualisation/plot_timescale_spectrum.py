@@ -32,6 +32,7 @@ try:
     import netcdf_io as nio
     import general_io as gio
     import calc_fourier_transform as cft
+    import calc_composite
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -40,10 +41,60 @@ except ImportError:
 colors = ['blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'magenta', 'purple', 'brown', 'black']    
 
 
-def main(inargs):
-    """Run the program."""
+def transform_data(signal, indep_var, scaling):
+    """Do the Fourier Transform."""
+
+    sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
+    spectrum, spectrum_freqs = cft.spectrum(sig_fft, sample_freq, 
+                                            scaling=scaling, 
+                                            variance=numpy.var(signal))
+	
+    spectrum_temporal_mean = numpy.mean(spectrum, axis=0)
+    spectrum_freqs_1D = numpy.mean(spectrum_freqs, axis=0)
+
+    return spectrum_temporal_mean, spectrum_freqs_1D
+
+
+def composite_plot(plt, inargs, runave=30):
+    """Plot periodogram that compares composites."""
+
+    assert inargs.date_files
+
+    indata = nio.InputData(inargs.infile, inargs.variable, runave=runave,
+                           **nio.dict_filter(vars(inargs), ['latitude', 'time']))
+
+    indep_var = indata.data.getLongitude()[:]
+    metadata_dict = {inargs.infile: indata.global_atts['history']}
+
+    composite_dict = {'PWI > 90pct': inargs.date_files[0],
+                      'PWI < 10pct': inargs.date_files[1],
+                      'all timesteps': None}
+
+    for label, date_file in composite_dict.iteritems():        
+        data_filtered, date_metadata, size_filtered = calc_composite.filter_dates(indata.data, date_file)
+        spectrum_temporal_mean, spectrum_freqs_1D = transform_data(data_filtered, indep_var, inargs.scaling)
+
+        plt.plot(spectrum_freqs_1D, spectrum_temporal_mean, label=label, marker='o')
+
+        if date_file:
+            metadata_dict[date_file] = date_metadata
+
+    plt.xlim(1, inargs.window)
+    plt.xlabel('wavenumber ($k$)')
     
-    plt.figure() 
+    if inargs.scaling == 'R2':
+        ylabel = 'variance explained ($R_k^2$)'
+    else:
+        ylabel = inargs.scaling
+    plt.ylabel('average %s' %(ylabel))
+    plt.legend()
+
+    return metadata_dict
+
+
+def timescale_plot(plt, inargs):
+    """Plot periodogram that compares various timescales."""
+
     if inargs.runmean:
         runmean_windows = inargs.runmean
     else:
@@ -53,17 +104,11 @@ def main(inargs):
         
         indata = nio.InputData(inargs.infile, inargs.variable, runave=step,
                                **nio.dict_filter(vars(inargs), ['latitude', 'time']))
-    
+	
         signal = indata.data
         indep_var = signal.getLongitude()[:]
 
-        sig_fft, sample_freq = cft.fourier_transform(signal, indep_var)
-        spectrum, spectrum_freqs = cft.spectrum(sig_fft, sample_freq, 
-                                                scaling=inargs.scaling, 
-                                                variance=numpy.var(signal))
-	
-        spectrum_temporal_mean = numpy.mean(spectrum, axis=0)
-        spectrum_freqs_1D = numpy.mean(spectrum_freqs, axis=0)
+        spectrum_temporal_mean, spectrum_freqs_1D = transform_data(signal, indep_var, inargs.scaling)
         
         plt.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
                  label=str(step), marker='o', color=colors[index])
@@ -77,11 +122,26 @@ def main(inargs):
         ylabel = inargs.scaling
     plt.ylabel('average %s' %(ylabel))
     plt.legend()
+
+    metadata_dict = {inargs.infile: indata.global_atts['history']}
+
+    return metadata_dict
+
+
+def main(inargs):
+    """Run the program."""
     
+    plt.figure()
+
+    assert inargs.plot_type in ('timescale', 'composite')
+    if inargs.plot_type == 'timescale':
+        metadata_dict = timescale_plot(plt, inargs)
+    elif inargs.plot_type == 'composite':
+        metadata_dict = composite_plot(plt, inargs)
+
     plt.savefig(inargs.outfile, bbox_inches='tight')
     plt.clf()
-    metadata = {indata.fname: indata.global_atts['history']}
-    gio.write_metadata(inargs.outfile, file_info=metadata)
+    gio.write_metadata(inargs.outfile, file_info=metadata_dict)
     
 
 if __name__ == '__main__':
@@ -114,6 +174,12 @@ author:
                            help="Latitude over which to perform the Fourier Transform [default = entire]")
     argparser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                            help="Time period [default = entire]")
+    argparser.add_argument("--date_files", type=str, nargs=2, metavar=('UPPER', 'LOWER'), default=None, 
+                           help="File containing dates for the upper and lower composite")
+
+    # Plot type
+    argparser.add_argument("--plot_type", type=str, choices=('timescale', 'composite'), default='timescale',
+                           help="type of plot to generate [default=timescale]")
 
     # Output options
     argparser.add_argument("--window", type=int, default=10,
@@ -123,6 +189,7 @@ author:
     argparser.add_argument("--scaling", type=str, choices=('amplitude', 'power', 'R2'), default='amplitude',
                            help="scaling applied to the amplitude of the spectal density [default=None]")
   
+
     args = argparser.parse_args()            
 
     print 'Input file: ', args.infile
