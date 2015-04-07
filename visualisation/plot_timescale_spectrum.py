@@ -1,7 +1,7 @@
 """
 Filename:     plot_timescale_spectrum.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
-Description:  Plot the density spectrum of a single data file for mutliple timescales
+Description:  Plot some periodograms
 
 """
 
@@ -55,44 +55,44 @@ def transform_data(signal, indep_var, scaling):
     return spectrum_temporal_mean, spectrum_freqs_1D
 
 
-def composite_plot(plt, inargs, runave=30):
+def composite_plot(ax, inargs, runave=30):
     """Plot periodogram that compares composites."""
 
-    assert inargs.date_files
-
+    # Get input data
     indata = nio.InputData(inargs.infile, inargs.variable, runave=runave,
                            **nio.dict_filter(vars(inargs), ['latitude', 'time']))
 
     indep_var = indata.data.getLongitude()[:]
     metadata_dict = {inargs.infile: indata.global_atts['history']}
 
-    composite_dict = {'PWI > 90pct': inargs.date_files[0],
-                      'PWI < 10pct': inargs.date_files[1],
+    composite_dict = {'PWI > 90 pctl': inargs.upper_date_file,
+                      'PWI < 10 pctl': inargs.lower_date_file,
                       'all timesteps': None}
 
+    # Create the plot
     for label, date_file in composite_dict.iteritems():        
         data_filtered, date_metadata, size_filtered = calc_composite.filter_dates(indata.data, date_file)
         spectrum_temporal_mean, spectrum_freqs_1D = transform_data(data_filtered, indep_var, inargs.scaling)
 
-        plt.plot(spectrum_freqs_1D, spectrum_temporal_mean, label=label, marker='o')
+        ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, label=label, marker='o')
 
         if date_file:
             metadata_dict[date_file] = date_metadata
 
-    plt.xlim(1, inargs.window)
-    plt.xlabel('wavenumber ($k$)')
+    ax.set_xlim([1, inargs.window])
+    ax.set_xlabel('wavenumber ($k$)')
     
     if inargs.scaling == 'R2':
         ylabel = 'variance explained ($R_k^2$)'
     else:
         ylabel = inargs.scaling
-    plt.ylabel('average %s' %(ylabel))
-    plt.legend()
+    ax.set_ylabel('average %s' %(ylabel))
+    ax.legend(fontsize='small')
 
     return metadata_dict
 
 
-def timescale_plot(plt, inargs):
+def timescale_plot(ax, inargs):
     """Plot periodogram that compares various timescales."""
 
     if inargs.runmean:
@@ -110,37 +110,40 @@ def timescale_plot(plt, inargs):
 
         spectrum_temporal_mean, spectrum_freqs_1D = transform_data(signal, indep_var, inargs.scaling)
         
-        plt.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
-                 label=str(step), marker='o', color=colors[index])
+        ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
+                label=str(step), marker='o', color=colors[index])
 
-    plt.xlim(1, inargs.window)
-    plt.xlabel('wavenumber ($k$)')
+    ax.set_xlim([1, inargs.window])
+    ax.set_xlabel('wavenumber ($k$)')
     
     if inargs.scaling == 'R2':
         ylabel = 'variance explained ($R_k^2$)'
     else:
         ylabel = inargs.scaling
-    plt.ylabel('average %s' %(ylabel))
-    plt.legend()
-
-    metadata_dict = {inargs.infile: indata.global_atts['history']}
-
-    return metadata_dict
+    ax.set_ylabel('average %s' %(ylabel))
+    ax.legend(fontsize='small')
 
 
 def main(inargs):
     """Run the program."""
     
-    plt.figure()
+    # Initialise plot
+    fig = plt.figure(figsize=inargs.figure_size)
+    if not inargs.figure_size:
+        print 'figure width: %s' %(str(fig.get_figwidth()))
+        print 'figure height: %s' %(str(fig.get_figheight()))
 
-    assert inargs.plot_type in ('timescale', 'composite')
-    if inargs.plot_type == 'timescale':
-        metadata_dict = timescale_plot(plt, inargs)
-    elif inargs.plot_type == 'composite':
-        metadata_dict = composite_plot(plt, inargs)
+    ax1 = plt.subplot(1, 2, 1)
+    ax2 = plt.subplot(1, 2, 2)
 
+    # Generate the plots
+    metadata_dict = composite_plot(ax1, inargs)
+    timescale_plot(ax2, inargs)
+    
     plt.savefig(inargs.outfile, bbox_inches='tight')
     plt.clf()
+
+    # Metadata
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)
     
 
@@ -148,11 +151,11 @@ if __name__ == '__main__':
 
     extra_info =""" 
 example (vortex.earthsci.unimelb.edu.au):
-  /usr/local/anaconda/bin/python plot_timescale_spectrum.py 
-  /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/va_Merra_250hPa_daily_r360x181.nc va 
-  /mnt/meteo0/data/simmonds/dbirving/Merra/data/processed/rwid/zw3/figures/tscale_anal/amp-spectra-va_Merra_250hPa_daily-2000-2009_r360x181-55S.png 
-  --runmean 1 5 10 15 30 60 90 180 365 
-  --latitude -55
+  python plot_timescale_spectrum.py va_data.nc va
+  dates_upper.txt dates_lower.txt output.png 
+  --latitude -55 --scaling R2 
+  --runmean 1 5 30 60 90 180 365 
+  --figure_size 14.0 6.0
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
@@ -160,37 +163,36 @@ author:
 """
 
     description='Plot the density spectrum of a single data file for mutliple timescales'
-    argparser = argparse.ArgumentParser(description=description,
+    parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    argparser.add_argument("infile", type=str, help="Input file name")
-    argparser.add_argument("variable", type=str, help="Input file variable")
-    argparser.add_argument("outfile", type=str, help="Output file name")
+    parser.add_argument("infile", type=str, help="Input file name")
+    parser.add_argument("variable", type=str, help="Input file variable")
+    parser.add_argument("upper_date_file", type=str, help="File containing dates for the upper composite (e.g. > 90th percentile)")
+    parser.add_argument("lower_date_file", type=str, help="File containing dates for the lower composite (e.g. < 10th percentile)")
+    parser.add_argument("outfile", type=str, help="Output file name")
 			
     # Input data options
-    argparser.add_argument("--latitude", type=float,
-                           help="Latitude over which to perform the Fourier Transform [default = entire]")
-    argparser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
-                           help="Time period [default = entire]")
-    argparser.add_argument("--date_files", type=str, nargs=2, metavar=('UPPER', 'LOWER'), default=None, 
-                           help="File containing dates for the upper and lower composite")
+    parser.add_argument("--latitude", type=float,
+                        help="Latitude over which to perform the Fourier Transform [default = entire]")
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
+                        help="Time period [default = entire]")
 
-    # Plot type
-    argparser.add_argument("--plot_type", type=str, choices=('timescale', 'composite'), default='timescale',
-                           help="type of plot to generate [default=timescale]")
+    # Analysis options
+    parser.add_argument("--window", type=int, default=8,
+                        help="upper limit on the frequencies included in the plot [default=8]")
+    parser.add_argument("--runmean", type=int, nargs='*', default=None,
+                        help="running mean windows to include (e.g. 1 5 30 60 90 180 365)")
+    parser.add_argument("--scaling", type=str, choices=('amplitude', 'power', 'R2'), default='R2',
+                        help="scaling applied to the amplitude of the spectal density [default=None]")
 
-    # Output options
-    argparser.add_argument("--window", type=int, default=10,
-                           help="upper limit on the frequencies included in the plot [default=10]")
-    argparser.add_argument("--runmean", type=int, nargs='*',
-                           help="running mean windows to include (e.g. 1 5 30 90 180)")
-    argparser.add_argument("--scaling", type=str, choices=('amplitude', 'power', 'R2'), default='amplitude',
-                           help="scaling applied to the amplitude of the spectal density [default=None]")
+    # Plot options
+    parser.add_argument("--figure_size", type=float, default=(14.0, 6.0), nargs=2, metavar=('WIDTH', 'HEIGHT'),
+                        help="size of the figure (in inches)")
   
-
-    args = argparser.parse_args()            
+    args = parser.parse_args()            
 
     print 'Input file: ', args.infile
     print 'Output file: ', args.outfile  

@@ -77,11 +77,12 @@ ${SEAS_MON_SUMMARY_PLOT} : ${WAVE_STATS}
 
 # Periodograms
 
-## Mutli-timescale spectrum
+## Mutli-timescale and composite spectrum
 
-TSCALE_SPECTRUM=${SPECTRA_DIR}/${VAR}-r2spectrum_${DATASET}_${LEVEL}_daily_${GRID}.png
-${TSCALE_SPECTRUM}: ${V_ORIG}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_timescale_spectrum.py $< ${VAR} $@ --latitude ${LAT_SINGLE} --runmean 1 5 10 15 30 60 90 180 365 --scaling R2
+V_SPECTRUM=${SPECTRA_DIR}/va-r2spectrum_${DATASET}_${LEVEL}_daily_native-${LAT_LABEL}.png
+${V_SPECTRUM}: ${V_ORIG} ${DATES_${INDEX_CAPS}_HIGH} ${DATES_${INDEX_CAPS}_LOW}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_timescale_spectrum.py $< va $(word 2,$^) $(word 3,$^) $@ --latitude ${LAT_SINGLE} --runmean 1 5 10 15 30 60 90 180 365 --scaling R2
+
 
 ## Mutli-file spectrum
 
