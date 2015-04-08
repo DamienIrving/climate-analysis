@@ -191,7 +191,7 @@ def get_time_constraint(start, end):
     else:  
         start_year, start_month, start_day = start.split('-') 
         end_year, end_month, end_day = end.split('-')
-        time_constraint = iris.Constraint(time=lambda t: iris.time.PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)) <= t <= iris.time.PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)))
+        time_constraint = iris.Constraint(time=lambda t: iris.time.PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)) <= t <= iris.time.PartialDateTime(year=int(end_year), month=int(end_month), day=int(end_day)))
 
     return time_constraint
 
@@ -240,7 +240,7 @@ def multiplot(cube_dict, nrows, ncols,
     set_spacing(colourbar_type, colourbar_orientation, subplot_spacing)
 
     if title:
-        fig.suptitle(inargs.title.replace('_',' '))
+        fig.suptitle(title.replace('_',' '))
 
     axis_list = []
     layers = range(0, max_layers + 1)
