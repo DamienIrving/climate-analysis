@@ -61,9 +61,9 @@ ${ENV_CLIM_PLOT} : ${ENV_CLIM}
 
 ## Plot the Hilbert transform
 
-HILBERT_PLOT=${ZWINDEX_DIR}/hilbert/${TSCALE_LABEL}/hilbert_zw_${ENV_WAVE_LABEL}_${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}-${LAT_LABEL}_${PLOT_DATE1}_${PLOT_DATE2}.png 
+HILBERT_PLOT=${ZW_DIR}/figures/hilbert_zw_${ENV_WAVE_LABEL}_va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-${LAT_LABEL}_${PLOT_DATE1}_${PLOT_DATE2}.png 
 ${HILBERT_PLOT}: ${V_RUNMEAN}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< ${VAR} $@ ${PLOT_DIMS} --latitude ${LAT_SINGLE} --dates ${PLOT_DATE1} ${PLOT_DATE2} --wavenumbers ${WAVE_MIN} ${WAVE_MAX} --figure_size 15 6
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_hilbert.py $< va $@ ${PLOT_DIMS} --latitude ${LAT_SINGLE} --dates ${PLOT_DATE1} ${PLOT_DATE2} --wavenumbers ${WAVE_MIN} ${WAVE_MAX} --figure_size 15 6
 
 
 # PWI climatology stats
