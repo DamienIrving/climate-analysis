@@ -29,13 +29,20 @@ date2=$6
 lat=$7
 outfile=$8
 python_exe=$9
-code_dir=$10
+code_dir=${10}
   
 
 #ticks="0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0" 
 #extend=max
 palette=hot_r
 #levels="-150 -120 -90 -60 -30 0 30 60 90 120 150" 
+
+if [ $contvar == 'sf' ] ; then
+    levels="-20 -15 -10 -5 0 5 10 15 20" 
+else
+    echo "Unknown variable: $contvar"
+    exit 1
+fi
 
 
 ${python_exe} ${code_dir}/plot_map.py ${envfile} ${var} ${date1} ${date1} none colour0 1 1 2 \
@@ -46,7 +53,9 @@ ${python_exe} ${code_dir}/plot_map.py ${envfile} ${var} ${date1} ${date1} none c
 --infiles ${contfile} ${contvar} ${date1} ${date1} none contour0 1 \
 --infiles ${contfile} ${contvar} ${date2} ${date2} none contour0 2 \
 --ofile ${outfile} \
---lat_lines ${lat} 0.5 dashed
+--lat_lines ${lat} 0.5 dashed \
+--contour_levels ${levels} \
+--figure_size 10 6
 #--colourbar_ticks ${ticks}
-#--figure_size 9 16 --extend ${extend}
+# --extend ${extend}
 

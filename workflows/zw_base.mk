@@ -47,6 +47,20 @@ SF_ORIG=${DATA_DIR}/sf_${DATASET}_${LEVEL}_daily_native.nc
 ${SF_ORIG} : ${U_ORIG} ${V_ORIG}
 	bash ${DATA_SCRIPT_DIR}/calc_wind_quantities.sh streamfunction $< ua $(word 2,$^) va $@ ${CDO_FIX_SCRIPT} ${CDAT} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
+SF_ANOM_RUNMEAN=${DATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native.nc
+${SF_ANOM_RUNMEAN} : ${SF_ORIG} 
+	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
+	bash ${CDO_FIX_SCRIPT} $@ sf
+
+SF_ZONAL_ANOM=${DATA_DIR}/sf_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc
+${SF_ZONAL_ANOM} : ${SF_ORIG}       
+	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< sf $@ ${CDO_FIX_SCRIPT} ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+
+SF_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
+${SF_ZONAL_ANOM_RUNMEAN} : ${SF_ZONAL_ANOM}
+	cdo ${TSCALE} $< $@
+	bash ${CDO_FIX_SCRIPT} $@ sf
+
 ## Sea surface temperature
 
 TOS_ORIG=${DATA_DIR}/tos_${DATASET}_surface_daily_native-tropicalpacific.nc

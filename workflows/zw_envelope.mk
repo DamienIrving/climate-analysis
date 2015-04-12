@@ -44,10 +44,9 @@ ${TABLE} : ${WAVE_STATS} ${ZW3_INDEX} ${FOURIER_INFO}
 # Envelope plots
 
 ## Plot the envelope for a selection of timesteps
-
-ENV_PLOT=${MAP_DIR}/env/${TSCALE_LABEL}/${VAR}/env${VAR}-${ENV_WAVE_LABEL}-${VAR}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_${GRID}_${PLOT_DATE1}_${PLOT_DATE2}.png 
-${ENV_PLOT}: ${ENV_3D} ${CONTOUR_ZONAL_ANOM_RUNMEAN}
-	bash ${VIS_SCRIPT_DIR}/plot_envelope.sh $< env${VAR} $(word 2,$^) ${CONTOUR_VAR} ${PLOT_DATE1} ${PLOT_DATE2} ${LAT_SINGLE} $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+ENV_PLOT=${MAP_DIR}/envva-${ENV_WAVE_LABEL}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native_${PLOT_DATE1}_${PLOT_DATE2}.png 
+${ENV_PLOT}: ${ENV_RUNMEAN} ${SF_ZONAL_ANOM_RUNMEAN}
+	bash ${VIS_SCRIPT_DIR}/plot_envelope.sh $< envva $(word 2,$^) sf ${PLOT_DATE1} ${PLOT_DATE2} ${LAT_SINGLE} $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 ## Plot the climatological mean envelope
 

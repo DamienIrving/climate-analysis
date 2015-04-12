@@ -403,6 +403,7 @@ def plot_contour(cube, levels, labels_switch,
     """Plot the contours."""
 
     contour_plot = iplt.contour(cube, colors=colour, linewidths=width, levels=levels)
+    print 'contour levels:', contour_plot.levels
     if labels_switch:
         plt.clabel(contour_plot, fmt='%.1f')
 
