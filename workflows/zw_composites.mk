@@ -159,7 +159,7 @@ DATES_INDEX_HIGH_SAM_POS=${INDEX_DIR}/dates_samgt75pct-${INDEX}gt${INDEX_HIGH_TH
 ${DATES_INDEX_HIGH_SAM_POS} : ${DATES_SAM_POS} ${DATES_${INDEX_CAPS}_HIGH}
 	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
 
-DATES_INDEX_HIGH_SAM_NEG=${INDEX_DIR}/dates_samlt75pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
+DATES_INDEX_HIGH_SAM_NEG=${INDEX_DIR}/dates_samlt25pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
 ${DATES_INDEX_HIGH_SAM_NEG} : ${DATES_SAM_NEG} ${DATES_${INDEX_CAPS}_HIGH}
 	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
 

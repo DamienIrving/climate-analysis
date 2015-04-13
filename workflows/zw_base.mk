@@ -61,6 +61,20 @@ ${SF_ZONAL_ANOM_RUNMEAN} : ${SF_ZONAL_ANOM}
 	cdo ${TSCALE} $< $@
 	bash ${CDO_FIX_SCRIPT} $@ sf
 
+## Geopotential height
+
+ZG_ORIG=${DATA_DIR}/zg_${DATASET}_${LEVEL}_daily_native.nc
+
+ZG_ZONAL_ANOM=${DATA_DIR}/zg_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc
+${ZG_ZONAL_ANOM} : ${ZG_ORIG}       
+	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< zg $@ ${CDO_FIX_SCRIPT} ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+
+ZG_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/zg_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
+${ZG_ZONAL_ANOM_RUNMEAN} : ${ZG_ZONAL_ANOM}
+	cdo ${TSCALE} $< $@
+	bash ${CDO_FIX_SCRIPT} $@ zg
+
+
 ## Sea surface temperature
 
 TOS_ORIG=${DATA_DIR}/tos_${DATASET}_surface_daily_native-tropicalpacific.nc
