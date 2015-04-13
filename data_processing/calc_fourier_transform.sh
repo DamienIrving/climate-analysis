@@ -67,4 +67,4 @@ done
 
 cdo -O mergetime ${temp_files[@]} $outfile
 rm ${temp_files[@]}
-bash ${cdofix} ${outfile} env${invar}      # Put back the required attributes that CDO strips
+bash ${cdofix} ${outfile} wave1_amp      # Put back the required attributes that CDO strips
