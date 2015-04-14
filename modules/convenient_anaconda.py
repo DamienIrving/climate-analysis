@@ -13,8 +13,8 @@ Functions:
 # Import general Python modules
 
 import os, sys, pdb
-import numpy
-import pandas
+import numpy, pandas
+from datetime import datetime
 import netCDF4
 
 # Import my modules
@@ -81,7 +81,7 @@ def get_time_axis(time_variable):
     return time_axis
 
 
-def nc_to_df(infile, var_list, lat=None):
+def nc_to_df(infile, var_list, lat=None, datetime_index=False):
     """Convert netCDF to pandas DataFrame.
     
     Args:
@@ -89,7 +89,9 @@ def nc_to_df(infile, var_list, lat=None):
       var_list (list/tuple): List of variables to extract from infile
       lat (list/tuple, optional): Specify latitude details - (min, max, method), 
         where method can be meridional maximum ("mermax") or spatial average ("spatave")
-    
+      datetime_index (bool, optional): Make the output time axis consist of datetime
+        objects     
+
     Returns:
       A pandas DataFrame and the global attributes of the input netCDF file.
     
@@ -118,6 +120,9 @@ def nc_to_df(infile, var_list, lat=None):
         data[:, i+1] = numpy.array(indata.data)
         headers.append(var)
 
-    output = pandas.DataFrame(data, index=map(lambda x: gio.standard_datetime(x), time_axis), columns=headers)
+    if datetime_index:
+        output = pandas.DataFrame(data, index=map(lambda x: datetime.strptime(gio.standard_datetime(x), '%Y-%m-%d'), time_axis), columns=headers)
+    else:
+        output = pandas.DataFrame(data, index=map(lambda x: gio.standard_datetime(x), time_axis), columns=headers)
 
     return output, indata.global_atts['history']
