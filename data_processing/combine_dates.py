@@ -31,24 +31,58 @@ except ImportError:
 
 
 
+def stat_writer(fout, len_primary, len_intersect, len_secondary, season):
+    """Write stats for a given season."""
+
+    primary_statement = 'Total primary %s dates = %i \n' %(season, len_primary) 
+    intersect_statement = 'Total intersection %s dates = %i \n' %(season, len_intersect) 
+    secondary_statement = 'Total secondary %s dates = %i \n' %(season, len_secondary) 
+
+    
+    intersect_primary_ratio = (len_intersect / float(len_primary)) * 100
+    intersect_primary_statement = 'Intersect to primary ratio = %f percent \n' %(intersect_primary_ratio) 
+
+    fout.write(primary_statement)
+    fout.write(secondary_statement)
+    fout.write(intersect_statement)
+    fout.write(intersect_primary_statement)
+
+
 def main(inargs):
     """Run the program."""
 
-    # Initialise with the first file
+    # Read input
     metadata_dict = {}
-    date_list, date_metadata = gio.read_dates(inargs.infiles[0])
-    metadata_dict[inargs.infiles[0]] = date_metadata  
+    primary_date_list, metadata_dict[inargs.primary_infile] = gio.read_dates(inargs.primary_infile)
+    secondary_date_list, metadata_dict[inargs.secondary_infile] = gio.read_dates(inargs.secondary_infile)
 
-    # Loop through the remaining files
-    for date_file in inargs.infiles[1:]:
-        dates, metadata = gio.read_dates(date_file)
-        date_list = list(set(date_list).intersection(dates))
-        metadata_dict[date_file] = metadata
+    # Find the common dates
+    common_date_list = list(set(primary_date_list).intersection(secondary_date_list))
+    common_date_list.sort()
 
-    date_list.sort()
+    # Write some stats to a .dat file
+    season_dict = {'DJF': ['12', '01', '02'],
+                    'MAM': ['03', '04', '05'],
+                    'JJA': ['06', '07', '08'],
+                    'SON': ['09', '10', '11']}
 
-    # Write output
-    gio.write_dates(inargs.outfile, date_list)
+    fname, extension = inargs.outfile.split('.')
+    output_data_file = open(fname+'.dat', 'w')
+
+    stat_writer(output_data_file, len(primary_date_list), len(common_date_list), len(secondary_date_list), 'annual')
+    for season, month_list in season_dict.iteritems():
+        season_filtered_primary_date_list = [date for date in primary_date_list if date.split('-')[1] in month_list]
+        season_filtered_common_date_list = [date for date in common_date_list if date.split('-')[1] in month_list]
+        season_filtered_secondary_date_list = [date for date in secondary_date_list if date.split('-')[1] in month_list]
+
+        stat_writer(output_data_file, len(season_filtered_primary_date_list), 
+                    len(season_filtered_common_date_list), 
+                    len(season_filtered_secondary_date_list), season)
+
+    output_data_file.close()
+
+    # Write output date file
+    gio.write_dates(inargs.outfile, common_date_list)
     gio.write_metadata(ofile=inargs.outfile, file_info=metadata_dict)
 
 
@@ -60,18 +94,21 @@ author:
 
 """
 
-    description='Combine multiple lists of dates into a single list of common dates'
+    description='Combine two lists of dates into a single list of common dates'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    parser.add_argument("primary_infile", type=str, help="Name of the primary input file")
+    parser.add_argument("secondary_infile", type=str, help="Name of the secondary input file")
     parser.add_argument("outfile", type=str, help="Output file name")
-    parser.add_argument("infiles", type=str, nargs='*', help="Input file names")
+
 
     args = parser.parse_args()            
 
-    print 'Input files: ', args.infiles
+    print 'Primary input file: ', args.primary_infile
+    print 'Secondary input file: ', args.secondary_infile
     print 'Output file: ', args.outfile  
 
     main(args)

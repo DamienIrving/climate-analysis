@@ -130,12 +130,12 @@ ${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH}
 
 ## Step 1: Combine the index and nino date lists
 DATES_INDEX_HIGH_ELNINO=${INDEX_DIR}/dates_nino34elnino-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${DATES_INDEX_HIGH_ELNINO} : ${DATES_ELNINO} ${DATES_${INDEX_CAPS}_HIGH}
-	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
+${DATES_INDEX_HIGH_ELNINO} : ${DATES_${INDEX_CAPS}_HIGH} ${DATES_ELNINO}
+	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $< $(word 2,$^) $@
 
 DATES_INDEX_HIGH_LANINA=${INDEX_DIR}/dates_nino34lanina-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${DATES_INDEX_HIGH_LANINA} : ${DATES_LANINA} ${DATES_${INDEX_CAPS}_HIGH}
-	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
+${DATES_INDEX_HIGH_LANINA} : ${DATES_${INDEX_CAPS}_HIGH} ${DATES_LANINA} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $< $(word 2,$^) $@
 
 ## Step 2: Calculate the Nino contour composites
 COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_ELNINO=${COMP_DIR}/sf-composite_nino34elnino-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.nc 
@@ -156,12 +156,12 @@ ${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_NINO_PLOT} : ${COMP_SF_ANOM_RUNMEAN_INDEX_HI
 
 ## Step 1: Combine the index and SAM date lists
 DATES_INDEX_HIGH_SAM_POS=${INDEX_DIR}/dates_samgt75pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${DATES_INDEX_HIGH_SAM_POS} : ${DATES_SAM_POS} ${DATES_${INDEX_CAPS}_HIGH}
-	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
+${DATES_INDEX_HIGH_SAM_POS} : ${DATES_${INDEX_CAPS}_HIGH} ${DATES_SAM_POS}
+	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $< $(word 2,$^) $@
 
 DATES_INDEX_HIGH_SAM_NEG=${INDEX_DIR}/dates_samlt25pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_surface_${TSCALE_LABEL}_native.txt
-${DATES_INDEX_HIGH_SAM_NEG} : ${DATES_SAM_NEG} ${DATES_${INDEX_CAPS}_HIGH}
-	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $@ $< $(word 2,$^)
+${DATES_INDEX_HIGH_SAM_NEG} : ${DATES_${INDEX_CAPS}_HIGH} ${DATES_SAM_NEG}
+	${PYTHON} ${DATA_SCRIPT_DIR}/combine_dates.py $< $(word 2,$^) $@
 
 ## Step 2: Calculate the SAM contour composites
 
