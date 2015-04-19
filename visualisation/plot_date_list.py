@@ -105,7 +105,7 @@ def plot_index_dots(ax, x, index_data, bar_heights, upper_threshold=1.0, lower_t
         ax.plot(x + 0.4, numpy.where(index_data[season] < lower_threshold, bar_heights + top_buffer, None), color=color, marker="^", linestyle='None')
 
 
-def plot_monthly_totals(ax, monthly_data, month_days):
+def plot_monthly_totals(ax, monthly_data, month_days, label=None):
     """Plot a bar chart showing the totals for each month.
 
     Args:
@@ -133,9 +133,11 @@ def plot_monthly_totals(ax, monthly_data, month_days):
     ax.set_ylabel('Percentage of days')
     ax.xaxis.set_ticks(x+width/2.)
     ax.xaxis.set_ticklabels(calendar.month_abbr[1:])
+    if label:
+        ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
 
 
-def plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=None, index_var=None, leg_loc=7):
+def plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=None, index_var=None, leg_loc=7, label=None):
     """Plot a stacked histogram showing the seasonal values for each year."""
      
     # Count up 
@@ -167,6 +169,8 @@ def plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=None, index_var=No
 
     ax.set_ylabel('Total days')
     ax.legend( (pdjf[0], pmam[0], pjja[0], pson[0]), ('DJF', 'MAM', 'JJA', 'SON') )
+    if label:
+        ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
 
     
 def time_filter(df, start_date, end_date):
@@ -206,6 +210,7 @@ def main(inargs):
         nrows = 1
         ncols = len(inargs.plot_types)
 
+    labels = ['(a)', '(b)', '(c)'] 
     for index, plot_type in enumerate(inargs.plot_types):
         assert plot_type in ('monthly_totals_histogram', 'seasonal_values_stackplot')
         
@@ -217,7 +222,7 @@ def main(inargs):
             monthly_filtered_dates_df = fill_out_dates(filtered_dates_df, inargs.start, inargs.end)
             monthly_data = aggregate_data(monthly_filtered_dates_df, timescale='monthly', method='sum') 
             month_days = monthly_filtered_dates_df.groupby(lambda x: x.month).size()
-            plot_monthly_totals(ax, monthly_data, month_days)
+            plot_monthly_totals(ax, monthly_data, month_days, label=labels[index])
         elif plot_type == 'seasonal_values_stackplot':
             seasonal_start, seasonal_end = get_seasonal_bounds(inargs.start, inargs.end)
             seasonal_filtered_dates_df = fill_out_dates(filtered_dates_df, seasonal_start, seasonal_end)
@@ -229,7 +234,8 @@ def main(inargs):
             else:
                 seasonal_index = None
                 index_var = None
-            plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=seasonal_index, index_var=index_var, leg_loc=inargs.leg_loc)
+            plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=seasonal_index, index_var=index_var,
+                                    leg_loc=inargs.leg_loc, label=labels[index])
 
     fig.savefig(inargs.outfile, bbox_inches='tight')
     metadata_dict = {inargs.infile: date_metadata}
