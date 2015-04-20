@@ -6,8 +6,8 @@ To execute any of the workflows:
 1. Update the relevant `config.mk` file with your directory structure and desired options/settings
 2. Replace the `TARGET` in the `config.mk` file with a target taken from one of the other
 makefiles related to that workflow
-3. Run the workflow: e.g. `make -n -B -f zw_applications.mk`
-(`-n` is a dry run where what would have been executed is just printed to the screen)
+3. Run the workflow: e.g. `make -n -B -f zw_applications.mk`  
+(`-n` is a dry run where what would have been executed is just printed to the screen)  
 (`-B` forces all the steps to be executed, not just the ones that need updating)  
 
 #### Zonal wave analysis
