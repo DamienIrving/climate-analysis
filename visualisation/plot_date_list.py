@@ -4,6 +4,7 @@ import os, sys, pdb
 from datetime import datetime
 import argparse, numpy, pandas, calendar
 from pandas.tseries.resample import TimeGrouper
+from scipy import stats
 
 import matplotlib
 matplotlib.use('Agg')
@@ -157,20 +158,24 @@ def plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=None, index_var=No
     end_year = season_counts['MAM'].index[-1].year
 
     x = numpy.arange(start_year, end_year + 1)
-
     pdjf = ax.bar(x, season_counts['DJF'], color='yellow')
     pmam = ax.bar(x, season_counts['MAM'], color='orange', bottom=season_counts['DJF'])
     pjja = ax.bar(x, season_counts['JJA'], color='blue', bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix())
     pson = ax.bar(x, season_counts['SON'], color='green', bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix()+season_counts['JJA'].as_matrix())
 
+    season_counts['annual'] = season_counts['DJF'].as_matrix() + season_counts['MAM'].as_matrix() + season_counts['JJA'].as_matrix() + season_counts['SON'].as_matrix()
     if index_var:
-        bar_heights = season_counts['DJF'].as_matrix() + season_counts['MAM'].as_matrix() + season_counts['JJA'].as_matrix() + season_counts['SON'].as_matrix()
-        plot_index_dots(ax, x, season_index_groupings, bar_heights)
+        plot_index_dots(ax, x, season_index_groupings, annual_totals)
 
     ax.set_ylabel('Total days')
     ax.legend( (pdjf[0], pmam[0], pjja[0], pson[0]), ('DJF', 'MAM', 'JJA', 'SON') )
     if label:
         ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
+
+    # Stats
+    for season, counts in season_counts.iteritems():
+        slope, intercept, r_value, p_value, std_err = stats.linregress(x, counts)
+        print '%s: trend = %f events/year, p = %f' %(season, slope, p_value)
 
     
 def time_filter(df, start_date, end_date):
