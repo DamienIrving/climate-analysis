@@ -10,7 +10,7 @@ The rationale for this approach to reproducible research is outlined
 [here](https://www.authorea.com/users/5641/articles/15874/_show_article).
 
 
-## Directory contents
+## Table of contents
 
 | Directory | Contents |
 | :-------- | :------- |
