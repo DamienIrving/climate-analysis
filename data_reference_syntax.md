@@ -8,13 +8,15 @@ they must have undergone pre-processing
 
 ## Standard variable abbreviations
 
-This list gives the stardard variable id, followed by the `standard_name` / `long_name` (these both need to be the same and have underscores instead of spaces
-to keep iris/cartopy happy).
+This list gives the stardard variable id,
+followed by the `standard_name` / `long_name` 
+(these both need to be the same and have underscores instead of spaces
+to keep [iris/cartopy](http://scitools.org.uk/) happy).
 
 * `zg`, `geopotential_height`: Geopotential height
 * `tas`, `surface_air_temperature`: Surface air temperature
-* `psl`: Sea level pressure
-* `sf`: Streamfunction
+* `psl`, `sea_level_pressure`: Sea level pressure
+* `sf`, `streamfunction`: Streamfunction
 * `ua`, `eastward_wind`: Eastward wind velocity
 * `va`, `northward_wind`: Northward wind velocity
 * `pr`, `precipitation`: Precipitation
@@ -22,8 +24,10 @@ to keep iris/cartopy happy).
 * `vrot`: Northward wind velocity on a rotated sphere (i.e. the north pole has been shifted and the meridional wind re-calculated accordingly) 
 * `envva`, `hilbert_transformed_northward_wind`: Wave envelope calculated via a Hilbert Transform
 
-In order to be compliant with my iris/cartopy plotting routines, all variables should start with these standard names (and have the corresponding unaltered `standard_name` 
-and `long_name`) then things can be appended to the id using underscores (e.g. `tas_DJF`). 
+In order to be compliant with my iris/cartopy plotting routines,
+all variables should start with these standard names 
+(and have the corresponding unaltered `standard_name` and `long_name`)
+then things can be appended to the id using underscores (e.g. `tas_DJF`). 
 
 ## File name syntax
 
@@ -51,11 +55,13 @@ Examples include:
 
 ### More complex file names
 
-`<inside>_<project>_<filters>_<prev-var>_<dataset>_<level>_<time>_<spatial>.nc` 
+`<inside>_<filters>_<prev-var>_<dataset>_<level>_<time>_<spatial>.nc` 
 
 Sub-categories:
 
 * `<inside>`: The variable inside the file. e.g. `tas-composite`, `datelist`
-* `<project>`: `zw3` or `psa`
-* `<filters>`: e.g. `w19`, 
+* `<filters>`: e.g. `samgt90pct` (`gt` and `lt` and used for greater and less than, `pct` for percentile)
+* `<prev-var>`: if it's not obvious what variable `<inside>` was created from, include the previous variable/s
 
+Examples:  
+`tas-composite_pwigt90pct_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native-sh.png`
