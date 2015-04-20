@@ -1,6 +1,16 @@
-# README #
+# README
 
-Each directory contains the following:  
+This repository contains the code I use on a daily basis
+for the analysis and visualisation of climate data.
+Every time I publish a paper,
+I share corresponding log files on Figshare (see my profile page
+[here](http://figshare.com/authors/Damien_Irving/726490))
+that show how the code in this repository was used to generate the key results.
+The rationale for this approach to reproducible research is outlined
+[here](https://www.authorea.com/users/5641/articles/15874/_show_article).
+
+
+## Directory contents
 
 | Directory | Contents |
 | :-------- | :------- |
