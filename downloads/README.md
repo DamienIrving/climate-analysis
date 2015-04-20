@@ -1,6 +1,6 @@
 ## Data download and pre-processing
 
-The pre-processing scripts in this directory ensure that the downloaded data are 
+The pre-processing scripts in this directory ensure that my downloaded data are 
 compliant with the Climate and Forecast Metadata Convention 
 (see [here](http://cf-pcmdi.llnl.gov/) and 
 [here](http://badc.nerc.ac.uk/help/formats/netcdf/index_cf.html) for details) and also
