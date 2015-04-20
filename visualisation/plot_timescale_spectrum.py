@@ -55,7 +55,7 @@ def transform_data(signal, indep_var, scaling):
     return spectrum_temporal_mean, spectrum_freqs_1D
 
 
-def composite_plot(ax, inargs, runave=30):
+def composite_plot(ax, inargs, runave=30, label=None):
     """Plot periodogram that compares composites."""
 
     # Get input data
@@ -70,11 +70,11 @@ def composite_plot(ax, inargs, runave=30):
                       'all timesteps': None}
 
     # Create the plot
-    for label, date_file in composite_dict.iteritems():        
+    for leglabel, date_file in composite_dict.iteritems():        
         data_filtered, date_metadata, size_filtered = calc_composite.filter_dates(indata.data, date_file)
         spectrum_temporal_mean, spectrum_freqs_1D = transform_data(data_filtered, indep_var, inargs.scaling)
 
-        ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, label=label, marker='o')
+        ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, label=leglabel, marker='o')
 
         if date_file:
             metadata_dict[date_file] = date_metadata
@@ -89,10 +89,13 @@ def composite_plot(ax, inargs, runave=30):
     ax.set_ylabel('average %s' %(ylabel))
     ax.legend(fontsize='small')
 
+    if label:
+        ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
+
     return metadata_dict
 
 
-def timescale_plot(ax, inargs):
+def timescale_plot(ax, inargs, label=None):
     """Plot periodogram that compares various timescales."""
 
     if inargs.runmean:
@@ -123,6 +126,9 @@ def timescale_plot(ax, inargs):
     ax.set_ylabel('average %s' %(ylabel))
     ax.legend(fontsize='small')
 
+    if label:
+        ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
+
 
 def main(inargs):
     """Run the program."""
@@ -137,8 +143,8 @@ def main(inargs):
     ax2 = plt.subplot(1, 2, 2)
 
     # Generate the plots
-    metadata_dict = composite_plot(ax1, inargs)
-    timescale_plot(ax2, inargs)
+    metadata_dict = composite_plot(ax1, inargs, label='(a)')
+    timescale_plot(ax2, inargs, label='(b)')
     
     plt.savefig(inargs.outfile, bbox_inches='tight')
     plt.clf()
