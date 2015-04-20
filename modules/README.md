@@ -1,4 +1,14 @@
-Weird things about these modules:  
+## Modules
 
-* `coordinate_rotation.py` requires a library called `css`, that I can only get via downloading UV-CDAT. That means I have to run it with `/usr/local/uvcdat/1.3.0/bin/python` instead of `/usr/local/anaconda/bin/python` on vortex. Since `coordinate_rotation.py` depends on `netcdf_io.py` and UV-CDAT doesn't play nice with `pandas` and `netCDF4`, I can't use those libraries in `netcdf_io.py`
-* To separate convenience functions that work in both anaconda and uvcdat versus those that only work in anaconda, I've created `convenient_universal.py` and `convenient_anaconda.py`  
+These modules contain code that is used across many of my data analysis and visualisation scripts.
+
+### Rationale
+
+This is why the modules are split up the way they are:
+* `coordinate_rotation.py` requires a library called `css`,
+which I can only get via downloading [UV-CDAT](http://uvcdat.llnl.gov/).
+That means I have to run it with `/usr/local/uvcdat/1.3.0/bin/python` instead of `/usr/local/anaconda/bin/python` on vortex.
+Since `coordinate_rotation.py` depends on `netcdf_io.py` and UV-CDAT doesn't play nice with `pandas` and `netCDF4`,
+I can't use those libraries in `netcdf_io.py`
+* To separate convenience functions that work in both anaconda and uvcdat versus those that only work in anaconda, 
+I've created `convenient_universal.py` and `convenient_anaconda.py`  
