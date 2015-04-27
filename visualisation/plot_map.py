@@ -50,7 +50,8 @@ plot_types = ['colour', 'contour', 'uwind', 'vwind', 'hatching']
 
 projections = {'PlateCarree_Greenwich': ccrs.PlateCarree(), # Centred on Greenwich, which means lons go from 0 to 360
                'PlateCarree_Dateline': ccrs.PlateCarree(central_longitude=-180.0),
-               'SouthPolarStereo': ccrs.SouthPolarStereo()}
+               'SouthPolarStereo': ccrs.SouthPolarStereo(),
+               'Orthographic': ccrs.Orthographic(central_longitude=240, central_latitude=-45)}
 
 units_dict = {'ms-1': '$m s^{-1}$',
               'm.s-1': '$m s^{-1}$',
