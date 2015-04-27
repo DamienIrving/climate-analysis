@@ -8,7 +8,7 @@ Included functions:
 # Import general Python modules
 
 import os, sys, pdb, re
-import argparse
+import argparse, operator
 
 import matplotlib
 matplotlib.use('Agg')
@@ -40,6 +40,7 @@ sys.path.append(modules_dir)
 try:
     import general_io as gio
     import netcdf_io as nio
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -343,41 +344,77 @@ def multiplot(cube_dict, nrows, ncols,
 def plot_boxes(box_list, input_projection):
     """Add boxes to the plot.
     
-    Arguments:
-        box  ->  (name, color, style)
+    Args:
+      box (list/tuple): Each item specifies the details of a new 
+        box (name, color, style)
     
     """
     
     for box in box_list: 
-        region, color, style = box
+        name, color, style = box
     
-        assert region in nio.regions.keys()
         assert style in line_style_dict.keys()
+        if name in nio.regions.keys():
+            plot_predefined_box(name, style, color, input_projection)
+        else:
+            plot_shape_file(name, style, color, input_projection)
 
-        south_lat, north_lat = nio.regions[region][0][0: 2]
-        west_lon, east_lon = nio.regions[region][1][0: 2]
+
+def plot_predefined_box(region, style, color, input_projection):
+    """Plot a predefined box."""
+
+    south_lat, north_lat = nio.regions[region][0][0: 2]
+    west_lon, east_lon = nio.regions[region][1][0: 2]
+
+    # Adjust the longitude values as required
+    assert (0.0 <= east_lon <= 360) and  (0.0 <= west_lon <= 360), \
+    """Longitude coordinates for the box must be 0 < lon < 360"""  
+    if (east_lon < west_lon) and (west_lon > 180.0):
+        west_lon = west_lon - 360.0
+    if (east_lon < west_lon) and (west_lon <= 180.0):
+        east_lon = east_lon + 360.0
+
+    # Define the plot borders
+    borders = {}
+    borders['north_lons'] = borders['south_lons'] =  numpy.arange(west_lon, east_lon + 1, 1)
+    borders['south_lats'] = numpy.repeat(south_lat, len(borders['south_lons']))
+    borders['north_lats'] = numpy.repeat(north_lat, len(borders['south_lons']))
+
+    borders['east_lats'] = borders['west_lats'] = numpy.arange(south_lat, north_lat + 1, 1)
+    borders['west_lons'] = numpy.repeat(west_lon, len(borders['west_lats']))
+    borders['east_lons'] = numpy.repeat(east_lon, len(borders['west_lats']))
+
+    for side in ['north', 'south', 'east', 'west']:
+        x, y = borders[side+'_lons'], borders[side+'_lats']
+        plt.plot(x, y, linestyle=line_style_dict[style], color=color, transform=projections[input_projection])
+
+
+def plot_shape_file(infile, style, color, input_projection):
+    """Plot an arbitrary shape whose corners are defined in infile.
+
+    Args:
+      infile (string): Input file with each line containing a lat/lon 
+        pair of shape corners
         
-        # Adjust the longitude values as required
-        assert (0.0 <= east_lon <= 360) and  (0.0 <= west_lon <= 360), \
-        """Longitude coordinates for the box must be 0 < lon < 360"""  
-        if (east_lon < west_lon) and (west_lon > 180.0):
-            west_lon = west_lon - 360.0
-        if (east_lon < west_lon) and (west_lon <= 180.0):
-            east_lon = east_lon + 360.0
+    """
 
-        # Define the plot borders
-        borders = {}
-        borders['north_lons'] = borders['south_lons'] =  numpy.arange(west_lon, east_lon + 1, 1)
-        borders['south_lats'] = numpy.repeat(south_lat, len(borders['south_lons']))
-        borders['north_lats'] = numpy.repeat(north_lat, len(borders['south_lons']))
+    fin = open(infile, 'r')
+    lats = []
+    lons = []
+    for line in fin:
+        pair = line.rstrip('\n')
+        lat, lon = pair.split(',')
+        lats.append(float(lat))
+        lons.append(float(lon))
+    fin.close()
 
-        borders['east_lats'] = borders['west_lats'] = numpy.arange(south_lat, north_lat + 1, 1)
-        borders['west_lons'] = numpy.repeat(west_lon, len(borders['west_lats']))
-        borders['east_lons'] = numpy.repeat(east_lon, len(borders['west_lats']))
+    lons = uconv.adjust_lon_range(lons, radians=False, start=-180)  # seems to only work for range (-180, 180)
+    sorted_lats, sorted_lons = zip(*sorted(zip(lats, lons), key=operator.itemgetter(1)))  # Prevents problem of 0/360 lon crossing
 
-        for side in ['north', 'south', 'east', 'west']:
-            x, y = borders[side+'_lons'], borders[side+'_lats']
-            plt.plot(x, y, linestyle=line_style_dict[style], color=color, transform=projections[input_projection])
+    plt.plot(numpy.array(sorted_lons), numpy.array(sorted_lats), 
+             linestyle=line_style_dict[style], 
+             color=color, 
+             transform=projections[input_projection])
 
 
 def plot_colour(cube, 
@@ -672,7 +709,7 @@ example:
                         
     # Lines and boxes
     parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
-                        help="""draw a box - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
+                        help="""draw a box - name can be predefined or filename, colour can be a predefined name or fraction for grey shading, style can be 'solid' or 'dashed'""")
     parser.add_argument("--lat_lines", type=str, action='append', default=None, nargs=3, metavar=('LAT', 'COLOUR', 'STYLE'),
                         help="""highlight a particular line of latitude - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
 

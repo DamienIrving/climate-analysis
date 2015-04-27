@@ -50,11 +50,10 @@ def main(inargs):
         
         lat_mesh, lon_mesh = nio.coordinate_pairs(lats, lons)
 
-        rot_lats, rot_lons = crot.rotate_spherical(lat_mesh, lon_mesh, phi, theta, psi, invert=True)
-        rot_lons_adjust = uconv.adjust_lon_range(rot_lons, radians=False, start=0.0)
+        rot_lats, rot_lons = crot.rotate_spherical(lat_mesh, lon_mesh, phi, theta, psi, invert=False)
 
         for i in range(0, len(rot_lats)):
-            pair = '%f, %f' %(rot_lats[i], rot_lons_adjust[i])
+            pair = '%f, %f' %(rot_lats[i], rot_lons[i])
             fout.write(pair+'\n')
 
     fout.close()
