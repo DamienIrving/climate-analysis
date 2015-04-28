@@ -208,6 +208,8 @@ def multiplot(cube_dict, nrows, ncols,
               blank_plots=[],
               spstereo_limit=-30,
               max_layers=0,
+              custom_region=None,
+              predefined_region=None,
               #boxes/lines
               box_list=None,
               lat_line_list=None,
@@ -265,6 +267,13 @@ def multiplot(cube_dict, nrows, ncols,
             if output_projection == 'SouthPolarStereo':
                 ax.set_extent((0, 360, -90.0, spstereo_limit), crs=projections[input_projection])
                 grid_labels=False  #iris does not support this yet
+            elif custom_region:
+                west_lon, east_lon, south_lat, north_lat = custom_region
+                ax.set_extent((west_lon, east_lon, south_lat, north_lat), crs=projections[input_projection])
+            elif predefined_region:
+                south_lat, north_lat = nio.regions[predefined_region][0][0: 2]
+                west_lon, east_lon = nio.regions[predefined_region][1][0: 2]
+                ax.set_extent((west_lon, east_lon, south_lat, north_lat), crs=projections[input_projection])
             else:
                 plt.gca().set_global()
 
@@ -624,6 +633,8 @@ def main(inargs):
               blank_plots=blanks,
               spstereo_limit=inargs.spstereo_limit,
               max_layers=max_layers,
+              custom_region=inargs.custom_region,
+              predefined_region=inargs.predefined_region,
               #boxes/lines
               box_list=inargs.boxes,
               lat_line_list=inargs.lat_lines,
@@ -707,6 +718,10 @@ example:
                         help="switch for having gird labels [default: False]")
     parser.add_argument("--spstereo_limit", type=float, default=-30,
                         help="highest latitude to be plotted if the map projection is South Polar Stereographic")
+    parser.add_argument("--custom_region", type=float, nargs=4, metavar=('WESTLON', 'EASTLON', 'SOUTHLAT', 'NORTHLAT'), default=None,
+                        help="custom region to plot [default: None]")
+    parser.add_argument("--predefined_region", type=str, choices=nio.regions.keys(), default=None,
+                        help="name of predefined region to plot [default: None]")
                         
     # Lines and boxes
     parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
