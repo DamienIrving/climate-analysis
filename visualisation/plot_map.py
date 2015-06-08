@@ -248,7 +248,8 @@ def multiplot(cube_dict, nrows, ncols,
 
     axis_list = []
     layers = range(0, max_layers + 1)
-    colour_plot_switch = False    
+    colour_plot_switch = False
+        
     for plotnum in range(1, nrows*ncols + 1):
 
         if not plotnum in blank_plots:
@@ -619,8 +620,11 @@ def main(inargs):
     """Run program."""
 
     # Extract data
-    cube_dict, metadata_dict, plot_set, max_layers = extract_data(inargs.infiles, inargs.input_projection, inargs.output_projection)
-    blanks = get_blanks(inargs.nrows, inargs.ncols, plot_set)    
+    cube_dict, metadata_dict, plot_set, max_layers = extract_data(inargs.infile, inargs.input_projection, inargs.output_projection)
+    if inargs.exclude_blanks:
+        blanks = get_blanks(inargs.nrows, inargs.ncols, plot_set)
+    else:
+        blanks = []
 
     # Creat the plot
     multiplot(cube_dict, inargs.nrows, inargs.ncols,
@@ -691,23 +695,21 @@ example:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     # Input data
-    parser.add_argument("infile", type=str, help="input file name")
-    parser.add_argument("variable", type=str, help="input file variable")
-    parser.add_argument("start", type=str, help="start date in YYYY-MM-DD format (can be none)")
-    parser.add_argument("end", type=str, help="end date in YYY-MM-DD, let START=END for single time step (can be None)")
-    parser.add_argument("timestep", type=str, help="for data with a time axis of len > 1 pick a timestep (can be None)")
-    parser.add_argument("type", type=str, help="plot type: can be uwind, vwind, contour, colour, hatching followed by layer number: e.g. uwind0")
-    parser.add_argument("plotnum", type=str, help="plot number corresponding to infile (grid is filled top left to bottom right)")
     parser.add_argument("nrows", type=int, help="number of rows in the entire grid of plots")
     parser.add_argument("ncols", type=int, help="number of columns in the entire grid of plots")
 
-    parser.add_argument("--infiles", type=str, action='append', default=[], nargs=7,
-                        metavar=('FILENAME', 'VAR', 'START', 'END', 'TIMESTEP', 'TYPE', 'PLOTNUM'),  
-                        help="additional input file name, variable, start date, end date, plot type and plot number [default: None]")
+    parser.add_argument("--infile", type=str, action='append', default=[], nargs=7,
+                        metavar=('FILENAME', 'VAR', 'START(YYYY-MM-DD)', 'END(YYYY-MM-DD)', 
+                                 'TIMESTEP(can be none)', 
+                                 'TYPE/LAYER(e.g. uwind0, vwind0, contour1, colour2, hatching2)', 
+                                 'PLOTNUM'),  
+                        help="input file [default: None]")
     parser.add_argument("--input_projection", type=str, default='PlateCarree_Greenwich', choices=projections.keys(),
                         help="input map projection [default: PlateCarree_Greenwich]") 
 
     # Broad plot options
+    parser.add_argument("--exclude_blanks", action="store_true", default=False,
+                        help="switch for excluding plots that do not plot infile data [default: False]")
     parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
     parser.add_argument("--subplot_spacing", type=float, default=0.05,
@@ -785,6 +787,4 @@ example:
     
 
     args = parser.parse_args()              
-    args.infiles.insert(0, [args.infile, args.variable, args.start, args.end, args.timestep, args.type, args.plotnum])
-
     main(args)
