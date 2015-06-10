@@ -30,6 +30,13 @@ except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
 
+def write_output(fout, lats, lons, side_number):
+    """Write the output file."""
+
+    for i in range(0, len(lats)):
+        data = '%f, %f, %i' %(lats[i], lons[i], side_number)
+        fout.write(data+'\n')
+
 
 def main(inargs):
     """Run the program."""
@@ -37,25 +44,37 @@ def main(inargs):
     fout = open(inargs.outfile, 'w')
     phi, theta, psi = crot.north_pole_to_rotation_angles(inargs.north_pole_lat, inargs.north_pole_lon)
 
-    for side_number in range(0, len(inargs.side)):
-        start_lat, start_lon, end_lat, end_lon = inargs.side[side_number]
+    side_number = 0
+    for side in inargs.side:
+        start_lat, start_lon, end_lat, end_lon = side
         
-        end_lon = uconv.adjust_lon_range(end_lon, radians=False, start=start_lon)[0]
-        assert start_lat <= end_lat, "Latitude values must go south to north"
-        assert start_lon <= end_lon
+        # Check inputs
         assert (start_lat == end_lat) or (start_lon == end_lon), \
         "Each side must be straight (i.e. start_lat == end_lat or start_lon == end_lon)"
+        
+        assert start_lat <= end_lat, "Latitude values must go south to north"
 
+        end_lon = uconv.adjust_lon_range(end_lon, radians=False, start=start_lon)[0]
+        assert start_lon <= end_lon
+ 
+        # Rotate coordinate system              
         lats = numpy.arange(start_lat, end_lat + inargs.resolution, inargs.resolution)
         lons = numpy.arange(start_lon, end_lon + inargs.resolution, inargs.resolution)
         
         lat_mesh, lon_mesh = nio.coordinate_pairs(lats, lons)
-
         rot_lats, rot_lons = crot.rotate_spherical(lat_mesh, lon_mesh, phi, theta, psi, invert=False)
         
-        for i in range(0, len(rot_lats)):
-            data = '%f, %f, %i' %(rot_lats[i], rot_lons[i], side_number)
-            fout.write(data+'\n')
+        # Split into 2 lists if it crosses -180 / 180 (Iris plotting requires (-180, 180])
+        rot_lons = uconv.adjust_lon_range(rot_lons, radians=False, start=-180)
+        if rot_lons[0] > rot_lons[-1]:
+            diffs = numpy.diff(rot_lons)
+            split_point = diffs.argmin() + 1
+            write_output(fout, rot_lats[:split_point], rot_lons[:split_point], side_number)
+            write_output(fout, rot_lats[split_point:], rot_lons[split_point:], side_number + 1)
+            side_number = side_number + 2
+        else:
+            write_output(fout, rot_lats, rot_lons, side_number)
+            side_number = side_number + 1
 
     fout.close()
 

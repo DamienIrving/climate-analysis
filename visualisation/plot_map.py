@@ -429,12 +429,10 @@ def plot_shape_file(infile, style, color, input_projection):
     fin.close()
 
     # Plot each side
-
     for side in range(0, nsides + 1):
-        lons[side] = uconv.adjust_lon_range(lons[side], radians=False, start=-180)  # seems to only work for range (-180, 180)
-        #sorted_lats, sorted_lons = zip(*sorted(zip(lats[side], lons[side]), key=operator.itemgetter(1)))  # Prevents problem of 0/360 lon crossing
+        lons[side] = uconv.adjust_lon_range(lons[side], radians=False, start=-180)  # iris seems to only work for range (-180, 180)
 
-        plt.plot(numpy.array(lats[side]), numpy.array(lons[side]), 
+        plt.plot(numpy.array(lons[side]), numpy.array(lats[side]), 
                  linestyle=line_style_dict[style], 
                  color=color, 
                  transform=projections[input_projection])
@@ -713,9 +711,10 @@ example:
     parser.add_argument("--infile", type=str, action='append', default=[], nargs=7,
                         metavar=('FILENAME', 'VAR', 'START(YYYY-MM-DD)', 'END(YYYY-MM-DD)', 
                                  'TIMESTEP(can be none)', 
-                                 'TYPE/LAYER(e.g. uwind0, vwind0, contour1, colour2, hatching2)', 
+                                 'TYPE/LAYER(e.g. uwind0)', 
                                  'PLOTNUM'),  
-                        help="input file [default: None]")
+                        help="""input file [default: None]:
+                                TYPE can be uwind, vwind, contour, colour or hatching""")
     parser.add_argument("--input_projection", type=str, default='PlateCarree_Greenwich', choices=projections.keys(),
                         help="input map projection [default: PlateCarree_Greenwich]") 
 
@@ -739,9 +738,15 @@ example:
                         
     # Lines and boxes
     parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
-                        help="""draw a box - name can be predefined or filename, colour can be a predefined name or fraction for grey shading, style can be 'solid' or 'dashed'""")
+                        help="""draw a box: 
+                                name can be predefined or filename 
+                                (containing "lat, lon, side" on each line, break -180/180 lon into pieces), 
+                                colour can be a predefined name or fraction for grey shading, 
+                                style can be 'solid' or 'dashed'""")
     parser.add_argument("--lat_lines", type=str, action='append', default=None, nargs=3, metavar=('LAT', 'COLOUR', 'STYLE'),
-                        help="""highlight a particular line of latitude - style can be 'solid' or 'dashed', colour can be a name or fraction for grey shading""")
+                        help="""highlight a particular line of latitude: 
+                                style can be 'solid' or 'dashed', 
+                                colour can be a name or fraction for grey shading""")
 
     # Headings
     parser.add_argument("--title", type=str, default=None,
