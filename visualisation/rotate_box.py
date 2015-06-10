@@ -37,13 +37,14 @@ def main(inargs):
     fout = open(inargs.outfile, 'w')
     phi, theta, psi = crot.north_pole_to_rotation_angles(inargs.north_pole_lat, inargs.north_pole_lon)
 
-    for border_number in range(0, len(inargs.corner) - 1):
-        start_lat, start_lon = inargs.corner[border_number]
-        end_lat, end_lon = inargs.corner[border_number + 1]
+    for side_number in range(0, len(inargs.side)):
+        start_lat, start_lon, end_lat, end_lon = inargs.side[side_number]
         
         end_lon = uconv.adjust_lon_range(end_lon, radians=False, start=start_lon)[0]
         assert start_lat <= end_lat, "Latitude values must go south to north"
         assert start_lon <= end_lon
+        assert (start_lat == end_lat) or (start_lon == end_lon), \
+        "Each side must be straight (i.e. start_lat == end_lat or start_lon == end_lon)"
 
         lats = numpy.arange(start_lat, end_lat + inargs.resolution, inargs.resolution)
         lons = numpy.arange(start_lon, end_lon + inargs.resolution, inargs.resolution)
@@ -51,10 +52,10 @@ def main(inargs):
         lat_mesh, lon_mesh = nio.coordinate_pairs(lats, lons)
 
         rot_lats, rot_lons = crot.rotate_spherical(lat_mesh, lon_mesh, phi, theta, psi, invert=False)
-
+        
         for i in range(0, len(rot_lats)):
-            pair = '%f, %f' %(rot_lats[i], rot_lons[i])
-            fout.write(pair+'\n')
+            data = '%f, %f, %i' %(rot_lats[i], rot_lons[i], side_number)
+            fout.write(data+'\n')
 
     fout.close()
 
@@ -63,7 +64,8 @@ if __name__ == '__main__':
 
     extra_info = """
 example:
-  
+  python rotate_box.py test_box.txt 20 260 --side -2 320 -2 30 --side -2 30 2 30
+  --side 2 320 2 30 --side -2 320 2 320 --resolution 1.0
   
 """
 
@@ -77,10 +79,10 @@ example:
     parser.add_argument("north_pole_lat", type=float, help="latitude of the rotated world north pole")
     parser.add_argument("north_pole_lon", type=float, help="longitude of the rotated world north pole")
     
-    parser.add_argument("--corner", type=float, action='append', nargs=2, metavar=('LAT', 'LON'),  
-                        help="a corner of the shape")
+    parser.add_argument("--side", type=float, action='append', nargs=4, metavar=('START_LAT', 'START_LON', 'END_LAT', 'END_LON'),  
+                        help="a side of the shape")
     parser.add_argument("--resolution", type=float, default=1.0,
-                        help="resolution of the shape (i.e. spacing between plotted points)")
+                        help="resolution of the shape (i.e. step size along lat and lon dimension)")
 
     args = parser.parse_args()              
     main(args)

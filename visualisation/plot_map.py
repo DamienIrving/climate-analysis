@@ -409,23 +409,35 @@ def plot_shape_file(infile, style, color, input_projection):
         
     """
 
+    # Find number of sides in shape
+    with open(infile, 'rb') as fh:
+        nsides = int(fh.readlines()[-1].split(',')[-1])
+
+    lats = {}
+    lons = {}
+    for i in range(0, nsides + 1):
+        lats[i] = []
+        lons[i] = []
+
+    # Extract data from file
     fin = open(infile, 'r')
-    lats = []
-    lons = []
     for line in fin:
-        pair = line.rstrip('\n')
-        lat, lon = pair.split(',')
-        lats.append(float(lat))
-        lons.append(float(lon))
+        data = line.rstrip('\n')
+        lat, lon, side_number = data.split(',')
+        lats[int(side_number)].append(float(lat))
+        lons[int(side_number)].append(float(lon))
     fin.close()
 
-    lons = uconv.adjust_lon_range(lons, radians=False, start=-180)  # seems to only work for range (-180, 180)
-    sorted_lats, sorted_lons = zip(*sorted(zip(lats, lons), key=operator.itemgetter(1)))  # Prevents problem of 0/360 lon crossing
+    # Plot each side
 
-    plt.plot(numpy.array(sorted_lons), numpy.array(sorted_lats), 
-             linestyle=line_style_dict[style], 
-             color=color, 
-             transform=projections[input_projection])
+    for side in range(0, nsides + 1):
+        lons[side] = uconv.adjust_lon_range(lons[side], radians=False, start=-180)  # seems to only work for range (-180, 180)
+        #sorted_lats, sorted_lons = zip(*sorted(zip(lats[side], lons[side]), key=operator.itemgetter(1)))  # Prevents problem of 0/360 lon crossing
+
+        plt.plot(numpy.array(lats[side]), numpy.array(lons[side]), 
+                 linestyle=line_style_dict[style], 
+                 color=color, 
+                 transform=projections[input_projection])
 
 
 def plot_colour(cube, 
