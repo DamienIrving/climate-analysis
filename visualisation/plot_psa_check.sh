@@ -1,5 +1,5 @@
 function usage {
-    echo "USAGE: bash $0 contfile contvar ufile uvar vfile vvar boxfile date outfile plot_type python_exe code_dir"
+    echo "USAGE: bash $0 contfile contvar ufile uvar vfile vvar boxfile python_exe code_dir"
     echo "   contfile:    Input file for contour plot"
     echo "   contvar:     Variable for contour plot"
     echo "   ufile:       Input file name for zonal wind"
@@ -7,16 +7,16 @@ function usage {
     echo "   vfile:       Input file name for meridional wind"
     echo "   vvar:        Variable for meridional wind"
     echo "   boxfile:     File with search path to plot"
-    echo "   date:        Date to plot"
-    echo "   outfile:     Output file name"
-    echo "   plot_type:   quivers or streamlines"
     echo "   python_exe:  Python executable"
     echo "   code_dir:    Directory that plot_map.py is in"
-    echo "   e.g. bash $0 zg_data.nc zg ua_data.nc ua va_data.nc va plot.png /usr/local/anaconda/bin/python ~/climate-analysis/visualisation"
+    echo "   e.g. bash $0 zg_data.nc zg ua_data.nc ua va_data.nc va box.txt /usr/local/anaconda/bin/python ~/climate-analysis/visualisation"
     exit 1
 }
 
-nargs=12
+# bash plot_psa_check.sh /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/sf_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native.nc sf /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/ua_ERAInterim_500hPa_030day-runmean_native.nc ua /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/va_ERAInterim_500hPa_030day-runmean_native.nc va searchbox_pole-20N-260E_segment-225E-335E-10S-10N.txt /usr/local/anaconda/bin/python ~/climate-analysis/visualisation
+
+
+nargs=9
 
 if [ $# -ne $nargs ] ; then
   usage
@@ -29,11 +29,8 @@ uvar=$4
 vfile=$5
 vvar=$6
 boxfile=$7
-date=$8
-outfile=$9
-plot_type=${10}
-python_exe=${11}
-code_dir=${12}
+python_exe=$8
+code_dir=$9
   
 if [[ $cvar == 'zg' ]] ; then
     ticks="-150 -120 -90 -60 -30 0 30 60 90 120 150"     
@@ -46,27 +43,40 @@ else
 fi
 
 
+#projection=PlateCarree_Dateline
+#projection=Orthographic
+projection=SouthPolarStereo
 
-#if [[ $plot_type == 'quivers' ]] ; then
-#elif [[ $plot_type == 'streamlines' ]] ; then
-#else
-#    echo "Unknown plot type: ${plot_type}"
-#    exit 1
-#fi
+years=(2005)    
+#years=(2005 2006)
 
+months=(01)
+#months=(01 02 03 04 05 06 07 08 09 10 11 12)
 
-${python_exe} ${code_dir}/plot_map.py 1 1 \
---output_projection PlateCarree_Dateline \
---infile ${cfile} ${cvar} ${date} ${date} none contour0 1 \
---infile ${ufile} ${uvar} ${date} ${date} none uwind0 1 \
---infile ${vfile} ${vvar} ${date} ${date} none vwind0 1 \
---ofile ${outfile} \
---subplot_headings ${date} \
---flow_type streamlines \
---contour_levels ${ticks} \
---contour_colours 0.3 \
---predefined_region sh \
---boxes ${boxfile} orange solid \
+days=(02 07)
+#days=(02 07 12 17 22 27)
+
+for year in "${years[@]}"; do
+    for month in "${months[@]}"; do
+        for day in "${days[@]}"; do
+
+            date=${year}-${month}-${day}
+
+	    ${python_exe} ${code_dir}/plot_map.py 1 1 \
+	    --output_projection ${projection} \
+	    --infile ${cfile} ${cvar} ${date} ${date} none contour0 1 \
+	    --ofile /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/figures/maps/${year}/psa_check_${date}_${projection}.png \
+	    --subplot_headings ${date} \ 
+	    --contour_levels ${ticks} \
+	    --contour_colours 0.3 \
+	    --boxes ${boxfile} orange solid \
+	    
+        done
+    done
+done
+
+#	    --infile ${ufile} ${uvar} ${date} ${date} none uwind0 1 \
+#	    --infile ${vfile} ${vvar} ${date} ${date} none vwind0 1 \
+#	    --predefined_region sh \
+#           --flow_type streamlines \
 #--streamline_bounds 0 30 \
-
-
