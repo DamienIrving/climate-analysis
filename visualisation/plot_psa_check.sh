@@ -1,11 +1,12 @@
 function usage {
-    echo "USAGE: bash $0 contfile contvar ufile uvar vfile vvar date outfile plot_type python_exe code_dir"
+    echo "USAGE: bash $0 contfile contvar ufile uvar vfile vvar boxfile date outfile plot_type python_exe code_dir"
     echo "   contfile:    Input file for contour plot"
     echo "   contvar:     Variable for contour plot"
     echo "   ufile:       Input file name for zonal wind"
     echo "   uvar:        Variable for zonal wind"
     echo "   vfile:       Input file name for meridional wind"
     echo "   vvar:        Variable for meridional wind"
+    echo "   boxfile:     File with search path to plot"
     echo "   date:        Date to plot"
     echo "   outfile:     Output file name"
     echo "   plot_type:   quivers or streamlines"
@@ -15,7 +16,7 @@ function usage {
     exit 1
 }
 
-nargs=11
+nargs=12
 
 if [ $# -ne $nargs ] ; then
   usage
@@ -27,11 +28,12 @@ ufile=$3
 uvar=$4
 vfile=$5
 vvar=$6
-date=$7
-outfile=$8
-plot_type=$9
-python_exe=${10}
-code_dir=${11}
+boxfile=$7
+date=$8
+outfile=$9
+plot_type=${10}
+python_exe=${11}
+code_dir=${12}
   
 if [[ $cvar == 'zg' ]] ; then
     ticks="-150 -120 -90 -60 -30 0 30 60 90 120 150"     
@@ -53,16 +55,18 @@ fi
 #fi
 
 
-${python_exe} ${code_dir}/plot_map.py ${cfile} ${cvar} ${date} ${date} none contour0 1 1 1 \
+${python_exe} ${code_dir}/plot_map.py 1 1 \
 --output_projection PlateCarree_Dateline \
---infiles ${ufile} ${uvar} ${date} ${date} none uwind0 1 \
---infiles ${vfile} ${vvar} ${date} ${date} none vwind0 1 \
+--infile ${cfile} ${cvar} ${date} ${date} none contour0 1 \
+--infile ${ufile} ${uvar} ${date} ${date} none uwind0 1 \
+--infile ${vfile} ${vvar} ${date} ${date} none vwind0 1 \
 --ofile ${outfile} \
 --subplot_headings ${date} \
 --flow_type streamlines \
 --contour_levels ${ticks} \
 --contour_colours 0.3 \
 --predefined_region sh \
+--boxes ${boxfile} orange solid \
 #--streamline_bounds 0 30 \
 
 
