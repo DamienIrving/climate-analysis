@@ -51,7 +51,8 @@ plot_types = ['colour', 'contour', 'uwind', 'vwind', 'hatching']
 projections = {'PlateCarree_Greenwich': ccrs.PlateCarree(), # Centred on Greenwich, which means lons go from 0 to 360
                'PlateCarree_Dateline': ccrs.PlateCarree(central_longitude=-180.0),
                'SouthPolarStereo': ccrs.SouthPolarStereo(),
-               'Orthographic': ccrs.Orthographic(central_longitude=240, central_latitude=-45)}
+               'Orthographic': ccrs.Orthographic(central_longitude=240, central_latitude=-45),
+               'RotatedPole_260E_20N': ccrs.RotatedPole(pole_longitude=260, pole_latitude=20)}
 
 units_dict = {'ms-1': '$m s^{-1}$',
               'm.s-1': '$m s^{-1}$',
@@ -210,9 +211,8 @@ def multiplot(cube_dict, nrows, ncols,
               max_layers=0,
               custom_region=None,
               predefined_region=None,
-              #boxes/lines
-              box_list=None,
-              lat_line_list=None,
+              #lines
+              line_list=None,
               #headings
               title=None, subplot_headings=None,
               #colourbar
@@ -336,12 +336,9 @@ def multiplot(cube_dict, nrows, ncols,
                 except KeyError:
                     pass
 
-            # Add boxes and lines
-            if box_list:
-                plot_boxes(box_list, input_projection)
-
-            if lat_line_list:
-                plot_lines(lat_line_list, input_projection, line_type='lat')  
+            # Add lines
+            if line_list:
+                plot_lines(line_list, input_projection)
 
             # Add plot features
             plt.gca().coastlines()
@@ -350,92 +347,6 @@ def multiplot(cube_dict, nrows, ncols,
                 set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units)       
 
     fig.savefig(ofile, bbox_inches='tight')
-
-
-def plot_boxes(box_list, input_projection):
-    """Add boxes to the plot.
-    
-    Args:
-      box (list/tuple): Each item specifies the details of a new 
-        box (name, color, style)
-    
-    """
-    
-    for box in box_list: 
-        name, color, style = box
-    
-        assert style in line_style_dict.keys()
-        if name in nio.regions.keys():
-            plot_predefined_box(name, style, color, input_projection)
-        else:
-            plot_shape_file(name, style, color, input_projection)
-
-
-def plot_predefined_box(region, style, color, input_projection):
-    """Plot a predefined box."""
-
-    south_lat, north_lat = nio.regions[region][0][0: 2]
-    west_lon, east_lon = nio.regions[region][1][0: 2]
-
-    # Adjust the longitude values as required
-    assert (0.0 <= east_lon <= 360) and  (0.0 <= west_lon <= 360), \
-    """Longitude coordinates for the box must be 0 < lon < 360"""  
-    if (east_lon < west_lon) and (west_lon > 180.0):
-        west_lon = west_lon - 360.0
-    if (east_lon < west_lon) and (west_lon <= 180.0):
-        east_lon = east_lon + 360.0
-
-    # Define the plot borders
-    borders = {}
-    borders['north_lons'] = borders['south_lons'] =  numpy.arange(west_lon, east_lon + 1, 1)
-    borders['south_lats'] = numpy.repeat(south_lat, len(borders['south_lons']))
-    borders['north_lats'] = numpy.repeat(north_lat, len(borders['south_lons']))
-
-    borders['east_lats'] = borders['west_lats'] = numpy.arange(south_lat, north_lat + 1, 1)
-    borders['west_lons'] = numpy.repeat(west_lon, len(borders['west_lats']))
-    borders['east_lons'] = numpy.repeat(east_lon, len(borders['west_lats']))
-
-    for side in ['north', 'south', 'east', 'west']:
-        x, y = borders[side+'_lons'], borders[side+'_lats']
-        plt.plot(x, y, linestyle=line_style_dict[style], color=color, transform=projections[input_projection])
-
-
-def plot_shape_file(infile, style, color, input_projection):
-    """Plot an arbitrary shape whose corners are defined in infile.
-
-    Args:
-      infile (string): Input file with each line containing a lat/lon 
-        pair of shape corners
-        
-    """
-
-    # Find number of sides in shape
-    with open(infile, 'rb') as fh:
-        nsides = int(fh.readlines()[-1].split(',')[-1])
-
-    lats = {}
-    lons = {}
-    for i in range(0, nsides + 1):
-        lats[i] = []
-        lons[i] = []
-
-    # Extract data from file
-    fin = open(infile, 'r')
-    for line in fin:
-        data = line.rstrip('\n')
-        lat, lon, side_number = data.split(',')
-        lats[int(side_number)].append(float(lat))
-        lons[int(side_number)].append(float(lon))
-    fin.close()
-
-    # Plot each side
-    for side in range(0, nsides + 1):
-        lons[side] = uconv.adjust_lon_range(lons[side], radians=False, start=-180)  # iris seems to only work for range (-180, 180)
-
-        plt.plot(numpy.array(lons[side]), numpy.array(lats[side]), 
-                 linestyle=line_style_dict[style], 
-                 color=color, 
-                 transform=projections[input_projection])
 
 
 def plot_colour(cube, 
@@ -487,25 +398,6 @@ def plot_flow(x, y, u, v, ax, flow_type, input_projection, palette=None, colour_
         ax.quiver(x, y, u, v, transform=projections[input_projection], regrid_shape=40) 
 
 
-def plot_lines(line_list, input_projection, line_type='lat'):
-    """Highlight certain lines of latitude or longitude."""
-
-    assert line_type in ['lat', 'lon']
-
-    for line in line_list: 
-        value, color, style = line
-        assert style in line_style_dict.keys()
-
-        if line_type == 'lat':
-            x = numpy.arange(0, 360, 1)
-            y = numpy.repeat(float(value), x.shape[0])
-        elif line_type == 'lon':
-            y = numpy.arange(-90, 91, 1)
-            x = numpy.repeat(float(value), y.shape[0])
-
-        plt.plot(x, y, linestyle=line_style_dict[style], color=color, transform=projections[input_projection])
-
-
 def plot_hatching(cube, hatch_bounds, hatch_styles):
     """Plot the hatching."""
 
@@ -536,6 +428,33 @@ def plot_hatching(cube, hatch_bounds, hatch_styles):
     #     xPoints = xData[sigPoints] - central_long
     #     yPoints = yData[sigPoints]
     #     plt.scatter(xPoints,yPoints,s=1, c='k', marker='.', alpha=0.5) 
+
+
+def plot_lines(line_list, input_projection):
+    """Add lines to the plot.
+    
+    Args:
+      line_list (list/tuple): Each item specifies the details of a new 
+        line (start_lat, end_lat, start_lon, end_lon, color, style)
+    
+    """
+    
+    for line in line_list: 
+        start_lat, end_lat, start_lon, end_lon, color, style = line
+    
+        assert style in line_style_dict.keys()
+
+        start_lon = uconv.adjust_lon_range(float(start_lon), radians=False, start=0)  
+        end_lon = uconv.adjust_lon_range(float(end_lon), radians=False, start=0)
+        # FIXME: start=0 only works for an input projection of PlateCarree_Greenwich
+        
+        if start_lon > end_lon:
+            end_lon, start_lon = start_lon, end_lon
+        
+        plt.plot(numpy.array([start_lon, end_lon]), numpy.array([float(start_lat), float(end_lat)]), 
+                 linestyle=line_style_dict[style], 
+                 color=color, 
+                 transform=projections[input_projection])
 
 
 def set_global_colourbar(orientation, span, cf, fig, units):
@@ -649,9 +568,8 @@ def main(inargs):
               max_layers=max_layers,
               custom_region=inargs.custom_region,
               predefined_region=inargs.predefined_region,
-              #boxes/lines
-              box_list=inargs.boxes,
-              lat_line_list=inargs.lat_lines,
+              #lines
+              line_list=inargs.line,
               #headings
               title=inargs.title,
               subplot_headings=inargs.subplot_headings,
@@ -737,14 +655,9 @@ example:
                         help="name of predefined region to plot [default: None]")
                         
     # Lines and boxes
-    parser.add_argument("--boxes", type=str, action='append', default=None, nargs=3, metavar=('NAME', 'COLOUR', 'STYLE'),
-                        help="""draw a box: 
-                                name can be predefined or filename 
-                                (containing "lat, lon, side" on each line, break -180/180 lon into pieces), 
-                                colour can be a predefined name or fraction for grey shading, 
-                                style can be 'solid' or 'dashed'""")
-    parser.add_argument("--lat_lines", type=str, action='append', default=None, nargs=3, metavar=('LAT', 'COLOUR', 'STYLE'),
-                        help="""highlight a particular line of latitude: 
+    parser.add_argument("--line", type=str, action='append', default=None, nargs=6, 
+                        metavar=('START_LAT', 'END_LAT', 'START_LON', 'END_LON', 'COLOUR', 'STYLE'),
+                        help="""plot a line: 
                                 style can be 'solid' or 'dashed', 
                                 colour can be a name or fraction for grey shading""")
 
