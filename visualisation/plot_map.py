@@ -1,8 +1,6 @@
 """
 Collection of commonly used functions for plotting spatial data.
 
-Included functions: 
-
 """
 
 # Import general Python modules
@@ -68,20 +66,6 @@ hatch_style_dict = {'dots': '.',
                     'stars': '*'}
 
 
-def check_projection(cube, input_projection):
-    """Check that the specified input projection is correct."""
-
-    coord_names = [coord.name() for coord in cube.coords()]
-    lon_name = next(obj for obj in coord_names if 'lon' in obj)
-    first_lon = cube.coord(lon_name).points[0]
-
-    if input_projection == 'PlateCarree_Greenwich':
-        assert first_lon == 0.0, \
-        'Mismatch between data grid and specified input projection'
-    else:
-        print 'WARNING: There is no test in this script to see if the data grid matches the specifed input projection'
-
-
 def collapse_time(cube, ntimes, timestep):
     """Select the desired timestep from the time axis."""
 
@@ -94,30 +78,30 @@ def collapse_time(cube, ntimes, timestep):
     return new_cube  
 
 
-def extract_data(infile_list, input_projection, output_projection):
+def extract_data(infile_list, output_projection):
     """Extract data."""
-
-    if output_projection == 'SouthPolarStereo':
-        lat_constraint = iris.Constraint(latitude=lambda y: y <= 0.0)
-    else:
-        lat_constraint = iris.Constraint()
 
     cube_dict = {} 
     metadata_dict = {}
     plot_numbers = []
     max_layers=0
     for infile, var, start_date, end_date, timestep, plot_type, plot_number in infile_list:
-        assert plot_type[:-1] in plot_types
-        layer = int(plot_type[-1])
-        if layer > max_layers:
-            max_layers = layer
         
+        # Check input
+        assert plot_type[:-1] in plot_types
+        
+        # Define data constraints
         time_constraint = get_time_constraint(start_date, end_date)
+        if output_projection[int(plot_number) - 1] == 'SouthPolarStereo':
+            lat_constraint = iris.Constraint(latitude=lambda y: y <= 0.0)
+        else:
+            lat_constraint = iris.Constraint()
+
+        # Read data
         standard_name = get_standard_name(var)
         with iris.FUTURE.context(cell_datetime_objects=True):
             new_cube = iris.load_cube(infile, standard_name & time_constraint & lat_constraint)       
 
-        check_projection(new_cube, input_projection)
         coord_names = [coord.name() for coord in new_cube.coords()]
         if 'time' in coord_names:
             ntimes = len(new_cube.coords('time')[0].points)
@@ -128,9 +112,14 @@ def extract_data(infile_list, input_projection, output_projection):
                     timestep = None
                 new_cube = collapse_time(new_cube, ntimes, timestep)
 
+        # Define outputs
         cube_dict[(plot_type, int(plot_number))] = new_cube
         metadata_dict[infile] = new_cube.attributes['history']
         plot_numbers.append(int(plot_number))
+
+        layer = int(plot_type[-1])
+        if layer > max_layers:
+            max_layers = layer
 
     return cube_dict, metadata_dict, set(plot_numbers), max_layers
 
@@ -200,15 +189,15 @@ def get_time_constraint(start, end):
 
 
 def multiplot(cube_dict, nrows, ncols,
-              input_projection='PlateCarree_Greenwich',
-              #broad plot options
+              #size, spacing, projection, etc
               figure_size=None,
               subplot_spacing=0.05,
-              output_projection='PlateCarree_Dateline',
+              output_projection=None,
               grid_labels=False,
               blank_plots=[],
-              spstereo_limit=-30,
               max_layers=0,
+              #spatial bounds
+              spstereo_limit=-30,
               custom_region=None,
               predefined_region=None,
               #lines
@@ -249,12 +238,15 @@ def multiplot(cube_dict, nrows, ncols,
     axis_list = []
     layers = range(0, max_layers + 1)
     colour_plot_switch = False
+
+    if not output_projection:
+        output_projection = ['PlateCarree_Dateline'] * (nrows * ncols)
         
     for plotnum in range(1, nrows*ncols + 1):
 
         if not plotnum in blank_plots:
 
-            ax = plt.subplot(nrows, ncols, plotnum, projection=projections[output_projection])
+            ax = plt.subplot(nrows, ncols, plotnum, projection=projections[output_projection[plotnum - 1]])
             plt.sca(ax)
 
             # Mini header
@@ -265,16 +257,16 @@ def multiplot(cube_dict, nrows, ncols,
                 pass
 
             # Set limits
-            if output_projection == 'SouthPolarStereo':
-                ax.set_extent((0, 360, -90.0, spstereo_limit), crs=projections[input_projection])
+            if output_projection[plotnum - 1] == 'SouthPolarStereo':
+                ax.set_extent((0, 360, -90.0, spstereo_limit), crs=projections['PlateCarree_Greenwich'])
                 grid_labels=False  #iris does not support this yet
             elif custom_region:
                 west_lon, east_lon, south_lat, north_lat = custom_region
-                ax.set_extent((west_lon, east_lon, south_lat, north_lat), crs=projections[input_projection])
+                ax.set_extent((west_lon, east_lon, south_lat, north_lat), crs=projections['PlateCarree_Greenwich'])
             elif predefined_region:
                 south_lat, north_lat = nio.regions[predefined_region][0][0: 2]
                 west_lon, east_lon = nio.regions[predefined_region][1][0: 2]
-                ax.set_extent((west_lon, east_lon, south_lat, north_lat), crs=projections[input_projection])
+                ax.set_extent((west_lon, east_lon, south_lat, north_lat), crs=projections['PlateCarree_Greenwich'])
             else:
                 plt.gca().set_global()
 
@@ -301,11 +293,12 @@ def multiplot(cube_dict, nrows, ncols,
                 try:
                     u_cube = cube_dict[(uwind_label, plotnum)]
                     v_cube = cube_dict[(vwind_label, plotnum)]
+                    
                     x = u_cube.coords('longitude')[0].points
                     y = u_cube.coords('latitude')[0].points
                     u = u_cube.data
                     v = v_cube.data
-                    plot_flow(x, y, u, v, ax, flow_type, input_projection,
+                    plot_flow(x, y, u, v, ax, flow_type,
                               palette=streamline_palette, colour_bounds=streamline_bounds)
                 except KeyError:
                     pass
@@ -338,7 +331,7 @@ def multiplot(cube_dict, nrows, ncols,
 
             # Add lines
             if line_list:
-                plot_lines(line_list, input_projection)
+                plot_lines(line_list)
 
             # Add plot features
             plt.gca().coastlines()
@@ -349,7 +342,7 @@ def multiplot(cube_dict, nrows, ncols,
     fig.savefig(ofile, bbox_inches='tight')
 
 
-def plot_colour(cube, 
+def plot_colour(cube,
                 colour_type, colourbar_type, 
                 palette, extend, ticks):
     """Plot the colour plot."""
@@ -377,7 +370,7 @@ def plot_contour(cube, levels, labels_switch,
         plt.clabel(contour_plot, fmt='%.1f')
 
     
-def plot_flow(x, y, u, v, ax, flow_type, input_projection, palette=None, colour_bounds=None):
+def plot_flow(x, y, u, v, ax, flow_type, palette=None, colour_bounds=None):
     """Plot quivers or streamlines."""
 
     assert flow_type in ['streamlines', 'quivers']
@@ -392,10 +385,10 @@ def plot_flow(x, y, u, v, ax, flow_type, input_projection, palette=None, colour_
 
     if flow_type == 'streamlines':
         magnitude = (u ** 2 + v ** 2) ** 0.5
-        ax.streamplot(x, y, u, v, transform=projections[input_projection], linewidth=2, density=2,
+        ax.streamplot(x, y, u, v, linewidth=2, density=2,
                       color=magnitude, cmap=cmap, norm=norm)
     elif flow_type == 'quivers':
-        ax.quiver(x, y, u, v, transform=projections[input_projection], regrid_shape=40) 
+        ax.quiver(x, y, u, v, regrid_shape=40) 
 
 
 def plot_hatching(cube, hatch_bounds, hatch_styles):
@@ -430,27 +423,24 @@ def plot_hatching(cube, hatch_bounds, hatch_styles):
     #     plt.scatter(xPoints,yPoints,s=1, c='k', marker='.', alpha=0.5) 
 
 
-def plot_lines(line_list, input_projection):
+def plot_lines(line_list):
     """Add lines to the plot.
     
     Args:
       line_list (list/tuple): Each item specifies the details of a new 
-        line (start_lat, end_lat, start_lon, end_lon, color, style)
+        line (start_lat, end_lat, start_lon, end_lon, color, style, input_projection)
     
     """
     
     for line in line_list: 
-        start_lat, end_lat, start_lon, end_lon, color, style = line
+        start_lat, end_lat, start_lon, end_lon, color, style, input_projection = line
     
         assert style in line_style_dict.keys()
 
         start_lon = uconv.adjust_lon_range(float(start_lon), radians=False, start=0)  
         end_lon = uconv.adjust_lon_range(float(end_lon), radians=False, start=0)
         # FIXME: start=0 only works for an input projection of PlateCarree_Greenwich
-        
-        if start_lon > end_lon:
-            end_lon, start_lon = start_lon, end_lon
-        
+
         plt.plot(numpy.array([start_lon, end_lon]), numpy.array([float(start_lat), float(end_lat)]), 
                  linestyle=line_style_dict[style], 
                  color=color, 
@@ -549,7 +539,7 @@ def main(inargs):
     """Run program."""
 
     # Extract data
-    cube_dict, metadata_dict, plot_set, max_layers = extract_data(inargs.infile, inargs.input_projection, inargs.output_projection)
+    cube_dict, metadata_dict, plot_set, max_layers = extract_data(inargs.infile, inargs.output_projection)
     if inargs.exclude_blanks:
         blanks = get_blanks(inargs.nrows, inargs.ncols, plot_set)
     else:
@@ -557,15 +547,15 @@ def main(inargs):
 
     # Creat the plot
     multiplot(cube_dict, inargs.nrows, inargs.ncols,
-              input_projection=inargs.input_projection,
-              #broad plot options
+              #size, spacing, projection, etc
               output_projection=inargs.output_projection,
               figure_size=inargs.figure_size,
               subplot_spacing=inargs.subplot_spacing,
               grid_labels=inargs.grid_labels,
               blank_plots=blanks,
-              spstereo_limit=inargs.spstereo_limit,
               max_layers=max_layers,
+              #spatial bounds
+              spstereo_limit=inargs.spstereo_limit,
               custom_region=inargs.custom_region,
               predefined_region=inargs.predefined_region,
               #lines
@@ -632,21 +622,21 @@ example:
                                  'TYPE/LAYER(e.g. uwind0)', 
                                  'PLOTNUM'),  
                         help="""input file [default: None]:
-                                TYPE can be uwind, vwind, contour, colour or hatching""")
-    parser.add_argument("--input_projection", type=str, default='PlateCarree_Greenwich', choices=projections.keys(),
-                        help="input map projection [default: PlateCarree_Greenwich]") 
+                                TYPE can be uwind, vwind, contour, colour or hatching
+                                PLOTNUM starts at 1, goes top left to bottom right""")
 
-    # Broad plot options
+    # Plot size, spacing, projection etc
+    parser.add_argument("--output_projection", type=str, nargs='*', choices=projections.keys(), default=None,
+                        help="""output map projection [default: all PlateCarree_Dateline]
+                                (in order from top left to bottom right, write none for a blank)""")
     parser.add_argument("--exclude_blanks", action="store_true", default=False,
                         help="switch for excluding plots that do not plot infile data [default: False]")
     parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
     parser.add_argument("--subplot_spacing", type=float, default=0.05,
                         help="minimum spacing between subplots [default=0.05]")
-    parser.add_argument("--output_projection", type=str, default='PlateCarree_Dateline', choices=projections.keys(),
-                        help="output map projection [default: PlateCarree_Dateline]")
-    parser.add_argument("--grid_labels", action="store_true", default=False,
-                        help="switch for having gird labels [default: False]")
+
+    # Spatial bounds
     parser.add_argument("--spstereo_limit", type=float, default=-30,
                         help="highest latitude to be plotted if the map projection is South Polar Stereographic")
     parser.add_argument("--custom_region", type=float, nargs=4, metavar=('WESTLON', 'EASTLON', 'SOUTHLAT', 'NORTHLAT'), default=None,
@@ -654,12 +644,14 @@ example:
     parser.add_argument("--predefined_region", type=str, choices=nio.regions.keys(), default=None,
                         help="name of predefined region to plot [default: None]")
                         
-    # Lines and boxes
-    parser.add_argument("--line", type=str, action='append', default=None, nargs=6, 
-                        metavar=('START_LAT', 'END_LAT', 'START_LON', 'END_LON', 'COLOUR', 'STYLE'),
+    # Lines and labels
+    parser.add_argument("--line", type=str, action='append', default=None, nargs=7, 
+                        metavar=('START_LAT', 'END_LAT', 'START_LON', 'END_LON', 'COLOUR', 'STYLE', 'PROJECTION'),
                         help="""plot a line: 
                                 style can be 'solid' or 'dashed', 
                                 colour can be a name or fraction for grey shading""")
+    parser.add_argument("--grid_labels", action="store_true", default=False,
+                        help="switch for having gird labels [default: False]")
 
     # Headings
     parser.add_argument("--title", type=str, default=None,
