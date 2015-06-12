@@ -1,22 +1,21 @@
 function usage {
-    echo "USAGE: bash $0 contfile contvar ufile uvar vfile vvar boxfile python_exe code_dir"
+    echo "USAGE: bash $0 contfile contvar ufile uvar vfile vvar python_exe code_dir"
     echo "   contfile:    Input file for contour plot"
     echo "   contvar:     Variable for contour plot"
     echo "   ufile:       Input file name for zonal wind"
     echo "   uvar:        Variable for zonal wind"
     echo "   vfile:       Input file name for meridional wind"
     echo "   vvar:        Variable for meridional wind"
-    echo "   boxfile:     File with search path to plot"
     echo "   python_exe:  Python executable"
     echo "   code_dir:    Directory that plot_map.py is in"
     echo "   e.g. bash $0 zg_data.nc zg ua_data.nc ua va_data.nc va box.txt /usr/local/anaconda/bin/python ~/climate-analysis/visualisation"
     exit 1
 }
 
-# bash plot_psa_check.sh /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/sf_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native.nc sf /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/ua_ERAInterim_500hPa_030day-runmean_native.nc ua /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/va_ERAInterim_500hPa_030day-runmean_native.nc va searchbox_pole-20N-260E_segment-225E-335E-10S-10N.txt /usr/local/anaconda/bin/python ~/climate-analysis/visualisation
+# bash plot_psa_check.sh /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/sf_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native.nc sf /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/ua_ERAInterim_500hPa_030day-runmean_native.nc ua /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/va_ERAInterim_500hPa_030day-runmean_native.nc va /usr/local/anaconda/bin/python ~/climate-analysis/visualisation
 
 
-nargs=9
+nargs=8
 
 if [ $# -ne $nargs ] ; then
   usage
@@ -28,9 +27,8 @@ ufile=$3
 uvar=$4
 vfile=$5
 vvar=$6
-boxfile=$7
-python_exe=$8
-code_dir=$9
+python_exe=$7
+code_dir=$8
   
 if [[ $cvar == 'zg' ]] ; then
     ticks="-150 -120 -90 -60 -30 0 30 60 90 120 150"     
@@ -42,10 +40,6 @@ else
     exit 1
 fi
 
-
-#projection=PlateCarree_Dateline
-#projection=Orthographic
-projection=SouthPolarStereo
 
 years=(2005)    
 #years=(2005 2006)
@@ -61,15 +55,25 @@ for year in "${years[@]}"; do
         for day in "${days[@]}"; do
 
             date=${year}-${month}-${day}
+            ofile=/mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/figures/maps/${year}/psa_check_${date}.png
 
-	    ${python_exe} ${code_dir}/plot_map.py 1 1 \
-	    --output_projection ${projection} \
+	    ${python_exe} ${code_dir}/plot_map.py 1 3 \
+	    --output_projection PlateCarree_Dateline Orthographic SouthPolarStereo \
 	    --infile ${cfile} ${cvar} ${date} ${date} none contour0 1 \
-	    --ofile /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/figures/maps/${year}/psa_check_${date}_${projection}.png \
-	    --subplot_headings ${date} \ 
+            --infile ${cfile} ${cvar} ${date} ${date} none contour0 2 \
+            --infile ${cfile} ${cvar} ${date} ${date} none contour0 3 \
+	    --ofile ${ofile} \
+	    --title ${date} \
 	    --contour_levels ${ticks} \
 	    --contour_colours 0.3 \
-	    --boxes ${boxfile} orange solid \
+            --line -10 -10 115 225 blue solid RotatedPole_260E_20N \
+            --line 10 10 115 225 blue solid RotatedPole_260E_20N \
+            --line -10 10 115 115 blue solid RotatedPole_260E_20N \
+            --line -10 10 225 225 blue solid RotatedPole_260E_20N \
+            --spstereo_limit -20 \
+            --figure_size 16.0 6.5
+            
+            echo ${ofile}
 	    
         done
     done
