@@ -71,7 +71,8 @@ for year in "${years[@]}"; do
             --line -10 10 115 115 blue solid RotatedPole_260E_20N \
             --line -10 10 225 225 blue solid RotatedPole_260E_20N \
             --spstereo_limit -20 \
-            --figure_size 16.0 6.5
+            --figure_size 16.0 6.5 \
+            --region sh None None
             
             echo ${ofile}
 	    
@@ -81,6 +82,4 @@ done
 
 #	    --infile ${ufile} ${uvar} ${date} ${date} none uwind0 1 \
 #	    --infile ${vfile} ${vvar} ${date} ${date} none vwind0 1 \
-#	    --predefined_region sh \
 #           --flow_type streamlines \
-#--streamline_bounds 0 30 \

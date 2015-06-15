@@ -192,14 +192,13 @@ def multiplot(cube_dict, nrows, ncols,
               #size, spacing, projection, etc
               figure_size=None,
               subplot_spacing=0.05,
-              output_projection=None,
+              output_projection=['PlateCarree_Dateline',],
               grid_labels=False,
               blank_plots=[],
               max_layers=0,
               #spatial bounds
               spstereo_limit=-30,
-              custom_region=None,
-              predefined_region=None,
+              region=['None',],
               #lines
               line_list=None,
               #headings
@@ -239,14 +238,25 @@ def multiplot(cube_dict, nrows, ncols,
     layers = range(0, max_layers + 1)
     colour_plot_switch = False
 
-    if not output_projection:
-        output_projection = ['PlateCarree_Dateline'] * (nrows * ncols)
-        
+    if len(output_projection) == 1:
+        output_projection = output_projection * (nrows * ncols)
+    assert len(output_projection) == (nrows * ncols), \
+    "Must specify an output projection for each plot"
+
+    if len(region) == 1:
+        region = region * (nrows * ncols)
+    assert len(region) == (nrows * ncols), \
+    "Must specify a region for each plot"
+   
     for plotnum in range(1, nrows*ncols + 1):
 
         if not plotnum in blank_plots:
 
-            ax = plt.subplot(nrows, ncols, plotnum, projection=projections[output_projection[plotnum - 1]])
+            out_proj_name = output_projection[plotnum - 1]
+            out_proj_object = projections[out_proj_name]
+            out_region_name = region[plotnum - 1]
+
+            ax = plt.subplot(nrows, ncols, plotnum, projection=out_proj_object)
             plt.sca(ax)
 
             # Mini header
@@ -257,16 +267,13 @@ def multiplot(cube_dict, nrows, ncols,
                 pass
 
             # Set limits
-            if output_projection[plotnum - 1] == 'SouthPolarStereo':
+            if out_proj_name == 'SouthPolarStereo':
                 ax.set_extent((0, 360, -90.0, spstereo_limit), crs=projections['PlateCarree_Greenwich'])
                 grid_labels=False  #iris does not support this yet
-            elif custom_region:
-                west_lon, east_lon, south_lat, north_lat = custom_region
-                ax.set_extent((west_lon, east_lon, south_lat, north_lat), crs=projections['PlateCarree_Greenwich'])
-            elif predefined_region:
-                south_lat, north_lat = nio.regions[predefined_region][0][0: 2]
-                west_lon, east_lon = nio.regions[predefined_region][1][0: 2]
-                ax.set_extent((west_lon, east_lon, south_lat, north_lat), crs=projections['PlateCarree_Greenwich'])
+            elif out_region_name != 'None':
+                south_lat, north_lat = nio.regions[out_region_name][0][0: 2]
+                west_lon, east_lon = nio.regions[out_region_name][1][0: 2]
+                ax.set_extent((west_lon, east_lon, south_lat, north_lat), crs=out_proj_object)
             else:
                 plt.gca().set_global()
 
@@ -556,8 +563,7 @@ def main(inargs):
               max_layers=max_layers,
               #spatial bounds
               spstereo_limit=inargs.spstereo_limit,
-              custom_region=inargs.custom_region,
-              predefined_region=inargs.predefined_region,
+              region=inargs.region,
               #lines
               line_list=inargs.line,
               #headings
@@ -626,9 +632,11 @@ example:
                                 PLOTNUM starts at 1, goes top left to bottom right""")
 
     # Plot size, spacing, projection etc
-    parser.add_argument("--output_projection", type=str, nargs='*', choices=projections.keys(), default=None,
-                        help="""output map projection [default: all PlateCarree_Dateline]
-                                (in order from top left to bottom right, write none for a blank)""")
+    parser.add_argument("--output_projection", type=str, nargs='*', choices=projections.keys(), default=['PlateCarree_Dateline',],
+                        help="""output map projection: 
+                                default is all PlateCarree_Dateline
+                                specify a projection for all plots (order top left to bottom right, write none for blank)
+                                or indicate a single choice to be applied to all plots""")
     parser.add_argument("--exclude_blanks", action="store_true", default=False,
                         help="switch for excluding plots that do not plot infile data [default: False]")
     parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
@@ -637,12 +645,15 @@ example:
                         help="minimum spacing between subplots [default=0.05]")
 
     # Spatial bounds
+    region_choices = nio.regions.keys()
+    region_choices.append('None')
+    parser.add_argument("--region", type=str, nargs='*', choices=region_choices, default=[None,],
+                        help="""name of predefined region to plot:
+                                default is all global
+                                specify a region for all plots (order top left to bottom right, write none for blank)
+                                or indicate a single choice to be applied to all plots""")
     parser.add_argument("--spstereo_limit", type=float, default=-30,
                         help="highest latitude to be plotted if the map projection is South Polar Stereographic")
-    parser.add_argument("--custom_region", type=float, nargs=4, metavar=('WESTLON', 'EASTLON', 'SOUTHLAT', 'NORTHLAT'), default=None,
-                        help="custom region to plot [default: None]")
-    parser.add_argument("--predefined_region", type=str, choices=nio.regions.keys(), default=None,
-                        help="name of predefined region to plot [default: None]")
                         
     # Lines and labels
     parser.add_argument("--line", type=str, action='append', default=None, nargs=7, 
