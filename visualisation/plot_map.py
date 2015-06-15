@@ -38,7 +38,6 @@ sys.path.append(modules_dir)
 try:
     import general_io as gio
     import netcdf_io as nio
-    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -444,11 +443,10 @@ def plot_lines(line_list):
     
         assert style in line_style_dict.keys()
 
-        start_lon = uconv.adjust_lon_range(float(start_lon), radians=False, start=0)  
-        end_lon = uconv.adjust_lon_range(float(end_lon), radians=False, start=0)
-        # FIXME: start=0 only works for an input projection of PlateCarree_Greenwich
+        lons = iris.analysis.cartography.wrap_lons(numpy.array([float(start_lon), float(end_lon)]), 0, 360)
+        # FIXME: start=0 might not work for all input/output projection combos
 
-        plt.plot(numpy.array([start_lon, end_lon]), numpy.array([float(start_lat), float(end_lat)]), 
+        plt.plot(lons, numpy.array([float(start_lat), float(end_lat)]), 
                  linestyle=line_style_dict[style], 
                  color=color, 
                  transform=projections[input_projection])
