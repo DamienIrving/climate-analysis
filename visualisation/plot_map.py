@@ -77,6 +77,20 @@ def collapse_time(cube, ntimes, timestep):
     return new_cube  
 
 
+def duplicate_input(in_list, nrows, ncols, in_type):
+    """Duplicate an input value (if necessary) to match number of plots."""
+
+    if len(in_list) == 1:
+        out_list = in_list * (nrows * ncols)
+    else:
+        out_list = in_list
+
+    assert len(out_list) == (nrows * ncols), \
+    "Must specify an output %s for each plot" %(in_type)
+
+    return out_list
+
+
 def extract_data(infile_list, output_projection):
     """Extract data."""
 
@@ -237,15 +251,13 @@ def multiplot(cube_dict, nrows, ncols,
     layers = range(0, max_layers + 1)
     colour_plot_switch = False
 
+    output_projection = duplicate_input(output_projection, nrows, ncols, "projection")
+    region = duplicate_input(region, nrows, ncols, "region")
+
     if len(output_projection) == 1:
         output_projection = output_projection * (nrows * ncols)
     assert len(output_projection) == (nrows * ncols), \
     "Must specify an output projection for each plot"
-
-    if len(region) == 1:
-        region = region * (nrows * ncols)
-    assert len(region) == (nrows * ncols), \
-    "Must specify a region for each plot"
    
     for plotnum in range(1, nrows*ncols + 1):
 
@@ -542,6 +554,11 @@ def get_blanks(nrows, ncols, plot_set):
 
 def main(inargs):
     """Run program."""
+
+    # Adjust user inputs if required
+    inargs.output_projection = duplicate_input(inargs.output_projection,
+                                               inargs.nrows, inargs.ncols,
+                                               "projection")
 
     # Extract data
     cube_dict, metadata_dict, plot_set, max_layers = extract_data(inargs.infile, inargs.output_projection)
