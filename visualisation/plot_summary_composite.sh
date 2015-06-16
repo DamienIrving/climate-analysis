@@ -96,7 +96,7 @@ elif [[ $plot_type == 'streamlines' ]] ; then
 --ofile ${outfile} \
 --flow_type streamlines \
 --contour_levels ${ticks} \
---exclude_blanks --streamline_colour 0.9
+--exclude_blanks --streamline_colour 0.7
 
 
 else
