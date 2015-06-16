@@ -456,19 +456,33 @@ def plot_lines(line_list):
     
     Args:
       line_list (list/tuple): Each item specifies the details of a new 
-        line (start_lat, end_lat, start_lon, end_lon, color, style, input_projection)
+        line (start_lat, end_lat, start_lon, end_lon, color, style, input_projection, resolution)
     
     """
     
     for line in line_list: 
-        start_lat, end_lat, start_lon, end_lon, color, style, input_projection = line
+        start_lat, end_lat, start_lon, end_lon, color, style, input_projection, resolution = line
     
         assert style in line_style_dict.keys()
+        assert resolution in ['high', 'low']
 
         lons = iris.analysis.cartography.wrap_lons(numpy.array([float(start_lon), float(end_lon)]), 0, 360)
         # FIXME: start=0 might not work for all input/output projection combos
 
-        plt.plot(lons, numpy.array([float(start_lat), float(end_lat)]), 
+        if resolution == 'low':
+            lats = numpy.array([float(start_lat), float(end_lat)])         
+        elif resolution == 'high':
+	    assert start_lat == end_lat or start_lon == end_lon, \
+	    "High res lines need constant lat or lon in reference coordinate system"
+
+            if start_lat == end_lat:
+                lons = numpy.arange(lons[0], lons[-1], 0.5)
+                lats = numpy.repeat(start_lat, len(lons))
+            else:
+                lats = numpy.arange(start_lat, end_lat, 0.5)
+                lons = numpy.repeat(lons[0], len(lats))
+            
+        plt.plot(lons, lats, 
                  linestyle=line_style_dict[style], 
                  color=color, 
                  transform=projections[input_projection])
@@ -683,11 +697,12 @@ example:
                         help="highest latitude to be plotted if the map projection is South Polar Stereographic")
                         
     # Lines and labels
-    parser.add_argument("--line", type=str, action='append', default=None, nargs=7, 
-                        metavar=('START_LAT', 'END_LAT', 'START_LON', 'END_LON', 'COLOUR', 'STYLE', 'PROJECTION'),
+    parser.add_argument("--line", type=str, action='append', default=None, nargs=8, 
+                        metavar=('START_LAT', 'END_LAT', 'START_LON', 'END_LON', 'COLOUR', 'STYLE', 'PROJECTION', 'RES'),
                         help="""plot a line: 
-                                style can be 'solid' or 'dashed', 
-                                colour can be a name or fraction for grey shading""")
+                                STYLE can be 'solid' or 'dashed', 
+                                COLOUR can be a name or fraction for grey shading
+                                RES can be 'low' or 'high'""")
     parser.add_argument("--grid_labels", action="store_true", default=False,
                         help="switch for having gird labels [default: False]")
 
