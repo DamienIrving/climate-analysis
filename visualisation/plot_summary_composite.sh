@@ -46,54 +46,57 @@ fi
 if [[ $plot_type == 'quivers' ]] ; then
     extend=both
     palette=RdBu_r
-    ${python_exe} ${code_dir}/plot_map.py ${cfile} ${cvar}_annual none none none colour0 1 3 2 \
---infiles ${cfile} ${cvar}_DJF none none none colour0 3 \
---infiles ${cfile} ${cvar}_MAM none none none colour0 4 \
---infiles ${cfile} ${cvar}_JJA none none none colour0 5 \
---infiles ${cfile} ${cvar}_SON none none none colour0 6 \
+    ${python_exe} ${code_dir}/plot_map.py 3 2 \
+--infile ${cfile} ${cvar}_DJF none none none colour0 1 \
+--infile ${cfile} ${cvar}_DJF none none none colour0 3 \
+--infile ${cfile} ${cvar}_MAM none none none colour0 4 \
+--infile ${cfile} ${cvar}_JJA none none none colour0 5 \
+--infile ${cfile} ${cvar}_SON none none none colour0 6 \
 --palette ${palette} \
 --extend ${extend} \
 --output_projection SouthPolarStereo \
 --subplot_headings Annual none DJF MAM JJA SON \
---infiles ${ufile} ${uvar}_annual none none none uwind0 1 \
---infiles ${ufile} ${uvar}_DJF none none none uwind0 3 \
---infiles ${ufile} ${uvar}_MAM none none none uwind0 4 \
---infiles ${ufile} ${uvar}_JJA none none none uwind0 5 \
---infiles ${ufile} ${uvar}_SON none none none uwind0 6 \
+--infile ${ufile} ${uvar}_annual none none none uwind0 1 \
+--infile ${ufile} ${uvar}_DJF none none none uwind0 3 \
+--infile ${ufile} ${uvar}_MAM none none none uwind0 4 \
+--infile ${ufile} ${uvar}_JJA none none none uwind0 5 \
+--infile ${ufile} ${uvar}_SON none none none uwind0 6 \
 --figure_size 9 16 \
---infiles ${vfile} ${vvar}_annual none none none vwind0 1 \
---infiles ${vfile} ${vvar}_DJF none none none vwind0 3 \
---infiles ${vfile} ${vvar}_MAM none none none vwind0 4 \
---infiles ${vfile} ${vvar}_JJA none none none vwind0 5 \
---infiles ${vfile} ${vvar}_SON none none none vwind0 6 \
+--infile ${vfile} ${vvar}_annual none none none vwind0 1 \
+--infile ${vfile} ${vvar}_DJF none none none vwind0 3 \
+--infile ${vfile} ${vvar}_MAM none none none vwind0 4 \
+--infile ${vfile} ${vvar}_JJA none none none vwind0 5 \
+--infile ${vfile} ${vvar}_SON none none none vwind0 6 \
 --ofile ${outfile} \
---colourbar_ticks ${ticks}
+--colourbar_ticks ${ticks} \
+--exclude_blanks
+
 
 elif [[ $plot_type == 'streamlines' ]] ; then
     
-    ${python_exe} ${code_dir}/plot_map.py ${cfile} ${cvar}_annual none none none contour0 1 3 2 \
---infiles ${cfile} ${cvar}_DJF none none none contour0 3 \
---infiles ${cfile} ${cvar}_MAM none none none contour0 4 \
---infiles ${cfile} ${cvar}_JJA none none none contour0 5 \
---infiles ${cfile} ${cvar}_SON none none none contour0 6 \
+    ${python_exe} ${code_dir}/plot_map.py 3 2 \
+--infile ${cfile} ${cvar}_annual none none none contour0 1 \
+--infile ${cfile} ${cvar}_DJF none none none contour0 3 \
+--infile ${cfile} ${cvar}_MAM none none none contour0 4 \
+--infile ${cfile} ${cvar}_JJA none none none contour0 5 \
+--infile ${cfile} ${cvar}_SON none none none contour0 6 \
 --output_projection SouthPolarStereo \
 --subplot_headings Annual none DJF MAM JJA SON \
---infiles ${ufile} ${uvar}_annual none none none uwind0 1 \
---infiles ${ufile} ${uvar}_DJF none none none uwind0 3 \
---infiles ${ufile} ${uvar}_MAM none none none uwind0 4 \
---infiles ${ufile} ${uvar}_JJA none none none uwind0 5 \
---infiles ${ufile} ${uvar}_SON none none none uwind0 6 \
+--infile ${ufile} ${uvar}_annual none none none uwind0 1 \
+--infile ${ufile} ${uvar}_DJF none none none uwind0 3 \
+--infile ${ufile} ${uvar}_MAM none none none uwind0 4 \
+--infile ${ufile} ${uvar}_JJA none none none uwind0 5 \
+--infile ${ufile} ${uvar}_SON none none none uwind0 6 \
 --figure_size 9 16 \
---infiles ${vfile} ${vvar}_annual none none none vwind0 1 \
---infiles ${vfile} ${vvar}_DJF none none none vwind0 3 \
---infiles ${vfile} ${vvar}_MAM none none none vwind0 4 \
---infiles ${vfile} ${vvar}_JJA none none none vwind0 5 \
---infiles ${vfile} ${vvar}_SON none none none vwind0 6 \
+--infile ${vfile} ${vvar}_annual none none none vwind0 1 \
+--infile ${vfile} ${vvar}_DJF none none none vwind0 3 \
+--infile ${vfile} ${vvar}_MAM none none none vwind0 4 \
+--infile ${vfile} ${vvar}_JJA none none none vwind0 5 \
+--infile ${vfile} ${vvar}_SON none none none vwind0 6 \
 --ofile ${outfile} \
 --flow_type streamlines \
---streamline_bounds 0 30 \
 --contour_levels ${ticks} \
---contour_colours 0.3
+--exclude_blanks --streamline_colour 0.9
 
 
 else
