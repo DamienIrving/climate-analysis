@@ -142,6 +142,8 @@ def get_palette(palette_name):
 
     if hasattr(plt.cm, palette_name):
         cmap = getattr(plt.cm, palette_name)
+    elif palette_name in mpl_cm.cmap_d.keys():
+        cmap = mpl_cm.get_cmap(palette_name)
     else:
         print "Error, color option '", palette_name, "' not a valid option"
         sys.exit(1)
@@ -705,7 +707,6 @@ example:
     parser.add_argument("--global_colourbar_span", type=float, default=0.6,
                         help="the span of the global colour bar (expressed as a fraction) [default: 0.6]")
     parser.add_argument("--palette", type=str, default='hot_r',
-                        choices=('rainbow', 'rainbow_r', 'hot', 'hot_r', 'Blues', 'RdBu', 'RdBu_r', 'BrBG', 'BrBG_r'),
                         help="Colourbar colours [defualt: hot_r]")
     parser.add_argument("--colourbar_ticks", type=float, nargs='*', default=None,
                         help="list of tick marks to appear on the colourbar [default = auto]")
