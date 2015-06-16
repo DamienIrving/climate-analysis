@@ -34,7 +34,6 @@ code_dir=${10}
 
 #ticks="0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0" 
 #extend=max
-palette=hot_r
 #levels="-150 -120 -90 -60 -30 0 30 60 90 120 150" 
 
 if [ $contvar == 'sf' ] ; then
@@ -45,17 +44,18 @@ else
 fi
 
 
-${python_exe} ${code_dir}/plot_map.py ${envfile} ${var} ${date1} ${date1} none colour0 1 1 2 \
---infiles ${envfile} ${var} ${date2} ${date2} none colour0 2 \
---palette ${palette} \
+${python_exe} ${code_dir}/plot_map.py 1 2 \
+--infile ${envfile} ${var} ${date1} ${date1} none colour0 1 \
+--infile ${envfile} ${var} ${date2} ${date2} none colour0 2 \
+--palette brewer_YlOrRd_09 \
 --output_projection SouthPolarStereo \
 --subplot_headings ${date1} ${date2} \
---infiles ${contfile} ${contvar} ${date1} ${date1} none contour0 1 \
---infiles ${contfile} ${contvar} ${date2} ${date2} none contour0 2 \
+--infile ${contfile} ${contvar} ${date1} ${date1} none contour0 1 \
+--infile ${contfile} ${contvar} ${date2} ${date2} none contour0 2 \
 --ofile ${outfile} \
---lat_lines ${lat} 0.5 dashed \
+--line -55 -55 0 359.9 0.5 dashed PlateCarree_Dateline high \
 --contour_levels ${levels} \
---figure_size 10 6
+--figure_size 9 5.5
 #--colourbar_ticks ${ticks}
 # --extend ${extend}
 
