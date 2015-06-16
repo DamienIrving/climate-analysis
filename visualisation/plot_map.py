@@ -45,8 +45,8 @@ except ImportError:
 
 plot_types = ['colour', 'contour', 'uwind', 'vwind', 'hatching']
 
-projections = {'PlateCarree_Greenwich': ccrs.PlateCarree(), # Centred on Greenwich, which means lons go from 0 to 360
-               'PlateCarree_Dateline': ccrs.PlateCarree(central_longitude=-180.0),
+projections = {'PlateCarree_Greenwich': ccrs.PlateCarree(),
+               'PlateCarree_Dateline': ccrs.PlateCarree(central_longitude=180.0),
                'SouthPolarStereo': ccrs.SouthPolarStereo(),
                'Orthographic': ccrs.Orthographic(central_longitude=240, central_latitude=-45),
                'RotatedPole_260E_20N': ccrs.RotatedPole(pole_longitude=260, pole_latitude=20)}
@@ -229,6 +229,8 @@ def multiplot(cube_dict, nrows, ncols,
               #flow
               flow_type='quiver',
               streamline_palette='YlGnBu',
+              streamline_magnitude=False,
+              streamline_colour='0.8',
               streamline_bounds=None,
               #hatching
               hatch_bounds=(0.0, 0.05),
@@ -279,7 +281,7 @@ def multiplot(cube_dict, nrows, ncols,
 
             # Set limits
             if out_proj_name == 'SouthPolarStereo':
-                ax.set_extent((0, 360, -90.0, spstereo_limit), crs=projections['PlateCarree_Greenwich'])
+                ax.set_extent((0, 360, -90.0, spstereo_limit), crs=projections['PlateCarree_Dateline'])
                 grid_labels=False  #iris does not support this yet
             elif out_region_name != 'None':
                 south_lat, north_lat = nio.regions[out_region_name][0][0: 2]
@@ -317,7 +319,10 @@ def multiplot(cube_dict, nrows, ncols,
                     u = u_cube.data
                     v = v_cube.data
                     plot_flow(x, y, u, v, ax, flow_type,
-                              palette=streamline_palette, colour_bounds=streamline_bounds)
+                              palette=streamline_palette,
+                              colour=streamline_colour, 
+                              plot_magnitude=streamline_magnitude, 
+                              colour_bounds=streamline_bounds)
                 except KeyError:
                     pass
 
@@ -388,12 +393,12 @@ def plot_contour(cube, levels, labels_switch,
         plt.clabel(contour_plot, fmt='%.1f')
 
     
-def plot_flow(x, y, u, v, ax, flow_type, palette=None, colour_bounds=None):
+def plot_flow(x, y, u, v, ax, flow_type, 
+              palette='YlGnBu', colour='0.8', 
+              plot_magnitude=False, colour_bounds=None):
     """Plot quivers or streamlines."""
 
     assert flow_type in ['streamlines', 'quivers']
-
-    cmap = get_palette(palette) if palette else None
 
     if colour_bounds:
         vmin, vmax = colour_bounds
@@ -401,12 +406,15 @@ def plot_flow(x, y, u, v, ax, flow_type, palette=None, colour_bounds=None):
     else:
         norm = None
 
-    if flow_type == 'streamlines':
+    if flow_type == 'streamlines' and plot_magnitude:
         magnitude = (u ** 2 + v ** 2) ** 0.5
-        ax.streamplot(x, y, u, v, linewidth=2, density=2,
-                      color=magnitude, cmap=cmap, norm=norm)
+        cmap = get_palette(palette)
+        ax.streamplot(x, y, u, v, transform=projections['PlateCarree_Dateline'], 
+                      linewidth=2, density=2, color=magnitude, cmap=cmap, norm=norm)
+    elif flow_type == 'streamlines':
+        ax.streamplot(x, y, u, v, transform=projections['PlateCarree_Dateline'], color=colour)
     elif flow_type == 'quivers':
-        ax.quiver(x, y, u, v, regrid_shape=40) 
+        ax.quiver(x, y, u, v, transform=projections['PlateCarree_Dateline'], regrid_shape=40) 
 
 
 def plot_hatching(cube, hatch_bounds, hatch_styles):
@@ -600,6 +608,8 @@ def main(inargs):
               #flow
               flow_type=inargs.flow_type,
               streamline_palette=inargs.streamline_palette,
+              streamline_magnitude=inargs.streamline_magnitude,
+              streamline_colour=inargs.streamline_colour,
               streamline_bounds=inargs.streamline_bounds,
               #hatching
               hatch_bounds=inargs.hatch_bounds,
@@ -662,7 +672,7 @@ example:
     # Spatial bounds
     region_choices = nio.regions.keys()
     region_choices.append('None')
-    parser.add_argument("--region", type=str, nargs='*', choices=region_choices, default=[None,],
+    parser.add_argument("--region", type=str, nargs='*', choices=region_choices, default=['None',],
                         help="""name of predefined region to plot:
                                 default is all global
                                 specify a region for all plots (order top left to bottom right, write none for blank)
@@ -717,9 +727,12 @@ example:
     # Flow
     parser.add_argument("--flow_type", type=str, default='quivers', choices=('quivers', 'streamlines'),
                         help="what to do with the uwind and vwind data [default=quiver]")
+    parser.add_argument("--streamline_magnitude", action="store_true", default=False,
+                        help="switch for coloring the streamlines according to their magnitude")
     parser.add_argument("--streamline_palette", type=str, default='YlGnBu',
-                        choices=('hot_r', 'YlGnBu'),
-                        help="streamline colour palette [default = YlGnBu]")
+                        help="streamline colour palette (for magnitude plot)")
+    parser.add_argument("--streamline_colour", type=str, default='0.8',
+                        help="streamline colour (for non-magnitude plot)")
     parser.add_argument("--streamline_bounds", type=float, nargs=2, metavar=('MIN', 'MAX'), default=None,
                         help="min and max for streamline colours [default = auto]")
 
