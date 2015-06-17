@@ -95,10 +95,10 @@ def get_seasonal_index(nc_file, var, start, end):
 def plot_index_dots(ax, x, index_data, bar_heights, upper_threshold=1.0, lower_threshold=-1.0):
     """Plot dots."""
 
-    style_dict = {'DJF': (2.0, 'yellow'),
-                  'MAM': (4.0, 'orange'),
-                  'JJA': (6.0, 'blue'),
-                  'SON': (8.0, 'green'),}
+    style_dict = {'DJF': (2.0, '#b2df8a'),
+                  'MAM': (4.0, '#33a02c'),
+                  'JJA': (6.0, '#a6cee3'),
+                  'SON': (8.0, '#1f78b4'),}
 
     for season, style_info in style_dict.iteritems():
         top_buffer, color = style_info
@@ -129,7 +129,7 @@ def plot_monthly_totals(ax, monthly_data, month_days, label=None):
     x= numpy.arange(12)
     width = 0.8
 
-    ax.bar(x, monthly_pct, width)
+    ax.bar(x, monthly_pct, width, color='0.7')
 
     ax.set_ylabel('Percentage of days')
     ax.xaxis.set_ticks(x+width/2.)
@@ -158,10 +158,10 @@ def plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=None, index_var=No
     end_year = season_counts['MAM'].index[-1].year
 
     x = numpy.arange(start_year, end_year + 1)
-    pdjf = ax.bar(x, season_counts['DJF'], color='yellow')
-    pmam = ax.bar(x, season_counts['MAM'], color='orange', bottom=season_counts['DJF'])
-    pjja = ax.bar(x, season_counts['JJA'], color='blue', bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix())
-    pson = ax.bar(x, season_counts['SON'], color='green', bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix()+season_counts['JJA'].as_matrix())
+    pdjf = ax.bar(x, season_counts['DJF'], color='#b2df8a')
+    pmam = ax.bar(x, season_counts['MAM'], color='#33a02c', bottom=season_counts['DJF'])
+    pjja = ax.bar(x, season_counts['JJA'], color='#a6cee3', bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix())
+    pson = ax.bar(x, season_counts['SON'], color='#1f78b4', bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix()+season_counts['JJA'].as_matrix())
 
     season_counts['annual'] = season_counts['DJF'].as_matrix() + season_counts['MAM'].as_matrix() + season_counts['JJA'].as_matrix() + season_counts['SON'].as_matrix()
     if index_var:
