@@ -80,7 +80,7 @@ ${SEAS_MON_SUMMARY_PLOT} : ${WAVE_STATS}
 
 V_SPECTRUM=${SPECTRA_DIR}/va-r2spectrum_${DATASET}_${LEVEL}_daily_native-${LAT_LABEL}.png
 ${V_SPECTRUM}: ${V_ORIG} ${DATES_${INDEX_CAPS}_HIGH} ${DATES_${INDEX_CAPS}_LOW}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_timescale_spectrum.py $< va $(word 2,$^) $(word 3,$^) $@ --latitude ${LAT_SINGLE} --runmean 1 5 10 15 30 60 90 180 365 --scaling R2
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_timescale_spectrum.py $< va $(word 2,$^) $(word 3,$^) $@ --latitude ${LAT_SINGLE} --runmean 365 180 90 60 30 15 10 5 1 --scaling R2
 
 
 ## Mutli-file spectrum

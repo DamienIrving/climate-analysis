@@ -38,8 +38,6 @@ except ImportError:
 
 # Define functions, global variables etc
 
-colors = ['blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'magenta', 'purple', 'brown', 'black']    
-
 
 def transform_data(signal, indep_var, scaling):
     """Do the Fourier Transform."""
@@ -70,14 +68,19 @@ def composite_plot(ax, inargs, runave=30, label=None):
                       'all timesteps': None}
 
     # Create the plot
+    colors = ['#b2df8a', '#1f78b4', '#a6cee3']
+    cindex = 0
     for leglabel, date_file in composite_dict.iteritems():        
         data_filtered, date_metadata, size_filtered = calc_composite.filter_dates(indata.data, date_file)
         spectrum_temporal_mean, spectrum_freqs_1D = transform_data(data_filtered, indep_var, inargs.scaling)
 
-        ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, label=leglabel, marker='o')
+        ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
+                label=leglabel, marker='o', color=colors[cindex])
 
         if date_file:
             metadata_dict[date_file] = date_metadata
+        
+        cindex = cindex + 1
 
     ax.set_xlim([1, inargs.window])
     ax.set_xlabel('wavenumber ($k$)')
@@ -103,6 +106,9 @@ def timescale_plot(ax, inargs, label=None):
     else:
         runmean_windows = [1]
     
+    colors = ['#ffffd9', '#edf8b1', '#c7e9b4', '#7fcdbb', '#41b6c4', 
+              '#1d91c0', '#225ea8', '#253494', '#081d58'] 
+ 
     for index, step in enumerate(runmean_windows):
         
         indata = nio.InputData(inargs.infile, inargs.variable, runave=step,
@@ -124,7 +130,9 @@ def timescale_plot(ax, inargs, label=None):
     else:
         ylabel = inargs.scaling
     ax.set_ylabel('average %s' %(ylabel))
-    ax.legend(fontsize='small')
+    
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles[::-1], labels[::-1], fontsize='small')
 
     if label:
         ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
