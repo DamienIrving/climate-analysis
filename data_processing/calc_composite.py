@@ -124,7 +124,7 @@ def main(inargs):
 	outvar_axes_list.append(indata.data.getAxisList()[1:])
 
 	# Perform significance test
-	if inargs.date_file:
+	if inargs.date_file and not inargs.no_sig:
             pval, pval_atts = uconv.get_significance(data_filtered, indata.data, 
 	                                             'p_'+season, 'p_value_'+season, 
 						     size_filtered, indata.data.shape[0])
@@ -191,6 +191,9 @@ author:
                         help="Number of days to offset the input dates by (from date_file) [default = None]")
     parser.add_argument("--invert", action="store_true", default=False,
                         help="switch for creating composite of dates that are not in date_file [default: False]")
+
+    parser.add_argument("--no_sig", action="store_true", default=False,
+                        help="do not perform the significance testing [default: False]")
 
     args = parser.parse_args()            
 
