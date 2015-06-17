@@ -77,7 +77,7 @@ def scatter_plot(x_data, y_data,
     if trend:
         p = numpy.polyfit(x, y, 1)
         print p
-        plt.plot(x, p[0]*x+p[1], 'black')
+        plt.plot(x, p[0]*x+p[1], 'r')
     
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
