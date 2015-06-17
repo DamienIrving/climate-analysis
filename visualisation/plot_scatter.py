@@ -58,7 +58,7 @@ def scatter_plot(x_data, y_data,
                  outfile, 
                  c_data=None, 
                  zero_lines=False, thin=1, 
-                 trend=False, cmap='jet'):
+                 trend=False, cmap='Greys'):
     """Create scatterplot."""
 
     plt.figure()
@@ -72,11 +72,12 @@ def scatter_plot(x_data, y_data,
     c = c_data[::thin] if type(c_data) == pandas.core.series.Series else 'k'
     
     plt.scatter(x, y, c=c, cmap=cmap)
+    plt.colorbar()
 
     if trend:
         p = numpy.polyfit(x, y, 1)
         print p
-        plt.plot(x, p[0]*x+p[1], 'r')
+        plt.plot(x, p[0]*x+p[1], 'black')
     
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -187,7 +188,7 @@ author:
                         help="Switch for a linear line of best fit [default: False]")
     parser.add_argument("--zero_lines", action="store_true", default=False,
                         help="Switch for drawing zero lines [default: False]")
-    parser.add_argument("--cmap", type=str, default='jet', choices=('jet', 'jet_r', 'hot', 'hot_r', 'RdBu', 'RdBu_r'),
+    parser.add_argument("--cmap", type=str, default='Greys',
                         help="Colour map [default: False]")
     parser.add_argument("--xlabel", type=str, default=None,
                         help="x-axis label")
