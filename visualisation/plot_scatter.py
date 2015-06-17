@@ -56,9 +56,9 @@ def normalise_series(series):
 def scatter_plot(x_data, y_data, 
                  xlabel, ylabel,
                  outfile, 
-                 c_data=None, 
+                 c_data=None, cmap='Greys',
                  zero_lines=False, thin=1, 
-                 trend=False, cmap='Greys'):
+                 plot_trend=False, trend_colour='r'):
     """Create scatterplot."""
 
     plt.figure()
@@ -74,10 +74,10 @@ def scatter_plot(x_data, y_data,
     plt.scatter(x, y, c=c, cmap=cmap)
     plt.colorbar()
 
-    if trend:
+    if plot_trend:
         p = numpy.polyfit(x, y, 1)
         print p
-        plt.plot(x, p[0]*x+p[1], 'r')
+        plt.plot(x, p[0]*x+p[1], trend_colour)
     
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -129,9 +129,9 @@ def main(inargs):
     scatter_plot(dataframe[target_xvar], dataframe[target_yvar], 
                  xlabel, ylabel,
                  inargs.ofile, 
-                 c_data=c_data, 
+                 c_data=c_data, cmap=inargs.cmap, 
                  zero_lines=inargs.zero_lines, thin=inargs.thin, 
-                 trend=inargs.trend_line, cmap=inargs.cmap)
+                 plot_trend=inargs.trend_line, trend_colour=inargs.trend_colour)
 
     gio.write_metadata(inargs.ofile, file_info=metadata_dict)
 
@@ -186,6 +186,8 @@ author:
     # Plot options
     parser.add_argument("--trend_line", action="store_true", default=False,
                         help="Switch for a linear line of best fit [default: False]")
+    parser.add_argument("--trend_colour", type=str, default='r',
+                        help="Colour of linear line of best fit [default: red]")
     parser.add_argument("--zero_lines", action="store_true", default=False,
                         help="Switch for drawing zero lines [default: False]")
     parser.add_argument("--cmap", type=str, default='Greys',
