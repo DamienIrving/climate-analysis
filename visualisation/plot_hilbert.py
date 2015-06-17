@@ -115,22 +115,22 @@ def plot_hilbert(data_dict, date_list,
 
         ax.axhline(y=0.0, linestyle='-', color='0.8')
         
-        # Plot original signal
-        tag = 'meridional wind, %s'  %(lat_tag)
-        ax.plot(xaxis, numpy.array(data), color='green', label=tag)
-
-        # Plot reconstructed signal
-        tag = 'reconstructed signal (waves %s-%s)'  %(str(wmin), str(wmax))
-        ax.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], color='orange', linestyle='--', label=tag)
-
-        # Plot reconstructed envelope
-        tag = 'wave envelope'
-        ax.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='orange', label=tag)
-
         # Plot individual wavenumber components
         for wavenum in range(wmin, wmax):
             ax.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], color='0.5', linestyle='--')
         ax.plot(xaxis, 2*filtered_signal['positive', wmax, wmax], color='0.5', linestyle='--', label='Fourier components')
+
+        # Plot reconstructed envelope
+        tag = 'wave envelope'
+        ax.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='#fc8d62', label=tag, linewidth=1.5)
+
+        # Plot reconstructed signal
+        tag = 'reconstructed signal (waves %s-%s)'  %(str(wmin), str(wmax))
+        ax.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], color='#fc8d62', linestyle='--', label=tag)
+
+        # Plot original signal
+        tag = 'meridional wind, %s'  %(lat_tag)
+        ax.plot(xaxis, numpy.array(data), color='#66c2a5', label=tag, linewidth=1.5)
 
         # Plot details
         ax.set_xlim(0, 360)
@@ -142,8 +142,8 @@ def plot_hilbert(data_dict, date_list,
         ax.set_ylabel('$m s^{-1}$', fontsize='medium')
         ax.set_xlabel('longitude', fontsize='medium')
 
-        font = font_manager.FontProperties(size='small')
-        ax.legend(loc=4, prop=font)
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles[::-1], labels[::-1], fontsize='small', loc=4)
 
     fig.savefig(outfile, bbox_inches='tight')
 
