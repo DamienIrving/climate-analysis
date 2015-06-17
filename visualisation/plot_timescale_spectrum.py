@@ -68,9 +68,10 @@ def composite_plot(ax, inargs, runave=30, label=None):
                       'all timesteps': None}
 
     # Create the plot
-    colors = ['#b2df8a', '#1f78b4', '#a6cee3']
+    colors = ['#fbb4b9', '#f768a1', '#ae017e']
     cindex = 0
-    for leglabel, date_file in composite_dict.iteritems():        
+    for leglabel in ['PWI < 10 pctl', 'all timesteps', 'PWI > 90 pctl']:        
+        date_file = composite_dict[leglabel]
         data_filtered, date_metadata, size_filtered = calc_composite.filter_dates(indata.data, date_file)
         spectrum_temporal_mean, spectrum_freqs_1D = transform_data(data_filtered, indep_var, inargs.scaling)
 
