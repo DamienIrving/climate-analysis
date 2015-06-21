@@ -640,15 +640,12 @@ if __name__ == '__main__':
 
     extra_info = """
 example:
-  /usr/local/anaconda/bin/python plot_map2.py 
-  /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw3/figures/composites/tas-composite_zw3_ampmedian90pct-w19_env-va_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native.nc 
-  tas_DJF none none none colour0 1 1 1 
+  /usr/local/anaconda/bin/python plot_map.py 1 1 
   --palette RdBu_r 
   --colourbar_ticks -3.0 -2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5 3.0 
   --output_projection SouthPolarStereo 
   --subplot_headings DJF 
-  --infiles /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw3/figures/composites/zg-composite_zw3_ampmedian90pct-w19_env-va_ERAInterim_500hPa_030day-runmean_native-zonal-anom.nc 
-  zg_DJF none none none contour0 1 
+  --infile zg_anom.nc zg_DJF none none none contour0 1 
   --contour_levels -150 -120 -90 -60 -30 0 30 60 90 120 150
 
 """
