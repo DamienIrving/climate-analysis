@@ -122,15 +122,15 @@ def plot_hilbert(data_dict, date_list,
 
         # Plot reconstructed envelope
         tag = 'wave envelope'
-        ax.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='#fc8d62', label=tag, linewidth=1.5)
+        ax.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='#d95f02', label=tag, linewidth=2.0)
 
         # Plot reconstructed signal
         tag = 'reconstructed signal (waves %s-%s)'  %(str(wmin), str(wmax))
-        ax.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], color='#fc8d62', linestyle='--', label=tag)
+        ax.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], color='#d95f02', linestyle='--', label=tag, linewidth=2.0)
 
         # Plot original signal
         tag = 'meridional wind, %s'  %(lat_tag)
-        ax.plot(xaxis, numpy.array(data), color='#66c2a5', label=tag, linewidth=1.5)
+        ax.plot(xaxis, numpy.array(data), color='#1b9e77', label=tag, linewidth=2.0)
 
         # Plot details
         ax.set_xlim(0, 360)

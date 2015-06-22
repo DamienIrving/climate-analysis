@@ -76,7 +76,7 @@ def composite_plot(ax, inargs, runave=30, label=None):
         spectrum_temporal_mean, spectrum_freqs_1D = transform_data(data_filtered, indep_var, inargs.scaling)
 
         ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
-                label=leglabel, marker='o', color=colors[cindex])
+                label=leglabel, marker='o', color=colors[cindex], linewidth=2.0)
 
         if date_file:
             metadata_dict[date_file] = date_metadata
@@ -121,7 +121,7 @@ def timescale_plot(ax, inargs, label=None):
         spectrum_temporal_mean, spectrum_freqs_1D = transform_data(signal, indep_var, inargs.scaling)
         
         ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
-                label=str(step), marker='o', color=colors[index])
+                label=str(step), marker='o', color=colors[index], linewidth=2.0)
 
     ax.set_xlim([1, inargs.window])
     ax.set_xlabel('wavenumber ($k$)')
