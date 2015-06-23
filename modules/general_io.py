@@ -120,7 +120,7 @@ def check_xrayDataset(dset, vars):
     
         if dset[var].dims != correct_order:
             print 'swapping dimension order...'
-            #FIXME
+            dset[var] = dset[var].transpose(*correct_order)
         
     # Axis values 
     if 'latitude' in dset.keys():
