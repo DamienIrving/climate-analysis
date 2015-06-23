@@ -35,18 +35,80 @@ try:
 except ImportError:
     MODULE_HASH = 'unknown'
 
+
 # Define functions
 
-def find_duplicates(inlist):
-    """Return list of duplicates in a list."""
+
+# [south_lat, north_lat, west_lon, east_lon]
+
+regions = {'asl': [-75, -60, 180, 310],
+           'aus': [-45, -10, 110, 160],
+           'ausnz': [-50, 0, 100, 185],
+           'emia': [-10, 10, 165, 220],
+           'emib': [-15, 5, 250, 290],
+           'emic': [(-10, 20), (125, 145)],
+           'eqpacific': [(-30, 30), (120, 280)],
+           'nino1': [(-10, -5), (270, 280)],
+           'nino2': [(-5, 0), (270, 280)],
+           'nino12': [(-10, 0), (270, 280)],
+           'nino3': [(-5, 5), (210, 270)],
+           'nino34': [(-5, 5), (190, 240)],
+           'nino4': [(-5, 5), (160, 210)],
+           'sh': [(-90, 0), (0, 360)],
+           'shextropics15': [(-90, -15), (0, 360)],
+           'shextropics20': [(-90, -20), (0, 360)],
+           'shextropics30': [(-90, -30), (0, 360)],
+           'small': [(-5, 0), (10, 15)],
+           'tropics': [(-30, 30), (0, 360)],
+           'glatt': [(20, 80), (-180, 180)],
+           'nonpolar70': [(-70, 70), (0, 360)],
+           'nonpolar80': [(-80, 80), (0, 360)],
+           'sh-psa': [(-90, 0), (90, 450)],
+           'sh-psa-extra': [(-90, 30), (90, 450)],
+           'world-dateline': [(-90, 90), (0, 360)],
+           'world-dateline-duplicate360': [(-90, 90), (0, 360)],
+           'world-greenwich': [(-90, 90), (-180, 180)],
+           'world-psa': [(-90, 90), (90, 450)],
+           'zw31': [(-50, -45), (45, 60)],
+           'zw32': [(-50, -45), (161, 171)],
+           'zw33': [(-50, -45), (279, 289)],
+           }
+           
+
+def get_timescale(times):
+    """Get the timescale.
     
-    D = defaultdict(list)
-    for i,item in enumerate(mylist):
-        D[item].append(i)
-    D = {k:v for k,v in D.items() if len(v)>1}
+    Args:
+      times (list/tuple): Tuple containing two datetime instances. The difference between
+        them is used to determine the timescale. 
+
+    """
+
+    diff = times[1] - times[0]
+
+    thresholds = {'yearly': datetime.timedelta(days=365),
+                  'monthly': datetime.timedelta(days=27),
+                  'daily': datetime.timedelta(days=1),
+                  '12hourly': datetime.timedelta(hours=12),
+                  '6hourly': datetime.timedelta(hours=6),
+                  'hourly': datetime.timedelta(hours=1)}
     
-    return D
+    timescale = None
+    scales = ['yearly', 'monthly', 'daily', '12hourly', '6hourly', 'hourly']
+    for key in scales:
+        if diff >= thresholds[key]:
+            timescale = key
+            break
     
+    if not timescale:
+        print 'Invalid timescale data.'
+        print 'Must be between hourly and yearly.'
+        sys.exit(1)
+
+    print timescale
+
+    return timescale
+
 
 def get_timestamp():
     """Return a time stamp that includes the command line entry."""
