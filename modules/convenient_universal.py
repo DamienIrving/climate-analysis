@@ -277,13 +277,16 @@ def match_dates(dates, time_axis, invert_matching=False, return_indexes=False):
 def single2list(item, numpy_array=False):
     """Check if item is a list, then convert if not."""
     
-    try:
-        test = len(item)
-    except TypeError:
+    if type(item) == list or type(item) == tuple:
+        output = item 
+    elif type(item) == str:
         output = [item,]
     else:
-        output = item 
-        
+        try:
+            test = len(item)
+        except TypeError:
+            output = [item,]
+
     if numpy_array and not isinstance(output, numpy.ndarray):
         return numpy.array(output)
     else:

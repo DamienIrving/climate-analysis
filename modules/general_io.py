@@ -85,7 +85,7 @@ regions = {'asl': [-75, -60, 180, 310],
            }
 
 
-def check_xrayDataset(dset, vars):
+def check_xrayDataset(dset, var_list):
     """Check xray.Dataset for data format compliance.
     
     Args:
@@ -94,8 +94,8 @@ def check_xrayDataset(dset, vars):
     
     """
     
-    vars = uconv.single2list(vars)
-    for var in vars:
+    var_list = uconv.single2list(var_list)
+    for var in var_list:
     
         # Variable attributes
         assert 'units' in dset[var].attrs.keys(), \
@@ -118,7 +118,7 @@ def check_xrayDataset(dset, vars):
             if dim_name in dset[var].dims:
                 correct_order.append(dim_name)
     
-        if dset[var].dims != correct_order:
+        if dset[var].dims != tuple(correct_order):
             print 'swapping dimension order...'
             dset[var] = dset[var].transpose(*correct_order)
         

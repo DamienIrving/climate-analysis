@@ -27,6 +27,7 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -52,19 +53,19 @@ def calc_asl(ifile, var_id, ofile):
     
     dset_in = xray.open_dataset(ifile)
     gio.check_xrayDataset(dset_in, var_id)
-    darray = dset_in[var_id].sel(latitude=(south_lat, north_lat), longitude=(west_lon, east_lon))
-    
-    assert darray[var_id].dims == ('time', 'latitude', 'longitude'), \ 
+    darray = dset_in[var_id].sel(latitude=slice(south_lat, north_lat), longitude=slice(west_lon, east_lon))
+
+    assert darray.dims == ('time', 'latitude', 'longitude'), \
     "Order of the data must be time, latitude, longitude"
 
     # Get axis information
     lat_values = darray['latitude'].values
     lon_values = darray['longitude'].values
-    lats, lons = nio.coordinate_pairs(lat_values, lon_values)
+    lats, lons = uconv.coordinate_pairs(lat_values, lon_values)
 
     # Reshape data
-    ntimes, nlats, nlons = darray[var_id].values.shape
-    darray_reshaped = numpy.reshape(darray[var_id].values, (ntimes, nlats*nlons))
+    ntimes, nlats, nlons = darray.values.shape
+    darray_reshaped = numpy.reshape(darray.values, (ntimes, nlats*nlons))
 
     # Get the ASL index info (min value for each timestep and its lat/lon)
     min_values = numpy.amin(darray_reshaped, axis=1)
@@ -98,288 +99,287 @@ def calc_asl(ifile, var_id, ofile):
     dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
 
 
-def calc_nino(index, ifile, var_id, base_period):
-    """Calculate a Nino index.
-
-    Expected input: Sea surface temperature data.
-
-    """
-
-    # Determine the timescale
-    indata = nio.InputData(ifile, var_id, region='nino'+index[4:])
-    tscale_abbrev = get_timescale(indata.data)
-
-    # Calculate the index
-    south_lat, north_lat = nio.regions['nino'+index[4:]][0][0: 2]
-    west_lon, east_lon = nio.regions['nino'+index[4:]][1][0: 2]
-    
-    sub_operator_text = 'cdo y%ssub ' %(tscale_abbrev)
-    sub_operator_func = eval(sub_operator_text.replace(' ', '.', 1)) 
-    avg_operator_text = ' -y%savg ' %(tscale_abbrev)
-    
-    selregion = "-sellonlatbox,%3.2f,%3.2f,%3.2f,%3.2f %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
-    seldate = "-seldate,%s,%s " %(base_period[0], base_period[1])
-    raw_data = "-fldmean "+selregion
-    climatology = avg_operator_text + seldate + raw_data
-    
-    print sub_operator_text + raw_data + climatology
-    result = sub_operator_func(input=raw_data + climatology, returnArray=var_id)
-    nino_timeseries = numpy.squeeze(result)
-
-    # Output file info
-    hx = 'lat: %s to %s, lon: %s to %s, base: %s to %s' %(south_lat, north_lat,
-                                                          west_lon, east_lon,
-                                                          base_period[0], base_period[1])
-    var_atts = {'id': 'nino'+index[4:],
-                'long_name': 'nino'+index[4:]+'_index',
-                'standard_name': 'nino'+index[4:]+'_index',
-                'units': 'Celsius',
-                'notes': hx}
-    
-    outdata_list = [nino_timeseries,]
-    outvar_atts_list = [var_atts,]
-    outvar_axes_list = [(indata.data.getTime(),),]
-    
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
-
-
-def calc_nino_new(index, ifile, var_id, base_period):
-    """Calculate a new Nino index.
-
-    Ref: Ren & Jin (2011). Nino indices for two types of ENSO. 
-      Geophysical Research Letters, 38(4), L04704. 
-      doi:10.1029/2010GL046031.
-
-    Expected input: Sea surface temperature data.
-
-    """
-    
-    # Calculate the traditional NINO3 and NINO4 indices
-    regions = ['NINO3','NINO4']
-    anomaly_timeseries = {}
-    for reg in regions: 
-        outdata_list, temp_atts_list, outvar_axes_list, global_atts = calc_nino(reg, ifile, var_id, base_period)       
-        anomaly_timeseries[reg] = outdata_list[0]      
- 
-    # Calculate the new Ren & Jin index
-    ntime = len(anomaly_timeseries['NINO3'])
-    
-    nino_new_timeseries = numpy.ma.zeros(ntime)
-    for i in range(0, ntime):
-        nino3_val = anomaly_timeseries['NINO3'][i]
-        nino4_val = anomaly_timeseries['NINO4'][i]
-        product = nino3_val * nino4_val
-    
-        alpha = 0.4 if product > 0 else 0.0
-    
-        if index == 'NINOCT':
-            nino_new_timeseries[i] = numpy.ma.subtract(nino3_val, (numpy.ma.multiply(nino4_val, alpha)))
-        elif index == 'NINOWP':
-            nino_new_timeseries[i] = numpy.ma.subtract(nino4_val, (numpy.ma.multiply(nino3_val, alpha)))
-    
-    # Determine the attributes
-    hx = 'Ref: Ren & Jin 2011, GRL, 38, L04704. Base period: %s to %s'  %(base_period[0], 
-                                                                          base_period[1])
-    long_name = {}
-    long_name['NINOCT'] = 'nino_cold_tongue_index'
-    long_name['NINOWP'] = 'nino_warm_pool_index'    
-
-    var_atts = {'id': 'nino'+index[4:],
-                'long_name': long_name[index],
-                'standard_name': long_name[index],
-                'units': 'Celsius',
-                'notes': hx}
-
-    outdata_list = [nino_new_timeseries,]
-    outvar_atts_list = [var_atts,]
-    
-    return outdata_list, outvar_atts_list, outvar_axes_list, global_atts 
-
-
-def calc_pwi(ifile, var_id):
-    """Calculate the Planetary Wave Index.
-
-    Ref: Irving & Simmonds (2015). Southern Hemisphere planetary wave 
-      activity and its influence on weather and climate extremes. 
-      https://www.authorea.com/users/5641/articles/12197/_show_article
-
-    Expected input: Wave envelope.   
-
-    """
-    
-    # Read data
-    indata = nio.InputData(ifile, var_id, latitude=(-70, -40))
-    assert indata.data.getOrder() == 'tyx', "Order of the data must be time, lon, lat"
-
-    # Calulcate the index
-    mermax = numpy.max(indata.data, axis=1)
-    pwi_timeseries = numpy.median(mermax, axis=-1)
-
-    # Output file info
-    pwi_atts = {'id': 'pwi',
-                'long_name': 'planetary_wave_index',
-                'standard_name': 'planetary_wave_index',
-                'units': indata.data.units,
-                'notes': 'Ref: https://www.authorea.com/users/5641/articles/12197/_show_article'}
-
-    outdata_list = [pwi_timeseries,]
-    outvar_atts_list = [pwi_atts,]
-    outvar_axes_list = [(indata.data.getTime(),),]
-    
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
-
-
-def calc_sam(ifile, var_id):
-    """Calculate an index of the Southern Annular Mode.
-
-    Ref: Gong & Wang (1999). Definition of Antarctic Oscillation index. 
-      Geophysical Research Letters, 26(4), 459-462.
-      doi:10.1029/1999GL900003
-
-    Expected input: Mean sea level pressure data.
-
-    Concept: Difference between the normalised zonal mean pressure 
-      difference between 40S and 65S.
-
-    """
-    
-    # Determine the timescale
-    indata = nio.InputData(ifile, var_id, longitude=(10,12))
-    tscale_abbrev = get_timescale(indata.data)
-    
-    # Determine latitude range (cdo requires exact latitude value)
-    lat_axis = indata.data.getLatitude()[:]
-    north_lat = nio.find_nearest(lat_axis, -40)
-    south_lat = nio.find_nearest(lat_axis, -65)
-
-    # Calculate the index
-    normalised_zonal_mean_mslp = {}
-    for lat in [north_lat, south_lat]: 
-        div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
-        div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
-        sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
-        avg_operator_text = ' -y%savg ' %(tscale_abbrev)
-        std_operator_text = ' -y%sstd ' %(tscale_abbrev)
-    
-        sellat = "-sellonlatbox,0,360,%3.2f,%3.2f %s" %(lat, lat, ifile)
-        zonmean = "-zonmean "+sellat
-        anomaly = sub_operator_text + zonmean + avg_operator_text + zonmean
-        std = std_operator_text + zonmean
-    
-        print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
-        result = div_operator_func(input=anomaly + std, returnArray=var_id)
-        normalised_zonal_mean_mslp[lat] = numpy.squeeze(result)
-
-    sam_timeseries = normalised_zonal_mean_mslp[north_lat] - normalised_zonal_mean_mslp[south_lat]
-
-    # Output file info
-    hx = 'Ref: Gong & Wang (1999). GRL, 26, 459-462. doi:10.1029/1999GL900003'
-    var_atts = {'id': 'sam',
-                'long_name': 'Southern_Annular_Mode_Index',
-                'standard_name': 'Southern_Annular_Mode_Index',
-                'units': '',
-                'notes': hx}
-
-    outdata_list = [sam_timeseries,]
-    outvar_atts_list = [var_atts,]
-    outvar_axes_list = [(indata.data.getTime(),),]
-    
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
-
-
-def calc_zw3(ifile, var_id):
-    """Calculate an index of the Southern Hemisphere ZW3 pattern.
-    
-    Ref: Raphael (2004). A zonal wave 3 index for the Southern Hemisphere. 
-      Geophysical Research Letters, 31(23), L23212. 
-      doi:10.1029/2004GL020365.
-
-    Expected input: Raphael (2004) uses is the 500hPa geopotential height, 
-      sea level pressure or 500hPa zonal anomalies which are constructed by 
-      removing the zonal mean of the geopotential height from each grid point 
-      (preferred). The running mean (and zonal mean too if using it) should 
-      have been applied to the input data beforehand. Raphael (2004) uses a 
-      3-month running mean.
-
-    Design notes: This function uses cdo instead of CDAT because the
-      cdutil library doesn't have routines for calculating the daily 
-      climatology or stdev.
-    
-    """
-
-    # Determine the timescale
-    indata = nio.InputData(ifile, var_id, region='small')
-    tscale_abbrev = get_timescale(indata.data)
-
-    # Calculate the index
-    index = {}
-    for region in ['zw31', 'zw32', 'zw33']: 
-        south_lat, north_lat = nio.regions[region][0][0: 2]
-        west_lon, east_lon = nio.regions[region][1][0: 2]
-    
-        div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
-        div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
-        sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
-        avg_operator_text = ' -y%savg ' %(tscale_abbrev)
-        std_operator_text = ' -y%sstd ' %(tscale_abbrev)
-    
-        selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
-        fldmean = "-fldmean "+selregion
-        anomaly = sub_operator_text + fldmean + avg_operator_text + fldmean
-        std = std_operator_text + fldmean
-    
-        print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
-        result = div_operator_func(input=anomaly + std, returnArray=var_id)
-        index[region] = numpy.squeeze(result)
-
-    zw3_timeseries = (index['zw31'] + index['zw32'] + index['zw33']) / 3.0
- 
-    # Define the output attributes
-    notes = 'Ref: ZW3 index of Raphael (2004)'
-    var_atts = {'id': 'zw3',
-                'long_name': 'zonal_wave_3_index',
-                'standard_name': 'zonal_wave_3_index',
-                'units': '',
-                'notes': notes}
-
-    outdata_list = [zw3_timeseries,]
-    outvar_atts_list = [var_atts,]
-    outvar_axes_list = [(indata.data.getTime(),),]
-    
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
-
-
-def get_timescale(indata):
-    """Find the timescale of the data.
-
-    Args:
-      indata (cdms2.Tvariable.transientvariable): Input data
-
-    Returns:
-      'day' or 'mon' to signify daily or monthly timescale data
-
-    """
-
-    time_axis = indata.getTime().asComponentTime()
-    timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
-        
-    assert timescale in ['daily', 'monthly']
-    tscale_abbrev = 'day' if timescale == 'daily' else 'mon'
-
-    return tscale_abbrev
+#def calc_nino(index, ifile, var_id, base_period):
+#    """Calculate a Nino index.
+#
+#    Expected input: Sea surface temperature data.
+#
+#    """
+#
+#    # Determine the timescale
+#    indata = nio.InputData(ifile, var_id, region='nino'+index[4:])
+#    tscale_abbrev = get_timescale(indata.data)
+#
+#    # Calculate the index
+#    south_lat, north_lat = nio.regions['nino'+index[4:]][0][0: 2]
+#    west_lon, east_lon = nio.regions['nino'+index[4:]][1][0: 2]
+#    
+#    sub_operator_text = 'cdo y%ssub ' %(tscale_abbrev)
+#    sub_operator_func = eval(sub_operator_text.replace(' ', '.', 1)) 
+#    avg_operator_text = ' -y%savg ' %(tscale_abbrev)
+#    
+#    selregion = "-sellonlatbox,%3.2f,%3.2f,%3.2f,%3.2f %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
+#    seldate = "-seldate,%s,%s " %(base_period[0], base_period[1])
+#    raw_data = "-fldmean "+selregion
+#    climatology = avg_operator_text + seldate + raw_data
+#    
+#    print sub_operator_text + raw_data + climatology
+#    result = sub_operator_func(input=raw_data + climatology, returnArray=var_id)
+#    nino_timeseries = numpy.squeeze(result)
+#
+#    # Output file info
+#    hx = 'lat: %s to %s, lon: %s to %s, base: %s to %s' %(south_lat, north_lat,
+#                                                          west_lon, east_lon,
+#                                                          base_period[0], base_period[1])
+#    var_atts = {'id': 'nino'+index[4:],
+#                'long_name': 'nino'+index[4:]+'_index',
+#                'standard_name': 'nino'+index[4:]+'_index',
+#                'units': 'Celsius',
+#                'notes': hx}
+#    
+#    outdata_list = [nino_timeseries,]
+#    outvar_atts_list = [var_atts,]
+#    outvar_axes_list = [(indata.data.getTime(),),]
+#    
+#    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
+#
+#
+#def calc_nino_new(index, ifile, var_id, base_period):
+#    """Calculate a new Nino index.
+#
+#    Ref: Ren & Jin (2011). Nino indices for two types of ENSO. 
+#      Geophysical Research Letters, 38(4), L04704. 
+#      doi:10.1029/2010GL046031.
+#
+#    Expected input: Sea surface temperature data.
+#
+#    """
+#    
+#    # Calculate the traditional NINO3 and NINO4 indices
+#    regions = ['NINO3','NINO4']
+#    anomaly_timeseries = {}
+#    for reg in regions: 
+#        outdata_list, temp_atts_list, outvar_axes_list, global_atts = calc_nino(reg, ifile, var_id, base_period)       
+#        anomaly_timeseries[reg] = outdata_list[0]      
+# 
+#    # Calculate the new Ren & Jin index
+#    ntime = len(anomaly_timeseries['NINO3'])
+#    
+#    nino_new_timeseries = numpy.ma.zeros(ntime)
+#    for i in range(0, ntime):
+#        nino3_val = anomaly_timeseries['NINO3'][i]
+#        nino4_val = anomaly_timeseries['NINO4'][i]
+#        product = nino3_val * nino4_val
+#    
+#        alpha = 0.4 if product > 0 else 0.0
+#    
+#        if index == 'NINOCT':
+#            nino_new_timeseries[i] = numpy.ma.subtract(nino3_val, (numpy.ma.multiply(nino4_val, alpha)))
+#        elif index == 'NINOWP':
+#            nino_new_timeseries[i] = numpy.ma.subtract(nino4_val, (numpy.ma.multiply(nino3_val, alpha)))
+#    
+#    # Determine the attributes
+#    hx = 'Ref: Ren & Jin 2011, GRL, 38, L04704. Base period: %s to %s'  %(base_period[0], 
+#                                                                          base_period[1])
+#    long_name = {}
+#    long_name['NINOCT'] = 'nino_cold_tongue_index'
+#    long_name['NINOWP'] = 'nino_warm_pool_index'    
+#
+#    var_atts = {'id': 'nino'+index[4:],
+#                'long_name': long_name[index],
+#                'standard_name': long_name[index],
+#                'units': 'Celsius',
+#                'notes': hx}
+#
+#    outdata_list = [nino_new_timeseries,]
+#    outvar_atts_list = [var_atts,]
+#    
+#    return outdata_list, outvar_atts_list, outvar_axes_list, global_atts 
+#
+#
+#def calc_pwi(ifile, var_id):
+#    """Calculate the Planetary Wave Index.
+#
+#    Ref: Irving & Simmonds (2015). Southern Hemisphere planetary wave 
+#      activity and its influence on weather and climate extremes. 
+#      https://www.authorea.com/users/5641/articles/12197/_show_article
+#
+#    Expected input: Wave envelope.   
+#
+#    """
+#    
+#    # Read data
+#    indata = nio.InputData(ifile, var_id, latitude=(-70, -40))
+#    assert indata.data.getOrder() == 'tyx', "Order of the data must be time, lon, lat"
+#
+#    # Calulcate the index
+#    mermax = numpy.max(indata.data, axis=1)
+#    pwi_timeseries = numpy.median(mermax, axis=-1)
+#
+#    # Output file info
+#    pwi_atts = {'id': 'pwi',
+#                'long_name': 'planetary_wave_index',
+#                'standard_name': 'planetary_wave_index',
+#                'units': indata.data.units,
+#                'notes': 'Ref: https://www.authorea.com/users/5641/articles/12197/_show_article'}
+#
+#    outdata_list = [pwi_timeseries,]
+#    outvar_atts_list = [pwi_atts,]
+#    outvar_axes_list = [(indata.data.getTime(),),]
+#    
+#    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
+#
+#
+#def calc_sam(ifile, var_id):
+#    """Calculate an index of the Southern Annular Mode.
+#
+#    Ref: Gong & Wang (1999). Definition of Antarctic Oscillation index. 
+#      Geophysical Research Letters, 26(4), 459-462.
+#      doi:10.1029/1999GL900003
+#
+#    Expected input: Mean sea level pressure data.
+#
+#    Concept: Difference between the normalised zonal mean pressure 
+#      difference between 40S and 65S.
+#
+#    """
+#    
+#    # Determine the timescale
+#    indata = nio.InputData(ifile, var_id, longitude=(10,12))
+#    tscale_abbrev = get_timescale(indata.data)
+#    
+#    # Determine latitude range (cdo requires exact latitude value)
+#    lat_axis = indata.data.getLatitude()[:]
+#    north_lat = nio.find_nearest(lat_axis, -40)
+#    south_lat = nio.find_nearest(lat_axis, -65)
+#
+#    # Calculate the index
+#    normalised_zonal_mean_mslp = {}
+#    for lat in [north_lat, south_lat]: 
+#        div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
+#        div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
+#        sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
+#        avg_operator_text = ' -y%savg ' %(tscale_abbrev)
+#        std_operator_text = ' -y%sstd ' %(tscale_abbrev)
+#    
+#        sellat = "-sellonlatbox,0,360,%3.2f,%3.2f %s" %(lat, lat, ifile)
+#        zonmean = "-zonmean "+sellat
+#        anomaly = sub_operator_text + zonmean + avg_operator_text + zonmean
+#        std = std_operator_text + zonmean
+#    
+#        print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
+#        result = div_operator_func(input=anomaly + std, returnArray=var_id)
+#        normalised_zonal_mean_mslp[lat] = numpy.squeeze(result)
+#
+#    sam_timeseries = normalised_zonal_mean_mslp[north_lat] - normalised_zonal_mean_mslp[south_lat]
+#
+#    # Output file info
+#    hx = 'Ref: Gong & Wang (1999). GRL, 26, 459-462. doi:10.1029/1999GL900003'
+#    var_atts = {'id': 'sam',
+#                'long_name': 'Southern_Annular_Mode_Index',
+#                'standard_name': 'Southern_Annular_Mode_Index',
+#                'units': '',
+#                'notes': hx}
+#
+#    outdata_list = [sam_timeseries,]
+#    outvar_atts_list = [var_atts,]
+#    outvar_axes_list = [(indata.data.getTime(),),]
+#    
+#    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
+#
+#
+#def calc_zw3(ifile, var_id):
+#    """Calculate an index of the Southern Hemisphere ZW3 pattern.
+#    
+#    Ref: Raphael (2004). A zonal wave 3 index for the Southern Hemisphere. 
+#      Geophysical Research Letters, 31(23), L23212. 
+#      doi:10.1029/2004GL020365.
+#
+#    Expected input: Raphael (2004) uses is the 500hPa geopotential height, 
+#      sea level pressure or 500hPa zonal anomalies which are constructed by 
+#      removing the zonal mean of the geopotential height from each grid point 
+#      (preferred). The running mean (and zonal mean too if using it) should 
+#      have been applied to the input data beforehand. Raphael (2004) uses a 
+#      3-month running mean.
+#
+#    Design notes: This function uses cdo instead of CDAT because the
+#      cdutil library doesn't have routines for calculating the daily 
+#      climatology or stdev.
+#    
+#    """
+#
+#    # Determine the timescale
+#    indata = nio.InputData(ifile, var_id, region='small')
+#    tscale_abbrev = get_timescale(indata.data)
+#
+#    # Calculate the index
+#    index = {}
+#    for region in ['zw31', 'zw32', 'zw33']: 
+#        south_lat, north_lat = nio.regions[region][0][0: 2]
+#        west_lon, east_lon = nio.regions[region][1][0: 2]
+#    
+#        div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
+#        div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
+#        sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
+#        avg_operator_text = ' -y%savg ' %(tscale_abbrev)
+#        std_operator_text = ' -y%sstd ' %(tscale_abbrev)
+#    
+#        selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
+#        fldmean = "-fldmean "+selregion
+#        anomaly = sub_operator_text + fldmean + avg_operator_text + fldmean
+#        std = std_operator_text + fldmean
+#    
+#        print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
+#        result = div_operator_func(input=anomaly + std, returnArray=var_id)
+#        index[region] = numpy.squeeze(result)
+#
+#    zw3_timeseries = (index['zw31'] + index['zw32'] + index['zw33']) / 3.0
+# 
+#    # Define the output attributes
+#    notes = 'Ref: ZW3 index of Raphael (2004)'
+#    var_atts = {'id': 'zw3',
+#                'long_name': 'zonal_wave_3_index',
+#                'standard_name': 'zonal_wave_3_index',
+#                'units': '',
+#                'notes': notes}
+#
+#    outdata_list = [zw3_timeseries,]
+#    outvar_atts_list = [var_atts,]
+#    outvar_axes_list = [(indata.data.getTime(),),]
+#    
+#    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
+#
+#
+#def get_timescale(indata):
+#    """Find the timescale of the data.
+#
+#    Args:
+#      indata (cdms2.Tvariable.transientvariable): Input data
+#
+#    Returns:
+#      'day' or 'mon' to signify daily or monthly timescale data
+#
+#    """
+#
+#    time_axis = indata.getTime().asComponentTime()
+#    timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
+#        
+#    assert timescale in ['daily', 'monthly']
+#    tscale_abbrev = 'day' if timescale == 'daily' else 'mon'
+#
+#    return tscale_abbrev
 
 
 def main(inargs):
     """Run the program."""
 
-    function_for_index = {'NINO': calc_nino,
-                          'NINO_new': calc_nino_new,
-                          'SAM': calc_sam,
-                          'ZW3': calc_zw3,
-                          'MEX': calc_mex,
-                          'ASL': calc_asl,
-                          'MI': calc_mi,
-                          'PWI': calc_pwi}   
+    function_for_index = {'ASL': calc_asl}
+#                          'NINO': calc_nino,
+#                          'NINO_new': calc_nino_new,
+#                          'SAM': calc_sam,
+#                          'ZW3': calc_zw3,
+#                          'MEX': calc_mex,
+#                          'PWI': calc_pwi}   
     
     if inargs.index[0:4] == 'NINO':
         if inargs.index == 'NINOCT' or inargs.index == 'NINOWP':
@@ -393,16 +393,8 @@ def main(inargs):
                                                                                    inargs.base)            
     else:
         calc_index = function_for_index[inargs.index]
-        outdata_list, outvar_atts_list, outvar_axes_list, global_atts = calc_index(inargs.infile, 
-                                                                                   inargs.variable)
+        calc_index(inargs.infile, inargs.variable, inargs.outfile)
     
-    # Write the outfile
-    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
-                     global_atts,  
-                     outdata_list,
-                     outvar_atts_list, 
-                     outvar_axes_list)
-
 
 if __name__ == '__main__':
 
