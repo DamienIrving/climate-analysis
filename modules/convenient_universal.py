@@ -3,7 +3,15 @@
 Functions:
   adjust_lon_range   -- Express longitude values in desired 360 degree interval
   apply_lon_filter   -- Set values outside of specified longitude range to zero
+  coordinate_paris   -- Generate lat/lon pairs
+  dict_filter        -- Filter dictionary according to specified keys
+  find_nearest       -- Find the closest array item to value
+  find_duplicates    -- Return list of duplicates in a list
   get_threshold      -- Turn the user input threshold into a numeric threshold
+  hi_lo              -- Determine the new highest and lowest value.
+  list_kwargs        -- List keyword arguments of a function
+  match_dates        -- Take list of dates and match with the corresponding times 
+                        in a detailed time axis
   single2list        -- Check if item is a list, then convert if not
 
 """
@@ -11,122 +19,6 @@ Functions:
 import numpy
 from scipy import stats
 import pdb, re
-
-
-def match_dates(dates, time_axis, invert_matching=False, return_indexes=False):
-    """Take simple list of dates and match with the corresponding times in a detailed time axis.
-    
-    (For the genutil picker to work correctly in nio.temporal_extract, the
-    date list must match perfectly)
- 
-    Args:   
-      dates (list/tuple): List of dates in a simple format (e.g. 1979-01-01)
-      time_axis (list/tuple): Time axis with detailed date format (e.g. 1979-01-01 12:00:0.0)
-      invert_matching (bool, optional): Return a list of time_axis values that aren't 
-        (True) or are (False; default) in dates
-      return_indexes (bool, optional): Returned time_axis values are index numbers (True)
-        or actual dates (False; default)
-        
-    """
-    
-    dates_split = map(split_dt, dates)
-    time_axis_split = map(split_dt, time_axis)
-    
-    matches_indexes = []
-    matches_dates = []
-    misses_indexes = range(0, len(time_axis))
-    misses_dates = time_axis[:]  # creates a shallow copy
-    
-    for date in dates_split:
-        try:
-            index = time_axis_split.index(date)
-            if invert_matching:
-                misses_dates.remove(time_axis[index])
-                misses_indexes.remove(index)
-            else:
-                matches_dates.append(time_axis[index])
-                matches_indexes.append(index)
-        except ValueError:
-            pass        
-
-    if invert_matching and return_indexes:
-        return misses_indexes
-    elif invert_matching and not return_indexes:
-        return misses_dates
-    elif not invert_matching and return_indexes:
-        return matches_indexes
-    else:
-        return matches_dates
-
-
-def find_nearest(array, value):
-    """Find the closest array item to value."""
-    
-    idx = (numpy.abs(numpy.array(array) - value)).argmin()
-    return array[idx]
-
-
-
-def list_kwargs(func):
-    """List keyword arguments of a function."""
-    
-    details = inspect.getargspec(func)
-    nopt = len(details.defaults)
-    
-    return details.args[-nopt:]
-
-
-def hi_lo(data_series, current_max, current_min):
-    """Determine the new highest and lowest value."""
-    
-    try:
-        highest = MV2.max(data_series)
-    except:
-        highest = max(data_series)
-    
-    if highest > current_max:
-        new_max = highest
-    else:
-        new_max = current_max
-    
-    try:    
-        lowest = MV2.min(data_series)
-    except:
-        lowest = min(data_series)
-    
-    if lowest < current_min:
-        new_min = lowest
-    else:
-        new_min = current_min
-    
-    return new_max, new_min
-
-
-def dict_filter(indict, key_list):
-    """Filter dictionary according to specified keys."""
-    
-    return dict((key, value) for key, value in indict.iteritems() if key in key_list)
-
-
-def coordinate_pairs(lat_axis, lon_axis):
-    """Take the latitude and longitude values from given grid axes
-    and produce a flattened lat and lon array, with element-wise pairs 
-    corresponding to every grid point."""
-    
-    lon_mesh, lat_mesh = numpy.meshgrid(lon_axis, lat_axis)  # This is the correct order
-    
-    return lat_mesh.flatten(), lon_mesh.flatten()
-
-
-def find_duplicates(inlist):
-    """Return list of duplicates in a list."""
-    
-    D = defaultdict(list)
-    for i,item in enumerate(mylist):
-        D[item].append(i)
-    D = {k:v for k,v in D.items() if len(v)>1}
-    
-    return D
 
 
 def adjust_lon_range(lons, radians=True, start=0.0):
@@ -180,6 +72,40 @@ def apply_lon_filter(data, lon_bounds):
     new_data = numpy.where(lon_axis_tiled < lon_min, 0.0, data)
     
     return numpy.where(lon_axis_tiled > lon_max, 0.0, new_data)
+
+
+def coordinate_pairs(lat_axis, lon_axis):
+    """Take the latitude and longitude values from given grid axes
+    and produce a flattened lat and lon array, with element-wise pairs 
+    corresponding to every grid point."""
+    
+    lon_mesh, lat_mesh = numpy.meshgrid(lon_axis, lat_axis)  # This is the correct order
+    
+    return lat_mesh.flatten(), lon_mesh.flatten()
+
+
+def dict_filter(indict, key_list):
+    """Filter dictionary according to specified keys."""
+    
+    return dict((key, value) for key, value in indict.iteritems() if key in key_list)
+
+
+def find_duplicates(inlist):
+    """Return list of duplicates in a list."""
+    
+    D = defaultdict(list)
+    for i,item in enumerate(mylist):
+        D[item].append(i)
+    D = {k:v for k,v in D.items() if len(v)>1}
+    
+    return D
+
+
+def find_nearest(array, value):
+    """Find the closest array item to value."""
+    
+    idx = (numpy.abs(numpy.array(array) - value)).argmin()
+    return array[idx]
 
 
 def get_significance(data_subset, data_all, 
@@ -265,6 +191,87 @@ def get_threshold(data, threshold_str, axis=None):
         threshold_float = float(threshold_str)
     
     return threshold_float
+
+
+def hi_lo(data_series, current_max, current_min):
+    """Determine the new highest and lowest value."""
+    
+    try:
+        highest = numpy.max(data_series)
+    except:
+        highest = max(data_series)
+    
+    if highest > current_max:
+        new_max = highest
+    else:
+        new_max = current_max
+    
+    try:    
+        lowest = numpy.min(data_series)
+    except:
+        lowest = min(data_series)
+    
+    if lowest < current_min:
+        new_min = lowest
+    else:
+        new_min = current_min
+    
+    return new_max, new_min
+
+
+def list_kwargs(func):
+    """List keyword arguments of a function."""
+    
+    details = inspect.getargspec(func)
+    nopt = len(details.defaults)
+    
+    return details.args[-nopt:]
+
+
+def match_dates(dates, time_axis, invert_matching=False, return_indexes=False):
+    """Take simple list of dates and match with the corresponding times in a detailed time axis.
+    
+    (For the genutil picker to work correctly in nio.temporal_extract, the
+    date list must match perfectly)
+ 
+    Args:   
+      dates (list/tuple): List of dates in a simple format (e.g. 1979-01-01)
+      time_axis (list/tuple): Time axis with detailed date format (e.g. 1979-01-01 12:00:0.0)
+      invert_matching (bool, optional): Return a list of time_axis values that aren't 
+        (True) or are (False; default) in dates
+      return_indexes (bool, optional): Returned time_axis values are index numbers (True)
+        or actual dates (False; default)
+        
+    """
+    
+    dates_split = map(split_dt, dates)
+    time_axis_split = map(split_dt, time_axis)
+    
+    matches_indexes = []
+    matches_dates = []
+    misses_indexes = range(0, len(time_axis))
+    misses_dates = time_axis[:]  # creates a shallow copy
+    
+    for date in dates_split:
+        try:
+            index = time_axis_split.index(date)
+            if invert_matching:
+                misses_dates.remove(time_axis[index])
+                misses_indexes.remove(index)
+            else:
+                matches_dates.append(time_axis[index])
+                matches_indexes.append(index)
+        except ValueError:
+            pass        
+
+    if invert_matching and return_indexes:
+        return misses_indexes
+    elif invert_matching and not return_indexes:
+        return misses_dates
+    elif not invert_matching and return_indexes:
+        return matches_indexes
+    else:
+        return matches_dates
 
 
 def single2list(item, numpy_array=False):

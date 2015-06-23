@@ -2,11 +2,13 @@
 Collection of commonly used functions for general file input and output.
 
 Functions:
-  find_duplicates   -- Find duplicates in a list
-  read_dates        -- Read in a list of dates
-  set_outfile_date  -- Take an outfile name and replace existing date with new one
-  standard_datetime -- Convert any arbitrary date/time to standard format: YYYY-MM-DD
-  write_dates       -- Write a list of dates
+  find_duplicates    -- Find duplicates in a list
+  read_dates         -- Read in a list of dates
+  set_global_atts    -- Update the global attributes of an xray.DataArray
+  set_outfile_date   -- Take an outfile name and replace existing date with new one
+  standard_datetime  -- Convert any arbitrary date/time to standard format: YYYY-MM-DD
+  update_history_att -- Update the global history attribute of an xray.DataArray
+  write_dates        -- Write a list of dates
 
 """
 
@@ -36,6 +38,14 @@ except ImportError:
     MODULE_HASH = 'unknown'
 
 
+modules_dir = os.path.join(repo_dir, 'modules')
+sys.path.append(modules_dir)
+try:
+    import convenient_universal as uconv
+except ImportError:
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
+
+
 # Define functions
 
 
@@ -46,35 +56,92 @@ regions = {'asl': [-75, -60, 180, 310],
            'ausnz': [-50, 0, 100, 185],
            'emia': [-10, 10, 165, 220],
            'emib': [-15, 5, 250, 290],
-           'emic': [(-10, 20), (125, 145)],
-           'eqpacific': [(-30, 30), (120, 280)],
-           'nino1': [(-10, -5), (270, 280)],
-           'nino2': [(-5, 0), (270, 280)],
-           'nino12': [(-10, 0), (270, 280)],
-           'nino3': [(-5, 5), (210, 270)],
-           'nino34': [(-5, 5), (190, 240)],
-           'nino4': [(-5, 5), (160, 210)],
-           'sh': [(-90, 0), (0, 360)],
-           'shextropics15': [(-90, -15), (0, 360)],
-           'shextropics20': [(-90, -20), (0, 360)],
-           'shextropics30': [(-90, -30), (0, 360)],
-           'small': [(-5, 0), (10, 15)],
-           'tropics': [(-30, 30), (0, 360)],
-           'glatt': [(20, 80), (-180, 180)],
-           'nonpolar70': [(-70, 70), (0, 360)],
-           'nonpolar80': [(-80, 80), (0, 360)],
-           'sh-psa': [(-90, 0), (90, 450)],
-           'sh-psa-extra': [(-90, 30), (90, 450)],
-           'world-dateline': [(-90, 90), (0, 360)],
-           'world-dateline-duplicate360': [(-90, 90), (0, 360)],
-           'world-greenwich': [(-90, 90), (-180, 180)],
-           'world-psa': [(-90, 90), (90, 450)],
-           'zw31': [(-50, -45), (45, 60)],
-           'zw32': [(-50, -45), (161, 171)],
-           'zw33': [(-50, -45), (279, 289)],
+           'emic': [-10, 20, 125, 145],
+           'eqpacific': [-30, 30, 120, 280],
+           'nino1': [-10, -5, 270, 280],
+           'nino2': [-5, 0, 270, 280],
+           'nino12': [-10, 0, 270, 280],
+           'nino3': [-5, 5, 210, 270],
+           'nino34': [-5, 5, 190, 240],
+           'nino4': [-5, 5, 160, 210],
+           'sh': [-90, 0, 0, 360],
+           'shextropics15': [-90, -15, 0, 360],
+           'shextropics20': [-90, -20, 0, 360],
+           'shextropics30': [-90, -30, 0, 360],
+           'small': [-5, 0, 10, 15],
+           'tropics': [-30, 30, 0, 360],
+           'glatt': [20, 80, -180, 180],
+           'nonpolar70': [-70, 70, 0, 360],
+           'nonpolar80': [-80, 80, 0, 360],
+           'sh-psa': [-90, 0, 90, 450],
+           'sh-psa-extra': [-90, 30, 90, 450],
+           'world-dateline': [-90, 90, 0, 360],
+           'world-dateline-duplicate360': [-90, 90, 0, 360],
+           'world-greenwich': [-90, 90, -180, 180],
+           'world-psa': [-90, 90, 90, 450],
+           'zw31': [-50, -45, 45, 60],
+           'zw32': [-50, -45, 161, 171],
+           'zw33': [-50, -45, 279, 289],
            }
-           
 
+
+def check_xrayDataset(dset, vars):
+    """Check xray.Dataset for data format compliance.
+    
+    Args:
+      dset (xray.Dataset)
+      vars (list of str): Variables to check
+    
+    """
+    
+    vars = uconv.single2list(vars)
+    for var in vars:
+    
+        # Variable attributes
+        assert 'units' in dset[var].attrs.keys(), \
+        "variable must have a units attribute"
+    
+        assert 'long_name' in dset[var].attrs.keys(), \
+        "variable must have a long_name attribute"
+    
+        assert len(dset[var].attrs['long_name'].split(' ')) == 1, \
+        "long_name must have no spaces" # Iris plotting library requires this
+    
+        # Axis names and order
+        accepted_dims = ['time', 'latitude', 'longitude', 'level']
+        for dim_name in dset[var].dims:
+            assert dim_name in accepted_dims, \
+            "accepted dimension names are %s" %(" ".join(accepted_dims))
+
+        correct_order = []
+        for dim_name in accepted_dims:
+            if dim_name in dset[var].dims:
+                correct_order.append(dim_name)
+    
+        if dset[var].dims != correct_order:
+            print 'swapping dimension order...'
+            #FIXME
+        
+    # Axis values 
+    if 'latitude' in dset.keys():
+        lat_values = dset['latitude'].values
+        
+        assert lat_values[0] <= lat_values[-1], \
+        'Latitude axis must be in ascending order'
+        
+    if 'longitude' in dset.keys():
+        lon_values = dset['longitude'].values
+    
+        assert lon_values[0] <= lon_values[-1], \
+        'Longitude axis must be in ascending order'
+    
+        assert 0 <= lon_values.max() <= 360, \
+        'Longitude axis must be 0 to 360E'
+
+        assert 0 <= lon_values.min() <= 360, \
+        'Longitude axis must be 0 to 360E'
+        
+    
 def get_timescale(times):
     """Get the timescale.
     
@@ -140,6 +207,25 @@ def read_dates(infile):
         date_metadata=metfile.read()
 
     return date_list, date_metadata
+
+
+def set_global_atts(dset, dset_template, hist_dict):
+    """Update the global attributes of an xray.DataArray.
+    
+    Args:
+      dset (xray.DataArray): DataArray that needs updating
+      dset_template (dict): Template global attributes
+      hist_dict (dict): History atts from each input file
+        (keys = filename, values = history attribute)
+    
+    """
+    
+    dset.attrs = dset_template
+    
+    if 'calendar' in dset.attrs.keys():
+        del dset.attrs['calendar']  # Iris does not like it
+
+    dset.attrs['history'] = write_metadata(file_info=hist_dict)
 
 
 def set_outfile_date(outfile, new_date):

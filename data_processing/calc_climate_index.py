@@ -26,9 +26,10 @@ modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 
 try:
-    import netcdf_io as nio
+    import general_io as gio
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
+
 
 # Define functions
 
@@ -47,32 +48,33 @@ def calc_asl(ifile, var_id, ofile):
     """
 
     # Read data
-    south_lat, north_lat, west_lon, east_lon = nio.regions['asl']
+    south_lat, north_lat, west_lon, east_lon = gio.regions['asl']
     
     dset_in = xray.open_dataset(ifile)
-    indata = dset_in[var_id].sel(latitude=(south_lat, north_lat), longitude=(west_lon, east_lon))
+    gio.check_xrayDataset(dset_in, var_id)
+    darray = dset_in[var_id].sel(latitude=(south_lat, north_lat), longitude=(west_lon, east_lon))
     
-    assert indata[var_id].dims == ('time', 'latitude', 'longitude'), \ 
+    assert darray[var_id].dims == ('time', 'latitude', 'longitude'), \ 
     "Order of the data must be time, latitude, longitude"
 
     # Get axis information
-    lat_values = indata['latitude'].values
-    lon_values = indata['longitude'].values
+    lat_values = darray['latitude'].values
+    lon_values = darray['longitude'].values
     lats, lons = nio.coordinate_pairs(lat_values, lon_values)
 
     # Reshape data
-    ntimes, nlats, nlons = indata[var_id].values.shape
-    indata_reshaped = numpy.reshape(indata[var_id].values, (ntimes, nlats*nlons))
+    ntimes, nlats, nlons = darray[var_id].values.shape
+    darray_reshaped = numpy.reshape(darray[var_id].values, (ntimes, nlats*nlons))
 
     # Get the ASL index info (min value for each timestep and its lat/lon)
-    min_values = numpy.amin(indata_reshaped, axis=1)
-    min_indexes = numpy.argmin(indata_reshaped, axis=1)
+    min_values = numpy.amin(darray_reshaped, axis=1)
+    min_indexes = numpy.argmin(darray_reshaped, axis=1)
     min_lats = numpy.take(lats, min_indexes)
     min_lons = numpy.take(lons, min_indexes)
 
     # Write the output file
     d = {}
-    d['time'] = indata['time']
+    d['time'] = darray['time']
     d['asl_value'] = (['time'], min_values)
     d['asl_lat'] = (['time'], min_lats)
     d['asl_lon'] = (['time'], min_lons)    
@@ -92,6 +94,7 @@ def calc_asl(ifile, var_id, ofile):
                                  'units': 'degrees_east',
                                  'notes': ref}
     
+    gio.set_global_atts(dset_out, dset_in.attrs, {ifile: dset_in.attrs['history']})
     dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
 
 
