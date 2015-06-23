@@ -10,10 +10,8 @@ Description:  Calculate common climate indices
 import sys, os
 import argparse
 import numpy
-from cdo import *
-cdo = Cdo()
+import xray
 import pdb
-import cdms2, cdutil, MV2
 
 # Import my modules
 
@@ -34,7 +32,7 @@ except ImportError:
 
 # Define functions
 
-def calc_asl(ifile, var_id):
+def calc_asl(ifile, var_id, ofile):
     """Calculate the Amundsen Sea Low index.
 
     Ref: Turner et al (2013). The Amundsen Sea Low. 
@@ -49,18 +47,22 @@ def calc_asl(ifile, var_id):
     """
 
     # Read data
-    indata = nio.InputData(ifile, var_id, region='asl')
-    assert indata.data.getOrder() == 'tyx', "Order of the data must be time, lon, lat"
+    south_lat, north_lat, west_lon, east_lon = nio.regions['asl']
+    
+    dset_in = xray.open_dataset(ifile)
+    indata = dset_in[var_id].sel(latitude=(south_lat, north_lat), longitude=(west_lon, east_lon))
+    
+    assert indata[var_id].dims == ('time', 'latitude', 'longitude'), \ 
+    "Order of the data must be time, latitude, longitude"
 
     # Get axis information
-    lat_axis = indata.data.getLatitude()[:]
-    lon_axis = indata.data.getLongitude()[:]
-    time_axis = indata.data.getTime()
-    lats, lons = nio.coordinate_pairs(lat_axis, lon_axis)
+    lat_values = indata['latitude'].values
+    lon_values = indata['longitude'].values
+    lats, lons = nio.coordinate_pairs(lat_values, lon_values)
 
     # Reshape data
-    ntimes, nlats, nlons = indata.data.shape
-    indata_reshaped = numpy.reshape(indata.data, (ntimes, nlats*nlons))
+    ntimes, nlats, nlons = indata[var_id].values.shape
+    indata_reshaped = numpy.reshape(indata[var_id].values, (ntimes, nlats*nlons))
 
     # Get the ASL index info (min value for each timestep and its lat/lon)
     min_values = numpy.amin(indata_reshaped, axis=1)
@@ -68,137 +70,29 @@ def calc_asl(ifile, var_id):
     min_lats = numpy.take(lats, min_indexes)
     min_lons = numpy.take(lons, min_indexes)
 
-    # Output file info
-    values_atts = {'id': 'asl_value',
-                   'long_name': 'asl_minimum_pressure',
-                   'standard_name': 'asl_minimum_pressure',
-                   'units': 'Pa',
-                   'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818-1829. doi:10.1002/joc.3558.'}
-    lats_atts = {'id': 'asl_lat',
-                 'long_name': 'asl_latitude',
-                 'standard_name': 'asl_latitude',
-                 'units': 'degrees_north',
-                 'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818-1829. doi:10.1002/joc.3558.'}
-    lons_atts = {'id': 'asl_lon',
-                 'long_name': 'asl_longitude',
-                 'standard_name': 'asl_longitude',
-                 'units': 'degrees_east',
-                 'notes': 'Ref: Turner et al (2013). Int J Clim. 33, 1818-1829. doi:10.1002/joc.3558.'}
-
-    outdata_list = [min_values, min_lats, min_lons]
-    outvar_atts_list = [values_atts, lats_atts, lons_atts]
-    outvar_axes_list = [(time_axis,), (time_axis,), (time_axis,)]
+    # Write the output file
+    d = {}
+    d['time'] = indata['time']
+    d['asl_value'] = (['time'], min_values)
+    d['asl_lat'] = (['time'], min_lats)
+    d['asl_lon'] = (['time'], min_lons)    
+    dset_out = xray.Dataset(d)
     
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
-
-
-def calc_mex(ifile, var_id):
-    """Calculate the mid-latitude extreme index (MEX).
+    ref = 'Ref: Turner et al (2013). Int J Clim. 33, 1818-1829. doi:10.1002/joc.3558.'
+    dset_out['asl_value'].attrs = {'long_name': 'asl_minimum_pressure',
+                                   'standard_name': 'asl_minimum_pressure',
+                                   'units': 'Pa',
+                                   'notes': ref}
+    dset_out['asl_lat'].attrs = {'long_name': 'asl_latitude',
+                                 'standard_name': 'asl_latitude',
+                                 'units': 'degrees_north',
+                                 'notes': ref}
+    dset_out['asl_lon'].attrs = {'long_name': 'asl_longitude',
+                                 'standard_name': 'asl_longitude',
+                                 'units': 'degrees_east',
+                                 'notes': ref}
     
-    Ref: Coumou et al (2014). Quasi-resonant circulation regimes and hemispheric 
-      synchronization of extreme weather in boreal summer. 
-      Proceedings of the National Academy of Sciences. 
-      doi:10.1073/pnas.1412797111
-      (Only difference between their method and that implemented here is that 
-      they detrend their data first.) 
-    
-    Expected input: Any running mean should have been applied to the 
-      input data beforehand. 
-    
-    Design notes: This function uses cdo instead of CDAT because the
-      cdutil library doesn't have routines for calculating the daily 
-      climatology or standard deviation.
-    
-    Possible improvements: A weighted mean?
-        
-    """
-
-    west_lon = 0
-    east_lon = 360
-    south_lat = -75
-    north_lat = -40
-
-    # Determine the timescale
-    indata_complete = nio.InputData(ifile, var_id, latitude=(south_lat, north_lat)) 
-    tscale_abbrev = get_timescale(indata.data) 
-
-    # Calculate the index
-    div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
-    div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
-    sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
-    avg_operator_text = ' -y%savg ' %(tscale_abbrev)
-    std_operator_text = ' -y%sstd ' %(tscale_abbrev)
-
-    selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
-
-    anomaly = sub_operator_text + selregion + avg_operator_text + selregion
-    std = std_operator_text + selregion
-
-    print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
-    cdo_result = div_operator_func(input=anomaly + std, returnArray=var_id)
-    square_term = numpy.square(cdo_result)
-    square_term = cdms2.createVariable(square_term, grid=indata.data.getGrid(), axes=indata.data.getAxisList())
-
-    ave_axes = square_term.getOrder().translate(None, 't')  #all but the time axis
-    mex_timeseries_raw = cdutil.averager(square_term, axis=ave_axes, weights=['weighted']*len(ave_axes))
-    
-    mex_avg = numpy.mean(mex_timeseries_raw)
-    mex_std = numpy.std(mex_timeseries_raw)
-
-    mex_timeseries_normalised = (mex_timeseries_raw - mex_avg) / mex_std
-
-    # Output file info
-    hx = 'Ref: MEX index of Coumou (2014) doi:10.1073/pnas.1412797111'
-    var_atts = {'id': 'mex',
-                'long_name': 'midlatitude_extreme_index',
-                'standard_name': 'midlatitude_extreme_index',
-                'units': '',
-                'notes': hx}
-
-    outdata_list = [mex_timeseries_normalised,]
-    outvar_atts_list = [var_atts,]
-    outvar_axes_list = [(indata.data.getTime(),),]
-    
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
-
-
-def calc_mi(ifile, var_id):
-    """Calculate the meridional index.
-
-    Expected input: Meridional wind data.
-    
-    Returns: Meridional index (average meridional wind amplitude from 40-70S)
-      and the average meridional wind (to check if close to zero).
-
-    """
-
-    # Read data
-    indata = nio.InputData(ifile, var_id, latitude=(-70, -40))
-    time_axis = indata.data.getTime()
-    
-    # v mean
-    v_mean = cdutil.averager(indata.data, axis='yx', weights=['unweighted']*2)
-
-    # amp(v) mean
-    v_amp = MV2.absolute(indata.data)
-    v_amp_mean = cdutil.averager(v_amp, axis='yx', weights=['unweighted']*2)
-
-    # Output file info
-    v_mean_atts = {'id': 'v_mean',
-                   'long_name': 'v_mean',
-                   'standard_name': 'v_mean',
-                   'units': indata.data.units}
-    v_amp_mean_atts = {'id': 'mi',
-                       'long_name': 'meridional_index',
-                       'standard_name': 'meridional_index',
-                       'units': indata.data.units,
-                       'notes': 'Average amplitude of the meridional wind from 40-70S'}
-
-    outdata_list = [v_mean, v_amp_mean]
-    outvar_atts_list = [v_mean_atts, v_amp_mean_atts]
-    outvar_axes_list = [(time_axis,), (time_axis,)]
-    
-    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
+    dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
 
 
 def calc_nino(index, ifile, var_id, base_period):
@@ -474,8 +368,7 @@ def get_timescale(indata):
 
 def main(inargs):
     """Run the program."""
-        
-    # Identify relevant function and calculate index
+
     function_for_index = {'NINO': calc_nino,
                           'NINO_new': calc_nino_new,
                           'SAM': calc_sam,
