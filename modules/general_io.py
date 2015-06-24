@@ -172,6 +172,8 @@ def get_timescale(times):
         print 'Must be between hourly and yearly.'
         sys.exit(1)
 
+    print timescale
+
     return timescale
 
 

@@ -241,7 +241,7 @@ def calc_sam(ifile, var_id, ofile):
     Expected input: Mean sea level pressure data.
 
     Concept: Difference between the normalised zonal mean pressure 
-      difference between 40S and 65S.
+      at 40S and 65S.
 
     """
  
@@ -252,15 +252,14 @@ def calc_sam(ifile, var_id, ofile):
     # Calculate index
     north_lat = uconv.find_nearest(dset_in['latitude'].values, -40)
     south_lat = uconv.find_nearest(dset_in['latitude'].values, -65)
-    
     darray = dset_in[var_id].sel(latitude=(south_lat, north_lat)).mean(dim='longitude')
-    
+
     groupby_op = get_groupby_op(darray['time'].values)
-    clim = darray.groupby(groupby_op).mean()
+    clim = darray.groupby(groupby_op).mean(dim='time')
     anom = darray.groupby(groupby_op) - clim
-    stdev = darray.groupby(groupby_op).std()
+    stdev = darray.groupby(groupby_op).std(dim='time')
     norm = anom.groupby(groupby_op) / stdev
-    
+
     sam_timeseries = norm.sel(latitude=north_lat).values - norm.sel(latitude=south_lat).values
 
     # Write output file
