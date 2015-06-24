@@ -259,8 +259,8 @@ def calc_sam(ifile, var_id, ofile):
     clim = darray.groupby(groupby_op).mean()
     anom = darray.groupby(groupby_op) - clim
     stdev = darray.groupby(groupby_op).std()
+    norm = anom.groupby(groupby_op) / stdev
     
-    norm = anom / stdev
     sam_timeseries = norm.sel(latitude=north_lat).values - norm.sel(latitude=south_lat).values
 
     # Write output file
