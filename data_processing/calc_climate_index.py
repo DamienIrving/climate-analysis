@@ -122,77 +122,79 @@ def calc_nino(index, ifile, var_id, base_period, ofile):
     clim = darray.sel(time=slice(base_period[0], base_period[1])).groupby(groupby_op).mean()
     anom = darray.groupby(groupby_op) - clim
 
-    # Write the output file
+    # Write output
+    if ofile:
+	d = {}
+	d['time'] = darray['time']
+	d[index_name] = (['time'], anom.values) 
+	dset_out = xray.Dataset(d)
+
+	hx = 'lat: %s to %s, lon: %s to %s, base: %s to %s' %(south_lat, north_lat,
+                                                              west_lon, east_lon,
+                                                              base_period[0], base_period[1])
+
+	dset_out[index_name].attrs = {'long_name': index_name+'_index',
+                                      'standard_name': index_name+'_index',
+                                      'units': 'Celsius',
+                                      'notes': hx}
+
+	gio.set_global_atts(dset_out, dset_in.attrs, {ifile: dset_in.attrs['history']})
+	dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
+    else:
+        return dset_in, anom.values
+
+
+def calc_nino_new(index, ifile, var_id, base_period, ofile):
+    """Calculate a new Nino index.
+
+    Ref: Ren & Jin (2011). Nino indices for two types of ENSO. 
+      Geophysical Research Letters, 38(4), L04704. 
+      doi:10.1029/2010GL046031.
+
+    Expected input: Sea surface temperature data.
+
+    """
+    
+    # Calculate the traditional NINO3 and NINO4 indices
+    regions = ['NINO3','NINO4']
+    anomaly_timeseries = {}
+    for reg in regions: 
+        dset_in, anomaly_timeseries[reg] = calc_nino(reg, ifile, var_id, base_period, None)             
+ 
+    # Calculate the new Ren & Jin index
+    ntime = len(anomaly_timeseries['NINO3'])
+    
+    nino_new_timeseries = numpy.ma.zeros(ntime)
+    for i in range(0, ntime):
+        nino3_val = anomaly_timeseries['NINO3'][i]
+        nino4_val = anomaly_timeseries['NINO4'][i]
+        product = nino3_val * nino4_val
+    
+        alpha = 0.4 if product > 0 else 0.0
+    
+        if index == 'NINOCT':
+            nino_new_timeseries[i] = numpy.ma.subtract(nino3_val, (numpy.ma.multiply(nino4_val, alpha)))
+        elif index == 'NINOWP':
+            nino_new_timeseries[i] = numpy.ma.subtract(nino4_val, (numpy.ma.multiply(nino3_val, alpha)))
+    
+    # Write output
     d = {}
-    d['time'] = darray['time']
-    d[index_name] = (['time'], anom.values) 
+    d['time'] = dset_in['time']
+    d['nino'+index[4:]] = (['time'], nino_new_timeseries) 
     dset_out = xray.Dataset(d)
 
-    hx = 'lat: %s to %s, lon: %s to %s, base: %s to %s' %(south_lat, north_lat,
-                                                          west_lon, east_lon,
-                                                          base_period[0], base_period[1])
+    hx = 'Ref: Ren & Jin 2011, GRL, 38, L04704. Base period: %s to %s'  %(base_period[0], base_period[1])
+    long_name = {}
+    long_name['ninoCT'] = 'nino_cold_tongue_index'
+    long_name['ninoWP'] = 'nino_warm_pool_index' 
+    dset_out['nino'+index[4:]].attrs = {'long_name': long_name['nino'+index[4:]],
+                                        'standard_name': long_name['nino'+index[4:]],
+                                        'units': 'Celsius',
+                                        'notes': hx}
 
-    dset_out[index_name].attrs = {'long_name': index_name+'_index',
-                                  'standard_name': index_name+'_index',
-                                  'units': 'Celsius',
-                                  'notes': hx}
-    
     gio.set_global_atts(dset_out, dset_in.attrs, {ifile: dset_in.attrs['history']})
     dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
-    
 
-#def calc_nino_new(index, ifile, var_id, base_period):
-#    """Calculate a new Nino index.
-#
-#    Ref: Ren & Jin (2011). Nino indices for two types of ENSO. 
-#      Geophysical Research Letters, 38(4), L04704. 
-#      doi:10.1029/2010GL046031.
-#
-#    Expected input: Sea surface temperature data.
-#
-#    """
-#    
-#    # Calculate the traditional NINO3 and NINO4 indices
-#    regions = ['NINO3','NINO4']
-#    anomaly_timeseries = {}
-#    for reg in regions: 
-#        outdata_list, temp_atts_list, outvar_axes_list, global_atts = calc_nino(reg, ifile, var_id, base_period)       
-#        anomaly_timeseries[reg] = outdata_list[0]      
-# 
-#    # Calculate the new Ren & Jin index
-#    ntime = len(anomaly_timeseries['NINO3'])
-#    
-#    nino_new_timeseries = numpy.ma.zeros(ntime)
-#    for i in range(0, ntime):
-#        nino3_val = anomaly_timeseries['NINO3'][i]
-#        nino4_val = anomaly_timeseries['NINO4'][i]
-#        product = nino3_val * nino4_val
-#    
-#        alpha = 0.4 if product > 0 else 0.0
-#    
-#        if index == 'NINOCT':
-#            nino_new_timeseries[i] = numpy.ma.subtract(nino3_val, (numpy.ma.multiply(nino4_val, alpha)))
-#        elif index == 'NINOWP':
-#            nino_new_timeseries[i] = numpy.ma.subtract(nino4_val, (numpy.ma.multiply(nino3_val, alpha)))
-#    
-#    # Determine the attributes
-#    hx = 'Ref: Ren & Jin 2011, GRL, 38, L04704. Base period: %s to %s'  %(base_period[0], 
-#                                                                          base_period[1])
-#    long_name = {}
-#    long_name['NINOCT'] = 'nino_cold_tongue_index'
-#    long_name['NINOWP'] = 'nino_warm_pool_index'    
-#
-#    var_atts = {'id': 'nino'+index[4:],
-#                'long_name': long_name[index],
-#                'standard_name': long_name[index],
-#                'units': 'Celsius',
-#                'notes': hx}
-#
-#    outdata_list = [nino_new_timeseries,]
-#    outvar_atts_list = [var_atts,]
-#    
-#    return outdata_list, outvar_atts_list, outvar_axes_list, global_atts 
-#
 
 def calc_pwi(ifile, var_id, ofile):
     """Calculate the Planetary Wave Index.
@@ -324,7 +326,7 @@ def calc_zw3(ifile, var_id, ofile):
     d['zw3'] = (['time'], zw3_timeseries)
     dset_out = xray.Dataset(d)
     
-    dset_out['sam'].attrs = {'id': 'zw3',
+    dset_out['zw3'].attrs = {'id': 'zw3',
                              'long_name': 'zonal_wave_3_index',
                              'standard_name': 'zonal_wave_3_index',
                              'units': '',
@@ -360,10 +362,9 @@ def main(inargs):
                           'NINO': calc_nino,
 			  'SAM': calc_sam,
 			  'PWI': calc_pwi,
-                          'ZW3': calc_zw3,}
-#                          'NINO_new': calc_nino_new,
+                          'ZW3': calc_zw3,
+                          'NINO_new': calc_nino_new,}
                        
-    
     if inargs.index[0:4] == 'NINO':
         if inargs.index == 'NINOCT' or inargs.index == 'NINOWP':
             calc_index = function_for_index['NINO_new']
@@ -380,7 +381,7 @@ if __name__ == '__main__':
     extra_info ="""
 
 example:
-  /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_climate_index.py NINO34 
+  python calc_climate_index.py NINO34 
   /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly_native-ocean.nc ts 
   /work/dbirving/processed/indices/data/ts_Merra_surface_NINO34_monthly_native-ocean.nc
         
