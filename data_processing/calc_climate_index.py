@@ -49,11 +49,12 @@ def calc_asl(ifile, var_id, ofile):
     """
 
     # Read data
-    south_lat, north_lat, west_lon, east_lon = gio.regions['asl']
-    
     dset_in = xray.open_dataset(ifile)
     gio.check_xrayDataset(dset_in, var_id)
-    darray = dset_in[var_id].sel(latitude=slice(south_lat, north_lat), longitude=slice(west_lon, east_lon))
+
+    south_lat, north_lat, west_lon, east_lon = gio.regions['asl']
+    darray = dset_in[var_id].sel(latitude=slice(south_lat, north_lat), 
+                                 longitude=slice(west_lon, east_lon))
 
     assert darray.dims == ('time', 'latitude', 'longitude'), \
     "Order of the data must be time, latitude, longitude"
@@ -99,51 +100,47 @@ def calc_asl(ifile, var_id, ofile):
     dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
 
 
-#def calc_nino(index, ifile, var_id, base_period):
-#    """Calculate a Nino index.
-#
-#    Expected input: Sea surface temperature data.
-#
-#    """
-#
-#    # Determine the timescale
-#    indata = nio.InputData(ifile, var_id, region='nino'+index[4:])
-#    tscale_abbrev = get_timescale(indata.data)
-#
-#    # Calculate the index
-#    south_lat, north_lat = nio.regions['nino'+index[4:]][0][0: 2]
-#    west_lon, east_lon = nio.regions['nino'+index[4:]][1][0: 2]
-#    
-#    sub_operator_text = 'cdo y%ssub ' %(tscale_abbrev)
-#    sub_operator_func = eval(sub_operator_text.replace(' ', '.', 1)) 
-#    avg_operator_text = ' -y%savg ' %(tscale_abbrev)
-#    
-#    selregion = "-sellonlatbox,%3.2f,%3.2f,%3.2f,%3.2f %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
-#    seldate = "-seldate,%s,%s " %(base_period[0], base_period[1])
-#    raw_data = "-fldmean "+selregion
-#    climatology = avg_operator_text + seldate + raw_data
-#    
-#    print sub_operator_text + raw_data + climatology
-#    result = sub_operator_func(input=raw_data + climatology, returnArray=var_id)
-#    nino_timeseries = numpy.squeeze(result)
-#
-#    # Output file info
-#    hx = 'lat: %s to %s, lon: %s to %s, base: %s to %s' %(south_lat, north_lat,
-#                                                          west_lon, east_lon,
-#                                                          base_period[0], base_period[1])
-#    var_atts = {'id': 'nino'+index[4:],
-#                'long_name': 'nino'+index[4:]+'_index',
-#                'standard_name': 'nino'+index[4:]+'_index',
-#                'units': 'Celsius',
-#                'notes': hx}
-#    
-#    outdata_list = [nino_timeseries,]
-#    outvar_atts_list = [var_atts,]
-#    outvar_axes_list = [(indata.data.getTime(),),]
-#    
-#    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
-#
-#
+def calc_nino(index, ifile, var_id, base_period, ofile):
+    """Calculate a Nino index.
+
+    Expected input: Sea surface temperature data.
+
+    """
+
+    index_name = 'nino'+index[4:]
+
+    # Read the data
+    dset_in = xray.open_dataset(ifile)
+    gio.check_xrayDataset(dset_in, var_id)
+
+    # Calculate the index
+    south_lat, north_lat, west_lon, east_lon = gio.regions[index_name]
+    darray = dset_in[var_id].sel(latitude=slice(south_lat, north_lat), 
+             longitude=slice(west_lon, east_lon)).mean(dim=['latitude', 'longitude'])
+    
+    groupby_op = get_groupby_op(darray['time'].values)
+    clim = darray.sel(time=slice(base_period[0], base_period[1])).groupby(groupby_op).mean()
+    anom = darray.groupby(groupby_op) - clim
+
+    # Write the output file
+    d = {}
+    d['time'] = darray['time']
+    d[index_name] = (['time'], anom.values) 
+    dset_out = xray.Dataset(d)
+
+    hx = 'lat: %s to %s, lon: %s to %s, base: %s to %s' %(south_lat, north_lat,
+                                                          west_lon, east_lon,
+                                                          base_period[0], base_period[1])
+
+    dset_out[index_name].attrs = {'long_name': index_name+'_index',
+                                  'standard_name': index_name+'_index',
+                                  'units': 'Celsius',
+                                  'notes': hx}
+    
+    gio.set_global_atts(dset_out, dset_in.attrs, {ifile: dset_in.attrs['history']})
+    dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
+    
+
 #def calc_nino_new(index, ifile, var_id, base_period):
 #    """Calculate a new Nino index.
 #
@@ -348,33 +345,32 @@ def calc_asl(ifile, var_id, ofile):
 #    outvar_axes_list = [(indata.data.getTime(),),]
 #    
 #    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
-#
-#
-#def get_timescale(indata):
-#    """Find the timescale of the data.
-#
-#    Args:
-#      indata (cdms2.Tvariable.transientvariable): Input data
-#
-#    Returns:
-#      'day' or 'mon' to signify daily or monthly timescale data
-#
-#    """
-#
-#    time_axis = indata.getTime().asComponentTime()
-#    timescale = nio.get_timescale(nio.get_datetime(time_axis[0:2]))
-#        
-#    assert timescale in ['daily', 'monthly']
-#    tscale_abbrev = 'day' if timescale == 'daily' else 'mon'
-#
-#    return tscale_abbrev
+
+
+def get_groupby_op(time_array):
+    """Find timescale of data and return groupby function.
+
+    Args:
+      indata (numpy array): Array of numpy.datetime64 instances
+
+    Returns:
+      'time.dayofyear' or 'time.month' for xray climatology calculation
+
+    """
+
+    tscale = gio.get_timescale(time_array)
+        
+    assert tscale in ['daily', 'monthly']
+    groupby_op = 'time.dayofyear' if tscale == 'daily' else 'time.month'
+
+    return groupby_op
 
 
 def main(inargs):
     """Run the program."""
 
-    function_for_index = {'ASL': calc_asl}
-#                          'NINO': calc_nino,
+    function_for_index = {'ASL': calc_asl,
+                          'NINO': calc_nino,}
 #                          'NINO_new': calc_nino_new,
 #                          'SAM': calc_sam,
 #                          'ZW3': calc_zw3,
@@ -386,11 +382,7 @@ def main(inargs):
             calc_index = function_for_index['NINO_new']
         else:
             calc_index = function_for_index['NINO']
-
-        outdata_list, outvar_atts_list, outvar_axes_list, global_atts = calc_index(inargs.index, 
-                                                                                   inargs.infile, 
-                                                                                   inargs.variable, 
-                                                                                   inargs.base)            
+        calc_index(inargs.index, inargs.infile, inargs.variable, inargs.base, inargs.outfile)            
     else:
         calc_index = function_for_index[inargs.index]
         calc_index(inargs.infile, inargs.variable, inargs.outfile)

@@ -15,7 +15,7 @@ Functions:
 # Import general Python modules
 
 import os, sys, pdb
-from datetime import datetime
+import datetime, numpy
 from dateutil import parser
 from collections import defaultdict
 import re
@@ -146,19 +146,19 @@ def get_timescale(times):
     """Get the timescale.
     
     Args:
-      times (list/tuple): Tuple containing two datetime instances. The difference between
-        them is used to determine the timescale. 
+      times (list/tuple): Tuple containing two or more numpy.datetime64 instances. 
+        The difference between them is used to determine the timescale. 
 
     """
 
     diff = times[1] - times[0]
 
-    thresholds = {'yearly': datetime.timedelta(days=365),
-                  'monthly': datetime.timedelta(days=27),
-                  'daily': datetime.timedelta(days=1),
-                  '12hourly': datetime.timedelta(hours=12),
-                  '6hourly': datetime.timedelta(hours=6),
-                  'hourly': datetime.timedelta(hours=1)}
+    thresholds = {'yearly': numpy.timedelta64(365, 'D'),
+                  'monthly': numpy.timedelta64(27, 'D'),
+                  'daily': numpy.timedelta64(1, 'D'),
+                  '12hourly': numpy.timedelta64(12, 'h'),
+                  '6hourly': numpy.timedelta64(6, 'h'),
+                  'hourly': numpy.timedelta64(1, 'h')}
     
     timescale = None
     scales = ['yearly', 'monthly', 'daily', '12hourly', '6hourly', 'hourly']
@@ -172,15 +172,13 @@ def get_timescale(times):
         print 'Must be between hourly and yearly.'
         sys.exit(1)
 
-    print timescale
-
     return timescale
 
 
 def get_timestamp():
     """Return a time stamp that includes the command line entry."""
     
-    time_stamp = """%s: %s %s (Git hash: %s)""" %(datetime.now().strftime("%a %b %d %H:%M:%S %Y"), 
+    time_stamp = """%s: %s %s (Git hash: %s)""" %(datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y"), 
                                                   sys.executable, 
                                                   " ".join(sys.argv), 
                                                   MODULE_HASH[0:7])
