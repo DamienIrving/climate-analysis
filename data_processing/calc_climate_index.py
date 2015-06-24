@@ -278,66 +278,60 @@ def calc_sam(ifile, var_id, ofile):
     dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
 
 
-#def calc_zw3(ifile, var_id):
-#    """Calculate an index of the Southern Hemisphere ZW3 pattern.
-#    
-#    Ref: Raphael (2004). A zonal wave 3 index for the Southern Hemisphere. 
-#      Geophysical Research Letters, 31(23), L23212. 
-#      doi:10.1029/2004GL020365.
-#
-#    Expected input: Raphael (2004) uses is the 500hPa geopotential height, 
-#      sea level pressure or 500hPa zonal anomalies which are constructed by 
-#      removing the zonal mean of the geopotential height from each grid point 
-#      (preferred). The running mean (and zonal mean too if using it) should 
-#      have been applied to the input data beforehand. Raphael (2004) uses a 
-#      3-month running mean.
-#
-#    Design notes: This function uses cdo instead of CDAT because the
-#      cdutil library doesn't have routines for calculating the daily 
-#      climatology or stdev.
-#    
-#    """
-#
-#    # Determine the timescale
-#    indata = nio.InputData(ifile, var_id, region='small')
-#    tscale_abbrev = get_timescale(indata.data)
-#
-#    # Calculate the index
-#    index = {}
-#    for region in ['zw31', 'zw32', 'zw33']: 
-#        south_lat, north_lat = nio.regions[region][0][0: 2]
-#        west_lon, east_lon = nio.regions[region][1][0: 2]
-#    
-#        div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
-#        div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
-#        sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
-#        avg_operator_text = ' -y%savg ' %(tscale_abbrev)
-#        std_operator_text = ' -y%sstd ' %(tscale_abbrev)
-#    
-#        selregion = "-sellonlatbox,%d,%d,%d,%d %s " %(west_lon, east_lon, south_lat, north_lat, ifile)
-#        fldmean = "-fldmean "+selregion
-#        anomaly = sub_operator_text + fldmean + avg_operator_text + fldmean
-#        std = std_operator_text + fldmean
-#    
-#        print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
-#        result = div_operator_func(input=anomaly + std, returnArray=var_id)
-#        index[region] = numpy.squeeze(result)
-#
-#    zw3_timeseries = (index['zw31'] + index['zw32'] + index['zw33']) / 3.0
-# 
-#    # Define the output attributes
-#    notes = 'Ref: ZW3 index of Raphael (2004)'
-#    var_atts = {'id': 'zw3',
-#                'long_name': 'zonal_wave_3_index',
-#                'standard_name': 'zonal_wave_3_index',
-#                'units': '',
-#                'notes': notes}
-#
-#    outdata_list = [zw3_timeseries,]
-#    outvar_atts_list = [var_atts,]
-#    outvar_axes_list = [(indata.data.getTime(),),]
-#    
-#    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
+def calc_zw3(ifile, var_id, ofile):
+    """Calculate an index of the Southern Hemisphere ZW3 pattern.
+    
+    Ref: Raphael (2004). A zonal wave 3 index for the Southern Hemisphere. 
+      Geophysical Research Letters, 31(23), L23212. 
+      doi:10.1029/2004GL020365.
+
+    Expected input: Raphael (2004) uses is the 500hPa geopotential height, 
+      sea level pressure or 500hPa zonal anomalies which are constructed by 
+      removing the zonal mean of the geopotential height from each grid point 
+      (preferred). The running mean (and zonal mean too if using it) should 
+      have been applied to the input data beforehand. Raphael (2004) uses a 
+      3-month running mean.
+
+    Design notes: This function uses cdo instead of CDAT because the
+      cdutil library doesn't have routines for calculating the daily 
+      climatology or stdev.
+    
+    """
+
+    # Read data
+    dset_in = xray.open_dataset(ifile)
+    gio.check_xrayDataset(dset_in, var_id)
+    
+    # Calculate the index
+    groupby_op = get_groupby_op(dset_in['time'].values)
+    index = {}
+    for region in ['zw31', 'zw32', 'zw33']: 
+        south_lat, north_lat, west_lon, east_lon = gio.regions[region]
+        darray = dset_in[var_id].sel(latitude=slice(south_lat, north_lat), longitude=slice(west_lon, east_lon)).mean(dim=['latitude', 'longitude'])
+
+        clim = darray.groupby(groupby_op).mean(dim='time')
+        anom = darray.groupby(groupby_op) - clim
+        stdev = darray.groupby(groupby_op).std(dim='time')
+        norm = anom.groupby(groupby_op) / stdev
+
+        index[region] = norm.values
+
+    zw3_timeseries = (index['zw31'] + index['zw32'] + index['zw33']) / 3.0
+ 
+    # Write output file
+    d = {}
+    d['time'] = darray['time']
+    d['zw3'] = (['time'], zw3_timeseries)
+    dset_out = xray.Dataset(d)
+    
+    dset_out['sam'].attrs = {'id': 'zw3',
+                             'long_name': 'zonal_wave_3_index',
+                             'standard_name': 'zonal_wave_3_index',
+                             'units': '',
+                             'notes': 'Ref: ZW3 index of Raphael (2004)'}
+    
+    gio.set_global_atts(dset_out, dset_in.attrs, {ifile: dset_in.attrs['history']})
+    dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
 
 
 def get_groupby_op(time_array):
@@ -365,11 +359,10 @@ def main(inargs):
     function_for_index = {'ASL': calc_asl,
                           'NINO': calc_nino,
 			  'SAM': calc_sam,
-			  'PWI': calc_pwi}
+			  'PWI': calc_pwi,
+                          'ZW3': calc_zw3,}
 #                          'NINO_new': calc_nino_new,
-#                          
-#                          'ZW3': calc_zw3,
-#                          }   
+                       
     
     if inargs.index[0:4] == 'NINO':
         if inargs.index == 'NINOCT' or inargs.index == 'NINOWP':
