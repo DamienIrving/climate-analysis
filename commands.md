@@ -25,7 +25,8 @@
 | Cygwin          | `startx` |
 |                 | `ssh -Y STUDENT\\dbirving@abyss` |
 | Secure copy     | `scp {remote file} {local file destination}` |
-|                 | e.g. `scp STUDENT\\dbirving@abyss:~/directory/script.py .` |  
+|                 | e.g. `scp STUDENT\\dbirving@abyss:~/directory/script.py .` |
+| Remove netCDF attribute | `ncatted -O -a missing_value,var,d,,` |
 
 ### Installing Python stuff
 
