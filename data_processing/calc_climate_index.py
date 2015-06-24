@@ -193,98 +193,92 @@ def calc_nino(index, ifile, var_id, base_period, ofile):
 #    
 #    return outdata_list, outvar_atts_list, outvar_axes_list, global_atts 
 #
-#
-#def calc_pwi(ifile, var_id):
-#    """Calculate the Planetary Wave Index.
-#
-#    Ref: Irving & Simmonds (2015). Southern Hemisphere planetary wave 
-#      activity and its influence on weather and climate extremes. 
-#      https://www.authorea.com/users/5641/articles/12197/_show_article
-#
-#    Expected input: Wave envelope.   
-#
-#    """
-#    
-#    # Read data
-#    indata = nio.InputData(ifile, var_id, latitude=(-70, -40))
-#    assert indata.data.getOrder() == 'tyx', "Order of the data must be time, lon, lat"
-#
-#    # Calulcate the index
-#    mermax = numpy.max(indata.data, axis=1)
-#    pwi_timeseries = numpy.median(mermax, axis=-1)
-#
-#    # Output file info
-#    pwi_atts = {'id': 'pwi',
-#                'long_name': 'planetary_wave_index',
-#                'standard_name': 'planetary_wave_index',
-#                'units': indata.data.units,
-#                'notes': 'Ref: https://www.authorea.com/users/5641/articles/12197/_show_article'}
-#
-#    outdata_list = [pwi_timeseries,]
-#    outvar_atts_list = [pwi_atts,]
-#    outvar_axes_list = [(indata.data.getTime(),),]
-#    
-#    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
-#
-#
-#def calc_sam(ifile, var_id):
-#    """Calculate an index of the Southern Annular Mode.
-#
-#    Ref: Gong & Wang (1999). Definition of Antarctic Oscillation index. 
-#      Geophysical Research Letters, 26(4), 459-462.
-#      doi:10.1029/1999GL900003
-#
-#    Expected input: Mean sea level pressure data.
-#
-#    Concept: Difference between the normalised zonal mean pressure 
-#      difference between 40S and 65S.
-#
-#    """
-#    
-#    # Determine the timescale
-#    indata = nio.InputData(ifile, var_id, longitude=(10,12))
-#    tscale_abbrev = get_timescale(indata.data)
-#    
-#    # Determine latitude range (cdo requires exact latitude value)
-#    lat_axis = indata.data.getLatitude()[:]
-#    north_lat = nio.find_nearest(lat_axis, -40)
-#    south_lat = nio.find_nearest(lat_axis, -65)
-#
-#    # Calculate the index
-#    normalised_zonal_mean_mslp = {}
-#    for lat in [north_lat, south_lat]: 
-#        div_operator_text = 'cdo y%sdiv ' %(tscale_abbrev)
-#        div_operator_func = eval(div_operator_text.replace(' ', '.', 1))
-#        sub_operator_text = ' -y%ssub ' %(tscale_abbrev)
-#        avg_operator_text = ' -y%savg ' %(tscale_abbrev)
-#        std_operator_text = ' -y%sstd ' %(tscale_abbrev)
-#    
-#        sellat = "-sellonlatbox,0,360,%3.2f,%3.2f %s" %(lat, lat, ifile)
-#        zonmean = "-zonmean "+sellat
-#        anomaly = sub_operator_text + zonmean + avg_operator_text + zonmean
-#        std = std_operator_text + zonmean
-#    
-#        print div_operator_text + anomaly + std   #e.g. cdo ydaydiv anomaly std
-#        result = div_operator_func(input=anomaly + std, returnArray=var_id)
-#        normalised_zonal_mean_mslp[lat] = numpy.squeeze(result)
-#
-#    sam_timeseries = normalised_zonal_mean_mslp[north_lat] - normalised_zonal_mean_mslp[south_lat]
-#
-#    # Output file info
-#    hx = 'Ref: Gong & Wang (1999). GRL, 26, 459-462. doi:10.1029/1999GL900003'
-#    var_atts = {'id': 'sam',
-#                'long_name': 'Southern_Annular_Mode_Index',
-#                'standard_name': 'Southern_Annular_Mode_Index',
-#                'units': '',
-#                'notes': hx}
-#
-#    outdata_list = [sam_timeseries,]
-#    outvar_atts_list = [var_atts,]
-#    outvar_axes_list = [(indata.data.getTime(),),]
-#    
-#    return outdata_list, outvar_atts_list, outvar_axes_list, indata.global_atts 
-#
-#
+
+def calc_pwi(ifile, var_id, ofile):
+    """Calculate the Planetary Wave Index.
+
+    Ref: Irving & Simmonds (2015). A novel approach to diagnosing Southern 
+      Hemisphere planetary wave activity and its influence on regional 
+      climate variability. 
+      https://www.authorea.com/users/5641/articles/12197/_show_article
+
+    Expected input: Wave envelope.   
+
+    """
+    
+    # Read data
+    dset_in = xray.open_dataset(ifile)
+    gio.check_xrayDataset(dset_in, var_id)
+
+    # Calculate index
+    darray = dset_in[var_id].sel(latitude=slice(-70, -40))
+    mermax = darray.max(dim='latitude')
+    pwi_timeseries = mermax.median(dim='longitude')
+
+
+    # Write output file
+    d = {}
+    d['time'] = darray['time']
+    d['pwi'] = (['time'], pwi_timeseries.values)
+    dset_out = xray.Dataset(d)
+    
+    dset_out['pwi'].attrs = {'long_name': 'planetary_wave_index',
+                             'standard_name': 'planetary_wave_index',
+                             'units': darray.attrs['units'],
+                             'notes': 'Ref: https://www.authorea.com/users/5641/articles/12197/_show_article'}
+    
+    gio.set_global_atts(dset_out, dset_in.attrs, {ifile: dset_in.attrs['history']})
+    dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
+
+
+def calc_sam(ifile, var_id, ofile):
+    """Calculate an index of the Southern Annular Mode.
+
+    Ref: Gong & Wang (1999). Definition of Antarctic Oscillation index. 
+      Geophysical Research Letters, 26(4), 459-462.
+      doi:10.1029/1999GL900003
+
+    Expected input: Mean sea level pressure data.
+
+    Concept: Difference between the normalised zonal mean pressure 
+      difference between 40S and 65S.
+
+    """
+ 
+    # Read data
+    dset_in = xray.open_dataset(ifile)
+    gio.check_xrayDataset(dset_in, var_id)
+ 
+    # Calculate index
+    north_lat = uconv.find_nearest(dset_in['latitude'].values, -40)
+    south_lat = uconv.find_nearest(dset_in['latitude'].values, -65)
+    
+    darray = dset_in[var_id].sel(latitude=(south_lat, north_lat)).mean(dim='longitude')
+    
+    groupby_op = get_groupby_op(darray['time'].values)
+    clim = darray.groupby(groupby_op).mean()
+    anom = darray.groupby(groupby_op) - clim
+    stdev = darray.groupby(groupby_op).std()
+    
+    norm = anom / stdev
+    sam_timeseries = norm.sel(latitude=north_lat).values - norm.sel(latitude=south_lat).values
+
+    # Write output file
+    d = {}
+    d['time'] = darray['time']
+    d['sam'] = (['time'], sam_timeseries)
+    dset_out = xray.Dataset(d)
+    
+    hx = 'Ref: Gong & Wang (1999). GRL, 26, 459-462. doi:10.1029/1999GL900003'
+    dset_out['sam'].attrs = {'long_name': 'Southern_Annular_Mode_Index',
+                             'standard_name': 'Southern_Annular_Mode_Index',
+                             'units': '',
+                             'notes': hx}
+    
+    gio.set_global_atts(dset_out, dset_in.attrs, {ifile: dset_in.attrs['history']})
+    dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
+
+
 #def calc_zw3(ifile, var_id):
 #    """Calculate an index of the Southern Hemisphere ZW3 pattern.
 #    
@@ -370,12 +364,13 @@ def main(inargs):
     """Run the program."""
 
     function_for_index = {'ASL': calc_asl,
-                          'NINO': calc_nino,}
+                          'NINO': calc_nino,
+			  'SAM': calc_sam,
+			  'PWI': calc_pwi}
 #                          'NINO_new': calc_nino_new,
-#                          'SAM': calc_sam,
+#                          
 #                          'ZW3': calc_zw3,
-#                          'MEX': calc_mex,
-#                          'PWI': calc_pwi}   
+#                          }   
     
     if inargs.index[0:4] == 'NINO':
         if inargs.index == 'NINOCT' or inargs.index == 'NINOWP':
