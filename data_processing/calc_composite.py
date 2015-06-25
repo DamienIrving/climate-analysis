@@ -9,7 +9,7 @@ Description:  Calculates a composite
 
 import sys, os, pdb
 import argparse
-import numpy
+import numpy, pandas
 import xray
 
 
@@ -34,50 +34,58 @@ except ImportError:
 
 # Define functions
 
-def get_dates(darray, date_file, invert=False):
-    """Filter the data into a subset that only includes dates in date_file. 
+season_months = {'annual': None, 'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
+                 'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
 
-    """
+def get_datetimes(darray, date_file):
+    """Generate a list of datetimes common to darray and date_file."""
 
-    if not date_file:
-        match_dates = darray['time'].values 
-        date_metadata = None
-        size_inlcuded = False
-        size_excluded = False
-    else:
-        date_list, date_metadata = gio.read_dates(date_file)
+    time_dim = map(str, darray['time'].values)
+    date_list, date_metadata = gio.read_dates(date_file)
+    
+    match_dates, miss_dates = uconv.match_dates(date_list, time_dim)
+    match_dates = map(numpy.datetime64, match_dates)
 
-        time_dim = map(str, darray['time'].values)
-        match_dates, miss_dates = uconv.match_dates(date_list, time_dim)
- 
-        match_dates = map(numpy.datetime64, match_dates)
-        size_included = len(match_dates)
-        size_excluced = len(miss_dates)
-
-    return match_dates, date_metadata, size_included, size_excluded
+    return match_dates, date_metadata
 
 
-def calc_composites(darray, seasonal_darray):
+def calc_composites(darray, dtlist, sig_test=True):
     """Calculate the composites and define their attributes."""
 
-    season_months = {'annual': None, 
-                     'DJF': 2, 'MAM': 5, 'JJA': 8, 'SON': 11}
+    standard_name = darray.attrs['standard_name']
+    darray_selection = darray.sel(time=dtlist)
+    seasonal_means = darray_selection.resample('Q-FEB', dim='time',
+                                               how='mean', label='right')
 
     composite_means = {}
-    composite_mean_atts = {}    
-    for season, month in season_months.iteritems():
+    pvals = {}
+    composite_mean_atts = {}
+    pval_atts = {}    
+    for season, months in season_months.iteritems():
         if season == 'annual':
             composite_means['annual'] = darray.mean(dim='time').values
+            
+            pvals['annual'], pval_atts['annual'] = uconv.calc_significance(darray_selection.values, 
+                                                                           darray.values, standard_name)
         else:
-            indexes = pandas.to_datetime(seasonal_darray['time'].values).month == month
-            composite_means[season] = seasonal_darray.loc[indexes].mean(dim='time').values
+            months_all = pandas.to_datetime(darray['time'].values).month
+            bools_all = (months_all == season_months[season][0]) + (months_all == season_months[season][1]) + (months_all == season_months[season][2])
+            data_all = darray.loc[bools_all]
+ 
+            months_subset = pandas.to_datetime(darray_selection['time'].values).month
+            bools_subset = (months_subset == season_months[season][0]) + (months_subset == season_months[season][1]) + (months_subset == season_months[season][2])
+            data_subset = darray_selection.loc[bools_subset]
 
-        composite_atts[season] = {'standard_name': darray.attrs['standard_name']+'_'+season,
-                                  'long_name': darray.attrs['standard_name']+'_'+season,
-                                  'units': darray.attrs['units'],
-                                  'notes': 'Composite mean for %s season' %(season)}
+            composite_means[season] = data_subset.mean(dim='time').values
+            pvals[season], pval_atts[season] = uconv.calc_significance(data_subset.values, 
+                                                                       data_all.values, standard_name)
 
-    return composite_means, composite_mean_atts
+        composite_mean_atts[season] = {'standard_name': standard_name+'_'+season,
+                                       'long_name': standard_name+'_'+season,
+                                       'units': darray.attrs['units'],
+                                       'notes': 'Composite mean for %s season' %(season)}
+
+    return composite_means, composite_mean_atts, pvals, pval_atts
 
 
 def main(inargs):
@@ -90,65 +98,37 @@ def main(inargs):
     subset_dict = gio.get_subset_kwargs(inargs)
     darray = dset_in[inargs.var].sel(**subset_dict)
 
+    assert darray.dims == ('time', 'latitude', 'longitude'), \
+    "Order of the data must be time, latitude, longitude"
+
     # Generate datetime list
-    dt_list, date_list_metadata, size_filtered, size_excluded = get_dates(darray, inargs.date_file)
+    dt_list, dt_list_metadata = get_datetimes(darray, inargs.datefile)
 
-    # Filter the data
-    darray_filtered = darray.sel(time=dt_list)
-    seasonal_darray_filtered = darray_filtered.resample('Q-FEB', dim='time', how='mean', label='right')
+    # Calculate the composites    
+    cmeans, cmean_atts, pvals, pval_atts = calc_composites(darray, dt_list, sig_test=not inargs.no_sig) 
 
-    # Calculate the composites
-    composite_means, composite_mean_atts = calc_composites(darray_filtered, seasonal_darray_filtered) 
+    # Write the output file
+    d = {}
+    d['latitude'] = darray['latitude']
+    d['longitude'] = darray['longitude']
 
+    for season in season_months.keys(): 
+        d[inargs.var+'_'+season] = (['latitude', 'longitude'], cmeans[season])
+        if not inargs.no_sig:
+            d['p_'+season] = (['latitude', 'longitude'], pvals[season])
 
+    dset_out = xray.Dataset(d)
 
- #   # Initialise output
-#    outdata_list = []
-#    outvar_atts_list = []
-#    outvar_axes_list = []
-#
-#    if inargs.time:
-#        start_date, end_date = inargs.time
-#    else:
-#        start_date = end_date = 'none'
-#
-#    for season in inargs.seasons:
-#
-#	# Prepate input data
-#        selector = 'none' if season == 'annual' else season
-#	indata = nio.InputData(inargs.infile, inargs.var, time=(start_date, end_date, selector),  **nio.dict_filter(vars(inargs), ['region']))
-#        assert indata.data.getOrder()[0] == 't', "First axis must be time"
-#
-#	# Filter data
-#	data_filtered, date_metadata, size_filtered = filter_dates(indata.data, inargs.date_file, offset=inargs.offset, invert=inargs.invert)
-#
-#	# Calculate composite
-#	composite, composite_atts = get_composite(data_filtered, inargs.var, 
-#                                        	  indata.data.long_name, indata.data.standard_name, indata.data.units,
-#                                        	  season)
-#	outdata_list.append(composite)
-#	outvar_atts_list.append(composite_atts)
-#	outvar_axes_list.append(indata.data.getAxisList()[1:])
-#
-#	# Perform significance test
-#	if inargs.date_file and not inargs.no_sig:
-#            pval, pval_atts = uconv.get_significance(data_filtered, indata.data, 
-#	                                             'p_'+season, 'p_value_'+season, 
-#						     size_filtered, indata.data.shape[0])
-#            outdata_list.append(pval)
-#            outvar_atts_list.append(pval_atts)
-#            outvar_axes_list.append(indata.data.getAxisList()[1:])	
-#
-#
-#    # Write the output file
-#    if date_metadata:
-#        infile_insert = 'History of %s:\n' %(inargs.infile)
-#        date_insert = 'History of %s:\n' %(inargs.date_file)
-#        indata.global_atts['history'] = '%s %s \n %s %s' %(infile_insert, indata.global_atts['history'], 
-#                                                           date_insert, date_metadata)
-#    else:
-#        indata.global_atts['history'] = indata.global_atts['history']
+    for season in season_months.keys(): 
+        dset_out[inargs.var+'_'+season].attrs = cmean_atts[season]
+        if not inargs.no_sig:
+            dset_out['p_'+season].attrs = pval_atts[season]
+    
+    output_metadata = {inargs.infile: dset_in.attrs['history'],
+                       inargs.datefile: dt_list_metadata}
 
+    gio.set_global_atts(dset_out, dset_in.attrs, output_metadata)
+    dset_out.to_netcdf(inargs.outfile, format='NETCDF3_CLASSIC')
 
 
 if __name__ == '__main__':
@@ -177,11 +157,9 @@ author:
 
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("var", type=str, help="Input file variable")
+    parser.add_argument("datefile", type=str, help="File containing dates to be included in composite")
     parser.add_argument("outfile", type=str, help="Output file name")
-
-    parser.add_argument("--date_file", type=str, default=None, 
-                        help="File containing dates to be included in composite")
-
+    
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period over which to calculate the composite [default = entire]")
     parser.add_argument("--region", type=str, choices=gio.regions.keys(),

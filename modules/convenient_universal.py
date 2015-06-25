@@ -3,6 +3,7 @@
 Functions:
   adjust_lon_range   -- Express longitude values in desired 360 degree interval
   apply_lon_filter   -- Set values outside of specified longitude range to zero
+  calc_significance  -- 
   coordinate_paris   -- Generate lat/lon pairs
   dict_filter        -- Filter dictionary according to specified keys
   find_nearest       -- Find the closest array item to value
@@ -74,6 +75,51 @@ def apply_lon_filter(data, lon_bounds):
     return numpy.where(lon_axis_tiled > lon_max, 0.0, new_data)
 
 
+def calc_significance(data_subset, data_all, standard_name):
+    """Perform significance test.
+
+    The approach for the significance test is to compare the mean of the subsetted
+    data with that of the entire data sample via an independent, two-sample,
+    parametric t-test (for details, see Wilks textbook). 
+    
+    POSSIBLE ENHANCEMENT: If equal_var=False perform a Welch t-test, which is for samples
+    with unequal variance (early versions of scipy do not have this option). To test whether
+    the variances are equal or not you use an F-test (i.e. do the test at each grid point and
+    then assign equal_var accordingly). If your data is close to normally distributed you can 
+    use the Barlett test (scipy.stats.bartlett), otherwise the Levene test (scipy.stats.levene).
+    http://stackoverflow.com/questions/21494141/how-do-i-do-a-f-test-in-python
+    
+    POSSIBLE ENHANCEMENT: Account for autocorrelation in the data by calculating an effective
+    sample size (see Wilkes, p 147). I can get the autocorrelation using either
+    genutil.autocorrelation or the acf function in the statsmodels time series analysis
+    python library, however I cannot see how to alter the sample size in stats.ttest_ind.
+
+    POSSIBLE ENHANCEMENT: Consider whether a parametric t-test is appropriate. One of my samples
+    might be very non-normally distributed, which means a non-parametric test might be better. 
+    
+    """
+
+#    alpha = 0.05 
+#    w, p_value = scipy.stats.levene(data_included, data_excluded)
+#    if p_value > alpha:
+#        equal_var = False# Reject the null hypothesis that Var(X) == Var(Y)
+#    else:
+#        equal_var = True
+
+    t, pvals = stats.mstats.ttest_ind(data_subset, data_all, axis=0) # stats.ttest_ind has an equal_var option that mstats does not
+    print 'WARNING: Significance test assumed equal variances'
+
+    size_subset = data_subset.shape[0]
+    size_all = data_all.shape[0]
+    notes = "Two-tailed p-value from standard independent two sample t-test comparing the subsetted data (size=%s) to a sample containing all the data (size=%s)" %(str(size_subset), str(size_all))
+    pval_atts = {'standard_name': standard_name,
+                 'long_name': standard_name,
+                 'units': ' ',
+                 'notes': notes,}
+
+    return pvals, pval_atts
+
+
 def coordinate_pairs(lat_axis, lon_axis):
     """Take the latitude and longitude values from given grid axes
     and produce a flattened lat and lon array, with element-wise pairs 
@@ -106,79 +152,6 @@ def find_nearest(array, value):
     
     idx = (numpy.abs(numpy.array(array) - value)).argmin()
     return array[idx]
-
-
-def get_significance(data_subset, data_all, 
-                     p_var, p_standard_name,
-                     size_subset, size_all):
-    """Perform significance test.
-
-    size_subset and size_all can either be a variable name (and the variable 
-    attributes will be returned; useful in cases where the size is an array) or a
-    single number (useful in cases where the size is constant and you want it in the
-    p_var attributes).
-    
-    The approach for the significance test is to compare the mean of the subsetted
-    data with that of the entire data sample via an independent, two-sample,
-    parametric t-test (for details, see Wilks textbook). 
-    
-    http://stackoverflow.com/questions/21494141/how-do-i-do-a-f-test-in-python
-
-    FIXME: If equal_var=False then it will perform a Welch t-test, which is for samples
-    with unequal variance (early versions of scipy do not have this option). To test whether
-    the variances are equal or not you use an F-test (i.e. do the test at each grid point and
-    then assign equal_var accordingly). If your data is close to normally distributed you can 
-    use the Barlett test (scipy.stats.bartlett), otherwise the Levene test (scipy.stats.levene).
-    
-    FIXME: I need to account for autocorrelation in the data by calculating an effective
-    sample size (see Wilkes, p 147). I can get the autocorrelation using either
-    genutil.autocorrelation or the acf function in the statsmodels time series analysis
-    python library, however I cannot see how to alter the sample size in stats.ttest_ind.
-
-    FIXME: I also need to consider whether a parametric t-test is appropriate. One of my samples
-    might be very non-normally distributed, which means a non-parametric test might be better. 
-    
-    """
-
-#    alpha = 0.05 
-#    w, p_value = scipy.stats.levene(data_included, data_excluded)
-#    if p_value > alpha:
-#        equal_var = False# Reject the null hypothesis that Var(X) == Var(Y)
-#    else:
-#        equal_var = True
-
-    assert type(size_subset) == type(size_all)
-    assert type(size_subset) in [str, float, int]
-
-    t, pvals = stats.mstats.ttest_ind(data_subset, data_all, axis=0) # stats.ttest_ind has an equal_var option that mstats does not
-    print 'WARNING: Significance test assumed equal variances'
-
-    pval_atts = {'id': p_var,
-                 'standard_name': p_standard_name,
-                 'long_name': p_standard_name,
-                 'units': ' ',
-                 'notes': """Two-tailed p-value from standard independent two sample t-test comparing the subsetted data (size=%s) to a sample containing all the data (size=%s)""" %(str(size_subset), str(size_all)),
-                 'reference': 'scipy.stats.ttest_ind(a, b, axis=t, equal_var=False)'}
-
-    if type(size_subset) == str:
-
-        size_subset_atts = {'id': size_subset,
-                            'standard_name': size_subset,
-                            'long_name': size_subset,
-                            'units': ' ',
-                            'notes': """Size of sample that exceeds the threshold"""}
-
-        size_all_atts = {'id': size_all,
-                         'standard_name': size_all,
-                         'long_name': size_all,
-                         'units': ' ',
-                         'notes': """Size of the entire data"""}
-
-        return pvals, pval_atts, size_subset_atts, size_all_atts
-
-    else:
-
-        return pvals, pval_atts
 
 
 def get_threshold(data, threshold_str, axis=None):
