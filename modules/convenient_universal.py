@@ -228,50 +228,25 @@ def list_kwargs(func):
     return details.args[-nopt:]
 
 
-def match_dates(dates, time_axis, invert_matching=False, return_indexes=False):
-    """Take simple list of dates and match with the corresponding times in a detailed time axis.
-    
-    (For the genutil picker to work correctly in nio.temporal_extract, the
-    date list must match perfectly)
+def match_dates(dates, time_axis):
+    """Take list of datetimes and match with the corresponding datetimes in a time axis.
  
     Args:   
-      dates (list/tuple): List of dates in a simple format (e.g. 1979-01-01)
-      time_axis (list/tuple): Time axis with detailed date format (e.g. 1979-01-01 12:00:0.0)
-      invert_matching (bool, optional): Return a list of time_axis values that aren't 
-        (True) or are (False; default) in dates
-      return_indexes (bool, optional): Returned time_axis values are index numbers (True)
-        or actual dates (False; default)
+      dates (list/tuple)
+      time_axis (list/tuple)
         
     """
     
-    dates_split = map(split_dt, dates)
-    time_axis_split = map(split_dt, time_axis)
+    match_dates = []
+    miss_dates = time_axis[:]  # creates a shallow copy
     
-    matches_indexes = []
-    matches_dates = []
-    misses_indexes = range(0, len(time_axis))
-    misses_dates = time_axis[:]  # creates a shallow copy
-    
-    for date in dates_split:
-        try:
-            index = time_axis_split.index(date)
-            if invert_matching:
-                misses_dates.remove(time_axis[index])
-                misses_indexes.remove(index)
-            else:
-                matches_dates.append(time_axis[index])
-                matches_indexes.append(index)
-        except ValueError:
-            pass        
+    for date in dates:
+        if date in time_axis:
+            match_dates.append(date)
+        else:
+            miss_dates.remove(date)    
 
-    if invert_matching and return_indexes:
-        return misses_indexes
-    elif invert_matching and not return_indexes:
-        return misses_dates
-    elif not invert_matching and return_indexes:
-        return matches_indexes
-    else:
-        return matches_dates
+    return match_dates, miss_dates
 
 
 def single2list(item, numpy_array=False):
