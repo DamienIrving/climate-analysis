@@ -145,7 +145,6 @@ def check_xrayDataset(dset, var_list):
         assert 0 <= lon_values.min() <= 360, \
         'Longitude axis must be 0 to 360E'
 
-
 def get_subset_kwargs(namespace):
     """Get keyword arguments for xray subsetting.
     
@@ -163,15 +162,9 @@ def get_subset_kwargs(namespace):
 	kwarg_dict['longitude'] = slice(west_lon, east_lon)
     except AttributeError:
         pass 
-    
-    try:
-        start_date, end_date = namespace.time
-        if start_date == end_date:
-            kwarg_dict['time'] = start_date
-        else:
-            kwarg_dict['time'] = slice(start_date, end_date)
-    except AttributeError:
-        pass
+
+    for dim in ['time', 'latitude', 'longitude']:
+        _sel_or_slice(kwarg_dict, dim)
 
     return kwarg_dict
 
@@ -241,6 +234,21 @@ def read_dates(infile):
         date_metadata=metfile.read()
 
     return date_list, date_metadata
+
+
+def _sel_or_slice(kw_dict, dim):
+    """Select or slice."""
+
+    try:
+        start, end = eval('namespace.'+dim)
+        if start == end:
+            kw_dict[dim] = start
+        else:
+            kw_dict[dim] = slice(start, end)
+    except AttributeError:
+        pass
+
+    return kw_dict
 
 
 def set_global_atts(dset, dset_template, hist_dict):
