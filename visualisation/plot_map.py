@@ -37,9 +37,9 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
-    import netcdf_io as nio
 except ImportError:
-    raise ImportError('Must run this script from anywhere within the phd git repo')
+    raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
+
 
 # Define functions and global lists/dicts
 
@@ -286,8 +286,7 @@ def multiplot(cube_dict, nrows, ncols,
                 ax.set_extent((0, 360, -90.0, spstereo_limit), crs=projections['PlateCarree_Dateline'])
                 grid_labels=False  #iris does not support this yet
             elif out_region_name != 'None':
-                south_lat, north_lat = nio.regions[out_region_name][0][0: 2]
-                west_lon, east_lon = nio.regions[out_region_name][1][0: 2]
+                south_lat, north_lat, west_lon, east_lon = gio.regions[out_region_name]
                 ax.set_extent((west_lon, east_lon, south_lat, north_lat), crs=out_proj_object)
             else:
                 plt.gca().set_global()
@@ -683,7 +682,7 @@ example:
                         help="minimum spacing between subplots [default=0.05]")
 
     # Spatial bounds
-    region_choices = nio.regions.keys()
+    region_choices = gio.regions.keys()
     region_choices.append('None')
     parser.add_argument("--region", type=str, nargs='*', choices=region_choices, default=['None',],
                         help="""name of predefined region to plot:
