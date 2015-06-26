@@ -63,7 +63,7 @@ def calc_composites(darray, dtlist, sig_test=True):
     pval_atts = {}    
     for season, months in season_months.iteritems():
         if season == 'annual':
-            composite_means['annual'] = darray.mean(dim='time').values
+            composite_means['annual'] = darray_selection.mean(dim='time').values
             
             pvals['annual'], pval_atts['annual'] = uconv.calc_significance(darray_selection.values, 
                                                                            darray.values, standard_name)
