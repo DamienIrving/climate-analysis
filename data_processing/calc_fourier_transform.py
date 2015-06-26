@@ -150,7 +150,7 @@ def get_coefficients(data, lon_axis, min_freq, max_freq):
     return outdata_list
 
 
-def get_coefficient_atts(orig_data, min_freq, max_freq):
+def get_coefficient_atts(orig_darray, min_freq, max_freq):
     """Get the attributes for the coefficient output file.
 
     Returns:
@@ -164,20 +164,20 @@ def get_coefficient_atts(orig_data, min_freq, max_freq):
     for freq in range(min_freq, max_freq + 1):
         filter_text = get_filter_text(method, freq, freq)
         mag_atts = {'id': 'wave'+str(freq)+'_amp',
-                    'standard_name': 'amplitude_of_'+method+'_'+orig_data.long_name,
-                    'long_name': 'amplitude_of_'+method+'_'+orig_data.long_name,
-                    'units': orig_data.units,
+                    'standard_name': 'amplitude_of_'+method+'_'+orig_darray.attrs['long_name'],
+                    'long_name': 'amplitude_of_'+method+'_'+orig_darray.attrs['long_name'],
+                    'units': orig_darray.attrs['units'],
                     'notes': filter_text}
         outvar_atts_list.append(mag_atts)
-        outvar_axes_list.append(orig_data.getAxisList()[:-1])
+        outvar_axes_list.append(orig_darray.getAxisList()[:-1])
         
         phase_atts = {'id': 'wave'+str(freq)+'_phase',
-                      'standard_name': 'first_local_maxima_of_'+method+'_'+orig_data.long_name,
-                      'long_name': 'first_local_maxima_of_'+method+'_'+orig_data.long_name,
-                      'units': orig_data.getLongitude().units,
+                      'standard_name': 'first_local_maxima_of_'+method+'_'+orig_darray.long_name,
+                      'long_name': 'first_local_maxima_of_'+method+'_'+orig_darray.long_name,
+                      'units': orig_darray.getLongitude().units,
                       'notes': filter_text}
         outvar_atts_list.append(phase_atts)    
-        outvar_axes_list.append(orig_data.getAxisList()[:-1])
+        outvar_axes_list.append(orig_darray.getAxisList()[:-1])
 
     return outvar_atts_list, outvar_axes_list
 
@@ -279,31 +279,51 @@ def spectrum(signal_fft, freqs, scaling='amplitude', variance=None):
 def main(inargs):
     """Run the program."""
     
-    # Read input data
-    indata = nio.InputData(inargs.infile, inargs.variable, 
-                           **nio.dict_filter(vars(inargs), ['time', 'latitude']))
-    
-    assert indata.data.getOrder()[-1] == 'x', \
+    # Read the data
+    dset_in = xray.open_dataset(inargs.infile)
+    gio.check_xrayDataset(dset_in, inargs.variable)
+
+    subset_dict = gio.get_subset_kwargs(inargs)
+    darray = dset_in[inargs.var].sel(**subset_dict)
+
+    assert darray.dims[-1] == 'longitude', \
     'This script is setup to perform the fourier transform along the longitude axis'
     
     # Apply longitude filter (i.e. set unwanted longitudes to zero)
-    data_masked = apply_lon_mask(indata.data, inargs.longitude) if inargs.longitude else indata.data
+    data_masked = apply_lon_mask(darray.values, darray['longitude'].values) if inargs.valid_lon else darray.values  # FIXME: apply_lon_mask needs to be written
     
     # Perform task
     min_freq, max_freq = inargs.filter
     if inargs.outtype == 'coefficients':
-        outdata_list = get_coefficients(data_masked, indata.data.getLongitude()[:], min_freq, max_freq)
-        outvar_atts_list, outvar_axes_list = get_coefficient_atts(indata.data, min_freq, max_freq)
+        outdata_list = get_coefficients(data_masked, darray['longitude'].values, min_freq, max_freq)
+        outvar_atts_list, outvar_axes_list = get_coefficient_atts(darray, min_freq, max_freq)
     elif inargs.outtype == 'hilbert':
-        outdata_list = hilbert_transform(data_masked, indata.data.getLongitude()[:], min_freq, max_freq, out_type=list)
+        outdata_list = hilbert_transform(data_masked, darray['longitude'].values, min_freq, max_freq, out_type=list)
         outvar_atts_list, outvar_axes_list = get_hilbert_atts(indata.data, min_freq, max_freq)
 
-    # Write output file
-    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
-                     indata.global_atts, 
-                     outdata_list,
-                     outvar_atts_list, 
-                     outvar_axes_list)
+    # Write the output file
+    d = {}
+    d['latitude'] = darray['latitude']
+    d['longitude'] = darray['longitude']
+
+    for season in season_months.keys(): 
+        d[inargs.var+'_'+season] = (['latitude', 'longitude'], cmeans[season])
+        if not inargs.no_sig:
+            d['p_'+season] = (['latitude', 'longitude'], pvals[season])
+
+    dset_out = xray.Dataset(d)
+
+    for season in season_months.keys(): 
+        dset_out[inargs.var+'_'+season].attrs = cmean_atts[season]
+        if not inargs.no_sig:
+            dset_out['p_'+season].attrs = pval_atts[season]
+    
+    output_metadata = {inargs.infile: dset_in.attrs['history'],}
+    if inargs.date_file:
+        output_metadata[inargs.date_file] = dt_list_metadata
+
+    gio.set_global_atts(dset_out, dset_in.attrs, output_metadata)
+    dset_out.to_netcdf(inargs.outfile, format='NETCDF3_CLASSIC')
 
 
 if __name__ == '__main__':
@@ -338,7 +358,7 @@ references:
     # Input data options
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
                         help="Latitude range over which to perform Fourier Transform [default = entire]")
-    parser.add_argument("--longitude", type=float, nargs=2, metavar=('START', 'END'), default=None,
+    parser.add_argument("--valid_lon", type=float, nargs=2, metavar=('START', 'END'), default=None,
                         help="Longitude range over which to perform Fourier Transform (all other values are set to zero) [default = entire]")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
