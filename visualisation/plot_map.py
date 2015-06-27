@@ -118,7 +118,10 @@ def extract_data(infile_list, output_projection):
         coord_names = [coord.name() for coord in new_cube.coords()]
         if 'time' in coord_names:
             ntimes = len(new_cube.coords('time')[0].points)
-            if ntimes > 1:
+            if ntimes == 1:
+                timestep = 0
+                new_cube = collapse_time(new_cube, ntimes, timestep)
+            elif ntimes > 1:
                 try:
                     timestep = int(timestep)
                 except ValueError:
@@ -161,12 +164,13 @@ def get_standard_name(var):
                       'pr': 'precipitation',
                       'sic' : 'sea_ice_fraction',
                       'envva' : 'hilbert_transformed_northward_wind',
+                      'iftva' : 'inverse_fourier_transformed_northward_wind',
                       'tas' : 'surface_air_temperature',
                       'ampmedian': 'zonal_median_of_the_meridional_maximum_hilbert_transformed_northward_wind',
                       'p' : 'p_value'}
 
     key_matches = [key for key in standard_names.keys() if var.split('_')[0] == key]   #re.search('^%s' %(key), var)]
-    assert len(key_matches) == 1
+    assert len(key_matches) == 1, "variable not recognised in list of standard names"
 
     standard_name = re.sub('^'+key_matches[0], standard_names[key_matches[0]], var)
 

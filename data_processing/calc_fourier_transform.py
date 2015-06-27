@@ -10,6 +10,7 @@ Description:  Calculate Fourier transform
 import sys, os, pdb
 import argparse
 import numpy, math
+import xray
 from scipy import fftpack
 from scipy import signal
 from copy import deepcopy
@@ -35,12 +36,15 @@ except ImportError:
 
 # Define functions
     
-def filter_signal(signal, indep_var, min_freq, max_freq, exclusion):
+def filter_signal(signal, indep_var, min_freq, max_freq, exclusion, real=False):
     """Filter a signal by performing a Fourier Tranform and then
     an inverse Fourier Transform for a selected range of frequencies"""
     
     sig_fft, sample_freq = fourier_transform(signal, indep_var)
     filtered_signal = inverse_fourier_transform(sig_fft, sample_freq, min_freq=min_freq, max_freq=max_freq, exclude=exclusion)
+    
+    if real:
+        filtered_signal = filtered_signal.real
     
     return filtered_signal
 
@@ -133,7 +137,7 @@ def _get_coefficients(data, lon_axis,
         filtered_signal = numpy.apply_along_axis(filter_signal, -1, 
                                                  data, lon_axis, 
                                                  freq, freq, 
-                                                 exclusion)
+                                                 exclusion, real=True)
 
         localmax_vals = numpy.max(filtered_signal, axis=-1)
         localmax_indexes = numpy.apply_along_axis(first_localmax_index, -1, filtered_signal)
@@ -167,7 +171,11 @@ def _coefficient_atts(ctype, freq, orig_long_name, units):
 def _filter_data(data, lon_axis,
                  min_freq, max_freq,
                  var, long_name, units, outtype):
-    """Filter data."""
+    """Filter data.
+    
+    Can perform either an inverse Fourier transform or Hilbert transform.
+    
+    """
     
     if outtype == 'hilbert':
         exclusion = 'negative'
@@ -184,10 +192,12 @@ def _filter_data(data, lon_axis,
                                      exclusion)
     if outtype == 'hilbert':
         outdata = 2 * numpy.abs(outdata)
+    else:
+        outdata = outdata.real
    
     filter_text = _get_filter_text(method_long, min_freq, max_freq)
-    atts = {'standard_name': method_long+'_'long_name,
-            'long_name': method_long+'_'long_name,
+    atts = {'standard_name': method_long+'_'+long_name,
+            'long_name': method_long+'_'+long_name,
             'units': units,
             'notes': filter_text}
 
@@ -254,7 +264,7 @@ def main(inargs):
     
     # Read the data
     dset_in = xray.open_dataset(inargs.infile)
-    gio.check_xrayDataset(dset_in, inargs.variable)
+    gio.check_xrayDataset(dset_in, inargs.var)
 
     subset_dict = gio.get_subset_kwargs(inargs)
     darray = dset_in[inargs.var].sel(**subset_dict)
@@ -268,22 +278,17 @@ def main(inargs):
         darray[dict(longitude=slice(start_lon, end_lon))] = 0
     
     # Perform task
-    func_dict = {'coefficients': _get_coefficients,
-                 'inverse_ft': ,
-                 'hilbert': _hilbert_transform}
-    task = func_dict[inargs.outtype]
-    
     long_name = darray.attrs['long_name']
     units = darray.attrs['units']
     if inargs.outtype == 'coefficients':
         outdata_dict = _get_coefficients(darray.values, darray['longitude'].values, 
                                          inargs.min_freq, inargs.max_freq,
                                          long_name, units)
-        dims = darray.dims[:, -1]
+        dims = darray.dims[:-1]
     else:
-        outdata_dict = filter_data(darray.values, darray['longitude'].values, 
+        outdata_dict = _filter_data(darray.values, darray['longitude'].values, 
                                    inargs.min_freq, inargs.max_freq,
-                                   var, long_name, units, inargs.outtype)
+                                   inargs.var, long_name, units, inargs.outtype)
         dims = darray.dims
         
     # Write the output file
@@ -297,7 +302,7 @@ def main(inargs):
     dset_out = xray.Dataset(d)
 
     for outvar in outdata_dict.keys(): 
-        d[outvar].attrs = outdata_dict[outvar][1])
+        dset_out[outvar].attrs = outdata_dict[outvar][1]
 
     gio.set_global_atts(dset_out, dset_in.attrs, {inargs.infile: dset_in.attrs['history'],})
     dset_out.to_netcdf(inargs.outfile, format='NETCDF3_CLASSIC')
@@ -329,7 +334,7 @@ references:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("infile", type=str, help="Input file name")
-    parser.add_argument("variable", type=str, help="Input file variable")
+    parser.add_argument("var", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
     parser.add_argument("min_freq", type=int, help="Minimum frequency to retain")
     parser.add_argument("max_freq", type=int, help="Maximum frequency to retain (can equal min_freq for single freq)")
@@ -340,7 +345,7 @@ references:
                         help="Latitude range over which to perform Fourier Transform [default = entire]")
     parser.add_argument("--valid_lon", type=float, nargs=2, metavar=('START', 'END'), default=None,
                         help="Longitude range over which to perform Fourier Transform (all other values are set to zero) [default = entire]")
-    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
 
     args = parser.parse_args()            

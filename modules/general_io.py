@@ -164,7 +164,7 @@ def get_subset_kwargs(namespace):
         pass 
 
     for dim in ['time', 'latitude', 'longitude']:
-        _sel_or_slice(kwarg_dict, dim)
+        kwarg_dict = _sel_or_slice(namespace, dim, kwarg_dict)
 
     return kwarg_dict
 
@@ -236,11 +236,11 @@ def read_dates(infile):
     return date_list, date_metadata
 
 
-def _sel_or_slice(kw_dict, dim):
+def _sel_or_slice(inargs, dim, kw_dict):
     """Select or slice."""
 
     try:
-        start, end = eval('namespace.'+dim)
+        start, end = eval('inargs.'+dim)
         if start == end:
             kw_dict[dim] = start
         else:

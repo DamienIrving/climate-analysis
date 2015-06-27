@@ -11,12 +11,12 @@ function usage {
     echo "   cdofix:      Script for replacing attributes that cdo strips"
     echo "   wavestart:   Beginning of wavenumber range"
     echo "   waveend:     End of wavenumber range"
-    echo "   type:        Type of analysis [coefficients or hilbert]"
+    echo "   type:        Type of analysis [coefficients, hilbert or inverse_ft]"
     echo "   python_exe:  Python executable"
     echo "   code_dir:    Directory that plot_map.py is in"
     echo "   temp_dir:    Directory to store temporary data files"
     echo "   lonstart:    Start longitude search"
-    echo "   lonend:      End longitude for new grid"
+    echo "   lonend:      End longitude search"
     echo "   (the 2 longitude selections are optional)"
     echo "   e.g. bash $0 vrot_Merra_250hPa_daily-anom-wrt-all_y181x360-np20N260E.nc vrot env-w567-vrot_Merra_250hPa_daily-anom-wrt-all_y181x360-np20N260E.nc 5 7 hilbert /usr/local/anaconda/bin/python ~/climate-analysis/data_processing /mnt/meteo0/data/simmonds/dbirving/temp 225 335 "
     exit 1
@@ -40,7 +40,7 @@ code_dir=$9
 temp_dir=${10}
 
 if [ $# == $narg_max ] ; then
-  lonselect=(--longitude ${11} ${12}) 
+  lonselect=(--valid_lon ${11} ${12}) 
 else
   lonselect=""
 fi  
@@ -58,8 +58,7 @@ for year in "${years[@]}"; do
     end=`expr $year + 4`
     temp_file=${temp_dir}/temp-${type}_${year}-${end}.nc
     ${python_exe} ${code_dir}/calc_fourier_transform.py $infile $invar ${temp_file} \
-    --filter ${waveselect[@]} \
-    --outtype ${type} \
+    ${waveselect[@]} ${type} \
     ${lonselect[@]} \
     --time ${year}-01-01 ${end}-12-31 none 
     temp_files+=(${temp_file})
