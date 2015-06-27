@@ -1,5 +1,5 @@
 #
-# Description: For global daily data, calc_envelope.py can only handle 5 years of data at a time
+# Description: For global daily data, calc_fourier_transform.py can only handle 5 years of data at a time
 # (on abyss and/or vortex.earthsci.unimelb.edu.au) 
 #
 
