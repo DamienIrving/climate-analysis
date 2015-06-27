@@ -27,7 +27,7 @@ modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 
 try:
-    import netcdf_io as nio
+    import general_io as gio
     import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
@@ -122,17 +122,12 @@ def first_localmax_index(data):
         return 0
 
 
-def get_coefficients(data, lon_axis, min_freq, max_freq):
-    """Calculate magnitude and phase coefficients for each frequency. 
+def _get_coefficients(data, lon_axis, 
+                      min_freq, max_freq,
+                      long_name, units):
+    """Calculate magnitude and phase coefficients for each frequency."""
 
-    Returns:
-      A list [mag_min_freq, phase_min_freq, ... mag_max_freq, phase_max_freq]
-      where the phase is represented by the location of the first local maxima 
-      along the longitude axis
-    
-    """
-
-    outdata_list = [] 
+    outdata_dict = {}
     exclusion = None
     for freq in range(min_freq, max_freq + 1):
         filtered_signal = numpy.apply_along_axis(filter_signal, -1, 
@@ -144,91 +139,69 @@ def get_coefficients(data, lon_axis, min_freq, max_freq):
         localmax_indexes = numpy.apply_along_axis(first_localmax_index, -1, filtered_signal)
         localmax_lons = map(lambda x: lon_axis[x], localmax_indexes)
         
-        outdata_list.append(localmax_vals)
-        outdata_list.append(localmax_lons)
+        outdata_dict['wave'+str(freq)+'_amp'] = (localmax_vals, _coefficient_atts('amp', freq, long_name, units))
+        outdata_dict['wave'+str(freq)+'_phase'] = (localmax_lons, _coefficient_atts('phase', freq, long_name, units))
 
-    return outdata_list
+    return outdata_dict
 
 
-def get_coefficient_atts(orig_darray, min_freq, max_freq):
-    """Get the attributes for the coefficient output file.
-
-    Returns:
-      A list [mag-atts_min-freq, phase-atts_min-freq, ... mag-atts_max-freq, mag-phase_max-freq] 
-
-    """
+def _coefficient_atts(ctype, freq, orig_long_name, units):
+    """Get the attributes for the coefficient output variable."""
+    
+    assert ctype in ('amp', 'phase')
     
     method = 'filtered'
-    outvar_atts_list = []
-    outvar_axes_list = []
-    for freq in range(min_freq, max_freq + 1):
-        filter_text = get_filter_text(method, freq, freq)
-        mag_atts = {'id': 'wave'+str(freq)+'_amp',
-                    'standard_name': 'amplitude_of_'+method+'_'+orig_darray.attrs['long_name'],
-                    'long_name': 'amplitude_of_'+method+'_'+orig_darray.attrs['long_name'],
-                    'units': orig_darray.attrs['units'],
-                    'notes': filter_text}
-        outvar_atts_list.append(mag_atts)
-        outvar_axes_list.append(orig_darray.getAxisList()[:-1])
-        
-        phase_atts = {'id': 'wave'+str(freq)+'_phase',
-                      'standard_name': 'first_local_maxima_of_'+method+'_'+orig_darray.long_name,
-                      'long_name': 'first_local_maxima_of_'+method+'_'+orig_darray.long_name,
-                      'units': orig_darray.getLongitude().units,
-                      'notes': filter_text}
-        outvar_atts_list.append(phase_atts)    
-        outvar_axes_list.append(orig_darray.getAxisList()[:-1])
+    if ctype == 'amp':
+        name = 'amplitude_of_'+method+'_'+orig_long_name
+    elif ctype == 'phase':
+        name = 'first_local_maxima_of_'+method+'_'+orig_long_name,
 
-    return outvar_atts_list, outvar_axes_list
+    atts = {'standard_name': name,
+            'long_name': name,
+            'units': units,
+            'notes': _get_filter_text(method, freq, freq)}
+
+    return atts
 
 
-def hilbert_transform(data, lon_axis, min_freq, max_freq, out_type=None):
-    """Perform the Hilbert transform.
-
-    There is the option of placing the output array in a list of length 1
-    (this is useful in some cases)
-
-    """
+def _filter_data(data, lon_axis,
+                 min_freq, max_freq,
+                 var, long_name, units, outtype):
+    """Filter data."""
     
-    exclusion = 'negative'
+    if outtype == 'hilbert':
+        exclusion = 'negative'
+        method_short = 'env'
+        method_long = 'hilbert_transformed'
+    elif outtype == 'inverse_ft':
+        exclusion = None
+        method_short = 'ift'
+        method_long = 'inverse_fourier_transformed'
+
     outdata = numpy.apply_along_axis(filter_signal, -1, 
                                      data, lon_axis, 
                                      min_freq, max_freq, 
                                      exclusion)
-    outdata = 2 * numpy.abs(outdata)
-
-    if out_type == list:
-        return [outdata,]
-    else:
-        return outdata
-
-
-def get_hilbert_atts(orig_data, min_freq, max_freq):
-    """Get the attributes for the output Hilbert transform file."""
+    if outtype == 'hilbert':
+        outdata = 2 * numpy.abs(outdata)
    
-    method = 'hilbert_transformed'
-    filter_text = get_filter_text(method, min_freq, max_freq)
-    var_atts = {'id': 'env'+orig_data.id,
-                'standard_name': method+'_'+orig_data.long_name,
-                'long_name': method+'_'+orig_data.long_name,
-                'units': orig_data.units,
-                'notes': filter_text}
+    filter_text = _get_filter_text(method_long, min_freq, max_freq)
+    atts = {'standard_name': method_long+'_'long_name,
+            'long_name': method_long+'_'long_name,
+            'units': units,
+            'notes': filter_text}
 
-    outvar_atts_list = [var_atts,]
-    outvar_axes_list = [orig_data.getAxisList(),]
+    outdata_dict = {method_short+var: (outdata, atts)}
 
-    return outvar_atts_list, outvar_axes_list
+    return outdata_dict
 
 
-def get_filter_text(method, min_freq, max_freq):
+def _get_filter_text(method, min_freq, max_freq):
     """Get the notes attribute text according to the analysis
     method and frequency range."""
 
-    if min_freq and max_freq:
-        filter_text = '%s with frequency range: %s to %s' %(method, min_freq, max_freq)
-    else:
-        filter_text = '%s with all frequencies retained' %(method)
-
+    filter_text = '%s with frequency range: %s to %s' %(method, min_freq, max_freq)
+ 
     return filter_text
 
 
@@ -288,41 +261,45 @@ def main(inargs):
 
     assert darray.dims[-1] == 'longitude', \
     'This script is setup to perform the fourier transform along the longitude axis'
-    
+
     # Apply longitude filter (i.e. set unwanted longitudes to zero)
-    data_masked = apply_lon_mask(darray.values, darray['longitude'].values) if inargs.valid_lon else darray.values  # FIXME: apply_lon_mask needs to be written
+    if inargs.valid_lon:
+        start_lon, end_lon = inargs.valid_lon
+        darray[dict(longitude=slice(start_lon, end_lon))] = 0
     
     # Perform task
-    min_freq, max_freq = inargs.filter
+    func_dict = {'coefficients': _get_coefficients,
+                 'inverse_ft': ,
+                 'hilbert': _hilbert_transform}
+    task = func_dict[inargs.outtype]
+    
+    long_name = darray.attrs['long_name']
+    units = darray.attrs['units']
     if inargs.outtype == 'coefficients':
-        outdata_list = get_coefficients(data_masked, darray['longitude'].values, min_freq, max_freq)
-        outvar_atts_list, outvar_axes_list = get_coefficient_atts(darray, min_freq, max_freq)
-    elif inargs.outtype == 'hilbert':
-        outdata_list = hilbert_transform(data_masked, darray['longitude'].values, min_freq, max_freq, out_type=list)
-        outvar_atts_list, outvar_axes_list = get_hilbert_atts(indata.data, min_freq, max_freq)
-
+        outdata_dict = _get_coefficients(darray.values, darray['longitude'].values, 
+                                         inargs.min_freq, inargs.max_freq,
+                                         long_name, units)
+        dims = darray.dims[:, -1]
+    else:
+        outdata_dict = filter_data(darray.values, darray['longitude'].values, 
+                                   inargs.min_freq, inargs.max_freq,
+                                   var, long_name, units, inargs.outtype)
+        dims = darray.dims
+        
     # Write the output file
     d = {}
-    d['latitude'] = darray['latitude']
-    d['longitude'] = darray['longitude']
+    for dim in dims:
+        d[dim] = darray[dim]
 
-    for season in season_months.keys(): 
-        d[inargs.var+'_'+season] = (['latitude', 'longitude'], cmeans[season])
-        if not inargs.no_sig:
-            d['p_'+season] = (['latitude', 'longitude'], pvals[season])
+    for outvar in outdata_dict.keys(): 
+        d[outvar] = (dims, outdata_dict[outvar][0])
 
     dset_out = xray.Dataset(d)
 
-    for season in season_months.keys(): 
-        dset_out[inargs.var+'_'+season].attrs = cmean_atts[season]
-        if not inargs.no_sig:
-            dset_out['p_'+season].attrs = pval_atts[season]
-    
-    output_metadata = {inargs.infile: dset_in.attrs['history'],}
-    if inargs.date_file:
-        output_metadata[inargs.date_file] = dt_list_metadata
+    for outvar in outdata_dict.keys(): 
+        d[outvar].attrs = outdata_dict[outvar][1])
 
-    gio.set_global_atts(dset_out, dset_in.attrs, output_metadata)
+    gio.set_global_atts(dset_out, dset_in.attrs, {inargs.infile: dset_in.attrs['history'],})
     dset_out.to_netcdf(inargs.outfile, format='NETCDF3_CLASSIC')
 
 
@@ -354,8 +331,11 @@ references:
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
-            
-    # Input data options
+    parser.add_argument("min_freq", type=int, help="Minimum frequency to retain")
+    parser.add_argument("max_freq", type=int, help="Maximum frequency to retain (can equal min_freq for single freq)")
+    parser.add_argument("outtype", type=str, choices=('hilbert', 'coefficients', 'inverse_ft'),
+                        help="Output can be a hilbert transform, inverse Fourier transform or magnitude and phase coefficients for each freq")
+    
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
                         help="Latitude range over which to perform Fourier Transform [default = entire]")
     parser.add_argument("--valid_lon", type=float, nargs=2, metavar=('START', 'END'), default=None,
@@ -363,13 +343,6 @@ references:
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period [default = entire]")
 
-    # Output options
-    parser.add_argument("--filter", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=None,
-                        help="Range of frequecies to retain in filtering [e.g. 3,3 would retain the wave that repeats 3 times over the domain")
-    parser.add_argument("--outtype", type=str, default='hilbert', choices=('hilbert', 'coefficients'),
-                        help="The output can be a hilbert transform or the magnitude and phase coefficients for each frequency")
-
-  
     args = parser.parse_args()            
 
     print 'Input files: ', args.infile
