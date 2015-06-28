@@ -207,39 +207,6 @@ ${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW} $
 	bash ${VIS_SCRIPT_DIR}/plot_composite.sh $(word 1,$^) ${COMP_VAR} $(word 2,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
-# Index composite, upper threshold
-
-COMP_INDEX_CVAR_ANOM_RUNMEAN_HIGH=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}90pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.nc
-${COMP_INDEX_CVAR_ANOM_RUNMEAN_HIGH} : ${CVAR_ANOM_RUNMEAN} ${${INDEX_CAPS}_INDEX}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${INDEX} 90pct $@ --region shextropics15
-
-COMP_INDEX_CVAR_ANOM_RUNMEAN_HIGH_PLOT=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}90pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.png
-${COMP_INDEX_CVAR_ANOM_RUNMEAN_HIGH_PLOT} : ${COMP_INDEX_CVAR_ANOM_RUNMEAN_HIGH}
-	bash ${VIS_SCRIPT_DIR}/plot_index_composite.sh $< ${INDEX} 90pct $@ ${PYTHON} ${VIS_SCRIPT_DIR}
-
-
-# Index composite, lower threshold
-
-COMP_INDEX_CVAR_ANOM_RUNMEAN_LOW=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}10pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.nc
-${COMP_INDEX_CVAR_ANOM_RUNMEAN_LOW} : ${CVAR_ANOM_RUNMEAN} ${${INDEX_CAPS}_INDEX}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${INDEX} 90pct $@ --region shextropics15 --include below
-
-COMP_INDEX_CVAR_ANOM_RUNMEAN_LOW_PLOT=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}10pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.png
-${COMP_INDEX_CVAR_ANOM_RUNMEAN_LOW_PLOT} : ${COMP_INDEX_CVAR_ANOM_RUNMEAN_LOW}
-	bash ${VIS_SCRIPT_DIR}/plot_index_composite.sh $< ${INDEX} 10pct $@ ${PYTHON} ${VIS_SCRIPT_DIR}
-
-
-# Index composite, upper threshold (absolute value anomalies)
-
-COMP_INDEX_CVAR_ANOM_RUNMEAN_ABS_HIGH=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}abs90pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.nc
-${COMP_INDEX_CVAR_ANOM_RUNMEAN_ABS_HIGH} : ${CVAR_ANOM_RUNMEAN} ${${INDEX_CAPS}_INDEX}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_index_composite.py $(word 1,$^) ${COMP_VAR} $(word 2,$^) ${INDEX} 90pct $@ --region shextropics15 --absolute
-
-COMP_INDEX_CVAR_ANOM_RUNMEAN_ABS_HIGH_PLOT=${COMP_DIR}/${INDEX}-composite_${COMP_VAR}abs90pct_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.png
-${COMP_INDEX_CVAR_ANOM_RUNMEAN_ABS_HIGH_PLOT} : ${COMP_INDEX_CVAR_ANOM_RUNMEAN_ABS_HIGH}
-	bash ${VIS_SCRIPT_DIR}/plot_index_composite.sh $< ${INDEX} 90pctabs $@ ${PYTHON} ${VIS_SCRIPT_DIR}
-
-
 # ASL composite, upper threshold of index
  
 # bash calc_asl_composite.sh
