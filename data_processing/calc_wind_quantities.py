@@ -8,12 +8,11 @@ Reference:    Uses the windspharm package: ajdawson.github.com/windspharm/index.
 
 # Import general Python modules
 
-import sys, os
+import sys, os, pdb
 import argparse
-import numpy
+import numpy, xray
 from windspharm.standard import VectorWind
 from windspharm.tools import prep_data, recover_data, order_latdim
-import pdb
 
 # Import my modules
 
@@ -28,94 +27,68 @@ modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 
 try:
-    import netcdf_io as nio
-    import coordinate_rotation as rot
+    import general_io as gio
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 # Define global variables and functions
 
-var_atts = {}
-
-var_atts['magnitude'] = {'id': 'spd',
-    'standard_name': 'wind_speed',
-    'long_name': 'wind_speed',
-    'units': 'm s-1'}
-
-var_atts['vorticity'] = {'id': 'vrt',
-    'standard_name': 'relative_vorticity',
-    'long_name': 'relative_vorticity',
-    'units': 's-1'}
-
-var_atts['divergence'] = {'id': 'div',
-    'standard_name': 'divergence',
-    'long_name': 'divergence',
-    'units': '1.e-6 s-1'}
-
-var_atts['absolutevorticity'] = {'id': 'avrt',
-    'standard_name': 'absolute_vorticity',
-    'long_name': 'absolute_vorticity',
-    'units': '1.e-5 s-1',
-    'notes': 'absolute vorticity = sum of relative and planetary vorticity'}
-
-var_atts['planetaryvorticity'] = {'id': 'pvrt',
-    'standard_name': 'planetary_vorticity',
-    'long_name': 'planetary_vorticity',
-    'units': 's-1',
-    'notes': 'planetary vorticity = Coriolis parameter'}
-
-var_atts['irrotationalcomponent','u'] = {'id': 'uchi',
-    'standard_name': 'irrotational_zonal_wind',
-    'long_name': 'irrotational_zonal_wind',
-    'units': 'm s-1',
-    'notes': 'Zonal irrotational (divergent) component of the vector wind (from Helmholtz decomposition)'}
-
-var_atts['irrotationalcomponent','v'] = {'id': 'vchi',
-    'standard_name': 'irrotational_meridional_wind',
-    'long_name': 'irrotational_meridional_wind',
-    'units': 'm s-1',
-    'notes': 'Meridional irrotational (divergent) component of the vector wind (from Helmholtz decomposition)'}
-
-var_atts['nondivergentcomponent','u'] = {'id': 'upsi',
-    'standard_name': 'non_divergent_zonal_wind',
-    'long_name': 'non_divergent_zonal_wind',
-    'units': 'm s-1',
-    'notes': 'Zonal non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)'}
-
-var_atts['nondivergentcomponent','v'] = {'id': 'vpsi',
-    'standard_name': 'non_divergent_meridional_wind',
-    'long_name': 'non_divergent_meridional_wind',
-    'units': 'm s-1',
-    'notes': 'meridional non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)'}
-
-var_atts['streamfunction'] = {'id': 'sf',
-    'standard_name': 'streamfunction',
-    'long_name': 'streamfunction',
-    'units': '1.e+6 m2 s-1',  
-    'notes': 'rotational wind blows along streamfunction contours, speed proportional to gradient'}
-
-var_atts['velocitypotential'] = {'id':'vp',
-    'standard_name': 'velocity_potential',
-    'long_name': 'velocity_potential',
-    'units': '1.e+6 m2 s-1',  
-    'notes': 'velocity potential (divergent wind blows along velocity potential contours, speed proportional to gradient)'}
-
-var_atts['rossbywavesource'] = {'id': 'rws',
-    'standard_name': 'rossby_wave_source',
-    'long_name': 'rossby_wave_source',
-    'units': '1.e-11 s-2'}
-
-var_atts['rossbywavesource1'] = {'id': 'rws1',
-    'standard_name': 'rossby_wave_source_vortex',
-    'long_name': 'rossby_wave_source_vortex',
-    'units': '1.e-11 s-2',  
-    'notes': 'Rossby wave source, vortex stretching term'}
-
-var_atts['rossbywavesource2'] = {'id': 'rws2',
-    'standard_name': 'rossby_wave_source_advection',
-    'long_name': 'rossby_wave_source_advection',
-    'units': '1.e-11 s-2',  
-    'notes': 'Rossby wave source, advection of absolute vorticity by divergent flow term'}
+var_atts = {'spd': {'standard_name': 'wind_speed',
+        'long_name': 'wind_speed',
+        'units': 'm s-1'},
+    'vrt': {'standard_name': 'relative_vorticity',
+        'long_name': 'relative_vorticity',
+        'units': 's-1'},
+    'div': {'standard_name': 'divergence',
+        'long_name': 'divergence',
+        'units': '1.e-6 s-1'},
+    'avrt': {'standard_name': 'absolute_vorticity',
+        'long_name': 'absolute_vorticity',
+        'units': '1.e-5 s-1',
+        'notes': 'absolute vorticity = sum of relative and planetary vorticity'},
+    'avrtgrad': {'standard_name': 'absolute_vorticity_gradient',
+        'long_name': 'absolute_vorticity_gradient',
+        'units': '1.e-5 s-1',
+        'notes': 'absolute vorticity = sum of relative and planetary vorticity'},
+    'pvrt': {'standard_name': 'planetary_vorticity',
+        'long_name': 'planetary_vorticity',
+        'units': 's-1',
+        'notes': 'planetary vorticity = Coriolis parameter'},
+    'uchi' : {'standard_name': 'irrotational_zonal_wind',
+        'long_name': 'irrotational_zonal_wind',
+        'units': 'm s-1',
+        'notes': 'Zonal irrotational (divergent) component of the vector wind (from Helmholtz decomposition)'},
+    'vchi': {'standard_name': 'irrotational_meridional_wind',
+        'long_name': 'irrotational_meridional_wind',
+        'units': 'm s-1',
+        'notes': 'Meridional irrotational (divergent) component of the vector wind (from Helmholtz decomposition)'},
+    'upsi': {'standard_name': 'non_divergent_zonal_wind',
+        'long_name': 'non_divergent_zonal_wind',
+        'units': 'm s-1',
+        'notes': 'Zonal non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)'},
+    'vpsi': {'standard_name': 'non_divergent_meridional_wind',
+        'long_name': 'non_divergent_meridional_wind',
+        'units': 'm s-1',
+        'notes': 'meridional non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)'},
+    'sf': {'standard_name': 'streamfunction',
+        'long_name': 'streamfunction',
+        'units': '1.e+6 m2 s-1',  
+        'notes': 'rotational wind blows along streamfunction contours, speed proportional to gradient'},
+    'vp': {'standard_name': 'velocity_potential',
+        'long_name': 'velocity_potential',
+        'units': '1.e+6 m2 s-1',  
+        'notes': 'velocity potential (divergent wind blows along velocity potential contours, speed proportional to gradient)'},
+    'rws': {'standard_name': 'rossby_wave_source',
+        'long_name': 'rossby_wave_source',
+        'units': '1.e-11 s-2'},
+    'rws1': {'standard_name': 'rossby_wave_source_vortex',
+        'long_name': 'rossby_wave_source_vortex',
+        'units': '1.e-11 s-2',  
+        'notes': 'Rossby wave source, vortex stretching term'},
+    'rws2': {'standard_name': 'rossby_wave_source_advection',
+        'long_name': 'rossby_wave_source_advection',
+        'units': '1.e-11 s-2',  
+        'notes': 'Rossby wave source, advection of absolute vorticity by divergent flow term'}}
 
 
 def calc_quantity(uwnd, vwnd, quantity, lat_axis, lon_axis, axis_order):
@@ -138,7 +111,6 @@ def calc_quantity(uwnd, vwnd, quantity, lat_axis, lon_axis, axis_order):
         things come back upsidedown if the lat axis isn't right, so
         I've just used the standard interface here instead.
        
-
     Reference: 
         ajdawson.github.io/windspharm
 
@@ -155,67 +127,60 @@ def calc_quantity(uwnd, vwnd, quantity, lat_axis, lon_axis, axis_order):
     flip_lat = False if lats[0] == lat_axis[0] else True 
     
     w = VectorWind(uwnd, vwnd)
-    
+    data_out = {}
     if quantity == 'rossbywavesource':
-	eta = w.absolutevorticity()
-	div = w.divergence()
-	uchi, vchi = w.irrotationalcomponent()
-	etax, etay = w.gradient(eta)
+        eta = w.absolutevorticity()
+        div = w.divergence()
+        uchi, vchi = w.irrotationalcomponent()
+        etax, etay = w.gradient(eta)
 
-        data_out = {}
-	data_out['rws1'] = (-eta * div) / (1.e-11)
+        data_out['rws1'] = (-eta * div) / (1.e-11)
         data_out['rws2'] = (-(uchi * etax + vchi * etay)) / (1.e-11)
         data_out['rws'] = data_out['rws1'] + data_out['rws2']
 
     elif quantity == 'magnitude':
-        data_out = w.magnitude()
+        data_out['spd'] = w.magnitude()
     
     elif quantity == 'vorticity':
-        data_out = w.vorticity()
+        data_out['vrt'] = w.vorticity()
     
     elif quantity == 'divergence':
-        data_out = w.divergence()
-	data_out = data_out / (1.e-6)
+        div = w.divergence()
+        data_out['div'] = div / (1.e-6)
     
     elif quantity == 'absolutevorticity':
-        data_out = w.absolutevorticity()
-	data_out = data_out / (1.e-5)
+        avrt = w.absolutevorticity()
+        data_out['avrt'] = avrt / (1.e-5)
     
     elif quantity == 'absolutevorticitygradient':
         avrt = w.absolutevorticity()
-	ugrad, vgrad = w.gradient(avrt)
-	data_out = numpy.sqrt(numpy.square(ugrad) + numpy.square(vgrad)) 
-	data_out = data_out / (1.e-5)
+        ugrad, vgrad = w.gradient(avrt)
+        avrtgrad = numpy.sqrt(numpy.square(ugrad) + numpy.square(vgrad)) 
+        data_out['avrtgrad'] = avrtgrad / (1.e-5)
     
     elif quantity == 'planetaryvorticity':
-        data_out = w.planetaryvorticity()
+        data_out['pvrt'] = w.planetaryvorticity()
     
     elif quantity == 'irrotationalcomponent':
-        data_out = {}
-	data_out['u'], data_out['v'] = w.irrotationalcomponent()    
+        data_out['uchi'], data_out['vchi'] = w.irrotationalcomponent()    
     
     elif quantity == 'nondivergentcomponent':
-        data_out = {}
-	data_out['u'], data_out['v'] = w.nondivergentcomponent() 
+        data_out['upsi'], data_out['vpsi'] = w.nondivergentcomponent() 
     
     elif quantity == 'streamfunction':
-        data_out = w.streamfunction()
-	data_out = data_out / (1.e+6)
+        sf = w.streamfunction()
+        data_out['sf'] = sf / (1.e+6)
     
     elif quantity == 'velocitypotential':
-        data_out = w.velocitypotential()
-    	data_out = data_out / (1.e+6)
-	
+        vp = w.velocitypotential()
+        data_out['vp'] = vp / (1.e+6)
+    
     else:
-	sys.exit('Wind quantity not recognised')
+        sys.exit('Wind quantity not recognised')
 
     # Return data to its original shape
-    if type(data_out) == dict:
-        for key in data_out.keys():
-            data_out[key] = recover_structure(data_out[key], flip_lat, uwnd_info) 
-    else:
-        data_out = recover_structure(data_out, flip_lat, uwnd_info)
-
+    for key in data_out.keys():
+        data_out[key] = recover_structure(data_out[key], flip_lat, uwnd_info) 
 
     return data_out
 
@@ -249,65 +214,89 @@ def recover_structure(data, flip_lat, orig_info):
 
     return data
 
+
+def axis_letters(dim_list):
+    """Convert dimension list to string.
+    
+    e.g. ['latitude', 'longitude', 'time'] -> 'yxt' 
+    
+    """
+    
+    dim_letters = {'latitude': 'y', 'longitude': 'x',
+                   'time': 't', 'level': 'z'}
+    
+    letter_list = []
+    for dim in dim_list:
+        assert dim in dim_letters.keys()
+        letter_list.append(dim_letters[dim])
+    
+    return "".join(letter_list)
+    
     
 def main(inargs):
     """Run the program."""
 
-    # Read the input data
-    data_u = nio.InputData(inargs.infileu, inargs.varu, 
-                           **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude']))
-    data_v = nio.InputData(inargs.infilev, inargs.varv, 
-                           **nio.dict_filter(vars(inargs), ['time', 'region', 'latitude', 'longitude']))
+    # Read the data
+    dset_in_u = xray.open_dataset(inargs.infileu)
+    gio.check_xrayDataset(dset_in_u, inargs.varu)
 
-    lat_axis = data_u.data.getLatitude()[:]
-    lon_axis = data_u.data.getLongitude()[:]    
-    axis_order = data_u.data.getOrder()
+    dset_in_v = xray.open_dataset(inargs.infilev)
+    gio.check_xrayDataset(dset_in_v, inargs.varv)
+
+    subset_dict = gio.get_subset_kwargs(inargs)
+       
+    darray_u = dset_in_u[inargs.varu].sel(**subset_dict)
+    darray_v = dset_in_v[inargs.varv].sel(**subset_dict)
+
+    lat_axis = darray_u['latitude'].values
+    lon_axis = darray_u['longitude'].values    
+    axis_order = axis_letters(darray.dims)
     
     # Calculate the desired quantity
-    data_out = calc_quantity(data_u.data, data_v.data, inargs.quantity,
+    data_out = calc_quantity(darray_u.values, darray_v.values, inargs.quantity,
                              lat_axis, lon_axis, axis_order)
 
-    # Write output file
-    indata_list = [data_u, data_v,]
-    if (type(data_out) == dict) and ('u' in data_out.keys()):
-        outdata_list = [data_out['u'], data_out['v'],]
-        outvar_atts_list = [var_atts[inargs.quantity, 'u'], var_atts[inargs.quantity, 'v'],]
-	outvar_axes_list = [data_u.data.getAxisList()] * 2
-    elif (type(data_out) == dict) and ('rws' in data_out.keys()):
-        outdata_list = [data_out['rws'], data_out['rws1'], data_out['rws2']]
-        outvar_atts_list = [var_atts['rossbywavesource'], 
-	                    var_atts['rossbywavesource1'],
-			    var_atts['rossbywavesource2']]
-	outvar_axes_list = [data_u.data.getAxisList()] * 3
-    else:
-        outdata_list = [data_out,]
-        outvar_atts_list = [var_atts[inargs.quantity],]
-        outvar_axes_list = [data_u.data.getAxisList(),]
+    # Write the output file
+    d = {}
+    for dim in darray.dims:
+        d[dim] = darray[dim]
 
-    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
-                     data_u.global_atts, 
-                     outdata_list,
-                     outvar_atts_list, 
-                     outvar_axes_list)
+    for var in data_out.keys():
+        d[var] = (darray.dims, data_out[var])
+    
+    dset_out = xray.Dataset(d)
 
+    for var in data_out.keys(): 
+        dset_out[var].attrs = var_atts[var]
+
+    outfile_metadata = {inargs.infileu: dset_in_u.attrs['history'],
+                        inargs.infliev: dset_in_v.attrs['history']}
+    gio.set_global_atts(dset_out, dset_in_u.attrs, outfile_metadata)
+    dset_out.to_netcdf(inargs.outfile, format='NETCDF3_CLASSIC')
+ 
     
 if __name__ == '__main__':
 
-    extra_info ="""	
+    extra_info =""" 
 wind quantities: 
-  magnitude             ->  Wind speed    
-  vorticity             ->  Relative vorticity
-  divergence            ->  Horizontal divergence
-  absolutevorticity     ->  Absolute vorticity (sum of relative and planetary)
-  irrotationalcomponent ->  Irrotational (divergent) component of the vector wind (from Helmholtz decomposition)
-  nondivergentcomponent ->  Non-divergent (rotational) component of the vector wind (from Helmholtz decomposition)
-  streamfunction        ->  Streamfunction (the rotational part of the wind blows along the streamfunction contours, 
-	                    with speed proportional to the gradient)
-  velocitypotential     ->  Velocity potential (the divergent part of the wind blows along the velocity potential contours,
-	                    with speed proportional to the gradient)
-  rossbywavesource      ->  Rossby wave source (includes the vortex stretching and advection of absolute vorticity by divergent flow terms)
-  		      	    
-	    
+  magnitude                  ->  Wind speed    
+  vorticity                  ->  Relative vorticity
+  divergence                 ->  Horizontal divergence
+  absolutevorticity          ->  Absolute vorticity (sum of relative and planetary)
+  absolutevorticitygradient  ->  Absolute vorticity gradient (sum of relative and planetary)
+  irrotationalcomponent      ->  Irrotational (divergent) component of the vector wind 
+                                 (from Helmholtz decomposition)
+  nondivergentcomponent      ->  Non-divergent (rotational) component of the vector wind 
+                                 (from Helmholtz decomposition)
+  streamfunction             ->  Streamfunction (the rotational part of the wind blows 
+                                 along the streamfunction contours, with speed proportional
+                                 to the gradient)
+  velocitypotential          ->  Velocity potential (the divergent part of the wind blows 
+                                 along the velocity potential contours, with speed 
+                                 proportional to the gradient)
+  rossbywavesource           ->  Rossby wave source (includes the vortex stretching and 
+                                 advection of absolute vorticity by divergent flow terms)
+                    
 note:
   The input data can have no missing values
 
@@ -315,7 +304,7 @@ reference:
   Uses the windspharm package: http://ajdawson.github.com/windspharm/intro.html
 
 example (vortex.earthsci.unimelb.edu.au):
-  /usr/local/uvcdat/1.3.0/bin/cdat calc_wind_quantities.py streamfunction  
+  /usr/local/uvcdat/1.3.0/bin/cdat calc_wind_quantities.py sf  
   ua_Merra_250hPa_monthly_native.nc ua
   va_Merra_250hPa_monthly_native.nc va
   sf_Merra_250hPa_monthly_native.nc
@@ -323,7 +312,6 @@ example (vortex.earthsci.unimelb.edu.au):
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
 
-    
 """
 
     description='Calculate wind derived quanitity.'
@@ -334,22 +322,18 @@ author:
 
     parser.add_argument("quantity", type=str, help="Quantity to calculate",
                         choices=['magnitude', 'vorticity', 'divergence', 'absolutevorticity', 
-			         'absolutevorticitygradient', 'planetaryvorticity',
+                                 'absolutevorticitygradient', 'planetaryvorticity',
                                  'irrotationalcomponent', 'nondivergentcomponent', 
-				 'streamfunction', 'velocitypotential', 'rossbywavesource'])
+                                 'streamfunction', 'velocitypotential', 'rossbywavesource'])
     parser.add_argument("infileu", type=str, help="Input U-wind file name")
     parser.add_argument("varu", type=str, help="Input U-wind variable")
     parser.add_argument("infilev", type=str, help="Input V-wind file name")
     parser.add_argument("varv", type=str, help="Input V-wind variable")
     parser.add_argument("outfile", type=str, help="Output file name")
     
-    parser.add_argument("--region", type=str, choices=nio.regions.keys(),
+    parser.add_argument("--region", type=str, choices=gio.regions.keys(),
                         help="Region [default = entire]")
-    parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
-                        help="Latitude range [default = entire]")
-    parser.add_argument("--longitude", type=float, nargs=2, metavar=('START', 'END'),
-                        help="Longitude range [default = entire]")
-    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
 
     args = parser.parse_args()  
