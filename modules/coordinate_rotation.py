@@ -34,7 +34,6 @@ modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 
 try:
-    import netcdf_io as nio
     import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
