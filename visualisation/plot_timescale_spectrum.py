@@ -137,7 +137,7 @@ def timescale_plot(ax, inargs, label=None):
               '#1d91c0', '#225ea8', '#253494', '#081d58'] 
  
     for index, step in enumerate(runmean_windows):
-        darray, indep_var, metadata_dict = read_data(inargs, runave)
+        darray, indep_var, metadata_dict = read_data(inargs, step)
         	
         spectrum_temporal_mean, spectrum_freqs_1D = transform_data(darray.values, indep_var, inargs.scaling)
         

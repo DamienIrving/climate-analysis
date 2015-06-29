@@ -201,25 +201,34 @@ def list_kwargs(func):
     return details.args[-nopt:]
 
 
-def match_dates(dates, time_axis):
+def split_dt(dt):
+    """Split a numpy.datetime64 value so as to just keep the date part."""
+
+    return str(dt).split('T')[0]
+
+
+def match_dates(datetimes, datetime_axis):
     """Take list of datetimes and match with the corresponding datetimes in a time axis.
  
     Args:   
-      dates (list/tuple)
-      time_axis (list/tuple)
+      datetimes (list/tuple)
+      datetime_axis (list/tuple)
         
     """
-    
-    match_dates = []
-    miss_dates = time_axis[:]  # creates a shallow copy
-    
-    for date in dates:
-        if date in time_axis:
-            match_dates.append(date)
-        else:
-            miss_dates.remove(date)    
 
-    return match_dates, miss_dates
+    dates = map(split_dt, datetimes)
+    date_axis = map(split_dt, datetime_axis[:]) 
+    
+    match_datetimes = []
+    miss_datetimes = [] 
+
+    for i in range(0, len(datetime_axis)):
+        if date_axis[i] in dates:
+            match_datetimes.append(datetime_axis[i])
+        else:
+            miss_datetimes.append(datetime_axis[i])    
+
+    return match_datetimes, miss_datetimes
 
 
 def single2list(item, numpy_array=False):
