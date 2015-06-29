@@ -240,11 +240,15 @@ def _sel_or_slice(inargs, dim, kw_dict):
     """Select or slice."""
 
     try:
-        start, end = eval('inargs.'+dim)
-        if start == end:
-            kw_dict[dim] = start
+        in_dim = eval('inargs.'+dim)
+        if type(in_dim) in (float, int):        
+            kw_dict[dim] = in_dim
         else:
-            kw_dict[dim] = slice(start, end)
+            start, end = in_dim
+            if start == end:
+                kw_dict[dim] = start
+            else:
+                kw_dict[dim] = slice(start, end)
     except AttributeError:
         pass
 
