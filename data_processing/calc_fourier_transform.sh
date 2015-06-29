@@ -4,11 +4,10 @@
 #
 
 function usage {
-    echo "USAGE: bash $0 infile invar outfile cdofix wavestart waveend type python_exe code_dir temp_dir lonstart lonend"
+    echo "USAGE: bash $0 infile invar outfile wavestart waveend type python_exe code_dir temp_dir lonstart lonend"
     echo "   infile:      Input file name"
     echo "   invar:       Input variable name"
     echo "   outfile:     Output file name"
-    echo "   cdofix:      Script for replacing attributes that cdo strips"
     echo "   wavestart:   Beginning of wavenumber range"
     echo "   waveend:     End of wavenumber range"
     echo "   type:        Type of analysis [coefficients, hilbert or inverse_ft]"
@@ -22,8 +21,8 @@ function usage {
     exit 1
 }
 
-narg_min=10
-narg_max=12
+narg_min=9
+narg_max=11
 
 if [[ $# -ne $narg_min && $# -ne $narg_max ]] ; then
   usage
@@ -32,15 +31,14 @@ fi
 infile=$1
 invar=$2
 outfile=$3
-cdofix=$4
-waveselect=($5 $6)
-type=$7
-python_exe=$8
-code_dir=$9
-temp_dir=${10}
+waveselect=($4 $5)
+type=$6
+python_exe=$7
+code_dir=$8
+temp_dir=$9
 
 if [ $# == $narg_max ] ; then
-  lonselect=(--valid_lon ${11} ${12}) 
+  lonselect=(--valid_lon ${10} ${11}) 
 else
   lonselect=""
 fi  
@@ -66,4 +64,4 @@ done
 
 cdo -O mergetime ${temp_files[@]} $outfile
 rm ${temp_files[@]}
-bash ${cdofix} ${outfile} wave1_amp      # Put back the required attributes that CDO strips
+

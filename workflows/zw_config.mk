@@ -14,7 +14,6 @@ CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/local/anaconda/bin/python
 DATA_SCRIPT_DIR=~/climate-analysis/data_processing
 VIS_SCRIPT_DIR=~/climate-analysis/visualisation
-CDO_FIX_SCRIPT=${DATA_SCRIPT_DIR}/cdo_fix.sh
 
 
 # Analysis details
@@ -62,4 +61,4 @@ INDEX_HIGH_THRESH=90pct
 INDEX_LOW_THRESH=10pct
 
 
-TARGET=${INDEX_DIR}/dates-summary_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.png
+TARGET=${INDEX_DIR}/pwi_va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc

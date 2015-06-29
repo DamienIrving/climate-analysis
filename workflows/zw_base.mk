@@ -25,13 +25,12 @@ V_ORIG=${DATA_DIR}/va_${DATASET}_${LEVEL}_daily_native.nc
 V_RUNMEAN=${DATA_DIR}/va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc
 ${V_RUNMEAN} : ${V_ORIG}
 	cdo ${TSCALE} $< $@
-	bash ${CDO_FIX_SCRIPT} $@ va
 
 ## Wave envelope
 
 ENV_RUNMEAN=${ZW_DIR}/envva_${ENV_WAVE_LABEL}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc
 ${ENV_RUNMEAN} : ${V_RUNMEAN}
-	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< va $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} hilbert ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< va $@ ${WAVE_MIN} ${WAVE_MAX} hilbert ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## Zonal wind
 
@@ -39,27 +38,24 @@ U_ORIG=${DATA_DIR}/ua_${DATASET}_${LEVEL}_daily_native.nc
 U_RUNMEAN=${DATA_DIR}/ua_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc
 ${U_RUNMEAN} : ${U_ORIG}
 	cdo ${TSCALE} $< $@
-	bash ${CDO_FIX_SCRIPT} $@ ua
 
 ## Streamfunction
 
 SF_ORIG=${DATA_DIR}/sf_${DATASET}_${LEVEL}_daily_native.nc
 ${SF_ORIG} : ${U_ORIG} ${V_ORIG}
-	bash ${DATA_SCRIPT_DIR}/calc_wind_quantities.sh streamfunction $< ua $(word 2,$^) va $@ ${CDO_FIX_SCRIPT} ${CDAT} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+	bash ${DATA_SCRIPT_DIR}/calc_wind_quantities.sh streamfunction $< ua $(word 2,$^) va $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 SF_ANOM_RUNMEAN=${DATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native.nc
 ${SF_ANOM_RUNMEAN} : ${SF_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
-	bash ${CDO_FIX_SCRIPT} $@ sf
 
 SF_ZONAL_ANOM=${DATA_DIR}/sf_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc
 ${SF_ZONAL_ANOM} : ${SF_ORIG}       
-	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< sf $@ ${CDO_FIX_SCRIPT} ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< sf $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 SF_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${SF_ZONAL_ANOM_RUNMEAN} : ${SF_ZONAL_ANOM}
 	cdo ${TSCALE} $< $@
-	bash ${CDO_FIX_SCRIPT} $@ sf
 
 ## Geopotential height
 
@@ -67,12 +63,11 @@ ZG_ORIG=${DATA_DIR}/zg_${DATASET}_${LEVEL}_daily_native.nc
 
 ZG_ZONAL_ANOM=${DATA_DIR}/zg_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc
 ${ZG_ZONAL_ANOM} : ${ZG_ORIG}       
-	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< zg $@ ${CDO_FIX_SCRIPT} ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< zg $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ZG_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/zg_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${ZG_ZONAL_ANOM_RUNMEAN} : ${ZG_ZONAL_ANOM}
 	cdo ${TSCALE} $< $@
-	bash ${CDO_FIX_SCRIPT} $@ zg
 
 
 ## Sea surface temperature
@@ -81,7 +76,6 @@ TOS_ORIG=${DATA_DIR}/tos_${DATASET}_surface_daily_native-tropicalpacific.nc
 TOS_RUNMEAN=${DATA_DIR}/tos_${DATASET}_surface_${TSCALE_LABEL}_native-tropicalpacific.nc
 ${TOS_RUNMEAN} : ${TOS_ORIG}
 	cdo ${TSCALE} $< $@
-	bash ${CDO_FIX_SCRIPT} $@ tos
 
 # Mean sea level pressure
 
@@ -89,7 +83,6 @@ PSL_ORIG=${DATA_DIR}/psl_${DATASET}_surface_daily_native-shextropics30.nc
 PSL_RUNMEAN=${DATA_DIR}/psl_${DATASET}_surface_${TSCALE_LABEL}_native-shextropics30.nc
 ${PSL_RUNMEAN} : ${PSL_ORIG}
 	cdo ${TSCALE} $< $@
-	bash ${CDO_FIX_SCRIPT} $@ psl
 
 
 # Common indices
@@ -98,13 +91,13 @@ ${PSL_RUNMEAN} : ${PSL_ORIG}
 
 FOURIER_INFO=${ZW_DIR}/fourier_zw_${COE_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc 
 ${FOURIER_INFO} : ${V_RUNMEAN}
-	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< va $@ ${CDO_FIX_SCRIPT} ${WAVE_MIN} ${WAVE_MAX} coefficients ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+	bash ${DATA_SCRIPT_DIR}/calc_fourier_transform.sh $< va $@ ${WAVE_MIN} ${WAVE_MAX} coefficients ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## Planetary Wave Index
 
 PWI_INDEX=${INDEX_DIR}/pwi_va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc 
 ${PWI_INDEX} : ${ENV_RUNMEAN}
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py PWI $< envva $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py PWI $< envva $@
 
 DATES_PWI_HIGH=${INDEX_DIR}/dates_pwigt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
 ${DATES_PWI_HIGH} : ${PWI_INDEX}
@@ -118,13 +111,13 @@ ${DATES_PWI_LOW} : ${PWI_INDEX}
 
 ZW3_INDEX=${INDEX_DIR}/zw3index_${DATASET}_500hPa_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${ZW3_INDEX} : ${ZG_ZONAL_ANOM_RUNMEAN}
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
 
 ## Nino 3.4
 
 NINO34_INDEX=${INDEX_DIR}/nino34_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
 ${NINO34_INDEX} : ${TOS_RUNMEAN}
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py NINO34 $< tos $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py NINO34 $< tos $@
 
 DATES_ELNINO=${INDEX_DIR}/dates_nino34elnino_${DATASET}_surface_${TSCALE_LABEL}_native.txt
 ${DATES_ELNINO} : ${NINO34_INDEX}
@@ -138,7 +131,7 @@ ${DATES_LANINA} : ${NINO34_INDEX}
 
 SAM_INDEX=${INDEX_DIR}/sam_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
 ${SAM_INDEX} : ${PSL_RUNMEAN}
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py SAM $< psl $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py SAM $< psl $@
 
 DATES_SAM_POS=${INDEX_DIR}/dates_samgt75pct_${DATASET}_surface_${TSCALE_LABEL}_native.txt
 ${DATES_SAM_POS} : ${SAM_INDEX}
@@ -152,19 +145,5 @@ ${DATES_SAM_NEG} : ${SAM_INDEX}
 
 ASL_INDEX=${INDEX_DIR}/asl_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
 ${ASL_INDEX} : ${PSL_RUNMEAN}
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py ASL $< psl $@
-
-## Meridional index (average amplitude of the v wind)
-
-MI_INDEX=${INDEX_DIR}/mi_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc 
-${MI_INDEX} : ${V_RUNMEAN}
-	${CDAT} ${DATA_SCRIPT_DIR}/calc_climate_index.py MI $< va $@
-
-DATES_MI_HIGH=${INDEX_DIR}/dates_migt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
-${DATES_MI_HIGH} : ${MI_INDEX}
-	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< mi $@ --metric_threshold ${INDEX_HIGH_THRESH} --threshold_direction greater
-
-DATES_MI_LOW=${INDEX_DIR}/dates_milt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.txt
-${DATES_MI_LOW} : ${MI_INDEX}
-	${PYTHON} ${DATA_SCRIPT_DIR}/create_date_list.py $< mi $@ --metric_threshold ${INDEX_LOW_THRESH} --threshold_direction less
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py ASL $< psl $@
 
