@@ -13,7 +13,7 @@ makefiles related to that workflow
 #### Zonal wave analysis
 
 *Reference:* Irving DB, Simmonds I (in preparation).
-Southern Hemisphere planetary wave activity and its influence on weather and climate extremes.
+A novel approach to diagnosing Southern Hemisphere planetary wave activity and its influence on regional climate variability.
 
 * Config file: `zw_config.mk`
 * Basic analyses that underpin the rest: `zw_base.mk`

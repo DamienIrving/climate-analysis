@@ -50,4 +50,9 @@ Remove offsets and scale factors and have attributes like the following:
   * _FillValue = %  
   * missing_value =   
 
+Note that: 
+  * missing_value is required for cdat
+  * xray doesn't use _FillValue or missing_value - it just puts in NaN
+    (cdo and iris seem to be able to handle that) 
+
 ```

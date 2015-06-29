@@ -12,12 +12,13 @@ My preferred setup is as follows:
     * [windspharm](http://ajdawson.github.io/windspharm/)
     * [eofs](http://ajdawson.github.io/eofs/)
     * [iris & cartopy](http://scitools.org.uk/)
+    * [xray](http://xray.readthedocs.org/en/stable/)
 
 * Quick data visualisation: [UV-CDAT](http://uvcdat.llnl.gov/) 
-(this is an optional extra - [Panoply](http://www.giss.nasa.gov/tools/panoply/) would be a simplier alternative)
 
-This is easy to setup on a linux machine, but more difficult on a Mac 
-(and near on impossible on a windows machine I would imagine, although I haven't tried)
+    * (This is an optional extra - [Panoply](http://www.giss.nasa.gov/tools/panoply/) would be a simplier alternative)
+    * This is easy to setup on a linux machine, but more difficult on a Mac
+      (and near on impossible on a windows machine I would imagine, although I haven't tried)
 
 My approach for installing Python libraries is to first install Anaconda. 
 It's a free scientific Python distribution that comes with most of the libraries you'd ever need.
@@ -57,6 +58,7 @@ Installed:
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson windspharm`
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson eofs`
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/rsignell iris` (installs cartopy too)
+* `$ sudo /usr/local/anaconda/bin/conda install xray dask netCDF4 bottleneck`
 * `$ sudo /usr/local/anaconda/bin/pip install gitpython`
 * `$ sudo /usr/local/anaconda/bin/pip install cdo`
 
@@ -144,7 +146,8 @@ but I haven't tried this.
 Installed:  
 
 * `$ /Users/damienirving/anaconda/bin/conda install -c https://conda.binstar.org/scitools iris` (installs cartopy too)
-* `$ /Users/damienirving/anaconda/bin/conda install -c https://conda.binstar.org/scitools cdat-lite
+* `$ /Users/damienirving/anaconda/bin/conda install -c https://conda.binstar.org/scitools cdat-lite`
+* `$ /Users/damienirving/anaconda/bin/conda install xray dask netCDF4 bottleneck`
 * `$ /Users/damienirving/anaconda/bin/pip install gitpython`
 
 Outstanding (i.e. things I still need to install or can't):  
