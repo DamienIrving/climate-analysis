@@ -202,7 +202,8 @@ def main(inargs):
     """Run the program."""
 
     # Read the data into a pandas data frame   
-    date_list, date_metadata = gio.read_dates(inargs.infile)
+    datetime_list, datetime_metadata = gio.read_dates(inargs.infile)
+    date_list = map(lambda x: x.split('T')[0], datetime_list)
     ones = numpy.ones(len(date_list))
     dates_df = pandas.DataFrame(ones, index=map(lambda x: datetime.strptime(x, '%Y-%m-%d'), date_list), columns=['count'])
     filtered_dates_df = time_filter(dates_df, inargs.start, inargs.end)
@@ -247,7 +248,7 @@ def main(inargs):
                                     leg_loc=inargs.leg_loc, label=labels[index])
 
     fig.savefig(inargs.outfile, bbox_inches='tight')
-    metadata_dict = {inargs.infile: date_metadata}
+    metadata_dict = {inargs.infile: datetime_metadata}
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)
 
 
