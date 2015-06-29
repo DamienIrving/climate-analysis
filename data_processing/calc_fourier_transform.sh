@@ -58,7 +58,7 @@ for year in "${years[@]}"; do
     ${python_exe} ${code_dir}/calc_fourier_transform.py $infile $invar ${temp_file} \
     ${waveselect[@]} ${type} \
     ${lonselect[@]} \
-    --time ${year}-01-01 ${end}-12-31 none 
+    --time ${year}-01-01 ${end}-12-31 
     temp_files+=(${temp_file})
 done
 
