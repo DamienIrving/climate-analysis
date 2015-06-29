@@ -10,7 +10,7 @@ Description: Create a scatterplot
 import os, sys, pdb
 
 import numpy
-import pandas
+import pandas, xray
 import argparse
 
 import matplotlib
@@ -32,7 +32,6 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
-    import convenient_anaconda as aconv
     import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
@@ -85,24 +84,39 @@ def scatter_plot(x_data, y_data,
     plt.savefig(outfile, bbox_inches='tight')
 
 
+def read_data(infile, var, subset={}):
+    """Read an input data file into a pandas dataframe."""
+
+    dset = xray.open_dataset(infile)
+    gio.check_xrayDataset(dset, var)
+
+    subset['method'] = 'nearest'
+
+    dataframe = dset[var].sel(**subset).to_pandas()
+    metadata = dset.attrs['history']
+
+    return dataframe, metadata
+
+
 def main(inargs):
     """Run program."""
 
-    # Read input data into a single pandas DataFrame
-    x_dataframe, x_metadata = aconv.nc_to_df(inargs.xfile, [inargs.xvar], lat=inargs.xlat)
-    y_dataframe, y_metadata = aconv.nc_to_df(inargs.yfile, [inargs.yvar], lat=inargs.ylat)
-    dataframe_list = [y_dataframe]
-
+    # Read the data
     metadata_dict = {}
-    metadata_dict[inargs.xfile] = x_metadata
-    metadata_dict[inargs.yfile] = y_metadata
+    x_dataframe, metadata_dict[inargs.xfile] = read_data(inargs.xfile, inargs.xvar) 
+    y_dataframe, metadata_dict[inargs.yfile] = read_data(inargs.yfile, inargs.yvar) 
+
+    dataframe_list = [x_dataframe, y_dataframe]
+    headers = [inargs.xvar, inargs.yvar]
 
     if inargs.colour:
-        c_dataframe, c_metadata = aconv.nc_to_df(inargs.colour[0], [inargs.colour[1]], lat=inargs.clat)
+        subset = {'latitude': inargs.clat} if inargs.clat else {}
+        c_dataframe, metadata_dict[inargs.colour[0]] = read_data(inargs.colour[0], inargs.colour[1], subset=subset)
         dataframe_list.append(c_dataframe)
-        metadata_dict[inargs.colour[0]] = c_metadata
-        
-    dataframe = x_dataframe.join(dataframe_list)
+        headers.append(inargs.colour[1])
+    
+    dataframe = pandas.concat(dataframe_list, join='inner', axis=1)
+    dataframe.columns = headers
     dataframe = dataframe.dropna()
 
     # Normalise data 
@@ -167,7 +181,9 @@ author:
     # Optional data
     parser.add_argument("--colour", type=str, nargs=2, metavar=('FILE', 'VAR'), default=None, 
                         help="Input file and variable for colouring the dots")
- 
+    parser.add_argument("--clat", type=float, default=None, 
+                        help="Latitude to select from colour file")
+
     # Data options
     parser.add_argument("--filter", type=str, nargs=2, metavar=('METRIC', 'THRESHOLD'), default=None, 
                         help="Remove values where metric is below threshold. Threshold can be percentile (e.g. 90pct) or raw value.")
@@ -175,13 +191,6 @@ author:
                         help="Switch for normalising the x and y input data [default: False]")
     parser.add_argument("--thin", type=int, default=1,
                         help="Stride for thinning the data (e.g. 3 will keep one-third of the data) [default: 1]")
-    
-    parser.add_argument("--xlat", type=str, nargs=3, metavar=('LAT_MIN', 'LAT_MAX', 'METHOD'), default=None, 
-                        help="Collapse the latitude axis of xfile over range (LAT_MIN, LAT_MAX) using METHOD (mermax or spatave; or none if LAT_MAX == LAT_MIN)")
-    parser.add_argument("--ylat", type=str, nargs=3, metavar=('LAT_MIN', 'LAT_MAX', 'METHOD'), default=None, 
-                        help="Collapse the latitude axis of yfile over range (LAT_MIN, LAT_MAX) using METHOD (mermax or spatave; or none if LAT_MAX == LAT_MIN)")
-    parser.add_argument("--clat", type=str, nargs=3, metavar=('LAT_MIN', 'LAT_MAX', 'METHOD'), default=None, 
-                        help="Collapse the latitude axis of colour file over range (LAT_MIN, LAT_MAX) using METHOD (mermax or spatave); or none if LAT_MAX == LAT_MIN")
 
     # Plot options
     parser.add_argument("--trend_line", action="store_true", default=False,
