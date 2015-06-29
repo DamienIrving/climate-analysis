@@ -25,7 +25,7 @@ sys.path.append(modules_dir)
 try:
     import coordinate_rotation as crot
     import convenient_universal as uconv
-    import netcdf_io as nio
+    import general_io as gio
 except ImportError:
     raise ImportError('Must run this script from anywhere within the phd git repo')
 
@@ -61,7 +61,7 @@ def main(inargs):
         lats = numpy.arange(start_lat, end_lat + inargs.resolution, inargs.resolution)
         lons = numpy.arange(start_lon, end_lon + inargs.resolution, inargs.resolution)
         
-        lat_mesh, lon_mesh = nio.coordinate_pairs(lats, lons)
+        lat_mesh, lon_mesh = gio.coordinate_pairs(lats, lons)
         rot_lats, rot_lons = crot.rotate_spherical(lat_mesh, lon_mesh, phi, theta, psi, invert=False)
         
         # Split into 2 lists if it crosses -180 / 180 (Iris plotting requires (-180, 180])
