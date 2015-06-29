@@ -21,9 +21,6 @@ A novel approach to diagnosing Southern Hemisphere planetary wave activity and i
 * Composite creation and plotting: `zw_composites.mk`
 * Compare various indices: `zw_index_comparison.mk`
 
-Note that `zw_tscale_analysis.mk` and `zw_tscale_analysis_config.mk`
-were used in the initial scoping for the zonal wave analysis
-but were not used to produce any of the results in the reference above
 
 #### PSA pattern analysis
 

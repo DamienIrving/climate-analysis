@@ -2,10 +2,6 @@
 #
 # Description: Calculate composite for variable of interest (e.g. tas, pr, sic)
 #
-# Composite methods:
-#   variable: calculate composite mean variable for times where index exceeds threshold
-#   index: calculate composite mean index for times where variable anomaly exceeds threshold 
-#
 # Thresholds:
 #   upper: e.g. > 90th percentile
 #   lower: e.g. < 10th percentile  
@@ -27,7 +23,6 @@ CVAR_ORIG=${DATA_DIR}/${COMP_VAR}_${DATASET}_surface_daily_native.nc
 CVAR_ANOM_RUNMEAN=${DATA_DIR}/${COMP_VAR}_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
 ${CVAR_ANOM_RUNMEAN} : ${CVAR_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
-	bash ${CDO_FIX_SCRIPT} $@ ${COMP_VAR}
 
 
 # Streamfunction composites (for contours)
@@ -206,7 +201,3 @@ COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW_PLOT=${COMP_DIR}/${COMP_VAR}-composite_${INDEX}
 ${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW} ${COMP_SF_ANOM_RUNMEAN_INDEX_LOW}
 	bash ${VIS_SCRIPT_DIR}/plot_composite.sh $(word 1,$^) ${COMP_VAR} $(word 2,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
-
-# ASL composite, upper threshold of index
- 
-# bash calc_asl_composite.sh
