@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Description: CDO strips a bunch of variable attributes that other programs need.
+# Description: CDO strips a bunch of variable attributes that cdat needs.
 #              This script puts them back.
 
 function usage {

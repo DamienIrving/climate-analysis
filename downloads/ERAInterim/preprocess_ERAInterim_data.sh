@@ -39,7 +39,6 @@ fi
 
 bash ${cdofix} ${outfile} ${invar}            # Put back the required attributes that CDO strips
 ncrename -O -v ${invar},${outvar} ${outfile}
-ncatted -O -a axis,time,c,c,T ${outfile}
 ncatted -O -a calendar,global,d,, ${outfile}  # Iris does not like this
 
 if [[ "${outvar}" = "zg" ]] ; then
@@ -59,7 +58,7 @@ elif [[ "${outvar}" = "va" ]] ; then
     ncatted -O -a standard_name,${outvar},o,c,"northward_wind" ${outfile}
     ncatted -O -a long_name,${outvar},o,c,"northward_wind" ${outfile}
     ncatted -O -a level,${outvar},o,c,"500hPa" ${outfile}
-elif [[ "${outvar}" = "va" ]] ; then
+elif [[ "${outvar}" = "ua" ]] ; then
     ncatted -O -a standard_name,${outvar},o,c,"eastward_wind" ${outfile}
     ncatted -O -a long_name,${outvar},o,c,"eastward_wind" ${outfile}
     ncatted -O -a level,${outvar},o,c,"500hPa" ${outfile}
