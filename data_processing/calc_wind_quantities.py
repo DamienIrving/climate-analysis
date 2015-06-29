@@ -250,7 +250,7 @@ def main(inargs):
 
     lat_axis = darray_u['latitude'].values
     lon_axis = darray_u['longitude'].values    
-    axis_order = axis_letters(darray.dims)
+    axis_order = axis_letters(darray_u.dims)
     
     # Calculate the desired quantity
     data_out = calc_quantity(darray_u.values, darray_v.values, inargs.quantity,
@@ -258,11 +258,11 @@ def main(inargs):
 
     # Write the output file
     d = {}
-    for dim in darray.dims:
-        d[dim] = darray[dim]
+    for dim in darray_u.dims:
+        d[dim] = darray_u[dim]
 
     for var in data_out.keys():
-        d[var] = (darray.dims, data_out[var])
+        d[var] = (darray_u.dims, data_out[var])
     
     dset_out = xray.Dataset(d)
 
@@ -270,7 +270,7 @@ def main(inargs):
         dset_out[var].attrs = var_atts[var]
 
     outfile_metadata = {inargs.infileu: dset_in_u.attrs['history'],
-                        inargs.infliev: dset_in_v.attrs['history']}
+                        inargs.infilev: dset_in_v.attrs['history']}
     gio.set_global_atts(dset_out, dset_in_u.attrs, outfile_metadata)
     dset_out.to_netcdf(inargs.outfile, format='NETCDF3_CLASSIC')
  
