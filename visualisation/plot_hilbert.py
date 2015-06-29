@@ -11,10 +11,7 @@ import sys, os, pdb
 import argparse
 import numpy
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as font_manager
-import cdms2, cdutil
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
+import xray
 
 # Import my modules
 
@@ -31,11 +28,11 @@ anal_dir = os.path.join(repo_dir, 'data_processing')
 sys.path.append(anal_dir)
 
 try:
-    import netcdf_io as nio
     import general_io as gio
     import calc_fourier_transform as cft
 except ImportError:
     raise ImportError('Must run this script from within the climate-analysis git repo')
+
 
 # Define functions
 
@@ -48,31 +45,17 @@ def get_hemisphere(lat):
         return 'N' 
 
 
-def get_lat_target(fname, lat_desired):
-    """Identify the latitude closest to the desired."""
-
-    fin = cdms2.open(fname)
-    lat_name = next(dim for dim in fin.listdimension() if 'lat' in dim)
-    lat_target = nio.find_nearest(fin.getAxis(lat_name)[:], lat_desired)
-    fin.close()
-
-    return lat_target
-
-
-def extract_data(fname, var, lat, dates):
+def extract_data(dset, var, lat, dates):
     """Extract data for the given latitude and dates.""" 
 
-    lat_target = get_lat_target(fname, lat)
     data_dict = {}
-    metadata_dict = {}
-
     for date in dates:
-        indata = nio.InputData(fname, var, time=(date, date), latitude=lat_target)
-        data_dict[date] = indata.data
+        darray = dset[var].sel(time=date, latitude=lat, method='nearest')
+        data_dict[date] = darray
+    
+    lat_target = darray['latitude'].values.tolist()
 
-    metadata_dict[fname] = indata.global_atts['history']
-
-    return data_dict, metadata_dict, lat_target
+    return data_dict, lat_target
  
 
 def plot_hilbert(data_dict, date_list,
@@ -94,8 +77,9 @@ def plot_hilbert(data_dict, date_list,
     for index in range(0, len(date_list)):
         plotnum = index + 1
         date = date_list[index]
-        data = data_dict[date]
-        xaxis = data.getLongitude()[:]
+        darray = data_dict[date]
+        xaxis = darray['longitude'].values
+        data = darray.values.squeeze()
 
         ax = plt.subplot(nrows, ncols, plotnum)
         plt.sca(ax)
@@ -130,7 +114,7 @@ def plot_hilbert(data_dict, date_list,
 
         # Plot original signal
         tag = 'meridional wind, %s'  %(lat_tag)
-        ax.plot(xaxis, numpy.array(data), color='#1b9e77', label=tag, linewidth=2.0)
+        ax.plot(xaxis, data, color='#1b9e77', label=tag, linewidth=2.0)
 
         # Plot details
         ax.set_xlim(0, 360)
@@ -151,12 +135,14 @@ def plot_hilbert(data_dict, date_list,
 def main(inargs):
     """Plot each timestep."""
 
-    # Extract data #
-    
-    data_dict, metadata_dict, latitude = extract_data(inargs.infile, inargs.variable, inargs.latitude, inargs.dates)    
+    # Extract data
+    dset_in = xray.open_dataset(inargs.infile)
+    gio.check_xrayDataset(dset_in, inargs.variable)
 
-    # Creat the plot
-    
+    data_dict, latitude = extract_data(dset_in, inargs.variable, 
+                                       inargs.latitude, inargs.dates)    
+
+    # Create the plot
     wmin, wmax = inargs.wavenumbers
     plot_hilbert(data_dict, inargs.dates,
                  wmin, wmax,
@@ -166,24 +152,13 @@ def main(inargs):
                  ybounds=inargs.ybounds,
                  figure_size=inargs.figure_size)
 
-    gio.write_metadata(inargs.ofile, file_info=metadata_dict)
+    gio.write_metadata(inargs.ofile, file_info={inargs.infile: dset_in.attrs['history']})
 
 
 if __name__ == '__main__':
 
-    extra_info = """ 
-
-example:
-
-
-author:
-  Damien Irving, d.irving@student.unimelb.edu.au
-
-"""
-
     description = 'Plot the components of a Hilbert transform.'
-    parser = argparse.ArgumentParser(description=description,
-                                     epilog=extra_info, 
+    parser = argparse.ArgumentParser(description=description, 
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
