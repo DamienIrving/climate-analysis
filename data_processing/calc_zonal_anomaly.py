@@ -7,10 +7,9 @@ Description:  Calculate the zonal anomaly (i.e. subtract the zonal mean at each 
 
 # Import general Python modules
 
-import os, sys
+import os, sys, pdb
 import argparse
-import numpy
-import cdutil
+import xray
 
 # Import my modules
 
@@ -25,62 +24,49 @@ modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 
 try:
-    import netcdf_io as nio
+    import general_io as gio
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
     
+
 # Define fuctions
-
-def calc_zonal_anomaly(indata):
-    """Calculate zonal anomaly."""  
-    
-    assert indata.getOrder()[-1] == 'x', \
-    'The last dimension must be longitude'
-        
-    # Calculate the zonal mean climatology
-    zonal_mean = cdutil.averager(indata, axis='x')
-    
-    # Broadcast to same shape and subract from data
-    zonal_mean_shape = list(zonal_mean.shape)
-    zonal_mean_shape.append(1)
-    zonal_mean_added_dim = numpy.reshape(zonal_mean, zonal_mean_shape)
-    zonal_mean_field = numpy.repeat(zonal_mean_added_dim, indata.shape[-1], axis=-1)
-    zonal_anomaly = indata - zonal_mean_field
-
-    return zonal_anomaly
-
 
 def main(inargs):
     """Run the program."""
     
-    # Open the input file
-    indata = nio.InputData(inargs.infile, inargs.variable, **nio.dict_filter(vars(inargs), ['time',]))
+    # Read the data
+    dset_in = xray.open_dataset(inargs.infile)
+    gio.check_xrayDataset(dset_in, inargs.variable)
+
+    subset_dict = gio.get_subset_kwargs(inargs)
+    darray = dset_in[inargs.variable].sel(**subset_dict)
       
     # Calculate the zonal anomaly
-    zonal_anomaly = calc_zonal_anomaly(indata.data)
+    zonal_mean = darray.mean(dim='longitude')
+    zonal_anomaly = darray - zonal_mean
 
     # Write output file
-    attributes = {'id': inargs.variable,
-                 'long_name': indata.data.long_name,
-                 'units': indata.data.units,
-                 'notes': 'The zonal mean has been subtracted at each time step.'}
+    d = {}
+    for dim in darray.dims:
+        d[dim] = darray[dim]
+    d[inargs.variable] = (darray.dims, zonal_anomaly)
 
-    outdata_list = [zonal_anomaly,]
-    outvar_atts_list = [attributes,]
-    outvar_axes_list = [indata.data.getAxisList(),]
- 
-    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
-                     indata.global_atts, 
-                     outdata_list,
-                     outvar_atts_list, 
-                     outvar_axes_list)
-   
-   
+    dset_out = xray.Dataset(d)
+
+    dset_out[inargs.variable].attrs = {'long_name': darray.attrs['long_name'],
+        'standard_name': darray.attrs['standard_name'],
+        'units': darray.attrs['units'],
+        'notes': 'The zonal mean has been subtracted at each time step.'}
+
+    gio.set_global_atts(dset_out, dset_in.attrs, {inargs.infile: dset_in.attrs['history'],})
+    dset_out.to_netcdf(inargs.outfile, format='NETCDF3_CLASSIC')
+
+
 if __name__ == '__main__':
 
     extra_info = """
 example (vortex.earthsci.unimelb.edu.au):
-  /usr/local/uvcdat/1.3.0/bin/cdat calc_zonal_anomaly.py 
+  /usr/local/anaconda/bin/python calc_zonal_anomaly.py 
   zg_Merra_250hPa_monthly_native.nc zg zg_Merra_250hPa_monthly-zonal-anom_native.nc
 """    	
 
@@ -94,7 +80,7 @@ example (vortex.earthsci.unimelb.edu.au):
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
 
     args = parser.parse_args()            

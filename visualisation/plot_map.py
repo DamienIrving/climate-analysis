@@ -72,6 +72,7 @@ def collapse_time(cube, ntimes, timestep):
         print 'Averaging over the %s time points' %(str(ntimes))
         new_cube = cube.collapsed('time', iris.analysis.MEAN)
     else:
+        assert new_cube.coords()[0] == 'time'
         new_cube = cube[timestep, :, :]
 
     return new_cube  
@@ -102,7 +103,7 @@ def extract_data(infile_list, output_projection):
         
         # Check input
         assert plot_type[:-1] in plot_types
-        
+
         # Define data constraints
         time_constraint = get_time_constraint(start_date, end_date)
         if output_projection[int(plot_number) - 1] == 'SouthPolarStereo':
@@ -119,8 +120,7 @@ def extract_data(infile_list, output_projection):
         if 'time' in coord_names:
             ntimes = len(new_cube.coords('time')[0].points)
             if ntimes == 1:
-                timestep = 0
-                new_cube = collapse_time(new_cube, ntimes, timestep)
+                pass
             elif ntimes > 1:
                 try:
                     timestep = int(timestep)
