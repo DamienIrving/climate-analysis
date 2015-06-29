@@ -25,7 +25,6 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
-    import convenient_anaconda as aconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -85,7 +84,12 @@ def get_seasonal_bounds(start_date, end_date):
 def get_seasonal_index(nc_file, var, start, end):
     """Get seasonal aggregate of metric from netCDF file."""
 
-    metric_df, metric_metadata = aconv.nc_to_df(nc_file, [var,], datetime_index=True)
+    dset = xray.open_dataset(nc_file)
+    gio.check_xrayDataset(dset, var)
+
+    metric_df = dset[var].to_pandas()
+    metric_metadata = dset.attrs['history']
+
     metric_aggregate_df = aggregate_data(metric_df, timescale='seasonal', method='mean')
     filtered_dates_metric_aggregate_df = time_filter(metric_aggregate_df, start, end)
 
