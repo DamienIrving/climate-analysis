@@ -8,8 +8,9 @@ Description:  Plot some periodograms
 # Import general Python modules
 
 import os, sys, pdb
-import numpy
+import numpy, pandas
 import argparse
+import xray
 
 import matplotlib
 matplotlib.use('Agg')
@@ -29,14 +30,41 @@ sys.path.append(modules_dir)
 anal_dir = os.path.join(repo_dir, 'data_processing')
 sys.path.append(anal_dir)
 try:
-    import netcdf_io as nio
     import general_io as gio
     import calc_fourier_transform as cft
     import calc_composite
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
-# Define functions, global variables etc
+
+# Define functions
+
+def running_mean(darray, window):
+    """Calculate the running mean."""
+
+    dframe = darray.to_pandas()
+    dframe = pandas.rolling_mean(dframe, window, center=True)
+    dframe = dframe.dropna()
+
+    return xray.DataArray(dframe)
+
+
+def read_data(inargs, runmean_window):
+    """Read input data into an xray DataArray."""
+
+    dset_in = xray.open_dataset(inargs.infile)
+    gio.check_xrayDataset(dset_in, inargs.variable)
+
+    subset_dict = gio.get_subset_kwargs(inargs)
+    subset_dict['method'] = 'nearest'
+    darray = dset_in[inargs.variable].sel(**subset_dict)
+
+    indep_var = darray['longitude'].values
+    metadata_dict = {inargs.infile: dset_in.attrs['history']}
+
+    darray = running_mean(darray, runmean_window)
+
+    return darray, indep_var, metadata_dict
 
 
 def transform_data(signal, indep_var, scaling):
@@ -56,24 +84,22 @@ def transform_data(signal, indep_var, scaling):
 def composite_plot(ax, inargs, runave=30, label=None):
     """Plot periodogram that compares composites."""
 
-    # Get input data
-    indata = nio.InputData(inargs.infile, inargs.variable, runave=runave,
-                           **nio.dict_filter(vars(inargs), ['latitude', 'time']))
+    # Read the data
+    darray, indep_var, metadata_dict = read_data(inargs, runave)
 
-    indep_var = indata.data.getLongitude()[:]
-    metadata_dict = {inargs.infile: indata.global_atts['history']}
-
+    # Create the plot
     composite_dict = {'PWI > 90 pctl': inargs.upper_date_file,
                       'PWI < 10 pctl': inargs.lower_date_file,
                       'all timesteps': None}
 
-    # Create the plot
     colors = ['#fbb4b9', '#f768a1', '#ae017e']
     cindex = 0
     for leglabel in ['PWI < 10 pctl', 'all timesteps', 'PWI > 90 pctl']:        
         date_file = composite_dict[leglabel]
-        data_filtered, date_metadata, size_filtered = calc_composite.filter_dates(indata.data, date_file)
-        spectrum_temporal_mean, spectrum_freqs_1D = transform_data(data_filtered, indep_var, inargs.scaling)
+        match_dates, date_metadata = calc_composite.get_datetimes(darray, date_file)
+        data_filtered = darray.sel(time=match_dates)
+
+        spectrum_temporal_mean, spectrum_freqs_1D = transform_data(data_filtered.values, indep_var, inargs.scaling)
 
         ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
                 label=leglabel, marker='o', color=colors[cindex], linewidth=2.0)
@@ -111,14 +137,9 @@ def timescale_plot(ax, inargs, label=None):
               '#1d91c0', '#225ea8', '#253494', '#081d58'] 
  
     for index, step in enumerate(runmean_windows):
-        
-        indata = nio.InputData(inargs.infile, inargs.variable, runave=step,
-                               **nio.dict_filter(vars(inargs), ['latitude', 'time']))
-	
-        signal = indata.data
-        indep_var = signal.getLongitude()[:]
-
-        spectrum_temporal_mean, spectrum_freqs_1D = transform_data(signal, indep_var, inargs.scaling)
+        darray, indep_var, metadata_dict = read_data(inargs, runave)
+        	
+        spectrum_temporal_mean, spectrum_freqs_1D = transform_data(darray.values, indep_var, inargs.scaling)
         
         ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
                 label=str(step), marker='o', color=colors[index], linewidth=2.0)
