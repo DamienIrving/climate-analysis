@@ -10,7 +10,6 @@ INDEX_DIR=${DATA_DIR}/indexes
 MAP_DIR=${ZW_DIR}/figures/maps
 COMP_DIR=${ZW_DIR}/figures/composites
 SPECTRA_DIR=${ZW_DIR}/figures/spectra
-CDAT=/usr/local/uvcdat/1.3.0/bin/cdat
 PYTHON=/usr/local/anaconda/bin/python
 DATA_SCRIPT_DIR=~/climate-analysis/data_processing
 VIS_SCRIPT_DIR=~/climate-analysis/visualisation
@@ -42,12 +41,9 @@ LAT_SINGLE=-55
 LAT_LABEL=55S
 
 ## Plot envelope 
-PLOT_START=2002-01-01
-PLOT_END=2005-12-31
 PLOT_DATE1=1986-05-22
 PLOT_DATE2=2006-07-29
 PLOT_DIMS=1 2
-STRIDE=2
 
 ## Composites
 COMP_VAR=tas
