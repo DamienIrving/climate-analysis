@@ -29,17 +29,17 @@ code_dir=$7
 if [ $var == 'tas' ] ; then
     ticks="-2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5" 
     extend=both
-    palette=RdBu_r   #brewer_RdBu_11
+    palette=RdBu_r
     significance="--infile ${varfile} p_annual none none none hatching0 1 --infile ${varfile} p_DJF none none none hatching0 3 --infile ${varfile} p_MAM none none none hatching0 4 --infile ${varfile} p_JJA none none none hatching0 5 --infile ${varfile} p_SON none none none hatching0 6"
 elif [ $var == 'sic' ] ; then
     ticks="-0.13 -0.11 -0.09 -0.07 -0.05 -0.03 -0.01 0.01 0.03 0.05 0.07 0.09 0.11 0.13"
     extend=both
-    palette=RdBu_r     #brewer_RdBu_11
+    palette=RdBu_r
     significance="--infile ${varfile} p_annual none none none hatching0 1 --infile ${varfile} p_DJF none none none hatching0 3 --infile ${varfile} p_MAM none none none hatching0 4 --infile ${varfile} p_JJA none none none hatching0 5 --infile ${varfile} p_SON none none none hatching0 6 --units ice_fraction --spstereo_limit -50"
 elif [ $var == 'pr' ] ; then
     ticks="-1.0 -0.8 -0.6 -0.4 -0.2 0 0.2 0.4 0.6 0.8 1.0" 
     extend=both
-    palette=BrBg  #brewer_BrBG_11
+    palette=BrBG
     significance="--infile ${varfile} p_annual none none none hatching0 1 --infile ${varfile} p_DJF none none none hatching0 3 --infile ${varfile} p_MAM none none none hatching0 4 --infile ${varfile} p_JJA none none none hatching0 5 --infile ${varfile} p_SON none none none hatching0 6 --units mm/day"
 elif [ $var == 'envva' ] ; then
     ticks="0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0" 
