@@ -177,7 +177,7 @@ ${COMP_CVAR_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_PLOT} : ${COMP_SF_ZONAL_ANOM_RUNME
 	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) sf $@ all ${PYTHON} ${VIS_SCRIPT_DIR}
 
 ### Zonal anomaly - just annual
-COMP_CVAR_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_ANNUAL_PLOT=${COMP_DIR}/sf-composite_samgt75pct-samlt25pct-${INDEX}gt{INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.png
+COMP_CVAR_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_ANNUAL_PLOT=${COMP_DIR}/sf-composite_samgt75pct-samlt25pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.png
 ${COMP_CVAR_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_ANNUAL_PLOT} : ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS} ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH} ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG}
 	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) sf $@ annual ${PYTHON} ${VIS_SCRIPT_DIR}
 

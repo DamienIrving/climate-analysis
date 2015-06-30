@@ -54,4 +54,4 @@ INDEX_HIGH_THRESH=90pct
 INDEX_LOW_THRESH=10pct
 
 
-TARGET=${COMP_DIR}/sf-composite_samgt75pct-samlt25pct-${INDEX}gt{INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.png
+TARGET=${COMP_DIR}/sf-composite_samgt75pct-samlt25pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.png
