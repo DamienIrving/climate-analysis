@@ -135,11 +135,11 @@ ${DATES_INDEX_HIGH_LANINA} : ${DATES_${INDEX_CAPS}_HIGH} ${DATES_LANINA}
 ## Step 2: Calculate the Nino contour composites
 COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_ELNINO=${COMP_DIR}/sf-composite_nino34elnino-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.nc 
 ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_ELNINO} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_ELNINO} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region shextropics15
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region shextropics15 --no_sig
 
 COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_LANINA=${COMP_DIR}/sf-composite_nino34lanina-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.nc 
 ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_LANINA} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_LANINA} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region shextropics15
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region shextropics15 --no_sig
 
 ## Step 3: Plot
 COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_NINO_PLOT=${COMP_DIR}/sf-composite_nino-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.png
@@ -163,11 +163,11 @@ ${DATES_INDEX_HIGH_SAM_NEG} : ${DATES_${INDEX_CAPS}_HIGH} ${DATES_SAM_NEG}
 ### Zonal anomaly
 COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS=${COMP_DIR}/sf-composite_samgt75pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.nc 
 ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS} : ${SF_ZONAL_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_SAM_POS} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region shextropics15
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region shextropics15 --no_sig
 
 COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG=${COMP_DIR}/sf-composite_samlt25pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.nc 
 ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG} : ${SF_ZONAL_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_SAM_NEG} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region shextropics15
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region shextropics15 --no_sig
 
 ## Step 3: Plot
 
@@ -186,7 +186,7 @@ ${COMP_CVAR_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_ANNUAL_PLOT} : ${COMP_SF_ZONAL_ANO
 
 COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW=${COMP_DIR}/${COMP_VAR}-composite_${INDEX}lt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.nc 
 ${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW} : ${CVAR_ANOM_RUNMEAN} ${DATES_${INDEX_CAPS}_LOW} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) --region shextropics15 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ${COMP_VAR} $@ --date_file $(word 2,$^) --region shextropics15 --no_sig
 
 COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW_PLOT=${COMP_DIR}/${COMP_VAR}-composite_${INDEX}lt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.png
 ${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW_PLOT} : ${COMP_CVAR_ANOM_RUNMEAN_INDEX_LOW} ${COMP_SF_ANOM_RUNMEAN_INDEX_LOW}
