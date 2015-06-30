@@ -57,7 +57,7 @@ temp_files=()
 for year in "${years[@]}"; do
     end=`expr $year + 2`
     temp_file=${temp_dir}/temp-${quantity}_${year}-${end}.nc
-    ${python_exe} ${code_dir}/calc_wind_quantities.py ${quantity} $ufile $uvar $vfile $vvar ${temp_file} --time ${year}-01-01 ${end}-12-31 none 
+    ${python_exe} ${code_dir}/calc_wind_quantities.py ${quantity} $ufile $uvar $vfile $vvar ${temp_file} --time ${year}-01-01 ${end}-12-31 
     temp_files+=(${temp_file})
 done
 
