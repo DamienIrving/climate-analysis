@@ -70,7 +70,7 @@ def calc_composites(darray, dtlist, sig_test=True):
             
             if sig_test:
                 pvals['annual'], pval_atts['annual'] = uconv.calc_significance(darray_selection.values, 
-                                                                               darray.values, standard_name)
+                                                                               darray.values, 'p_value_'+season)
         else: 
             months_subset = pandas.to_datetime(darray_selection['time'].values).month
             bools_subset = (months_subset == season_months[season][0]) + (months_subset == season_months[season][1]) + (months_subset == season_months[season][2])
@@ -82,7 +82,7 @@ def calc_composites(darray, dtlist, sig_test=True):
                 bools_all = (months_all == season_months[season][0]) + (months_all == season_months[season][1]) + (months_all == season_months[season][2])
                 data_all = darray.loc[bools_all]
                 pvals[season], pval_atts[season] = uconv.calc_significance(data_subset.values, 
-                                                                           data_all.values, standard_name)
+                                                                           data_all.values, 'p_value_'+season)
 
         composite_mean_atts[season] = {'standard_name': standard_name+'_'+season,
                                        'long_name': standard_name+'_'+season,
