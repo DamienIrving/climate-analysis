@@ -80,11 +80,11 @@ ${COMP_SUMMARY_PLOT} : ${COMP_SF_ZONAL_ANOM_RUNMEAN} ${COMP_U_RUNMEAN} ${COMP_V_
 ### Spatial composite
 COMP_V_RUNMEAN_INDEX_HIGH=${COMP_DIR}/va-composite_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-shextropics15.nc 
 ${COMP_V_RUNMEAN_INDEX_HIGH} : ${V_RUNMEAN} ${DATES_${INDEX_CAPS}_HIGH} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< va $@ --date_file $(word 2,$^) --region shextropics15
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< va $@ --date_file $(word 2,$^) --region shextropics15 --no_sig
 
 COMP_U_RUNMEAN_INDEX_HIGH=${COMP_DIR}/ua-composite_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-shextropics15.nc 
 ${COMP_U_RUNMEAN_INDEX_HIGH} : ${U_RUNMEAN} ${DATES_${INDEX_CAPS}_HIGH} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ua $@ --date_file $(word 2,$^) --region shextropics15
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ua $@ --date_file $(word 2,$^) --region shextropics15 --no_sig
 
 COMP_SUMMARY_PLOT_INDEX_HIGH=${COMP_DIR}/sf-composite_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.png
 ${COMP_SUMMARY_PLOT_INDEX_HIGH} : ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH} ${COMP_U_RUNMEAN_INDEX_HIGH} ${COMP_V_RUNMEAN_INDEX_HIGH}
@@ -99,11 +99,11 @@ ${DATES_INDEX_HIGH_PLOT} : ${DATES_${INDEX_CAPS}_HIGH}
 
 COMP_V_RUNMEAN_INDEX_LOW=${COMP_DIR}/va-composite_${INDEX}lt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-shextropics15.nc 
 ${COMP_V_RUNMEAN_INDEX_LOW} : ${V_RUNMEAN} ${DATES_${INDEX_CAPS}_LOW} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< va $@ --date_file $(word 2,$^) --region shextropics15
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< va $@ --date_file $(word 2,$^) --region shextropics15 --no_sig
 
 COMP_U_RUNMEAN_INDEX_LOW=${COMP_DIR}/ua-composite_${INDEX}lt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-shextropics15.nc 
 ${COMP_U_RUNMEAN_INDEX_LOW} : ${U_RUNMEAN} ${DATES_${INDEX_CAPS}_LOW} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ua $@ --date_file $(word 2,$^) --region shextropics15
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< ua $@ --date_file $(word 2,$^) --region shextropics15 --no_sig
 
 COMP_SUMMARY_PLOT_INDEX_LOW=${COMP_DIR}/sf-composite_${INDEX}lt${INDEX_LOW_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.png
 ${COMP_SUMMARY_PLOT_INDEX_LOW} : ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_LOW} ${COMP_U_RUNMEAN_INDEX_LOW} ${COMP_V_RUNMEAN_INDEX_LOW}
@@ -160,15 +160,6 @@ ${DATES_INDEX_HIGH_SAM_NEG} : ${DATES_${INDEX_CAPS}_HIGH} ${DATES_SAM_NEG}
 
 ## Step 2: Calculate the SAM contour composites
 
-### Temporal anomaly
-COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS=${COMP_DIR}/sf-composite_samgt75pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.nc 
-${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_SAM_POS} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region shextropics15
-
-COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG=${COMP_DIR}/sf-composite_samlt25pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.nc 
-${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG} : ${SF_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_SAM_NEG} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_composite.py $< sf $@ --date_file $(word 2,$^) --region shextropics15
-
 ### Zonal anomaly
 COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS=${COMP_DIR}/sf-composite_samgt75pct-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.nc 
 ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS} : ${SF_ZONAL_ANOM_RUNMEAN} ${DATES_INDEX_HIGH_SAM_POS} 
@@ -180,15 +171,15 @@ ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG} : ${SF_ZONAL_ANOM_RUNMEAN} ${DA
 
 ## Step 3: Plot
 
-### Temporal anomaly
-COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_SAM_PLOT=${COMP_DIR}/sf-composite_sam-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-shextropics15.png
-${COMP_CVAR_ANOM_RUNMEAN_INDEX_HIGH_SAM_PLOT} : ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS} ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH} ${COMP_SF_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG}
-	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
-
-### Zonal anomaly
+### Zonal anomaly - all seasons
 COMP_CVAR_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_PLOT=${COMP_DIR}/sf-composite_sam-${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.png
 ${COMP_CVAR_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_PLOT} : ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS} ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH} ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG}
-	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) sf $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) sf $@ all ${PYTHON} ${VIS_SCRIPT_DIR}
+
+### Zonal anomaly - just annual
+COMP_CVAR_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_ANNUAL_PLOT=${COMP_DIR}/sf-composite_samgt75pct-samlt25pct-${INDEX}gt{INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.png
+${COMP_CVAR_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_ANNUAL_PLOT} : ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_POS} ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH} ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH_SAM_NEG}
+	bash ${VIS_SCRIPT_DIR}/plot_variability_composite.sh $(word 1,$^) $(word 2,$^) $(word 3,$^) sf $@ annual ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
 # Variable composite, lower threshold of index

@@ -41,9 +41,6 @@ LAT_RANGE=-70 -40
 LAT_SINGLE=-55
 LAT_LABEL=55S
 
-## Extent statistics
-EXTENT_THRESH=75pct
-
 ## Plot envelope 
 PLOT_START=2002-01-01
 PLOT_END=2005-12-31
@@ -53,7 +50,7 @@ PLOT_DIMS=1 2
 STRIDE=2
 
 ## Composites
-COMP_VAR=sic
+COMP_VAR=tas
 COMP_THRESH=90pct
 INDEX=pwi
 INDEX_CAPS=PWI
@@ -61,4 +58,4 @@ INDEX_HIGH_THRESH=90pct
 INDEX_LOW_THRESH=10pct
 
 
-TARGET=${ZW_DIR}/fourier_zw_${COE_WAVE_LABEL}-va_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.nc
+TARGET=${COMP_DIR}/sf-composite_samgt75pct-samlt25pct-${INDEX}gt{INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom-shextropics15.png
