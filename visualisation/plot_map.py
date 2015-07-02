@@ -165,6 +165,7 @@ def get_standard_name(var):
                       'sic' : 'sea_ice_fraction',
                       'envva' : 'hilbert_transformed_northward_wind',
                       'iftva' : 'inverse_fourier_transformed_northward_wind',
+                      'iftsf' : 'inverse_fourier_transformed_streamfunction',
                       'tas' : 'surface_air_temperature',
                       'ampmedian': 'zonal_median_of_the_meridional_maximum_hilbert_transformed_northward_wind',
                       'p' : 'p_value'}
