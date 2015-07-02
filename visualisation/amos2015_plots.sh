@@ -64,6 +64,10 @@ do
 
 /usr/local/anaconda/bin/python /home/STUDENT/dbirving/climate-analysis/visualisation/plot_hilbert.py \
 /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/va_ERAInterim_500hPa_030day-runmean_native.nc va \
-line-env_${date} 1 1 --latitude -55 --dates ${date} --wavenumbers 1 9
+line-env_${date}.${ftype} 1 1 --latitude -55 --dates ${date} --wavenumbers 1 9
+
+/usr/local/anaconda/bin/python /home/STUDENT/dbirving/climate-analysis/visualisation/plot_hilbert.py \
+/mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/va_ERAInterim_500hPa_030day-runmean_native.nc va \
+line-ft_${date}.${ftype} 1 1 --latitude -55 --dates ${date} --wavenumbers 1 9 --highlights 1 3 --noenv
 
 done

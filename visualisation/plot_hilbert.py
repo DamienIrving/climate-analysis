@@ -63,6 +63,8 @@ def plot_hilbert(data_dict, date_list,
                  nrows, ncols,
                  latitude,
                  outfile='test.png',
+                 highlights=[],
+                 noenv=False,
                  ybounds=None,
                  figure_size=None):
     """Create the plot."""
@@ -87,7 +89,7 @@ def plot_hilbert(data_dict, date_list,
         # Fourier transform
         sig_fft, sample_freq = cft.fourier_transform(data, xaxis)
 
-        # Individual Fourier components
+        # Calculate individual Fourier components
         filtered_signal = {}
         for filt in [None, 'positive', 'negative']:
             for wave_min in range(wmin, wmax + 1):
@@ -98,15 +100,18 @@ def plot_hilbert(data_dict, date_list,
                                                                                               exclude=filt)
 
         ax.axhline(y=0.0, linestyle='-', color='0.8')
-        
+
         # Plot individual wavenumber components
         for wavenum in range(wmin, wmax):
-            ax.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], color='0.5', linestyle='--')
+            color = '#7570b3' if wavenum in highlights else '0.5' 
+            ax.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], color=color, linestyle='--')
         ax.plot(xaxis, 2*filtered_signal['positive', wmax, wmax], color='0.5', linestyle='--', label='Fourier components')
 
+
         # Plot reconstructed envelope
-        tag = 'wave envelope'
-        ax.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='#d95f02', label=tag, linewidth=2.0)
+        if not noenv:
+            tag = 'wave envelope'
+            ax.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='#d95f02', label=tag, linewidth=2.0)
 
         # Plot reconstructed signal
         tag = 'reconstructed signal (waves %s-%s)'  %(str(wmin), str(wmax))
@@ -150,7 +155,9 @@ def main(inargs):
                  latitude,
                  outfile=inargs.ofile,
                  ybounds=inargs.ybounds,
-                 figure_size=inargs.figure_size)
+                 figure_size=inargs.figure_size,
+                 highlights=inargs.highlights,
+                 noenv=inargs.noenv)
 
     gio.write_metadata(inargs.ofile, file_info={inargs.infile: dset_in.attrs['history']})
 
@@ -174,11 +181,18 @@ if __name__ == '__main__':
                         help="Dates to plot")
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[1, 9],
                         help="Wavenumbers to include in the Hiblert Transform and on the plot")
+    
+    parser.add_argument("--highlights", type=int, nargs='*', default=[],
+                        help="Wavenumers to highlight")
+    parser.add_argument("--noenv", action="store_true", default=False,
+                        help="Do not plot the wave envelope")
+
     parser.add_argument("--ybounds", type=float, nargs=2, metavar=('LOWER', 'UPPER'), default=None,
                         help="y-axis bounds (there are defaults set for each timescale)")
-
     parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
+
+
   
     args = parser.parse_args()            
 
