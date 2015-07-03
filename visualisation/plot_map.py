@@ -224,6 +224,7 @@ def multiplot(cube_dict, nrows, ncols,
               #headings
               title=None, subplot_headings=None,
               #colourbar
+              no_colourbar=False,
               colour_type='smooth',
               colourbar_type='global', colourbar_orientation='horizontal', global_colourbar_span=0.6,
               global_units=None,
@@ -365,8 +366,9 @@ def multiplot(cube_dict, nrows, ncols,
             # Add plot features
             plt.gca().coastlines()
             plt.gca().gridlines(draw_labels=grid_labels)
-            if colourbar_type == 'global' and colour_plot_switch:
-                set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units)       
+            if not no_colourbar:
+                if colourbar_type == 'global' and colour_plot_switch:
+                    set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units)       
 
     fig.savefig(ofile, bbox_inches='tight')
 
@@ -613,6 +615,7 @@ def main(inargs):
               title=inargs.title,
               subplot_headings=inargs.subplot_headings,
               #colourbar
+              no_colourbar=inargs.no_colourbar,
               colourbar_orientation=inargs.colourbar_orientation,
               colourbar_type=inargs.colourbar_type,
               colour_type=inargs.colour_type,
@@ -714,6 +717,8 @@ example:
                         help="list of subplot headings (in order from top left to bottom right, write none for a blank)")
 
     # Colourbar
+    parser.add_argument("--no_colourbar", action="store_true", default=False,
+                        help="switch for not plotting the colourbar")
     parser.add_argument("--colour_type", type=str, default='smooth', choices=('smooth', 'pixels'),
                         help="how to present the colours [default=smooth]")
     parser.add_argument("--colourbar_type", type=str, default='global', choices=('individual', 'global'),
