@@ -1,4 +1,4 @@
-ftype=eps
+ftype=png
 
 # Explantory slide
 
@@ -74,10 +74,18 @@ ftype=eps
 #done
 
 # Composites
+#
+#/usr/local/anaconda/bin/python /home/STUDENT/dbirving/climate-analysis/visualisation/plot_map.py 1 1 \
+#--output_projection SouthPolarStereo \
+#--infile /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw/figures/composites/sf-composite_pwigt90pct_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native-shextropics15.nc sf_annual none none none contour0 1 \
+#--contour_levels -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6 \
+#--ofile sf_temporal_composite_annual.${ftype}
 
 /usr/local/anaconda/bin/python /home/STUDENT/dbirving/climate-analysis/visualisation/plot_map.py 1 1 \
+--infile /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw/figures/composites/sf-composite_pwigt90pct_ERAInterim_500hPa_030day-runmean_native-zonal-anom-shextropics15.nc sf_annual none none none contour0 1 \
 --output_projection SouthPolarStereo \
---infile /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw/figures/composites/sf-composite_pwigt90pct_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native-shextropics15.nc sf_annual none none none contour0 1 \
---contour_levels -6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6 \
---ofile sf_temporal_composite_annual.${ftype}
+--infile /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw/figures/composites/ua-composite_pwigt90pct_ERAInterim_500hPa_030day-runmean_native-shextropics15.nc ua_annual none none none uwind0 1 \
+--infile /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/zw/figures/composites/va-composite_pwigt90pct_ERAInterim_500hPa_030day-runmean_native-shextropics15.nc va_annual none none none vwind0 1 \
+--ofile sf_zonal_composite_annual.${ftype} --flow_type streamlines --contour_levels -12.5 -10 -7.5 -5 -2.5 0 2.5 5 7.5 10 12.5 --streamline_colour 0.7
+
 
