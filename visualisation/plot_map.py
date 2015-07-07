@@ -115,6 +115,7 @@ def extract_data(infile_list, output_projection):
         standard_name = get_standard_name(var)
         with iris.FUTURE.context(cell_datetime_objects=True):
             new_cube = iris.load_cube(infile, standard_name & time_constraint & lat_constraint)       
+        new_cube = iris.util.squeeze(new_cube)
 
         coord_names = [coord.name() for coord in new_cube.coords()]
         if 'time' in coord_names:
@@ -417,12 +418,12 @@ def plot_flow(x, y, u, v, ax, flow_type,
     if flow_type == 'streamlines' and plot_magnitude:
         magnitude = (u ** 2 + v ** 2) ** 0.5
         cmap = get_palette(palette)
-        ax.streamplot(x, y, u, v, transform=projections['PlateCarree_Dateline'], 
-                      linewidth=2, density=2, color=magnitude, cmap=cmap, norm=norm)
+        ax.streamplot(x, y, u, v, transform=projections['PlateCarree_Greenwich'],
+                      color=magnitude, cmap=cmap, norm=norm)  #linewidth=2, density=2
     elif flow_type == 'streamlines':
-        ax.streamplot(x, y, u, v, transform=projections['PlateCarree_Dateline'], color=colour)
+        ax.streamplot(x, y, u, v, transform=projections['PlateCarree_Greenwich'], color=colour)
     elif flow_type == 'quivers':
-        ax.quiver(x, y, u, v, transform=projections['PlateCarree_Dateline'], regrid_shape=40) 
+        ax.quiver(x, y, u, v, transform=projections['PlateCarree_Greenwich'], regrid_shape=40) 
 
 
 def plot_hatching(cube, hatch_bounds, hatch_styles):
