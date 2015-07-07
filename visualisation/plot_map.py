@@ -117,6 +117,11 @@ def extract_data(infile_list, output_projection):
             new_cube = iris.load_cube(infile, standard_name & time_constraint & lat_constraint)       
         new_cube = iris.util.squeeze(new_cube)
 
+        # Plotting of streamlines and/or quivers requires lon range -180 to 180 
+        if plot_type[:-1] in ['uwind', 'vwind']:
+            print 'switching %s data from %s longitude range to [-180, 180]' %(plot_type[:-1], infile)
+            new_cube = new_cube.intersection(longitude=(-180, 180))
+
         coord_names = [coord.name() for coord in new_cube.coords()]
         if 'time' in coord_names:
             ntimes = len(new_cube.coords('time')[0].points)
