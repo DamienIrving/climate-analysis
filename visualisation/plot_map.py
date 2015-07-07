@@ -115,7 +115,7 @@ def extract_data(infile_list, output_projection):
         standard_name = get_standard_name(var)
         with iris.FUTURE.context(cell_datetime_objects=True):
             new_cube = iris.load_cube(infile, standard_name & time_constraint & lat_constraint)       
-        new_cube = iris.util.squeeze(new_cube)
+        #new_cube = iris.util.squeeze(new_cube)
 
         # Plotting of streamlines and/or quivers requires lon range -180 to 180 
         if plot_type[:-1] in ['uwind', 'vwind']:
