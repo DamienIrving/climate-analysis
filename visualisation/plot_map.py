@@ -120,11 +120,6 @@ def extract_data(infile_list, output_projection):
         except AttributeError:
             pass  # squeeze is not available with older versions of iris
 
-        # Plotting of streamlines and/or quivers requires lon range -180 to 180 
-        if plot_type[:-1] in ['uwind', 'vwind']:
-            print 'switching %s data from %s longitude range to [-180, 180]' %(plot_type[:-1], infile)
-            new_cube = new_cube.intersection(longitude=(-180, 180, False, True))
-
         coord_names = [coord.name() for coord in new_cube.coords()]
         if 'time' in coord_names:
             ntimes = len(new_cube.coords('time')[0].points)
@@ -426,12 +421,12 @@ def plot_flow(x, y, u, v, ax, flow_type,
     if flow_type == 'streamlines' and plot_magnitude:
         magnitude = (u ** 2 + v ** 2) ** 0.5
         cmap = get_palette(palette)
-        ax.streamplot(x, y, u, v, transform=projections['PlateCarree_Greenwich'],
+        ax.streamplot(x, y, u, v, transform=ccrs.PlateCarree(),
                       color=magnitude, cmap=cmap, norm=norm)  #linewidth=2, density=2
     elif flow_type == 'streamlines':
-        ax.streamplot(x, y, u, v, transform=projections['PlateCarree_Greenwich'], color=colour)
+        ax.streamplot(x, y, u, v, transform=ccrs.PlateCarree(), color=colour)
     elif flow_type == 'quivers':
-        ax.quiver(x, y, u, v, transform=projections['PlateCarree_Greenwich'], regrid_shape=40) 
+        ax.quiver(x, y, u, v, transform=ccrs.PlateCarree(), regrid_shape=40) 
 
 
 def plot_hatching(cube, hatch_bounds, hatch_styles):
