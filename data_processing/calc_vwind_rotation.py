@@ -7,7 +7,7 @@ Description:  Calculate meridional wind according to a new coordinate axis
 
 # Import general Python modules
 
-import sys, os
+import sys, os, pdb
 
 import argparse
 import numpy
@@ -31,6 +31,7 @@ sys.path.append(modules_dir)
 try:
     import general_io as gio
     import coordinate_rotation as rot
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -54,7 +55,7 @@ def rotate_vwind(dataU, dataV, new_np, pm_point, res=1.0, anomaly=None):
 
     lat_axis = dataU.getLatitude()[:]
     lon_axis = dataU.getLongitude()[:]
-    lats, lons = gio.coordinate_pairs(lat_axis, lon_axis)
+    lats, lons = uconv.coordinate_pairs(lat_axis, lon_axis)
 
     # Calculate new vwind on the native grid
     vwind_rot = calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np) 
@@ -93,7 +94,7 @@ def calc_vwind(dataU, dataV, lat_axis, lon_axis, new_np, old_np=(90.0, 0.0)):
     """Calculate the new meridional wind field, according to the
     new position of the north pole."""
     
-    lats, lons = gio.coordinate_pairs(lat_axis, lon_axis) 
+    lats, lons = uconv.coordinate_pairs(lat_axis, lon_axis) 
     theta = rot.rotation_angle(old_np[0], old_np[1], new_np[0], new_np[1], 
                                lats, lons, reshape=[len(lat_axis), len(lon_axis)])
     theta = numpy.resize(theta, numpy.shape(dataU))
@@ -143,7 +144,7 @@ def subset_kwargs(namespace):
         south_lat, north_lat, west_lon, east_lon = regions[namespace.region]
         kwarg_dict['latitude'] = (south_lat, north_lat)
 	kwarg_dict['longitude'] = (west_lon, east_lon)
-    except AttributeError:
+    except:
         pass     
 
     try:
@@ -318,7 +319,7 @@ def main(inargs):
     indataV = vfin(inargs.variableV, **subset_dict)
     
     # Calulate the new vwind
-    vwind_rot, vwind_rot_switch = rotate_vwind(indataU.data, indataV.data, inargs.north_pole, inargs.pm, anomaly=inargs.anomaly)
+    vwind_rot, vwind_rot_switch = rotate_vwind(indataU, indataV, inargs.north_pole, inargs.pm, anomaly=inargs.anomaly)
 
     # Write the output file
     if inargs.noswitch:
@@ -340,15 +341,15 @@ def main(inargs):
     vrot_atts = {'id': 'vrot',
                  'standard_name': standard_name,
                  'long_name': long_name,
-                 'units': indataU.data.units,
+                 'units': indataU.units,
                  'notes': notes}
 											    
     outdata_list = [vwind_rot,] if inargs.noswitch else [vwind_rot_switch,]
     outvar_atts_list = [vrot_atts,]
     outvar_axes_list = [vwind_rot.getAxisList(),] if inargs.noswitch else [vwind_rot_switch.getAxisList(),]
- 
+
     write_netcdf(inargs.outfile, " ".join(sys.argv), 
-                 indataU.global_atts, 
+                 ufin.attributes, 
                  outdata_list,
                  outvar_atts_list, 
                  outvar_axes_list)

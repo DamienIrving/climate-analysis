@@ -234,7 +234,7 @@ def match_dates(datetimes, datetime_axis):
 def single2list(item, numpy_array=False):
     """Check if item is a list, then convert if not."""
     
-    if type(item) == list or type(item) == tuple:
+    if type(item) == list or type(item) == tuple or type(item) == numpy.ndarray:
         output = item 
     elif type(item) == str:
         output = [item,]

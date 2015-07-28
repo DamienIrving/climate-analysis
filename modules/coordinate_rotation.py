@@ -19,7 +19,7 @@ import numpy
 import MV2
 import css
 
-import sys, os 
+import sys, os, pdb 
 
 # Import my modules
 
@@ -72,11 +72,12 @@ def switch_regular_axes(data, lats_in, lons_in, lat_axis_out, lon_axis_out, new_
         phi, theta, psi = north_pole_to_rotation_angles(new_np[0], new_np[1], prime_meridian_point=pm_point)
     
     lats_in_rot, lons_in_rot = rotate_spherical(lats_in, lons_in, phi, theta, psi, invert=invert)
+    ntimes = numpy.shape(data)[0]
 
     grid_instance = css.Cssgrid(lats_in_rot, lons_in_rot, lat_axis_out, lon_axis_out)
     if numpy.rank(data) == 3:    
-        data_rot = numpy.zeros(numpy.shape(data))
-        for tstep in xrange(0, numpy.shape(data)[0]):
+        data_rot = numpy.zeros((ntimes, len(lat_axis_out), len(lon_axis_out)))
+        for tstep in xrange(0, ntimes):
             regrid = grid_instance.rgrd(data[tstep, :, :].flatten())
             data_rot[tstep, :, :] = numpy.transpose(regrid)
     elif numpy.rank(data) == 2: 
