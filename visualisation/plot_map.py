@@ -45,11 +45,17 @@ except ImportError:
 
 plot_types = ['colour', 'contour', 'uwind', 'vwind', 'hatching']
 
-projections = {'PlateCarree_Greenwich': ccrs.PlateCarree(),
-               'PlateCarree_Dateline': ccrs.PlateCarree(central_longitude=180.0),
-               'SouthPolarStereo': ccrs.SouthPolarStereo(),
-               'Orthographic': ccrs.Orthographic(central_longitude=240, central_latitude=-45),
-               'RotatedPole_260E_20N': ccrs.RotatedPole(pole_longitude=260, pole_latitude=20)}
+input_projections = {'PlateCarree': ccrs.PlateCarree(),
+                     'RotatedPole_260E_20N_shift180': ccrs.RotatedPole(260, 20, central_rotated_longitude=180)}
+#Do not use the central_longitude option when defining input_projections
+#(iris can figure out longitude range on it's own) 
+
+output_projections = {'PlateCarree': ccrs.PlateCarree(),
+                      'PlateCarree_Dateline': ccrs.PlateCarree(central_longitude=180.0),
+                      'SouthPolarStereo': ccrs.SouthPolarStereo(),
+                      'Orthographic': ccrs.Orthographic(central_longitude=240, central_latitude=-45),
+                      'RotatedPole_260E_20N': ccrs.RotatedPole(pole_longitude=260, pole_latitude=20),
+                     }
 
 units_dict = {'ms-1': '$m s^{-1}$',
               'm.s-1': '$m s^{-1}$',
@@ -99,10 +105,10 @@ def extract_data(infile_list, output_projection):
     metadata_dict = {}
     plot_numbers = []
     max_layers=0
-    for infile, var, start_date, end_date, timestep, plot_type, plot_number in infile_list:
+    for infile, var, start_date, end_date, timestep, plot_type, plot_number, input_projection in infile_list:
         
-        # Check input
         assert plot_type[:-1] in plot_types
+        assert input_projection in input_projections.keys()
 
         # Define data constraints
         time_constraint = get_time_constraint(start_date, end_date)
@@ -131,6 +137,8 @@ def extract_data(infile_list, output_projection):
                 except ValueError:
                     timestep = None
                 new_cube = collapse_time(new_cube, ntimes, timestep)
+
+        new_cube.attributes['input_projection'] = input_projection
 
         # Define outputs
         cube_dict[(plot_type, int(plot_number))] = new_cube
@@ -278,7 +286,7 @@ def multiplot(cube_dict, nrows, ncols,
         if not plotnum in blank_plots:
 
             out_proj_name = output_projection[plotnum - 1]
-            out_proj_object = projections[out_proj_name]
+            out_proj_object = output_projections[out_proj_name]
             out_region_name = region[plotnum - 1]
 
             ax = plt.subplot(nrows, ncols, plotnum, projection=out_proj_object)
@@ -293,7 +301,7 @@ def multiplot(cube_dict, nrows, ncols,
 
             # Set limits
             if out_proj_name == 'SouthPolarStereo':
-                ax.set_extent((0, 360, -90.0, spstereo_limit), crs=projections['PlateCarree_Dateline'])
+                ax.set_extent((0, 360, -90.0, spstereo_limit), crs=output_projections['PlateCarree_Dateline'])
                 grid_labels=False  #iris does not support this yet
             elif out_region_name != 'None':
                 south_lat, north_lat, west_lon, east_lon = gio.regions[out_region_name]
@@ -307,7 +315,7 @@ def multiplot(cube_dict, nrows, ncols,
                 colour_label = 'colour'+str(layer)
                 try:
                     colour_cube = cube_dict[(colour_label, plotnum)]
-                    cf = plot_colour(colour_cube, colour_type, colourbar_type, 
+                    cf = plot_colour(colour_cube, ax, colour_type, colourbar_type, 
                                      palette, extend, colourbar_ticks)
                     units = global_units if global_units else colour_cube.units.symbol
                     if colourbar_type == 'individual':
@@ -349,7 +357,7 @@ def multiplot(cube_dict, nrows, ncols,
 
                 try:
                     contour_cube = cube_dict[(contour_label, plotnum)]
-                    plot_contour(contour_cube, contour_levels, contour_labels, 
+                    plot_contour(contour_cube, ax, contour_levels, contour_labels, 
                                  width=contour_width,
                                  colour=contour_colour)
                 except KeyError:
@@ -359,7 +367,7 @@ def multiplot(cube_dict, nrows, ncols,
                 hatching_label = 'hatching'+str(layer)
                 try:
                     hatch_cube = cube_dict[(hatching_label, plotnum)]
-                    plot_hatching(hatch_cube, hatch_bounds, hatch_styles)
+                    plot_hatching(hatch_cube, ax, hatch_bounds, hatch_styles)
                 except KeyError:
                     pass
 
@@ -377,29 +385,43 @@ def multiplot(cube_dict, nrows, ncols,
     fig.savefig(ofile, bbox_inches='tight')
 
 
-def plot_colour(cube,
+def get_spatial_info(cube):
+    """Get the spatial information required for plotting."""
+
+    x = cube.coord('longitude').points
+    y = cube.coord('latitude').points
+    inproj = input_projections[cube.attributes['input_projection']]
+
+    return x, y, inproj
+
+
+def plot_colour(cube, ax,
                 colour_type, colourbar_type, 
                 palette, extend, ticks):
     """Plot the colour plot."""
 
     assert colour_type in ['smooth', 'pixels']
 
+    x, y, inproj = get_spatial_info(cube)
     cmap = get_palette(palette) if palette else None
     if colour_type == 'smooth':
-        cf = iplt.contourf(cube, cmap=cmap, levels=ticks, extend=extend)
+        cf = ax.contourf(x, y, cube.data, transform=inproj,  
+                         cmap=cmap, levels=ticks, extend=extend)
         #colors is the option where you can give a list of hex strings
         #haven't been able to figure out how to get extent to work with that
     elif colour_type == 'pixels':
-        cf = iplt.pcolormesh(cube, cmap=cmap)
+        cf = ax.pcolormesh(x, y, cube.data, transform=inproj, cmap=cmap)
 
     return cf
 
 
-def plot_contour(cube, levels, labels_switch,
+def plot_contour(cube, ax, levels, labels_switch,
                  width=1.5, colour='k'):
     """Plot the contours."""
 
-    contour_plot = iplt.contour(cube, colors=colour, linewidths=width, levels=levels)
+    x, y, inproj = get_spatial_info(cube)
+    contour_plot = ax.contour(x, y, cube.data, transform=inproj,
+                              colors=colour, linewidths=width, levels=levels)  
     print 'contour levels:', contour_plot.levels
     if labels_switch:
         plt.clabel(contour_plot, fmt='%.1f')
@@ -429,14 +451,16 @@ def plot_flow(x, y, u, v, ax, flow_type,
         ax.quiver(x, y, u, v, transform=ccrs.PlateCarree(), regrid_shape=40) 
 
 
-def plot_hatching(cube, hatch_bounds, hatch_styles):
+def plot_hatching(cube, ax, hatch_bounds, hatch_styles):
     """Plot the hatching."""
 
     hatch_styles_converted = []
     for style in hatch_styles:
         hatch_styles_converted.append(hatch_style_dict[style])
 
-    iplt.contourf(cube, colors='none', levels=hatch_bounds, hatches=hatch_styles_converted)
+    x, y, inproj = get_spatial_info(cube)
+    ax.contourf(x, y, cube.data, transform=inproj, 
+                colors='none', levels=hatch_bounds, hatches=hatch_styles_converted)
     
     # An alternative would be:
     # I found that hatch with contourf only works for certain file formats and can disappear 
@@ -495,7 +519,7 @@ def plot_lines(line_list):
         plt.plot(lons, lats, 
                  linestyle=line_style_dict[style], 
                  color=color, 
-                 transform=projections[input_projection])
+                 transform=input_projections[input_projection])
 
 
 def set_global_colourbar(orientation, span, cf, fig, units):
@@ -671,17 +695,19 @@ example:
     parser.add_argument("nrows", type=int, help="number of rows in the entire grid of plots")
     parser.add_argument("ncols", type=int, help="number of columns in the entire grid of plots")
 
-    parser.add_argument("--infile", type=str, action='append', default=[], nargs=7,
+    parser.add_argument("--infile", type=str, action='append', default=[], nargs=8,
                         metavar=('FILENAME', 'VAR', 'START(YYYY-MM-DD)', 'END(YYYY-MM-DD)', 
                                  'TIMESTEP(can be none)', 
                                  'TYPE/LAYER(e.g. uwind0)', 
-                                 'PLOTNUM'),  
+                                 'PLOTNUM',
+                                 'PROJECTION'),  
                         help="""input file [default: None]:
                                 TYPE can be uwind, vwind, contour, colour or hatching
-                                PLOTNUM starts at 1, goes top left to bottom right""")
+                                PLOTNUM starts at 1, goes top left to bottom right
+                                PROJECTION is PlateCarree for regular lat/lon grid""")
 
     # Plot size, spacing, projection etc
-    parser.add_argument("--output_projection", type=str, nargs='*', choices=projections.keys(), default=['PlateCarree_Dateline',],
+    parser.add_argument("--output_projection", type=str, nargs='*', choices=output_projections.keys(), default=['PlateCarree_Dateline',],
                         help="""output map projection: 
                                 default is all PlateCarree_Dateline
                                 specify a projection for all plots (order top left to bottom right, write none for blank)
