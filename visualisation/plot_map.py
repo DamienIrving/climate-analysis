@@ -46,7 +46,8 @@ except ImportError:
 plot_types = ['colour', 'contour', 'uwind', 'vwind', 'hatching']
 
 input_projections = {'PlateCarree': ccrs.PlateCarree(),
-                     'RotatedPole_260E_20N_shift180': ccrs.RotatedPole(260, 20, central_rotated_longitude=180)}
+                     'RotatedPole_260E_20N': ccrs.RotatedPole(pole_longitude=260, pole_latitude=20)
+                    }
 #Do not use the central_longitude option when defining input_projections
 #(iris can figure out longitude range on it's own) 
 
@@ -54,7 +55,7 @@ output_projections = {'PlateCarree': ccrs.PlateCarree(),
                       'PlateCarree_Dateline': ccrs.PlateCarree(central_longitude=180.0),
                       'SouthPolarStereo': ccrs.SouthPolarStereo(),
                       'Orthographic': ccrs.Orthographic(central_longitude=240, central_latitude=-45),
-                      'RotatedPole_260E_20N': ccrs.RotatedPole(pole_longitude=260, pole_latitude=20),
+                      'RotatedPole_260E_20N_shift180': ccrs.RotatedPole(260, 20, central_rotated_longitude=180),
                      }
 
 units_dict = {'ms-1': '$m s^{-1}$',
@@ -210,7 +211,6 @@ def multiplot(cube_dict, nrows, ncols,
               figure_size=None,
               subplot_spacing=0.05,
               output_projection=['PlateCarree_Dateline',],
-              grid_labels=False,
               blank_plots=[],
               max_layers=0,
               #spatial bounds
@@ -218,6 +218,8 @@ def multiplot(cube_dict, nrows, ncols,
               region=['None',],
               #lines
               line_list=None,
+              grid_lines=True,
+              grid_labels=False,
               #headings
               title=None, subplot_headings=None,
               #colourbar
@@ -362,7 +364,8 @@ def multiplot(cube_dict, nrows, ncols,
 
             # Add plot features
             plt.gca().coastlines()
-            plt.gca().gridlines(draw_labels=grid_labels)
+            if grid_lines:
+                plt.gca().gridlines(draw_labels=grid_labels)
             if not no_colourbar:
                 if colourbar_type == 'global' and colour_plot_switch:
                     set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units)       
@@ -606,7 +609,6 @@ def main(inargs):
               output_projection=inargs.output_projection,
               figure_size=inargs.figure_size,
               subplot_spacing=inargs.subplot_spacing,
-              grid_labels=inargs.grid_labels,
               blank_plots=blanks,
               max_layers=max_layers,
               #spatial bounds
@@ -614,6 +616,8 @@ def main(inargs):
               region=inargs.region,
               #lines
               line_list=inargs.line,
+              grid_lines=not inargs.no_grid_lines,
+              grid_labels=inargs.grid_labels,
               #headings
               title=inargs.title,
               subplot_headings=inargs.subplot_headings,
@@ -713,7 +717,9 @@ example:
                                 COLOUR can be a name or fraction for grey shading
                                 RES can be 'low' or 'high'""")
     parser.add_argument("--grid_labels", action="store_true", default=False,
-                        help="switch for having gird labels [default: False]")
+                        help="switch for having grid labels [default: False]")
+    parser.add_argument("--no_grid_lines", action="store_true", default=False,
+                        help="switch for turning off grid lines [default: False]")
 
     # Headings
     parser.add_argument("--title", type=str, default=None,
