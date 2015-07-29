@@ -23,24 +23,28 @@ My preferred setup is as follows:
 My approach for installing Python libraries is to first install Anaconda. 
 It's a free scientific Python distribution that comes with most of the libraries you'd ever need.
 For installing extra libraries alongside Anaconda,
-I first search [Binstar](https://binstar.org/) to see if `conda` can be used 
+I first search [Anaconda.org](https://anaconda.org/) to see if `conda` can be used 
 (conda is the library installer that comes with Anaconda).
 If a binstar isn't available, 
 then I use the generic python package installer (`pip` or `easy_install`). 
 This approach avoids the need to install things myself from binaries or source code, 
 which is a nightmare and in most cases doesn't work.
 
-## Ubuntu (i.e. Linux)
+## Linux
+
+I have installed software on machines that run Ubuntu 12.04 and CentOS 7.
 
 ### NCO
 
-The Ubuntu Software Centre has NCO,
-which is the equivalent to `apt-get install nco` at the command line.
+* The Ubuntu Software Centre has NCO,
+  which is the equivalent to `apt-get install nco` at the command line.
+* For CentOS run `yum install nco` 
 
 ### CDO
 
-The Ubuntu Software Centre has CDO,
-which is the equivalent to `apt-get install cdo` at the command line.
+* The Ubuntu Software Centre has CDO,
+  which is the equivalent to `apt-get install cdo` at the command line.
+* `yum` doesn't have cdo on CentOS
 
 ### Anaconda
 
@@ -53,16 +57,15 @@ This can be updated via:
 ##### Additional libraries
 
 Installed:
-
-* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson cdat-lite`
-* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson windspharm`
-* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/ajdawson eofs`
-* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.binstar.org/rsignell iris` (installs cartopy too)
+conda install -c http://conda.anaconda.org/ioos iris
+* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/ajdawson cdat-lite`
+* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/ajdawson windspharm`
+* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/ajdawson eofs`
+* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/scitools iris` (installs cartopy too)
+  * or for the latest version: `$ sudo conda install -c http://conda.anaconda.org/ioos iris` 
 * `$ sudo /usr/local/anaconda/bin/conda install xray dask netCDF4 bottleneck`
 * `$ sudo /usr/local/anaconda/bin/pip install gitpython`
 * `$ sudo /usr/local/anaconda/bin/pip install cdo`
-
-(note that soon the latest iris and cartopy binstar files will be stored [here](https://binstar.org/scitools))
 
 ### UV-CDAT
 
@@ -152,7 +155,7 @@ Installed:
 
 Outstanding (i.e. things I still need to install or can't):  
 
-* windspharm & eofs (not able to produce a binstar - see [this disucssion](https://github.com/ajdawson/windspharm/issues/39))
+* windspharm & eofs (not available via anaconda.org - see [this disucssion](https://github.com/ajdawson/windspharm/issues/39))
 
 
 ### UV-CDAT
