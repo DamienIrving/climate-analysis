@@ -86,6 +86,20 @@ def regrid(cube):
     return regridded_data_clean
 
 
+def set_dim_atts(dset_out):
+    """Set dimension attributes."""
+    
+    dset_out['time'].attrs = {'calendar': time_coord.calendar}
+    dset_out['latitude'].attrs = {}
+    dset_out['longitude'].attrs = {}
+    for dim in ['time', 'latitude', 'longitude']:
+        for att in ['standard_name', 'units', 'long_name']:
+            try: 
+                dset_out[dim].attrs[att] = eval(dim+'_coord.'+att)
+            except AttributeError:
+                pass
+    
+
 def main(inargs):
     """Run the program."""
     
@@ -125,9 +139,7 @@ def main(inargs):
                                'long_name': 'rotated_meridional_wind',
                                'units': v_cube.units,
                                'notes': 'North Pole at %s, %s. Data defined on rotated grid.' %(np_lat, np_lon)}
-    dset_out['time'].attrs = time_coord.attributes
-    dset_out['latitude'].attrs = lat_coord.attributes
-    dset_out['longitude'].attrs = lon_coord.attributes 
+    set_dim_atts(dset_out)
 
     outfile_metadata = {inargs.infileU: u_cube.attributes['history'],
                         inargs.infileV: v_cube.attributes['history']}
