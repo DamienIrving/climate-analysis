@@ -61,8 +61,9 @@ conda install -c http://conda.anaconda.org/ioos iris
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/ajdawson cdat-lite`
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/ajdawson windspharm`
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/ajdawson eofs`
-* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/scitools iris` (installs cartopy too)
-  * or for the latest version: `$ sudo conda install -c http://conda.anaconda.org/ioos iris` 
+* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/scitools iris` 
+  * Installs cartopy too
+  * For the latest version: `$ sudo conda install -c http://conda.anaconda.org/ioos iris` 
 * `$ sudo /usr/local/anaconda/bin/conda install xray dask netCDF4 bottleneck`
 * `$ sudo /usr/local/anaconda/bin/pip install gitpython`
 * `$ sudo /usr/local/anaconda/bin/pip install cdo`
