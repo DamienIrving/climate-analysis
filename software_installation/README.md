@@ -48,11 +48,18 @@ I have installed software on machines that run Ubuntu 12.04 and CentOS 7.
 
 ### Anaconda
 
-[Downloaded](http://continuum.io/downloads) and ran their Linux-64bit installer.
-This can be updated via:
+* On Ubuntu 12.04 I [downloaded](http://continuum.io/downloads) and ran their Linux-64bit installer.
+  This can be updated via:
 
     $ sudo /usr/local/anaconda/bin/conda update conda
     $ sudo /usr/local/anaconda/bin/conda update anaconda
+
+* On CentOS in installed [miniconda](http://conda.pydata.org/miniconda.html) instead.
+  * To make it work successfully, I first had to run `yum install bzip2`
+  * On resbaz.cloud.edu.au I then had to do the following to make the IPython launcher call the conda IPython:
+    * `conda install ipython`
+    * `conda install ipython-notebook`
+    * edit ``/etc/supervisor.d/ipynb.conf` so that it points to the correct ipython
 
 ##### Additional libraries
 
