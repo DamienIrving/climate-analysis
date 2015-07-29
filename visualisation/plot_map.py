@@ -105,7 +105,7 @@ def extract_data(infile_list, output_projection):
     metadata_dict = {}
     plot_numbers = []
     max_layers=0
-    for infile, var, start_date, end_date, timestep, plot_type, plot_number, input_projection in infile_list:
+    for infile, long_name, start_date, end_date, timestep, plot_type, plot_number, input_projection in infile_list:
         
         assert plot_type[:-1] in plot_types
         assert input_projection in input_projections.keys()
@@ -118,9 +118,8 @@ def extract_data(infile_list, output_projection):
             lat_constraint = iris.Constraint()
 
         # Read data
-        standard_name = get_standard_name(var)
         with iris.FUTURE.context(cell_datetime_objects=True):
-            new_cube = iris.load_cube(infile, standard_name & time_constraint & lat_constraint)       
+            new_cube = iris.load_cube(infile, long_name & time_constraint & lat_constraint)       
         try:
             new_cube = iris.util.squeeze(new_cube)
         except AttributeError:
@@ -166,28 +165,14 @@ def get_palette(palette_name):
     return cmap
 
 
-def get_standard_name(var):
-    """For a given variable, get the corresponding standard name."""
+def get_spatial_info(cube):
+    """Get the spatial information required for plotting."""
 
-    standard_names = {'sf' : 'streamfunction',
-                      'zg' : 'geopotential_height',
-                      'ua' : 'eastward_wind',
-                      'va' : 'northward_wind',
-                      'pr': 'precipitation',
-                      'sic' : 'sea_ice_fraction',
-                      'envva' : 'hilbert_transformed_northward_wind',
-                      'iftva' : 'inverse_fourier_transformed_northward_wind',
-                      'iftsf' : 'inverse_fourier_transformed_streamfunction',
-                      'tas' : 'surface_air_temperature',
-                      'ampmedian': 'zonal_median_of_the_meridional_maximum_hilbert_transformed_northward_wind',
-                      'p' : 'p_value'}
+    x = cube.coord('longitude').points
+    y = cube.coord('latitude').points
+    inproj = input_projections[cube.attributes['input_projection']]
 
-    key_matches = [key for key in standard_names.keys() if var.split('_')[0] == key]   #re.search('^%s' %(key), var)]
-    assert len(key_matches) == 1, "variable not recognised in list of standard names"
-
-    standard_name = re.sub('^'+key_matches[0], standard_names[key_matches[0]], var)
-
-    return standard_name
+    return x, y, inproj
 
 
 def get_time_constraint(start, end):
@@ -383,16 +368,6 @@ def multiplot(cube_dict, nrows, ncols,
                     set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units)       
 
     fig.savefig(ofile, bbox_inches='tight')
-
-
-def get_spatial_info(cube):
-    """Get the spatial information required for plotting."""
-
-    x = cube.coord('longitude').points
-    y = cube.coord('latitude').points
-    inproj = input_projections[cube.attributes['input_projection']]
-
-    return x, y, inproj
 
 
 def plot_colour(cube, ax,
@@ -696,7 +671,7 @@ example:
     parser.add_argument("ncols", type=int, help="number of columns in the entire grid of plots")
 
     parser.add_argument("--infile", type=str, action='append', default=[], nargs=8,
-                        metavar=('FILENAME', 'VAR', 'START(YYYY-MM-DD)', 'END(YYYY-MM-DD)', 
+                        metavar=('FILENAME', 'VAR_LONG_NAME', 'START(YYYY-MM-DD)', 'END(YYYY-MM-DD)', 
                                  'TIMESTEP(can be none)', 
                                  'TYPE/LAYER(e.g. uwind0)', 
                                  'PLOTNUM',
