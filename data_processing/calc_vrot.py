@@ -68,10 +68,7 @@ def regrid(data, old_lats, old_lons, new_lats, new_lons):
 
     regridded_data = scipy.interpolate.griddata(points, values, (grid_lons, grid_lats), 
                                                 method='linear', fill_value=0)
-    #pdb.set_trace()
-    #regridded_data = regridded_data.T
 
-    # Get rid of spurious values
     regridded_data_clean = numpy.where(regridded_data < values.min(), values.min(), regridded_data) 
     regridded_data_clean = numpy.where(regridded_data_clean > values.max(), values.max(), regridded_data_clean)
 
