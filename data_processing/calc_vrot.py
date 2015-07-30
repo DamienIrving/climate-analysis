@@ -7,11 +7,13 @@ Description:  Calculate the meridional wind for a rotated coordinate system
 
 # Import general Python modules
 
-import sys, os, pdb
+import sys, os, re, pdb
 import argparse
 import numpy, math
+import scipy.interpolate
 import xray
 import iris
+
 
 # Import my modules
 
@@ -54,30 +56,20 @@ def get_time_constraint(time_list):
     return time_constraint
 
 
-def regrid(cube):
-    """ """
+def regrid(data, old_lats, old_lons, new_lats, new_lons):
+    """FIXME"""
 
-    # Get axis info
-    x_values = cube.coord('projection_x_coordinate').points
-    y_values = cube.coord('projection_y_coordinate').points
-    lats = cube.coord('latitude').points
-    lons = cube.coord('longitude').points
-    
-    # Make sure longitude range is 0 to 360
-    x_values = numpy.where(x_values < 0, x_values + 360, x_values)
-    lons = numpy.where(lons < 0, lons + 360, lons)
+    new_lons_flat = new_lons.flatten()
+    new_lats_flat = new_lats.flatten()
+    grid_lons, grid_lats = numpy.meshgrid(old_lons, old_lats)
 
-    # Interpolate
-    x_flat = x_values.flatten()
-    y_flat = y_values.flatten()
-    points = numpy.column_stack((x_flat, y_flat))
-
-    values = cube.data.flatten()  
-    grid_lons, grid_lats = numpy.meshgrid(lons, lats)
+    points = numpy.column_stack((new_lons_flat, new_lats_flat))  
+    values = data.flatten()
 
     regridded_data = scipy.interpolate.griddata(points, values, (grid_lons, grid_lats), 
                                                 method='linear', fill_value=0)
-    regridded_data = regridded_data.T
+    #pdb.set_trace()
+    #regridded_data = regridded_data.T
 
     # Get rid of spurious values
     regridded_data_clean = numpy.where(regridded_data < values.min(), values.min(), regridded_data) 
@@ -86,19 +78,21 @@ def regrid(cube):
     return regridded_data_clean
 
 
-def set_dim_atts(dset_out):
+def set_dim_atts(dset_out, time_coord, latitude_coord, longitude_coord):
     """Set dimension attributes."""
     
-    dset_out['time'].attrs = {'calendar': time_coord.calendar}
+    dset_out['time'].attrs = {'calendar': 'standard', 'long_name': 'time'}
     dset_out['latitude'].attrs = {}
     dset_out['longitude'].attrs = {}
     for dim in ['time', 'latitude', 'longitude']:
         for att in ['standard_name', 'units', 'long_name']:
             try: 
-                dset_out[dim].attrs[att] = eval(dim+'_coord.'+att)
+                dset_out[dim].attrs[att] = str(eval(dim+'_coord.'+att))
             except AttributeError:
                 pass
     
+    return dset_out
+
 
 def main(inargs):
     """Run the program."""
@@ -113,37 +107,50 @@ def main(inargs):
         u_cube = iris.load_cube(inargs.infileU, inargs.longnameU & time_constraint)  
         v_cube = iris.load_cube(inargs.infileV, inargs.longnameV & time_constraint) 
 
+    for coords in [u_cube.coords(), v_cube.coords()]:
+        coord_names = [coord.name() for coord in coords]
+        assert coord_names == ['time', 'latitude', 'longitude']
+
+    time_coord = v_cube.coord('time')
+    lat_coord = v_cube.coord('latitude')
+    lon_coord = v_cube.coord('longitude')
+
     # Rotate wind
     np_lat, np_lon = inargs.north_pole
     rotated_cs = iris.coord_systems.RotatedGeogCS(np_lat, np_lon)
     urot_cube, vrot_cube = iris.analysis.cartography.rotate_winds(u_cube, v_cube, rotated_cs)
 
     # Regrid
-    coord_names = [coord.name() for coord in vrot_cube.coords()]
-    assert coord_names == ['time', 'latitude', 'longitude']
-    vrot_data = numpy.apply_along_axis(regrid, 0, vrot_cube) 
+    x_values = vrot_cube.coord('projection_x_coordinate').points
+    y_values = vrot_cube.coord('projection_y_coordinate').points
+    lats = lat_coord.points
+    lons = lon_coord.points
+    
+    x_values = numpy.where(x_values < 0, x_values + 360, x_values)
+    lons = numpy.where(lons < 0, lons + 360, lons)
+
+    vrot_regridded = numpy.zeros(vrot_cube.data.shape)
+    for tstep in range(0, len(time_coord.points)):
+        vrot_regridded[tstep, :, :] = regrid(vrot_cube.data[tstep, :, :], lats, lons, y_values, x_values) 
     
     # Write to file
-    time_coord = v_cube.coord('time')
-    lat_coord = v_cube.coord('latitude')
-    lon_coord = v_cube.coord('longitude')
-
     d = {}
     d['time'] = ('time', time_coord.points)
     d['latitude'] = ('latitude', lat_coord.points)
     d['longitude'] = ('longitude', lon_coord.points)
-    d['vrot'] = (['time', 'latitude', 'longitude'], vrot_data)
+    d['vrot'] = (['time', 'latitude', 'longitude'], vrot_regridded)
 
     dset_out = xray.Dataset(d)
-    dset_out['vrot'].attrs =  {'standard_name': 'rotated_meridional_wind',
-                               'long_name': 'rotated_meridional_wind',
-                               'units': v_cube.units,
+    dset_out['vrot'].attrs =  {'standard_name': 'rotated_northward_wind',
+                               'long_name': 'rotated_northward_wind',
+                               'units': str(v_cube.units),
                                'notes': 'North Pole at %s, %s. Data defined on rotated grid.' %(np_lat, np_lon)}
-    set_dim_atts(dset_out)
+    set_dim_atts(dset_out, time_coord, lat_coord, lon_coord)
 
     outfile_metadata = {inargs.infileU: u_cube.attributes['history'],
                         inargs.infileV: v_cube.attributes['history']}
-    gio.set_global_atts(dset_out, v_cube.attributes['history'], outfile_metadata)
+
+    gio.set_global_atts(dset_out, v_cube.attributes, outfile_metadata)
     dset_out.to_netcdf(inargs.outfile, format='NETCDF3_CLASSIC')
 
 
@@ -176,8 +183,4 @@ author:
                         help="Time period [default = entire]")
 
     args = parser.parse_args()            
-
-    print 'Input files: ', args.infile
-    print 'Output file: ', args.outfile  
-
     main(args)
