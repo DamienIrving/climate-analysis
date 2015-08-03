@@ -36,6 +36,19 @@ except ImportError:
 
 # Define functions
 
+def clean_data(cube, max_value, min_value):
+    """Make sure cube values lie between min_value and max_value.
+    
+    (The regridding produces spurious large and small values.)
+    
+    """
+
+    data_clean = numpy.where(cube.data < min_value, min_value, cube.data) 
+    data_clean = numpy.where(data_clean > max_value, max_value, data_clean)
+    
+    return data_clean
+
+
 def get_time_constraint(time_list):
     """Set the time constraint."""
     
@@ -56,23 +69,24 @@ def get_time_constraint(time_list):
     return time_constraint
 
 
-def regrid(data, old_lats, old_lons, new_lats, new_lons):
-    """FIXME"""
+def make_grid(lat_values, lon_values, np_lat, np_lon):
+    """Make a dummy cube with desired grid."""
+    
+    coordsys = iris.coord_systems.RotatedGeogCS(np_lat, np_lon)
+    
+    latitude = iris.coords.DimCoord(lat_values,
+                                    standard_name='latitude',
+                                    units='degrees_north',
+                                    coord_system=coordsys)
+    longitude = iris.coords.DimCoord(lon_values,                     
+                                     standard_name='longitude',
+                                     units='degrees_east',
+                                     coord_system=coordsys)
 
-    new_lons_flat = new_lons.flatten()
-    new_lats_flat = new_lats.flatten()
-    grid_lons, grid_lats = numpy.meshgrid(old_lons, old_lats)
-
-    points = numpy.column_stack((new_lons_flat, new_lats_flat))  
-    values = data.flatten()
-
-    regridded_data = scipy.interpolate.griddata(points, values, (grid_lons, grid_lats), 
-                                                method='linear', fill_value=0)
-
-    regridded_data_clean = numpy.where(regridded_data < values.min(), values.min(), regridded_data) 
-    regridded_data_clean = numpy.where(regridded_data_clean > values.max(), values.max(), regridded_data_clean)
-
-    return regridded_data_clean
+    dummy_data = numpy.zeros((len(lat_values), len(lon_values)))
+    new_cube = iris.cube.Cube(dummy_data, dim_coords_and_dims=[(latitude, 0), (longitude, 1)])
+    
+    return new_cube
 
 
 def set_dim_atts(dset_out, time_coord, latitude_coord, longitude_coord):
@@ -90,13 +104,6 @@ def set_dim_atts(dset_out, time_coord, latitude_coord, longitude_coord):
                                   'long_name': 'longitude',
                                   'units': 'degrees_east',
                                   'axis': 'X'}
-
-#    for dim in ['time', 'latitude', 'longitude']:
-#        for att in ['standard_name', 'units', 'long_name']:
-#            try: 
-#                dset_out[dim].attrs[att] = str(eval(dim+'_coord.'+att))
-#            except AttributeError:
-#                pass
     
     return dset_out
 
@@ -128,30 +135,25 @@ def main(inargs):
     urot_cube, vrot_cube = iris.analysis.cartography.rotate_winds(u_cube, v_cube, rotated_cs)
 
     # Regrid
-    x_values = vrot_cube.coord('projection_x_coordinate').points
-    y_values = vrot_cube.coord('projection_y_coordinate').points
-    lats = lat_coord.points
-    lons = lon_coord.points
-    
-    x_values = numpy.where(x_values < 0, x_values + 360, x_values)
-    lons = numpy.where(lons < 0, lons + 360, lons)
+    target_grid_cube = make_grid(lat_coord.points, lon_coord.points, np_lat, np_lon)
+    scheme = iris.analysis.Linear()
+    vrot_cube.coords('latitude')[0].coord_system = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+    vrot_cube.coords('longitude')[0].coord_system = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+    vrot_regridded = vrot_cube.regrid(target_grid_cube, scheme)
+    #could use clean_data here to remove spurious large values that regirdding produces
 
-    vrot_regridded = numpy.zeros(vrot_cube.data.shape)
-    for tstep in range(0, len(time_coord.points)):
-        vrot_regridded[tstep, :, :] = regrid(vrot_cube.data[tstep, :, :], lats, lons, y_values, x_values) 
-    
     # Write to file
     d = {}
     d['time'] = ('time', time_coord.points)
     d['latitude'] = ('latitude', lat_coord.points)
     d['longitude'] = ('longitude', lon_coord.points)
-    d['vrot'] = (['time', 'latitude', 'longitude'], vrot_regridded)
+    d['vrot'] = (['time', 'latitude', 'longitude'], vrot_regridded.data)
 
     dset_out = xray.Dataset(d)
     dset_out['vrot'].attrs =  {'standard_name': 'rotated_northward_wind',
                                'long_name': 'rotated_northward_wind',
                                'units': str(v_cube.units),
-                               'notes': 'North Pole at %s, %s. Data defined on rotated grid.' %(np_lat, np_lon)}
+                               'notes': 'North Pole at lat=%s, lon=%s. Data defined on rotated grid.' %(np_lat, np_lon)}
     set_dim_atts(dset_out, time_coord, lat_coord, lon_coord)
 
     outfile_metadata = {inargs.infileU: u_cube.attributes['history'],
@@ -186,7 +188,7 @@ author:
     parser.add_argument("--north_pole", type=float, nargs=2, metavar=('LAT', 'LON'), default=[20.0, 260.0],
                         help="Location of north pole [default = (20, 260)]")
     
-    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=None,
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
 
     args = parser.parse_args()            
