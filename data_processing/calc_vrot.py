@@ -78,15 +78,25 @@ def regrid(data, old_lats, old_lons, new_lats, new_lons):
 def set_dim_atts(dset_out, time_coord, latitude_coord, longitude_coord):
     """Set dimension attributes."""
     
-    dset_out['time'].attrs = {'calendar': 'standard', 'long_name': 'time'}
-    dset_out['latitude'].attrs = {}
-    dset_out['longitude'].attrs = {}
-    for dim in ['time', 'latitude', 'longitude']:
-        for att in ['standard_name', 'units', 'long_name']:
-            try: 
-                dset_out[dim].attrs[att] = str(eval(dim+'_coord.'+att))
-            except AttributeError:
-                pass
+    dset_out['time'].attrs = {'calendar': 'standard', 
+                              'long_name': 'time',
+                              'units': str(time_coord.units),
+                              'axis': 'T'}
+    dset_out['latitude'].attrs = {'standard_name': 'latitude',
+                                  'long_name': 'latitude',
+                                  'units': 'degrees_north',
+                                  'axis': 'Y'}
+    dset_out['longitude'].attrs = {'standard_name': 'longitude',
+                                  'long_name': 'longitude',
+                                  'units': 'degrees_east',
+                                  'axis': 'X'}
+
+#    for dim in ['time', 'latitude', 'longitude']:
+#        for att in ['standard_name', 'units', 'long_name']:
+#            try: 
+#                dset_out[dim].attrs[att] = str(eval(dim+'_coord.'+att))
+#            except AttributeError:
+#                pass
     
     return dset_out
 
@@ -148,7 +158,7 @@ def main(inargs):
                         inargs.infileV: v_cube.attributes['history']}
 
     gio.set_global_atts(dset_out, v_cube.attributes, outfile_metadata)
-    dset_out.to_netcdf(inargs.outfile, format='NETCDF3_CLASSIC')
+    dset_out.to_netcdf(inargs.outfile,) #format='NETCDF3_CLASSIC')
 
 
 if __name__ == '__main__':
