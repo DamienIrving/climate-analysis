@@ -23,5 +23,9 @@ LEVEL=500hPa
 TSTEP=daily
 TSCALE=runmean,30
 
+## Analysis
+NPLAT=20
+NPLON=260
+NPLABEL=np20N260E
 
 TARGET=

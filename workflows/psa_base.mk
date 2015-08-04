@@ -3,12 +3,12 @@
 # Description: Basic workflow that underpins all other zonal wave (zw) workflows 
 #
 # To execute:
-#   make -n -B -f zw_base.mk  (-n is a dry run) (-B is a force make)
+#	make -n -B -f zw_base.mk  (-n is a dry run) (-B is a force make)
 
 # Pre-processing:
-#   The regirdding (if required) needs to be done beforehand 
-#   (probably using cdo remapcon2,r360x181 in.nc out.nc)
-#   So does the zonal anomaly
+#	The regirdding (if required) needs to be done beforehand 
+#	(probably using cdo remapcon2,r360x181 in.nc out.nc)
+#	So does the zonal anomaly
 
 
 # Define marcos
@@ -16,6 +16,7 @@ include zw_config.mk
 
 all : ${TARGET}
 
+# Core variables
 
 V_ORIG=${DATA_DIR}/va_${DATASET}_${LEVEL}_daily_native.nc
 U_ORIG=${DATA_DIR}/ua_${DATASET}_${LEVEL}_daily_native.nc
@@ -30,6 +31,15 @@ SF_ANOM_RUNMEAN=${DATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_
 ${SF_ANOM_RUNMEAN} : ${SF_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
 
+## Rotated meridional wind
+
+VROT_ORIG=${DATA_DIR}/vrot_${DATASET}_${LEVEL}_daily_native-${NPLABEL}.nc
+${VROT_ORIG} : ${U_ORIG} ${V_ORIG}
+	bash ${DATA_SCRIPT_DIR}/calc_vrot.sh ${NPLAT} ${NPLON} $< eastward_wind $(word 2,$^) northward_wind $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+
+VROT_ANOM_RUNMEAN=${DATA_DIR}/vrot_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.nc
+${VROT_ANOM_RUNMEAN} : ${VROT_ORIG} 
+	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
 
 
 # Common indices
