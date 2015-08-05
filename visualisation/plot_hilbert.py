@@ -13,6 +13,7 @@ import numpy
 import matplotlib.pyplot as plt
 import xray
 
+
 # Import my modules
 
 cwd = os.getcwd()
@@ -45,12 +46,19 @@ def get_hemisphere(lat):
         return 'N' 
 
 
-def extract_data(dset, var, lat, dates):
+def extract_data(dset, var, lat, valid_lon, dates):
     """Extract data for the given latitude and dates.""" 
 
     data_dict = {}
     for date in dates:
         darray = dset[var].sel(time=date, latitude=lat, method='nearest')
+        if valid_lon:
+            start_lon, end_lon = valid_lon
+            lon_vals = numpy.array([start_lon, end_lon, darray['longitude'].values.min()])          
+            assert numpy.sum(lon_vals >= 0) == 3, "Longitudes must be 0 to 360" 
+
+            darray.loc[dict(longitude=slice(0, start_lon,))] = 0
+            darray.loc[dict(longitude=slice(end_lon, 360))] = 0
         data_dict[date] = darray
     
     lat_target = darray['latitude'].values.tolist()
@@ -145,7 +153,8 @@ def main(inargs):
     gio.check_xrayDataset(dset_in, inargs.variable)
 
     data_dict, latitude = extract_data(dset_in, inargs.variable, 
-                                       inargs.latitude, inargs.dates)    
+                                       inargs.latitude, inargs.valid_lon, 
+                                       inargs.dates)    
 
     # Create the plot
     wmin, wmax = inargs.wavenumbers
@@ -177,6 +186,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--latitude", type=float, default=-45, 
                         help="Latitude along which to extract the waves [default = -45]")
+    parser.add_argument("--valid_lon", type=float, nargs=2, metavar=('START', 'END'), default=None,
+                        help="Longitude range over which to perform Fourier Transform (all other values are set to zero) [default = entire]")
     parser.add_argument("--dates", type=str, nargs='*',
                         help="Dates to plot")
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[1, 9],
