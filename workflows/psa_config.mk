@@ -22,6 +22,7 @@ DATASET=ERAInterim
 LEVEL=500hPa
 TSTEP=daily
 TSCALE=runmean,30
+TSCALE_LABEL=030day-runmean
 
 ## Analysis
 NPLAT=20
