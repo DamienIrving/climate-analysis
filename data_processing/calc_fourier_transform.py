@@ -275,8 +275,11 @@ def main(inargs):
     # Apply longitude filter (i.e. set unwanted longitudes to zero)
     if inargs.valid_lon:
         start_lon, end_lon = inargs.valid_lon
-        darray[dict(longitude=slice(start_lon, end_lon))] = 0
-    
+        lon_vals = numpy.array([start_lon, end_lon, darray['longitude'].values.min()])          
+        assert numpy.sum(lon_vals >= 0) == 3, "Longitudes must be 0 to 360" 
+        darray.loc[dict(longitude=slice(0, start_lon))] = 0
+        darray.loc[dict(longitude=slice(end_lon, 360))] = 0
+
     # Perform task
     long_name = darray.attrs['long_name']
     units = darray.attrs['units']
