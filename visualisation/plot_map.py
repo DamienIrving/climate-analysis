@@ -193,7 +193,7 @@ def get_time_constraint(start, end):
     if not start and not end:
         time_constraint = iris.Constraint()
     elif (start and not end) or (start == end):
-        year, month, day = start.split('-')    
+        year, month, day = start.split('-')   
         time_constraint = iris.Constraint(time=iris.time.PartialDateTime(year=int(year), month=int(month), day=int(day)))
     elif end and not start:
         year, month, day = end.split('-')    
@@ -388,7 +388,7 @@ def plot_colour(cube, ax,
         #colors is the option where you can give a list of hex strings
         #haven't been able to figure out how to get extent to work with that
     elif colour_type == 'pixels':
-        cf = ax.pcolormesh(x, y, cube.data, transform=inproj, cmap=cmap)
+        cf = ax.pcolormesh(x, y, cube.data, transform=inproj, cmap=cmap, vmin=ticks[0], vmax=ticks[-1])
 
     return cf
 
@@ -478,22 +478,27 @@ def plot_lines(line_list):
         assert style in line_style_dict.keys()
         assert resolution in ['high', 'low']
 
-        lons = iris.analysis.cartography.wrap_lons(numpy.array([float(start_lon), float(end_lon)]), 0, 360)
+        start_lat = float(start_lat)
+        start_lon = float(start_lon)
+        end_lat = float(end_lat)
+        end_lon = float(end_lon)
+
+        lons = iris.analysis.cartography.wrap_lons(numpy.array([start_lon, end_lon]), 0, 360)
         # FIXME: start=0 might not work for all input/output projection combos
 
         if resolution == 'low':
-            lats = numpy.array([float(start_lat), float(end_lat)])         
+            lats = numpy.array([start_lat, end_lat])         
         elif resolution == 'high':
 	    assert start_lat == end_lat or start_lon == end_lon, \
 	    "High res lines need constant lat or lon in reference coordinate system"
 
             if start_lat == end_lat:
-                lons = numpy.arange(lons[0], lons[-1], 0.5)
+                lons = numpy.arange(lons[0], lons[-1] + 0.5, 0.5)
                 lats = numpy.repeat(start_lat, len(lons))
             else:
-                lats = numpy.arange(start_lat, end_lat, 0.5)
+                lats = numpy.arange(start_lat, end_lat + 0.5, 0.5)
                 lons = numpy.repeat(lons[0], len(lats))
-            
+
         plt.plot(lons, lats, 
                  linestyle=line_style_dict[style], 
                  color=color, 
