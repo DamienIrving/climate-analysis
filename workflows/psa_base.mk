@@ -40,6 +40,8 @@ ${VROT_ORIG} : ${U_ORIG} ${V_ORIG}
 VROT_ANOM_RUNMEAN=${DATA_DIR}/vrot_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.nc
 ${VROT_ANOM_RUNMEAN} : ${VROT_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
+	ncatted -O -a bounds,time,d,, $@
+	ncks -O -x -v time_bnds $@
 
 
 # Common indices
