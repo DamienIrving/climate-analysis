@@ -12,7 +12,7 @@
 
 
 # Define marcos
-include zw_config.mk
+include psa_config.mk
 
 all : ${TARGET}
 
