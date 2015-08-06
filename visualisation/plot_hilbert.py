@@ -66,6 +66,25 @@ def extract_data(dset, var, lat, valid_lon, dates):
     return data_dict, lat_target
  
 
+def plot_periodogram(plot_axis, data_dict, wmin, wmax):
+    """Add a small periodgram to the plot."""
+
+    fig = plt.gcf()
+    x = 0.15
+    y = 0.15
+    width = 0.2
+    height = 0.2
+    subax = fig.add_axes([x, y, width, height])
+    xvals = numpy.arange(wmin, wmax + 1)
+    yvals = []
+    for w in xvals:
+        yvals.append(data_dict['positive', w, w].max()) 
+
+    subax.plot(xvals, numpy.array(yvals), marker='o')    
+    subax.set_yticklabels([])
+    #subax.xaxis.get_label().set_fontsize('x-small')
+
+
 def plot_hilbert(data_dict, date_list,
                  wmin, wmax,
                  nrows, ncols,
@@ -74,7 +93,8 @@ def plot_hilbert(data_dict, date_list,
                  highlights=[],
                  noenv=False,
                  ybounds=None,
-                 figure_size=None):
+                 figure_size=None,
+                 periodogram=False):
     """Create the plot."""
 
     fig = plt.figure(figsize=figure_size)
@@ -143,12 +163,8 @@ def plot_hilbert(data_dict, date_list,
         ax.legend(handles[::-1], labels[::-1], fontsize='small', loc=4)
         
         # Make a little subplot
-        test = plt.gcf()
-        x = 0.1
-        y = 0.1
-        width = 0.2
-        height = 0.2
-        subax = test.add_axes([x,y,width,height])
+        if periodogram:
+            plot_periodogram(ax, filtered_signal, wmin, wmax)
         
     fig.savefig(outfile, bbox_inches='tight')
 
@@ -174,7 +190,8 @@ def main(inargs):
                  ybounds=inargs.ybounds,
                  figure_size=inargs.figure_size,
                  highlights=inargs.highlights,
-                 noenv=inargs.noenv)
+                 noenv=inargs.noenv,
+                 periodogram=inargs.periodogram)
 
     gio.write_metadata(inargs.ofile, file_info={inargs.infile: dset_in.attrs['history']})
 
@@ -205,6 +222,8 @@ if __name__ == '__main__':
                         help="Wavenumers to highlight")
     parser.add_argument("--noenv", action="store_true", default=False,
                         help="Do not plot the wave envelope")
+    parser.add_argument("--periodogram", action="store_true", default=False,
+                        help="Plot a periodogram in the corner")
 
     parser.add_argument("--ybounds", type=float, nargs=2, metavar=('LOWER', 'UPPER'), default=None,
                         help="y-axis bounds (there are defaults set for each timescale)")
