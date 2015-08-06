@@ -35,14 +35,11 @@ sf_ticks="-12.5 -10 -7.5 -5 -2.5 0 2.5 5 7.5 10 12.5"
 vrot_ticks="-10 -8 -6 -4 -2 0 2 4 6 8 10"
 
 
-years=(2005)    
-#years=(2005 2006)
+years=(2005 2006)
 
-months=(01)
-#months=(01 02 03 04 05 06 07 08 09 10 11 12)
+months=(01 02 03 04 05 06 07 08 09 10 11 12)
 
-days=(02 07)
-#days=(02 07 12 17 22 27)
+days=(02 07 12 17 22 27)
 
 for year in "${years[@]}"; do
     mkdir -p ${outdir}/${year}
@@ -96,13 +93,13 @@ for year in "${years[@]}"; do
 	    echo ${ofile_hilbert}
 
 	    ${python_exe} ${code_dir}/plot_hilbert.py ${vrotfile} ${vrotvar} \
-	    ${ofile_hilbert} 1 1 --latitude 0 --dates ${date} --highlights 5 6 7 --valid_lon 115 225 
+	    ${ofile_hilbert} 1 1 --latitude 0 --dates ${date} --highlights 5 6 7 --valid_lon 115 225 --periodogram
 
             ofile_hilbert_all=${outdir}/${year}/psa_check_${date}_hilbert-alllons.png
 	    echo ${ofile_hilbert_all}
 
 	    ${python_exe} ${code_dir}/plot_hilbert.py ${vrotfile} ${vrotvar} \
-	    ${ofile_hilbert_all} 1 1 --latitude 0 --dates ${date} --highlights 5 6 7 
+	    ${ofile_hilbert_all} 1 1 --latitude 0 --dates ${date} --highlights 5 6 7 --periodogram
 	    
         done
     done
