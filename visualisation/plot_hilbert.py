@@ -141,7 +141,15 @@ def plot_hilbert(data_dict, date_list,
 
         handles, labels = ax.get_legend_handles_labels()
         ax.legend(handles[::-1], labels[::-1], fontsize='small', loc=4)
-
+        
+        # Make a little subplot
+        test = plt.gcf()
+        x = 0.1
+        y = 0.1
+        width = 0.2
+        height = 0.2
+        subax = test.add_axes([x,y,width,height])
+        
     fig.savefig(outfile, bbox_inches='tight')
 
 
