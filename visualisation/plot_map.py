@@ -46,7 +46,10 @@ except ImportError:
 plot_types = ['colour', 'contour', 'uwind', 'vwind', 'hatching']
 
 input_projections = {'PlateCarree': ccrs.PlateCarree(),
-                     'RotatedPole_260E_20N': ccrs.RotatedPole(pole_longitude=260, pole_latitude=20)
+                     'RotatedPole_260E_20N': ccrs.RotatedPole(pole_longitude=260, pole_latitude=20),
+                     'RotatedPole_250E_20N': ccrs.RotatedPole(pole_longitude=250, pole_latitude=20),
+                     'RotatedPole_270E_20N': ccrs.RotatedPole(pole_longitude=270, pole_latitude=20),
+                     'RotatedPole_260E_15N': ccrs.RotatedPole(pole_longitude=250, pole_latitude=15),
                     }
 #Do not use the central_longitude option when defining input_projections
 #(iris can figure out longitude range on it's own) 
