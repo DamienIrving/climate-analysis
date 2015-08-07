@@ -46,12 +46,16 @@ def get_hemisphere(lat):
         return 'N' 
 
 
-def extract_data(dset, var, lat, valid_lon, dates):
+def extract_data(dset, var, lat_range, valid_lon, dates):
     """Extract data for the given latitude and dates.""" 
 
+    start_lat, end_lat = lat_range
     data_dict = {}
     for date in dates:
-        darray = dset[var].sel(time=date, latitude=lat, method='nearest')
+        if start_lat == end_lat:
+            darray = dset[var].sel(time=date, latitude=start_lat, method='nearest')
+        else:
+            darray = dset[var].sel(time=date, latitude=slice(start_lat, end_lat)).mean('latitude')
         if valid_lon:
             start_lon, end_lon = valid_lon
             lon_vals = numpy.array([start_lon, end_lon, darray['longitude'].values.min()])          
@@ -61,9 +65,14 @@ def extract_data(dset, var, lat, valid_lon, dates):
             darray.loc[dict(longitude=slice(end_lon, 360))] = 0
         data_dict[date] = darray
     
-    lat_target = darray['latitude'].values.tolist()
+    if start_lat == end_lat:
+        lat_target = darray['latitude'].values.tolist()
+        lat_tag = '%s%s' %(str(abs(lat_target)), get_hemisphere(lat_target))
+    else:
+        lat_tag = '%s%s to %s%s' %(str(abs(start_lat)), get_hemisphere(start_lat),
+                                   str(abs(end_lat)), get_hemisphere(end_lat))
 
-    return data_dict, lat_target
+    return data_dict, lat_tag
  
 
 def plot_periodogram(plot_axis, data_dict, wmin, wmax):
@@ -88,7 +97,7 @@ def plot_periodogram(plot_axis, data_dict, wmin, wmax):
 def plot_hilbert(data_dict, date_list,
                  wmin, wmax,
                  nrows, ncols,
-                 latitude,
+                 lat_tag,
                  outfile='test.png',
                  highlights=[],
                  noenv=False,
@@ -101,8 +110,6 @@ def plot_hilbert(data_dict, date_list,
     if not figure_size:
         print 'figure width: %s' %(str(fig.get_figwidth()))
         print 'figure height: %s' %(str(fig.get_figheight()))
-
-    lat_tag = '%s%s' %(str(abs(latitude)), get_hemisphere(latitude))
 
     for index in range(0, len(date_list)):
         plotnum = index + 1
@@ -176,16 +183,16 @@ def main(inargs):
     dset_in = xray.open_dataset(inargs.infile)
     gio.check_xrayDataset(dset_in, inargs.variable)
 
-    data_dict, latitude = extract_data(dset_in, inargs.variable, 
-                                       inargs.latitude, inargs.valid_lon, 
-                                       inargs.dates)    
+    data_dict, lat_tag = extract_data(dset_in, inargs.variable, 
+                                      inargs.latitude, inargs.valid_lon, 
+                                      inargs.dates)    
 
     # Create the plot
     wmin, wmax = inargs.wavenumbers
     plot_hilbert(data_dict, inargs.dates,
                  wmin, wmax,
                  inargs.nrows, inargs.ncols,
-                 latitude,
+                 lat_tag,
                  outfile=inargs.ofile,
                  ybounds=inargs.ybounds,
                  figure_size=inargs.figure_size,
@@ -209,8 +216,8 @@ if __name__ == '__main__':
     parser.add_argument("nrows", type=int, help="number of rows in the entire grid of plots")
     parser.add_argument("ncols", type=int, help="number of columns in the entire grid of plots")
 
-    parser.add_argument("--latitude", type=float, default=-45, 
-                        help="Latitude along which to extract the waves [default = -45]")
+    parser.add_argument("--latitude", type=float, nargs=2, metavar=('START_LAT', 'END_LAT'), default=(0.0, 0.0),
+                        help="Latitude range over which average data before extracting and plotting the waves (for single lat, make start=end) [default = 0]")
     parser.add_argument("--valid_lon", type=float, nargs=2, metavar=('START', 'END'), default=None,
                         help="Longitude range over which to perform Fourier Transform (all other values are set to zero) [default = entire]")
     parser.add_argument("--dates", type=str, nargs='*',
@@ -230,8 +237,6 @@ if __name__ == '__main__':
     parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
 
-
-  
     args = parser.parse_args()            
 
     main(args)

@@ -35,20 +35,20 @@ sf_ticks="-12.5 -10 -7.5 -5 -2.5 0 2.5 5 7.5 10 12.5"
 vrot_ticks="-10 -8 -6 -4 -2 0 2 4 6 8 10"
 
 
-years=(2005 2006)
+years=(2000 2005 2006)
 
 months=(01 02 03 04 05 06 07 08 09 10 11 12)
 
-days=(02 07 12 17 22 27)
+days=(02 06 10 14 18 22 26)
 
 for year in "${years[@]}"; do
-    mkdir -p ${outdir}/${year}
+    mkdir -p ${outdir}/${year}_10S-10N
     for month in "${months[@]}"; do
         for day in "${days[@]}"; do
 
             date=${year}-${month}-${day}
 
-            ofile_sfanom=${outdir}/${year}/psa_check_${date}_sfanom.png
+            ofile_sfanom=${outdir}/${year}_10S-10N/psa_check_${date}_10S-10N_sfanom.png
 	    echo ${ofile_sfanom}
 
 	    ${python_exe} ${code_dir}/plot_map.py 1 3 \
@@ -62,11 +62,14 @@ for year in "${years[@]}"; do
 	    --contour_levels ${sf_ticks} \
 	    --spstereo_limit -20 \
 	    --figure_size 16.0 6.5 \
-	    --line 0 0 115 225 green solid RotatedPole_260E_20N low
+	    --line -10 -10 115 230 green solid RotatedPole_260E_20N low \
+	    --line 10 10 115 230 green solid RotatedPole_260E_20N low \
+	    --line -10 10 115 115 green solid RotatedPole_260E_20N low \
+	    --line -10 10 230 230 green solid RotatedPole_260E_20N low 
 
 	    # fix required if I want high-res line
 
-            ofile_vrot=${outdir}/${year}/psa_check_${date}_vrot.png
+            ofile_vrot=${outdir}/${year}_10S-10N/psa_check_${date}_10S-10N_vrot.png
 	    echo ${ofile_vrot}
 
 	    ${python_exe} ${code_dir}/plot_map.py 1 1 \
@@ -74,32 +77,24 @@ for year in "${years[@]}"; do
 	    --infile ${vrotfile} ${vrotlong} ${date} ${date} none colour0 1 RotatedPole_260E_20N \
 	    --ofile ${ofile_vrot} \
 	    --title ${date} \
-	    --line 0 0 115 225 green solid RotatedPole_260E_20N low \
 	    --colour_type pixels \
 	    --colourbar_ticks ${vrot_ticks} \
 	    --palette RdBu_r \
 	    --no_grid_lines \
 	    --figure_size 8.0 5.0 \
+	    --line -10 -10 115 230 green solid RotatedPole_260E_20N low \
+	    --line 10 10 115 230 green solid RotatedPole_260E_20N low \
+	    --line -10 10 115 115 green solid RotatedPole_260E_20N low \
+	    --line -10 10 230 230 green solid RotatedPole_260E_20N low 
 
 	    # fix required if I want to use contourf
 	    # fix required if I want high res line
 
-	    #--line -10 -10 115 225 blue solid RotatedPole_260E_20N \
-	    #--line 10 10 115 225 blue solid RotatedPole_260E_20N \
-	    #--line -10 10 115 115 blue solid RotatedPole_260E_20N \
-	    #--line -10 10 225 225 blue solid RotatedPole_260E_20N \
-
-            ofile_hilbert=${outdir}/${year}/psa_check_${date}_hilbert-validlons.png
+            ofile_hilbert=${outdir}/${year}_10S-10N/psa_check_${date}_10S-10N_hilbert.png
 	    echo ${ofile_hilbert}
 
 	    ${python_exe} ${code_dir}/plot_hilbert.py ${vrotfile} ${vrotvar} \
-	    ${ofile_hilbert} 1 1 --latitude 0 --dates ${date} --highlights 5 6 7 --valid_lon 115 225 --periodogram
-
-            ofile_hilbert_all=${outdir}/${year}/psa_check_${date}_hilbert-alllons.png
-	    echo ${ofile_hilbert_all}
-
-	    ${python_exe} ${code_dir}/plot_hilbert.py ${vrotfile} ${vrotvar} \
-	    ${ofile_hilbert_all} 1 1 --latitude 0 --dates ${date} --highlights 5 6 7 --periodogram
+	    ${ofile_hilbert} 1 1 --latitude 0 --dates ${date} --highlights 5 6 7 --valid_lon 115 230 --periodogram
 	    
         done
     done
