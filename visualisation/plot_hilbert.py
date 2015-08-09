@@ -100,7 +100,7 @@ def plot_hilbert(data_dict, date_list,
                  lat_tag,
                  outfile='test.png',
                  highlights=[],
-                 noenv=False,
+                 env_list=[],
                  ybounds=None,
                  figure_size=None,
                  periodogram=False):
@@ -110,6 +110,14 @@ def plot_hilbert(data_dict, date_list,
     if not figure_size:
         print 'figure width: %s' %(str(fig.get_figwidth()))
         print 'figure height: %s' %(str(fig.get_figheight()))
+
+    if env_list:
+        env_flat = numpy.array(env_list).flatten()
+        wlower = numpy.min([env_flat.min(), wmin])
+        wupper = numpy.max([env_flat.max(), wmax])
+    else:
+        wlower = wmin
+        wupper = wmax
 
     for index in range(0, len(date_list)):
         plotnum = index + 1
@@ -127,8 +135,8 @@ def plot_hilbert(data_dict, date_list,
         # Calculate individual Fourier components
         filtered_signal = {}
         for filt in [None, 'positive', 'negative']:
-            for wave_min in range(wmin, wmax + 1):
-                for wave_max in range(wmin, wmax + 1):
+            for wave_min in range(wlower, wupper + 1):
+                for wave_max in range(wlower, wupper + 1):
                     filtered_signal[filt, wave_min, wave_max] = cft.inverse_fourier_transform(sig_fft, sample_freq, 
                                                                                               min_freq=wave_min, 
                                                                                               max_freq=wave_max, 
@@ -138,19 +146,20 @@ def plot_hilbert(data_dict, date_list,
 
         # Plot individual wavenumber components
         for wavenum in range(wmin, wmax):
-            color = '#7570b3' if wavenum in highlights else '0.5' 
+            color = 'red' if wavenum in highlights else '0.5' 
             ax.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], color=color, linestyle='--')
         ax.plot(xaxis, 2*filtered_signal['positive', wmax, wmax], color='0.5', linestyle='--', label='Fourier components')
 
+        # Plot reconstructed signal and envelope
+        env_colors = ['blue', 'orange', 'cyan']
+        count = 0
+        for emin, emax in env_list:
+            tag = 'wave envelope (waves %i-%i)'  %(emin, emax)
+            ax.plot(xaxis, numpy.abs(2*filtered_signal['positive', emin, emax]), color=env_colors[count], label=tag, linewidth=2.0)
 
-        # Plot reconstructed envelope
-        if not noenv:
-            tag = 'wave envelope'
-            ax.plot(xaxis, numpy.abs(2*filtered_signal['positive', wmin, wmax]), color='#d95f02', label=tag, linewidth=2.0)
-
-        # Plot reconstructed signal
-        tag = 'reconstructed signal (waves %s-%s)'  %(str(wmin), str(wmax))
-        ax.plot(xaxis, 2*filtered_signal['positive', wmin, wmax], color='#d95f02', linestyle='--', label=tag, linewidth=2.0)
+            tag = 'reconstructed signal (waves %i-%i)'  %(emin, emax)
+            ax.plot(xaxis, 2*filtered_signal['positive', emin, emax], color=env_colors[count], linestyle='--', label=tag, linewidth=2.0)
+            count = count + 1
 
         # Plot original signal
         tag = 'meridional wind, %s'  %(lat_tag)
@@ -197,7 +206,7 @@ def main(inargs):
                  ybounds=inargs.ybounds,
                  figure_size=inargs.figure_size,
                  highlights=inargs.highlights,
-                 noenv=inargs.noenv,
+                 env_list=inargs.envelope,
                  periodogram=inargs.periodogram)
 
     gio.write_metadata(inargs.ofile, file_info={inargs.infile: dset_in.attrs['history']})
@@ -223,12 +232,12 @@ if __name__ == '__main__':
     parser.add_argument("--dates", type=str, nargs='*',
                         help="Dates to plot")
     parser.add_argument("--wavenumbers", type=int, nargs=2, metavar=('LOWER', 'UPPER'), default=[1, 9],
-                        help="Wavenumbers to include in the Hiblert Transform and on the plot")
-    
+                        help="Wavenumbers to include on the plot")    
     parser.add_argument("--highlights", type=int, nargs='*', default=[],
                         help="Wavenumers to highlight")
-    parser.add_argument("--noenv", action="store_true", default=False,
-                        help="Do not plot the wave envelope")
+    parser.add_argument("--envelope", type=int, action='append', nargs=2, metavar=('WAVE_MIN', 'WAVE_MAX'), default=[],
+                        help="Envelope to plot")
+
     parser.add_argument("--periodogram", action="store_true", default=False,
                         help="Plot a periodogram in the corner")
 

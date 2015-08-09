@@ -94,7 +94,8 @@ for year in "${years[@]}"; do
 	    echo ${ofile_hilbert}
 
 	    ${python_exe} ${code_dir}/plot_hilbert.py ${vrotfile} ${vrotvar} \
-	    ${ofile_hilbert} 1 1 --latitude -10 10 --dates ${date} --highlights 5 6 7 --valid_lon 115 230 --periodogram
+	    ${ofile_hilbert} 1 1 --latitude -10 10 --dates ${date} --highlights 4 5 6 7 --valid_lon 115 230 \
+            --periodogram --wavenumbers 1 8 --envelope 4 7 --envelope 1 20
 	    
         done
     done
