@@ -168,20 +168,49 @@ def _coefficient_atts(ctype, freq, orig_long_name, units):
     return atts
 
 
+def extract_data(dset, inargs):
+    """Extract the data from the input file."""
+
+    subset_dict = gio.get_subset_kwargs(inargs)
+    darray = dset[inargs.var].sel(**subset_dict)
+    
+    long_name = str(darray.attrs['long_name'])
+    units = str(darray.attrs['units'])
+
+    if inargs.avelat:
+        darray = darray.mean('latitude')
+
+    assert darray.dims[-1] == 'longitude', \
+    'This script is setup to perform the fourier transform along the longitude axis'
+
+    if inargs.valid_lon:
+        start_lon, end_lon = inargs.valid_lon
+        lon_vals = numpy.array([start_lon, end_lon, darray['longitude'].values.min()])          
+        assert numpy.sum(lon_vals >= 0) == 3, "Longitudes must be 0 to 360" 
+        darray.loc[dict(longitude=slice(0, start_lon))] = 0
+        darray.loc[dict(longitude=slice(end_lon, 360))] = 0
+
+    return darray, long_name, units
+
+
 def _filter_data(data, lon_axis,
                  min_freq, max_freq,
                  var, long_name, units, outtype):
     """Filter data.
     
-    Can perform either an inverse Fourier transform or Hilbert transform.
+    Can perform either a hilbert transform (i.e. inverse Fourier transform 
+    for wavenumbers of interest) or go one step further and calculate the 
+    wave envelope.
     
     """
-    
-    if outtype == 'hilbert':
+
+    assert outtype in ['envelope', 'hilbert']
+
+    if outtype == 'envelope':
         exclusion = 'negative'
         method_short = 'env'
-        method_long = 'hilbert_transformed'
-    elif outtype == 'inverse_ft':
+        method_long = 'wave_envelope'
+    elif outtype == 'hilbert':
         exclusion = None
         method_short = 'ift'
         method_long = 'inverse_fourier_transformed'
@@ -190,7 +219,7 @@ def _filter_data(data, lon_axis,
                                      data, lon_axis, 
                                      min_freq, max_freq, 
                                      exclusion)
-    if outtype == 'hilbert':
+    if outtype == 'envelope':
         outdata = 2 * numpy.abs(outdata)
     else:
         outdata = outdata.real
@@ -265,24 +294,9 @@ def main(inargs):
     # Read the data
     dset_in = xray.open_dataset(inargs.infile)
     gio.check_xrayDataset(dset_in, inargs.var)
-
-    subset_dict = gio.get_subset_kwargs(inargs)
-    darray = dset_in[inargs.var].sel(**subset_dict)
-
-    assert darray.dims[-1] == 'longitude', \
-    'This script is setup to perform the fourier transform along the longitude axis'
-
-    # Apply longitude filter (i.e. set unwanted longitudes to zero)
-    if inargs.valid_lon:
-        start_lon, end_lon = inargs.valid_lon
-        lon_vals = numpy.array([start_lon, end_lon, darray['longitude'].values.min()])          
-        assert numpy.sum(lon_vals >= 0) == 3, "Longitudes must be 0 to 360" 
-        darray.loc[dict(longitude=slice(0, start_lon))] = 0
-        darray.loc[dict(longitude=slice(end_lon, 360))] = 0
+    darray, long_name, units = extract_data(dset_in, inargs)
 
     # Perform task
-    long_name = darray.attrs['long_name']
-    units = darray.attrs['units']
     if inargs.outtype == 'coefficients':
         outdata_dict = _get_coefficients(darray.values, darray['longitude'].values, 
                                          inargs.min_freq, inargs.max_freq,
@@ -308,7 +322,7 @@ def main(inargs):
         dset_out[outvar].attrs = outdata_dict[outvar][1]
 
     gio.set_global_atts(dset_out, dset_in.attrs, {inargs.infile: dset_in.attrs['history'],})
-    dset_out.to_netcdf(inargs.outfile, format='NETCDF3_CLASSIC')
+    dset_out.to_netcdf(inargs.outfile)
 
 
 if __name__ == '__main__':
@@ -341,8 +355,8 @@ references:
     parser.add_argument("outfile", type=str, help="Output file name")
     parser.add_argument("min_freq", type=int, help="Minimum frequency to retain")
     parser.add_argument("max_freq", type=int, help="Maximum frequency to retain (can equal min_freq for single freq)")
-    parser.add_argument("outtype", type=str, choices=('hilbert', 'coefficients', 'inverse_ft'),
-                        help="Output can be a hilbert transform, inverse Fourier transform or magnitude and phase coefficients for each freq")
+    parser.add_argument("outtype", type=str, choices=('hilbert', 'coefficients', 'envelope'),
+                        help="Output can be a hilbert transform (i.e. inverse Fourier transform), wave envelope or magnitude and phase coefficients for each freq")
     
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
                         help="Latitude range over which to perform Fourier Transform [default = entire]")
@@ -350,6 +364,9 @@ references:
                         help="Longitude range over which to perform Fourier Transform (all other values are set to zero) [default = entire]")
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
+
+    parser.add_argument("--avelat", action="store_true", default=False,
+                        help="Average the data over the latitude axis before performing Fourier transform")
 
     args = parser.parse_args()            
 
