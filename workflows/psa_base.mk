@@ -52,6 +52,16 @@ FOURIER_COEFFICIENTS=${PSA_DIR}/fourier-vrot_${DATASET}_${LEVEL}-${LAT_LABEL}-${
 ${FOURIER_COEFFICIENTS} : ${VROT_ANOM_RUNMEAN}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_fourier_transform.py $< vrot $@ 1 10 coefficients --latitude ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --valid_lon ${LON_SEARCH_MIN} ${LON_SEARCH_MAX} --avelat
 
+## Hilbert transformed signal
+
 INVERSE_FT=${PSA_DIR}/ift-${WAVE_LABEL}-vrot_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.nc  
 ${INVERSE_FT} : ${VROT_ANOM_RUNMEAN}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_fourier_transform.py $< vrot $@ ${WAVE_MIN} ${WAVE_MAX} hilbert --latitude ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --valid_lon ${LON_SEARCH_MIN} ${LON_SEARCH_MAX} --avelat
+
+## PSA date list
+
+#/usr/local/anaconda/bin/python psa_date_list.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/fourier-vrot_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E.nc test_dates.txt
+
+## PSA phase scatter plot
+
+#/usr/local/anaconda/bin/python plot_psa_phase.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/ift-w47-vrot_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E.nc iftvrot /home/STUDENT/dbirving/climate-analysis/data_processing/test_dates.txt test_phase_scatter.png
