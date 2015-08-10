@@ -4,6 +4,9 @@ import os, sys, pdb
 import argparse
 import numpy, pandas
 import xray
+import operator
+from itertools import groupby
+
 
 # Import my modules
 
@@ -26,6 +29,36 @@ except ImportError:
 
 # Define functions
 
+#
+#def add_duration(DataFrame, metric, metric_threshold):
+#    """Add a duration column to the input DataFrame. 
+#
+#    An event is defined by the number of consecutive timesteps greater than 
+#    the metric_threshold.
+#    
+#    Note that every timestep is assigned a duration value equal to the number of
+#    days in the entire event.
+#    
+#    """
+#
+#    events = DataFrame[metric].map(lambda x: x > metric_threshold)
+#    event_list = events.tolist()
+#    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(event_list)]
+#
+#    duration = []
+#    for event in grouped_events:
+#        if event[0]:
+#            data = [event[1]] * event[1]
+#        else:
+#            data = [0] * event[1]
+#        duration.append(data)
+#
+#    DataFrame['duration'] = reduce(operator.add, duration)
+#    DataFrame['event'] = events
+#
+#    return DataFrame  
+
+
 def main(inargs):
     """Run the program"""
 
@@ -46,15 +79,26 @@ def main(inargs):
     # df.iloc[top3]
 
     # Generate duration information
+    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(top3)]  
+    #could replace top3 with a magnitude criteria  e.g. events = DataFrame[metric].map(lambda x: x > metric_threshold)
 
+    duration = []
+    for event in grouped_events:
+        if event[0]:
+            data = [event[1]] * event[1]
+        else:
+            data = [0] * event[1]
+        duration.append(data)
 
-    pdb.set_trace()
+    df['duration'] = reduce(operator.add, duration)
 
+    # Select all days where duration > 5 data times
+    final = df.loc[df['duration'] > 5]
 
-#    # Write outputs
-#    gio.write_dates(inargs.outfile, darray_selection['time'].values)
-#    metadata_dict = {inargs.infile: dset_in.attrs['history']}
-#    gio.write_metadata(inargs.outfile, file_info=metadata_dict)
+    # Write outputs
+    gio.write_dates(inargs.output_file, final.index.values)
+    metadata_dict = {inargs.fourier_file: dset_in.attrs['history']}
+    gio.write_metadata(inargs.output_file, file_info=metadata_dict)
 
 
 if __name__ == '__main__':
