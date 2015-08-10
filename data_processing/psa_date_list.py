@@ -31,36 +31,26 @@ def main(inargs):
 
     # Read data
     dset_in = xray.open_dataset(inargs.fourier_file)
-    dframe = dset_in.to_dataframe()
+    df = dset_in.to_dataframe()
+
+    # Select the amplitude columns
+    amp_df = df.loc[:, df.columns.map(lambda x: 'amp' in x)]
+
+    # Rank the amplitude columns
+    arank = amp_df.apply(numpy.argsort, axis=1)
+
+    # Select the ones where wave 5 and 6 are in the top 3 amplitudes
+    wave5_top3 = arank['wave5_amp'] <= 2
+    wave6_top3 = arank['wave6_amp'] <= 2
+    top3 = wave5_top3.tolist() and wave6_top3.tolist()
+    # df.iloc[top3]
+
+    # Generate duration information
+
 
     pdb.set_trace()
 
-    subset_dict = gio.get_subset_kwargs(inargs)
 
-
-    darray = dset_in[inargs.metric].sel(**subset_dict)
-
-
-    # Select the amplitude columns
-    amp_df = dframe.loc[:, dframe.columns.map(lambda x: 'amp' in x)]
-
-    # Rank the amplitude columns
-    arank = dframe.apply(numpy.argsort, axis=1)
-    ranked_cols = dframe.columns.to_series()[arank.values[:,::-1][:,:2]]
-    rank_amp_df = pandas.DataFrame(ranked_cols, index=dframe.index)
-
-
-#    # Make selection
-#    metric_threshold = uconv.get_threshold(darray.values, inargs.metric_threshold) 
-#    
-#    assert inargs.threshold_direction in ['greater', 'less']
-#    if inargs.threshold_direction == 'greater':
-#        indexes = darray >= metric_threshold
-#    elif inargs.threshold_direction == 'less':
-#        indexes = darray <= metric_threshold
-#
-#    darray_selection = darray.loc[indexes]
-#
 #    # Write outputs
 #    gio.write_dates(inargs.outfile, darray_selection['time'].values)
 #    metadata_dict = {inargs.infile: dset_in.attrs['history']}
@@ -76,9 +66,6 @@ if __name__ == '__main__':
 
     parser.add_argument("fourier_file", type=str, help="Input file name")
     parser.add_argument("output_file", type=str, help="Output file name")
-    
-    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
-                        help="Time period over which to provide dates [default = entire]")
 
     args = parser.parse_args()            
     main(args)
