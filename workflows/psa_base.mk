@@ -63,7 +63,24 @@ DATES_PSA=${PSA_DIR}/dates-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${T
 ${DATES_PSA} : ${FOURIER_COEFFICIENTS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ 
 
-## PSA phase plot
+## PSA phase plot (histogram)
 PLOT_PSA_PHASE=${PSA_DIR}/psa-phase_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
 ${PLOT_PSA_PHASE} : ${FOURIER_COEFFICIENTS} ${DATES_PSA}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_phase.py $< wave7_phase number $(word 2,$^) $@ --seasonal
+
+
+# PSA analysis
+
+## Composites for each of the phase groupings
+
+### Get dates for the specific phases
+
+#/usr/local/anaconda/bin/python ~/climate-analysis/data_processing/psa_date_list.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/fourier-vrot_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E.nc /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/dates-psa_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E_wave7phase29-39.txt --phase_filter 29 39
+
+### Calculate the composite
+
+#/usr/local/anaconda/bin/python ~/climate-analysis/data_processing/calc_composite.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/sf_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native.nc sf /mnt/meteo0/data/simmonds/dbirving/temp/sf-composite_wave7phase_29-39.nc --date_file /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/dates-psa_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E_wave7phase29-39.txt
+
+### Plot the composite
+
+#bash plot_psa_phase_composites.sh
