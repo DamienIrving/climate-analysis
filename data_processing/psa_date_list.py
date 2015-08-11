@@ -95,6 +95,11 @@ def main(inargs):
     # Select all days where duration > 5 data times
     final = df.loc[df['duration'] > 5]
 
+    # Optional filtering by wave 7 phase
+    if inargs.phase_filter:
+        phase_min, phase_max = inargs.phase_filter
+        final = final.loc[(final['wave7_phase'] > phase_min) & (final['wave7_phase'] < phase_max)]
+
     # Write outputs
     gio.write_dates(inargs.output_file, final.index.values)
     metadata_dict = {inargs.fourier_file: dset_in.attrs['history']}
@@ -110,6 +115,10 @@ if __name__ == '__main__':
 
     parser.add_argument("fourier_file", type=str, help="Input file name")
     parser.add_argument("output_file", type=str, help="Output file name")
+
+    parser.add_argument("--phase_filter", type=float, nargs=2, metavar=['MIN', 'MAX'], default=None, 
+                        help="Wave 7 phase range to retain [default = all]")
+
 
     args = parser.parse_args()            
     main(args)
