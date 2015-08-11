@@ -72,23 +72,36 @@ def main(inargs):
     """Run program."""
 
     # Read the data
-    dset_in = xray.open_dataset(inargs.ift_file)
-    gio.check_xrayDataset(dset_in, inargs.ift_var)
-    darray = dset_in[inargs.ift_var]
-
+    dset_in = xray.open_dataset(inargs.infile)
+    gio.check_xrayDataset(dset_in, inargs.var)
+    darray = dset_in[inargs.var]
+    
     # Filter data so just the date_list dates remain
     dt_list, dt_list_metadata = get_datetimes(darray, inargs.date_file)
     darray_selection = darray.sel(time=dt_list)
 
-    pdb.set_trace()
+    if inargs.type == "waveform":
+        lon_vals = darray['longitude'].values
+        lon_res = lon_vals[1] - lon_vals[0]
+        assert darray_selection.dims == ('time', 'longitude')
+        phase_vals = numpy.apply_along_axis(find_phase, -1, darray_selection.values, lon_vals)
+    else:
+        lon_res = 0.75
+        phase_vals = darray_selection.values
 
-    # Get the phase info
-    #find_phase(darray_selection)
+    bin_edge_start = phase_vals.min() - (lon_res / 2.)
+    bin_edge_end = phase_vals.max() + lon_res + (lon_res / 2.)
+    hist, bin_edges = numpy.histogram(phase_vals, bins=numpy.arange(bin_edge_start, bin_edge_end, lon_res))
+    bin_centers = numpy.arange(phase_vals.min(), phase_vals.max() + lon_res, lon_res)
 
+    fig = plt.figure()
+    ax = plt.subplot(1, 1, 1)
+    ax.bar(bin_centers, hist, color='0.7')
+    fig.savefig(inargs.ofile, bbox_inches='tight')
 
-    
-
-    #gio.write_metadata(inargs.ofile, file_info=metadata_dict)
+    metadata_dict = {inargs.infile: dset_in.attrs['history'],
+                     inargs.date_file: dt_list_metadata}
+    gio.write_metadata(inargs.ofile, file_info=metadata_dict)
 
 
 if __name__ == '__main__':
@@ -108,8 +121,9 @@ author:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     # Required data
-    parser.add_argument("ift_file", type=str, help="Input file for the x-axis")
-    parser.add_argument("ift_var", type=str, help="Variable name in x-axis input file")
+    parser.add_argument("infile", type=str, help="Input file to extract phase info from")
+    parser.add_argument("var", type=str, help="Variable to get phase info from")
+    parser.add_argument("type", type=str, choices=("waveform", "number"), help="Type of input data")    
     parser.add_argument("date_file", type=str, help="Input file for the x-axis")
     parser.add_argument("ofile", type=str, help="Output file name")
     
