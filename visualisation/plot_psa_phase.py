@@ -8,7 +8,7 @@ Description: Create a scatterplot
 # Import general Python modules
 
 import os, sys, pdb
-
+import math
 import numpy
 import pandas, xray
 from scipy.signal import argrelextrema
@@ -68,6 +68,24 @@ def find_phase(data, lon_axis):
     return first_lon
 
 
+def running_mean(data, window):
+    """Calculate the running mean.
+
+    This is especially for the case where the start and end points join up.
+
+    """
+    
+    temp = numpy.append(data, data)
+    padded_data = numpy.append(temp, data)
+
+    ds = pandas.Series(padded_data)
+    runmean = pandas.rolling_mean(ds, window, center=True).values  #labels are right edge if center=False
+
+    central_runmean = runmean[len(data):len(data)*2]
+
+    return central_runmean
+
+
 def main(inargs):
     """Run program."""
 
@@ -91,12 +109,14 @@ def main(inargs):
 
     bin_edge_start = phase_vals.min() - (lon_res / 2.)
     bin_edge_end = phase_vals.max() + lon_res + (lon_res / 2.)
-    hist, bin_edges = numpy.histogram(phase_vals, bins=numpy.arange(bin_edge_start, bin_edge_end, lon_res))
     bin_centers = numpy.arange(phase_vals.min(), phase_vals.max() + lon_res, lon_res)
+    hist, bin_edges = numpy.histogram(phase_vals, bins=numpy.arange(bin_edge_start, bin_edge_end, lon_res))
+    smooth_hist = running_mean(hist, 5)
 
     fig = plt.figure()
     ax = plt.subplot(1, 1, 1)
     ax.bar(bin_centers, hist, color='0.7')
+    ax.plot(bin_centers, smooth_hist) 
     fig.savefig(inargs.ofile, bbox_inches='tight')
 
     metadata_dict = {inargs.infile: dset_in.attrs['history'],
