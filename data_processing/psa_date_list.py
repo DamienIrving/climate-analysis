@@ -91,15 +91,22 @@ def main(inargs):
             data = [0] * event[1]
         duration.append(data)
 
-    df['duration'] = reduce(operator.add, duration)
+    arank['duration'] = reduce(operator.add, duration)
 
     # Select all days where duration > 5 data times
-    final = df.loc[df['duration'] > 10]
+    final = arank.loc[arank['duration'] > 10]
 
-    # Optional filtering by wave 7 phase
+    # Optional filtering by wave number
+    if inargs.freq_filter:
+        target_amp = 'wave%i_amp' %(inargs.freq_filter)
+        final = final.loc[final[target_amp] == 10]
+
+    # Optional filtering by wave phase
     if inargs.phase_filter:
+        assert inargs.freq_filter, "Must give a freq_filter to use phase filter"
         phase_min, phase_max = inargs.phase_filter
-        final = final.loc[(final['wave7_phase'] > phase_min) & (final['wave7_phase'] < phase_max)]
+        target_phase = 'wave%i_phase' %(inargs.freq_filter)
+        final = final.loc[(final[target_phase] > phase_min) & (final[target_phase] < phase_max)]
 
     # Write outputs
     gio.write_dates(inargs.output_file, final.index.values)
@@ -117,8 +124,10 @@ if __name__ == '__main__':
     parser.add_argument("fourier_file", type=str, help="Input file name")
     parser.add_argument("output_file", type=str, help="Output file name")
 
+    parser.add_argument("--freq_filter", type=int, default=None, 
+                        help="only keep times where freq_filter is most dominant [default = no filter]")
     parser.add_argument("--phase_filter", type=float, nargs=2, metavar=['MIN', 'MAX'], default=None, 
-                        help="Wave 7 phase range to retain [default = all]")
+                        help="phase range to retain [default = all]")
 
 
     args = parser.parse_args()            
