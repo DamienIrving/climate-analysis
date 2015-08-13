@@ -70,22 +70,19 @@ def main(inargs):
     dset_in = xray.open_dataset(inargs.fourier_file)
     df = dset_in.to_dataframe()
 
-    # Select the amplitude columns
+    # Change the amplitue columns so the value is a ranking
     amp_df = df.loc[:, df.columns.map(lambda x: 'amp' in x)]
-
-    # Rank the amplitude columns
-    arank = amp_df.apply(rankdata, axis=1)
+    rank_df = amp_df.apply(rankdata, axis=1)
+    rank_df = rank_df.combine_first(df)
 
     # Select the ones where wave 5 and 6 are in the top 3 amplitudes
     # (worst ranking must be 8 + 9 = 17) 
-    top3 = (arank['wave5_amp'].values + arank['wave6_amp'].values) >= 17
-    # df.iloc[top3]
-    #arank.loc[(arank['wave5_amp'] >= 8) & (arank['wave6_amp'] >= 8)]
+    top3 = (rank_df['wave5_amp'].values + rank_df['wave6_amp'].values) >= 17
 
     # Generate duration information
     grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(top3)]  
-    #could replace top3 with a magnitude criteria  e.g. events = DataFrame[metric].map(lambda x: x > metric_threshold)
 
+    # Select all days where duration > 5 data times
     duration = []
     for event in grouped_events:
         if event[0]:
@@ -94,10 +91,9 @@ def main(inargs):
             data = [0] * event[1]
         duration.append(data)
 
-    arank['duration'] = reduce(operator.add, duration)
+    rank_df['duration'] = reduce(operator.add, duration)
 
-    # Select all days where duration > 5 data times
-    final = arank.loc[arank['duration'] > 10]
+    final = rank_df.loc[rank_df['duration'] > 10]
 
     # Optional filtering by season
     if inargs.season_filter:
