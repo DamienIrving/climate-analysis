@@ -84,3 +84,8 @@ ${PLOT_PSA_PHASE} : ${FOURIER_COEFFICIENTS} ${DATES_PSA}
 ### Plot the composite
 
 #bash plot_psa_phase_composites.sh
+
+
+## Plot the timescale spectrum
+
+#/usr/local/anaconda/bin/python /home/STUDENT/dbirving/climate-analysis/visualisation/plot_timescale_spectrum.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/vrot_ERAInterim_500hPa_daily-anom-wrt-all_native-np20N260E.nc vrot  /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/figures/vrot-r2spectrum_ERAInterim_500hPa_daily-anom-wrt-all_native-np20N260E.png --latitude -10 10 --runmean 365 180 90 60 30 15 10 5 1 --scaling R2 --valid_lon 115 230 --window 10 --date_curve dummy_DJF_dates.txt DJF --date_curve dummy_MAM_dates.txt MAM --date_curve dummy_JJA_dates.txt JJA --date_curve dummy_SON_dates.txt SON
