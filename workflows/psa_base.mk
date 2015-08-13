@@ -79,7 +79,7 @@ ${PLOT_PSA_PHASE} : ${FOURIER_COEFFICIENTS} ${DATES_PSA}
 
 ### Calculate the composite
 
-#/usr/local/anaconda/bin/python ~/climate-analysis/data_processing/calc_composite.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/sf_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native.nc sf /mnt/meteo0/data/simmonds/dbirving/temp/sf-composite_wave7phase_29-39.nc --date_file /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/dates-psa_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E_wave7phase29-39.txt
+#/usr/local/anaconda/bin/python ~/climate-analysis/data_processing/calc_composite.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/sf_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native.nc sf /mnt/meteo0/data/simmonds/dbirving/temp/sf-psa-w5-phase62-70_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E.nc --date_file /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/dates-psa-w5-phase62-70_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E.txt --no_sig
 
 ### Plot the composite
 
