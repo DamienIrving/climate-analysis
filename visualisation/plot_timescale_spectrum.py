@@ -56,13 +56,19 @@ def read_data(inargs, runmean_window):
     gio.check_xrayDataset(dset_in, inargs.variable)
 
     subset_dict = gio.get_subset_kwargs(inargs)
-    subset_dict['method'] = 'nearest'
-    darray = dset_in[inargs.variable].sel(**subset_dict)
-
+    #subset_dict['method'] = 'nearest'
+    darray = dset_in[inargs.variable].sel(**subset_dict).mean('latitude')
     indep_var = darray['longitude'].values
-    metadata_dict = {inargs.infile: dset_in.attrs['history']}
+
+    if inargs.valid_lon:
+        start_lon, end_lon = inargs.valid_lon
+        lon_vals = numpy.array([start_lon, end_lon, darray['longitude'].values.min()])          
+        assert numpy.sum(lon_vals >= 0) == 3, "Longitudes must be 0 to 360" 
+        darray.loc[dict(longitude=slice(0, start_lon))] = 0
+        darray.loc[dict(longitude=slice(end_lon, 360))] = 0
 
     darray = running_mean(darray, runmean_window)
+    metadata_dict = {inargs.infile: dset_in.attrs['history']}
 
     return darray, indep_var, metadata_dict
 
@@ -84,18 +90,12 @@ def transform_data(signal, indep_var, scaling):
 def composite_plot(ax, inargs, runave=30, label=None):
     """Plot periodogram that compares composites."""
 
-    # Read the data
     darray, indep_var, metadata_dict = read_data(inargs, runave)
+    inargs.date_curve.append([None, 'all'])
 
-    # Create the plot
-    composite_dict = {'PWI > 90 pctl': inargs.upper_date_file,
-                      'PWI < 10 pctl': inargs.lower_date_file,
-                      'all timesteps': None}
-
-    colors = ['#fbb4b9', '#f768a1', '#ae017e']
+    colors = ['#fbb4b9', '#f768a1', '#ae017e', 'red', 'blue', 'green']
     cindex = 0
-    for leglabel in ['PWI < 10 pctl', 'all timesteps', 'PWI > 90 pctl']:        
-        date_file = composite_dict[leglabel]
+    for date_file, leglabel in inargs.date_curve:        
         match_dates, date_metadata = calc_composite.get_datetimes(darray, date_file)
         data_filtered = darray.sel(time=match_dates)
 
@@ -206,13 +206,17 @@ author:
 
     parser.add_argument("infile", type=str, help="Input file name")
     parser.add_argument("variable", type=str, help="Input file variable")
-    parser.add_argument("upper_date_file", type=str, help="File containing dates for the upper composite (e.g. > 90th percentile)")
-    parser.add_argument("lower_date_file", type=str, help="File containing dates for the lower composite (e.g. < 10th percentile)")
     parser.add_argument("outfile", type=str, help="Output file name")
+
+    # Additional curves for the left panel
+    parser.add_argument("--date_curve", type=str, action='append', default=[], metavar=('DATE_FILE', 'LABEL'), nargs=2,
+                        help="Date filtered curve for the left hand panel")
 			
     # Input data options
-    parser.add_argument("--latitude", type=float,
-                        help="Latitude over which to perform the Fourier Transform [default = entire]")
+    parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
+                        help="Latitude range over which to perform Fourier transform (data averaged over this range) [default = entire]")
+    parser.add_argument("--valid_lon", type=float, nargs=2, metavar=('START', 'END'), default=None,
+                        help="Longitude range over which to perform Fourier transform (all other values are set to zero) [default = entire]")
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
 
