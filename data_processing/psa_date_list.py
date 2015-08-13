@@ -60,6 +60,9 @@ except ImportError:
 #    return DataFrame  
 
 
+season_months = {'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
+                 'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
+
 def main(inargs):
     """Run the program"""
 
@@ -96,6 +99,13 @@ def main(inargs):
     # Select all days where duration > 5 data times
     final = arank.loc[arank['duration'] > 10]
 
+    # Optional filtering by season
+    if inargs.season_filter:
+        season = inargs.season_filter
+        months_subset = pandas.to_datetime(final.index.values).month
+        bools_subset = (months_subset == season_months[season][0]) + (months_subset == season_months[season][1]) + (months_subset == season_months[season][2])
+        final = final.loc[bools_subset]
+
     # Optional filtering by wave number
     if inargs.freq_filter:
         target_amp = 'wave%i_amp' %(inargs.freq_filter)
@@ -124,6 +134,8 @@ if __name__ == '__main__':
     parser.add_argument("fourier_file", type=str, help="Input file name")
     parser.add_argument("output_file", type=str, help="Output file name")
 
+    parser.add_argument("--season_filter", type=str, choices=('DJF', 'MAM', 'JJA', 'SON'), default=None, 
+                        help="only keep the selected season [default = no season filter]")
     parser.add_argument("--freq_filter", type=int, default=None, 
                         help="only keep times where freq_filter is most dominant [default = no filter]")
     parser.add_argument("--phase_filter", type=float, nargs=2, metavar=['MIN', 'MAX'], default=None, 
