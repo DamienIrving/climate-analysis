@@ -6,6 +6,7 @@ import numpy, pandas
 import xray
 import operator
 from itertools import groupby
+from scipy.stats import rankdata
 
 
 # Import my modules
@@ -70,11 +71,11 @@ def main(inargs):
     amp_df = df.loc[:, df.columns.map(lambda x: 'amp' in x)]
 
     # Rank the amplitude columns
-    arank = amp_df.apply(numpy.argsort, axis=1)
+    arank = amp_df.apply(rankdata, axis=1)
 
     # Select the ones where wave 5 and 6 are in the top 3 amplitudes
-    wave5_top3 = arank['wave5_amp'] <= 2
-    wave6_top3 = arank['wave6_amp'] <= 2
+    wave5_top3 = arank['wave5_amp'] >= 8
+    wave6_top3 = arank['wave6_amp'] >= 8
     top3 = wave5_top3.tolist() and wave6_top3.tolist()
     # df.iloc[top3]
 
