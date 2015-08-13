@@ -74,10 +74,10 @@ def main(inargs):
     arank = amp_df.apply(rankdata, axis=1)
 
     # Select the ones where wave 5 and 6 are in the top 3 amplitudes
-    wave5_top3 = arank['wave5_amp'] >= 8
-    wave6_top3 = arank['wave6_amp'] >= 8
-    top3 = wave5_top3.tolist() and wave6_top3.tolist()
+    # (worst ranking must be 8 + 9 = 17) 
+    top3 = (arank['wave5_amp'].values + arank['wave6_amp'].values) >= 17
     # df.iloc[top3]
+    #arank.loc[(arank['wave5_amp'] >= 8) & (arank['wave6_amp'] >= 8)]
 
     # Generate duration information
     grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(top3)]  
@@ -94,7 +94,7 @@ def main(inargs):
     df['duration'] = reduce(operator.add, duration)
 
     # Select all days where duration > 5 data times
-    final = df.loc[df['duration'] > 5]
+    final = df.loc[df['duration'] > 10]
 
     # Optional filtering by wave 7 phase
     if inargs.phase_filter:
