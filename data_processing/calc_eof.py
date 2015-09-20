@@ -2,19 +2,16 @@
 Filename:     calc_eof.py
 Author:       Damien Irving, d.irving@student.unimelb.edu.au
 Description:  Perform Empiricial Orthogonal Function (EOF) analysis
-Reference:    Uses eof2 package: https://github.com/ajdawson/eof2
+Reference:    Uses eofs package: http://ajdawson.github.io/eofs/
 
 """
 
 # Import general Python modules
 
-import sys
-import os
-
+import sys, os
 import argparse
-import numpy
-
-import eof2
+import numpy, xray
+import eofs
 
 # Import my modules
 
@@ -49,13 +46,13 @@ class EofAnalysis:
 
         self.neofs = neofs
         self.data = data
-        self.solver = eof2.Eof(data.data, weights='cos_lat')
-	self.var_exp = self.solver.varianceFraction(neigs=neofs)
+        self.solver = eofs.iris.Eof(data.data, weights='cos_lat')
+    self.var_exp = self.solver.varianceFraction(neigs=neofs)
 
 
     def eof(self, eof_scaling=0):
         """Calculate the EOFs."""
-	
+    
         if eof_scaling == 3:
             eofs = self.solver.eofsAsCorrelation(neofs=self.neofs)
             eof_scaling_text = 'EOF scaled as the correlation of the PCs with the original field - used eofsAsCorrelation() function'
@@ -109,18 +106,26 @@ class EofAnalysis:
                              'reference': 'https://github.com/ajdawson/eof2',
                              'notes': pc_scaling_text}
 
-	return pcs, attributes 
+    return pcs, attributes 
  
 
 def main(inargs):
     """Run the program."""
     
     # Prepate input data
-    indata = nio.InputData(inargs.infile, inargs.variable, 
-                           **nio.dict_filter(vars(inargs), ['time', 'agg', 'region']))
+    try:
+        time_constraint = get_time_constraint(inargs.time)
+    except AttributeError:
+        time_constraint = iris.Constraint() 
+
+    with iris.FUTURE.context(cell_datetime_objects=True):
+        cube = iris.load_cube(inargs.infile, inargs.longname & time_constraint)
+
+    coord_names = [coord.name() for coord in cube.coords()]
+    assert coord_names == ['time', 'latitude', 'longitude']
     
     # Perform EOF analysis
-    eof_anal = EofAnalysis(indata, **nio.dict_filter(vars(inargs), nio.list_kwargs(EofAnalysis.__init__)))
+    eof_anal = EofAnalysis(cube, **nio.dict_filter(vars(inargs), nio.list_kwargs(EofAnalysis.__init__)))
     
     eof_data, eof_atts = eof_anal.eof(**nio.dict_filter(vars(inargs), nio.list_kwargs(eof_anal.eof)))
     pc_data, pc_atts = eof_anal.pcs(**nio.dict_filter(vars(inargs), nio.list_kwargs(eof_anal.pcs)))
@@ -166,12 +171,9 @@ if __name__ == '__main__':
       2 : Principal components are multiplied by the square-root of their eigenvalue
 
 reference:
-  uses eof2 package: https://github.com/ajdawson/eof2
+  uses eofs package: http://ajdawson.github.io/eofs/
 
-example (abyss.earthsci.unimelb.edu.au):
-  /usr/local/uvcdat/1.2.0rc1/bin/cdat calc_eof.py --region eqpacific --time 1981-01-01 2010-12-31 
-  /work/dbirving/datasets/Merra/data/processed/ts_Merra_surface_monthly-anom-wrt-1981-2010_native-ocean.nc ts 
-  /work/dbirving/processed/indices/data/ts_Merra_surface_EOF_monthly-1981-2010_native-ocean-eqpacific.nc
+example:
 
 note:
   The data are area weighted according the the sqrt of the cosine of the latitude, as 
@@ -189,17 +191,15 @@ author:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("infile", type=str, help="Input file name")
-    parser.add_argument("variable", type=str, help="Input file variable")
+    parser.add_argument("longname", type=str, help="Long name for input variable")
     parser.add_argument("outfile", type=str, help="Output file name")
-			
+            
     parser.add_argument("--neofs", type=int,
                         help="Number of EOFs for output [default=5]")
     parser.add_argument("--region", type=str, choices=nio.regions.keys(),
                         help="Region over which to calculate EOF [default = entire]")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period over which to calculate the EOF [default = entire]")
-    parser.add_argument("--agg", type=str,
-                        help="temporal aggregation selector")
     parser.add_argument("--eof_scaling", type=int, choices=[0, 1, 2, 3],
                         help="Scaling method applied to EOF post calculation [default = None]")
     parser.add_argument("--pc_scaling", type=int, choices=[0, 1, 2],
