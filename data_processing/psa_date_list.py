@@ -77,12 +77,12 @@ def main(inargs):
 
     # Select the ones where wave 5 and 6 are in the top 3 amplitudes
     # (worst ranking must be 8 + 9 = 17) 
-    top3 = (rank_df['wave5_amp'].values + rank_df['wave6_amp'].values) >= 17
+    top = (rank_df['wave5_amp'].values + rank_df['wave6_amp'].values) >= 17
 
     # Generate duration information
-    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(top3)]  
+    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(top)]  
 
-    # Select all days where duration > 5 data times
+    # Select all days where duration > minimum threshold
     duration = []
     for event in grouped_events:
         if event[0]:
@@ -93,7 +93,7 @@ def main(inargs):
 
     rank_df['duration'] = reduce(operator.add, duration)
 
-    final = rank_df.loc[rank_df['duration'] > 10]
+    final = rank_df.loc[rank_df['duration'] > inargs.min_duration]
 
     # Optional filtering by season
     if inargs.season_filter:
@@ -129,6 +129,9 @@ if __name__ == '__main__':
 
     parser.add_argument("fourier_file", type=str, help="Input file name")
     parser.add_argument("output_file", type=str, help="Output file name")
+
+    parser.add_argument("--min_duration", type=int, default=20, 
+                        help="minimum duration for a PSA event [default = 20]")
 
     parser.add_argument("--season_filter", type=str, choices=('DJF', 'MAM', 'JJA', 'SON'), default=None, 
                         help="only keep the selected season [default = no season filter]")
