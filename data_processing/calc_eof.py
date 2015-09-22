@@ -114,7 +114,7 @@ def main(inargs):
     
     # Prepate input data
     try:
-        time_constraint = get_time_constraint(inargs.time)
+        time_constraint = gio.get_time_constraint(inargs.time)
     except AttributeError:
         time_constraint = iris.Constraint() 
 
@@ -124,6 +124,10 @@ def main(inargs):
     coord_names = [coord.name() for coord in cube.coords()]
     assert coord_names == ['time', 'latitude', 'longitude']
     
+    time_coord = cube.coord('time')
+    lat_coord = cube.coord('latitude')
+    lon_coord = cube.coord('longitude')
+    
     # Perform EOF analysis
     eof_anal = EofAnalysis(cube, **nio.dict_filter(vars(inargs), nio.list_kwargs(EofAnalysis.__init__)))
     
@@ -131,29 +135,40 @@ def main(inargs):
     pc_data, pc_atts = eof_anal.pcs(**nio.dict_filter(vars(inargs), nio.list_kwargs(eof_anal.pcs)))
 
     # Write output file
+    d = {}
+    d['time'] = ('time', time_coord.points)
+    d['latitude'] = ('latitude', lat_coord.points)
+    d['longitude'] = ('longitude', lon_coord.points)
+    
+    eof_dims = ['latitude', 'longitude']
+    pc_dims = ['time']
     neofs = numpy.shape(eof_data)[0]
-    outdata_list = []
-    outvar_atts_list = []
-    outvar_axes_list = []   
-    eof_axes = (indata.data.getLatitude(),
-                indata.data.getLongitude(),)  
-    pc_axes = (indata.data.getTime(),)
     for index in xrange(neofs * 2):
         if index < neofs:
-            outdata_list.append(eof_data[index, ::])
-            outvar_atts_list.append(eof_atts[index])
-            outvar_axes_list.append(eof_axes)   
+            var = eof_atts[index].id
+            d[var] = (eof_dims, eof_data[index, ::])
         else:
             adj_index = index - neofs
-            outdata_list.append(pc_data[:, adj_index])
-            outvar_atts_list.append(pc_atts[adj_index])
-            outvar_axes_list.append(pc_axes) 
-    
-    nio.write_netcdf(inargs.outfile, " ".join(sys.argv), 
-                     indata.global_atts, 
-                     outdata_list,
-                     outvar_atts_list, 
-                     outvar_axes_list)
+            var = pc_atts[adj_index].id
+            d[var] = (pc_dims, pc_data[adj_index, ::])
+            
+    dset_out = xray.Dataset(d)
+
+    for index in xrange(neofs * 2):
+        if index < neofs:
+            var = eof_atts[index].id
+            dset_out[var].attrs = eof_atts[index]
+        else:
+            adj_index = index - neofs
+            var = pc_atts[index].id
+            dset_out[var].attrs = pc_atts[adj_index]
+
+    gio.set_dim_atts(dset_out, time_coord, lat_coord, lon_coord)
+
+    outfile_metadata = {inargs.infile: cube.attributes['history']}
+
+    gio.set_global_atts(dset_out, cube.attributes, outfile_metadata)
+    dset_out.to_netcdf(inargs.outfile,) #format='NETCDF3_CLASSIC')
 
 
 if __name__ == '__main__':

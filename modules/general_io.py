@@ -2,17 +2,19 @@
 Collection of commonly used functions for general file input and output.
 
 Functions:
-  check_xrayDataset  -- Check xray.Dataset for data format compliance
-  get_subset_kwargs  -- Get keyword arguments for xray subsetting
-  get_timescale      -- Get the timescale
-  get_timestamp      -- Return a time stamp that includes the command line entry
-  read_dates         -- Read in a list of dates
-  set_global_atts    -- Update the global attributes of an xray.DataArray
-  set_outfile_date   -- Take an outfile name and replace existing date with new one
-  standard_datetime  -- Convert any arbitrary date/time to standard format: YYYY-MM-DD
-  update_history_att -- Update the global history attribute of an xray.DataArray
-  write_dates        -- Write a list of dates
-  write_metadata     -- Write a metadata output file
+  check_xrayDataset   -- Check xray.Dataset for data format compliance
+  get_subset_kwargs   -- Get keyword arguments for xray subsetting
+  get_time_constraint -- Get the time constraint used for reading an iris cube 
+  get_timescale       -- Get the timescale
+  get_timestamp       -- Return a time stamp that includes the command line entry
+  read_dates          -- Read in a list of dates
+  set_dim_atts        -- Set dimension attributes
+  set_global_atts     -- Update the global attributes of an xray.DataArray
+  set_outfile_date    -- Take an outfile name and replace existing date with new one
+  standard_datetime   -- Convert any arbitrary date/time to standard format: YYYY-MM-DD
+  update_history_att  -- Update the global history attribute of an xray.DataArray
+  write_dates         -- Write a list of dates
+  write_metadata      -- Write a metadata output file
 
 """
 
@@ -23,6 +25,7 @@ import datetime, numpy
 from dateutil import parser
 from collections import defaultdict
 import re
+import iris
 
 # Import my modules
 
@@ -145,6 +148,7 @@ def check_xrayDataset(dset, var_list):
         assert 0 <= lon_values.min() <= 360, \
         'Longitude axis must be 0 to 360E'
 
+
 def get_subset_kwargs(namespace):
     """Get keyword arguments for xray subsetting.
     
@@ -167,6 +171,26 @@ def get_subset_kwargs(namespace):
         kwarg_dict = _sel_or_slice(namespace, dim, kwarg_dict)
 
     return kwarg_dict
+
+
+def get_time_constraint(time_list):
+    """Get the time constraint used for reading an iris cube."""
+    
+    start_date, end_date = time_list
+
+    date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
+    assert re.search(date_pattern, start_date)
+    assert re.search(date_pattern, end_date)
+
+    if (start_date == end_date):
+        year, month, day = start_date.split('-')    
+        time_constraint = iris.Constraint(time=iris.time.PartialDateTime(year=int(year), month=int(month), day=int(day)))
+    else:  
+        start_year, start_month, start_day = start_date.split('-') 
+        end_year, end_month, end_day = end_date.split('-')
+        time_constraint = iris.Constraint(time=lambda t: iris.time.PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)) <= t <= iris.time.PartialDateTime(year=int(end_year), month=int(end_month), day=int(end_day)))
+
+    return time_constraint
 
     
 def get_timescale(times):
@@ -253,6 +277,30 @@ def _sel_or_slice(inargs, dim, kw_dict):
         pass
 
     return kw_dict
+
+
+def set_dim_atts(dset_out, time_coord, latitude_coord, longitude_coord):
+    """Set dimension attributes.
+    
+    Used when writing a new file using xray when the data
+    was originally an iris cube.
+    
+    """
+    
+    dset_out['time'].attrs = {'calendar': 'standard', 
+                              'long_name': 'time',
+                              'units': str(time_coord.units),
+                              'axis': 'T'}
+    dset_out['latitude'].attrs = {'standard_name': 'latitude',
+                                  'long_name': 'latitude',
+                                  'units': 'degrees_north',
+                                  'axis': 'Y'}
+    dset_out['longitude'].attrs = {'standard_name': 'longitude',
+                                  'long_name': 'longitude',
+                                  'units': 'degrees_east',
+                                  'axis': 'X'}
+    
+    return dset_out
 
 
 def set_global_atts(dset, dset_template, hist_dict):

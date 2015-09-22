@@ -49,26 +49,6 @@ def clean_data(cube, max_value, min_value):
     return data_clean
 
 
-def get_time_constraint(time_list):
-    """Set the time constraint."""
-    
-    start_date, end_date = time_list
-
-    date_pattern = '([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})'
-    assert re.search(date_pattern, start_date)
-    assert re.search(date_pattern, end_date)
-
-    if (start_date == end_date):
-        year, month, day = start_date.split('-')    
-        time_constraint = iris.Constraint(time=iris.time.PartialDateTime(year=int(year), month=int(month), day=int(day)))
-    else:  
-        start_year, start_month, start_day = start_date.split('-') 
-        end_year, end_month, end_day = end_date.split('-')
-        time_constraint = iris.Constraint(time=lambda t: iris.time.PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)) <= t <= iris.time.PartialDateTime(year=int(end_year), month=int(end_month), day=int(end_day)))
-
-    return time_constraint
-
-
 def make_grid(lat_values, lon_values, np_lat, np_lon):
     """Make a dummy cube with desired grid."""
     
@@ -89,31 +69,12 @@ def make_grid(lat_values, lon_values, np_lat, np_lon):
     return new_cube
 
 
-def set_dim_atts(dset_out, time_coord, latitude_coord, longitude_coord):
-    """Set dimension attributes."""
-    
-    dset_out['time'].attrs = {'calendar': 'standard', 
-                              'long_name': 'time',
-                              'units': str(time_coord.units),
-                              'axis': 'T'}
-    dset_out['latitude'].attrs = {'standard_name': 'latitude',
-                                  'long_name': 'latitude',
-                                  'units': 'degrees_north',
-                                  'axis': 'Y'}
-    dset_out['longitude'].attrs = {'standard_name': 'longitude',
-                                  'long_name': 'longitude',
-                                  'units': 'degrees_east',
-                                  'axis': 'X'}
-    
-    return dset_out
-
-
 def main(inargs):
     """Run the program."""
     
     # Read data
     try:
-        time_constraint = get_time_constraint(inargs.time)
+        time_constraint = gio.get_time_constraint(inargs.time)
     except AttributeError:
         time_constraint = iris.Constraint() 
 
@@ -154,7 +115,7 @@ def main(inargs):
                                'long_name': 'rotated_northward_wind',
                                'units': str(v_cube.units),
                                'notes': 'North Pole at lat=%s, lon=%s. Data defined on rotated grid.' %(np_lat, np_lon)}
-    set_dim_atts(dset_out, time_coord, lat_coord, lon_coord)
+    gio.set_dim_atts(dset_out, time_coord, lat_coord, lon_coord)
 
     outfile_metadata = {inargs.infileU: u_cube.attributes['history'],
                         inargs.infileV: v_cube.attributes['history']}
