@@ -8,10 +8,11 @@ Reference:    Uses eofs package: http://ajdawson.github.io/eofs/
 
 # Import general Python modules
 
-import sys, os
+import sys, os, pdb
 import argparse
 import numpy, xray
 import eofs
+import iris
 
 # Import my modules
 
@@ -25,7 +26,8 @@ for directory in cwd.split('/')[1:]:
 modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 try:
-    import netcdf_io as nio
+    import general_io as gio
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -38,16 +40,12 @@ class EofAnalysis:
 
     """
     
-    def __init__(self, data, neofs=5):
-        """Perform EOF analysis and calculate variance explained."""
-        
-        assert isinstance(data, nio.InputData), \
-        'input must be a nio.InputData instance'        
+    def __init__(self, cube, neofs=5):
+        """Perform EOF analysis and calculate variance explained."""      
 
         self.neofs = neofs
-        self.data = data
-        self.solver = eofs.iris.Eof(data.data, weights='cos_lat')
-    self.var_exp = self.solver.varianceFraction(neigs=neofs)
+        self.solver = eofs.iris.Eof(cube, weights='coslat')
+        self.var_exp = self.solver.varianceFraction(neigs=neofs)
 
 
     def eof(self, eof_scaling=0):
@@ -106,7 +104,7 @@ class EofAnalysis:
                              'reference': 'https://github.com/ajdawson/eof2',
                              'notes': pc_scaling_text}
 
-    return pcs, attributes 
+        return pcs, attributes 
  
 
 def main(inargs):
@@ -134,10 +132,10 @@ def main(inargs):
     lon_coord = cube.coord('longitude')
     
     # Perform EOF analysis
-    eof_anal = EofAnalysis(cube, **nio.dict_filter(vars(inargs), nio.list_kwargs(EofAnalysis.__init__)))
+    eof_anal = EofAnalysis(cube, **uconv.dict_filter(vars(inargs), uconv.list_kwargs(EofAnalysis.__init__)))
     
-    eof_data, eof_atts = eof_anal.eof(**nio.dict_filter(vars(inargs), nio.list_kwargs(eof_anal.eof)))
-    pc_data, pc_atts = eof_anal.pcs(**nio.dict_filter(vars(inargs), nio.list_kwargs(eof_anal.pcs)))
+    eof_data, eof_atts = eof_anal.eof(**uconv.dict_filter(vars(inargs), uconv.list_kwargs(eof_anal.eof)))
+    pc_data, pc_atts = eof_anal.pcs(**uconv.dict_filter(vars(inargs), uconv.list_kwargs(eof_anal.pcs)))
 
     # Write output file
     d = {}
@@ -216,7 +214,7 @@ author:
             
     parser.add_argument("--neofs", type=int,
                         help="Number of EOFs for output [default=5]")
-    parser.add_argument("--maxlat", type=str,
+    parser.add_argument("--maxlat", type=float,
                         help="Can restrict region by setting a maximum latitude [default = none / 90N]")
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period over which to calculate the EOF [default = entire]")
