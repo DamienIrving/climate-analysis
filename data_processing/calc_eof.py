@@ -118,8 +118,13 @@ def main(inargs):
     except AttributeError:
         time_constraint = iris.Constraint() 
 
+    try:
+        lat_constraint = iris.Constraint(latitude=lambda y: y <= inargs.maxlat)
+    except AttributeError:
+        lat_constraint = iris.Constraint()
+
     with iris.FUTURE.context(cell_datetime_objects=True):
-        cube = iris.load_cube(inargs.infile, inargs.longname & time_constraint)
+        cube = iris.load_cube(inargs.infile, inargs.longname & time_constraint & lat_constraint)
 
     coord_names = [coord.name() for coord in cube.coords()]
     assert coord_names == ['time', 'latitude', 'longitude']
@@ -211,8 +216,8 @@ author:
             
     parser.add_argument("--neofs", type=int,
                         help="Number of EOFs for output [default=5]")
-    parser.add_argument("--region", type=str, choices=nio.regions.keys(),
-                        help="Region over which to calculate EOF [default = entire]")
+    parser.add_argument("--maxlat", type=str,
+                        help="Can restrict region by setting a maximum latitude [default = none / 90N]")
     parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
                         help="Time period over which to calculate the EOF [default = entire]")
     parser.add_argument("--eof_scaling", type=int, choices=[0, 1, 2, 3],
