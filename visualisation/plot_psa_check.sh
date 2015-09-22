@@ -36,10 +36,12 @@ code_dir=$9
 sf_ticks="-12.5 -10 -7.5 -5 -2.5 0 2.5 5 7.5 10 12.5"
 vrot_ticks="-10 -8 -6 -4 -2 0 2 4 6 8 10"
 
-dates=`cat ${datefile}`
 
-for date in "${dates[@]}"; do
+while IFS= read -r datetime; do
+ 
+    date=`echo ${datetime} | cut -d 'T' -f 1`
     year=`echo ${date} | cut -d '-' -f 1`
+
     mkdir -p ${outdir}/${year}_10S-10N_PSAactive
 
     ofile_sfanom=${outdir}/${year}_10S-10N/psa_check_${date}_10S-10N_sfanom.png
@@ -91,5 +93,5 @@ for date in "${dates[@]}"; do
     ${ofile_hilbert} 1 1 --latitude -10 10 --dates ${date} --highlights 4 5 6 7 --valid_lon 115 230 \
     --periodogram --wavenumbers 1 8 --envelope 4 7 --envelope 1 20
 
-done
+done < "${datefile}"
 

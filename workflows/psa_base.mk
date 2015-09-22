@@ -85,6 +85,12 @@ PLOT_PSA_PHASE=${PSA_DIR}/psa-phase_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL
 ${PLOT_PSA_PHASE} : ${FOURIER_COEFFICIENTS} ${DATES_PSA}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_phase.py $< wave7_phase number $(word 2,$^) $@ --seasonal
 
+## PSA check (spatial map and FT for given dates)
+
+.PHONY : psa_check
+psa_check : ${DATES_PSA} ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
+	bash ${VIS_SCRIPT_DIR}/plot_psa_check.sh $<  $(word 2,$^) streamfunction $(word 3,$^) rotated_northward_wind vrot ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
+
 
 # PSA analysis
 
