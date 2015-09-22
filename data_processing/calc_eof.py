@@ -218,7 +218,7 @@ author:
                         help="Number of EOFs for output [default=5]")
     parser.add_argument("--maxlat", type=str,
                         help="Can restrict region by setting a maximum latitude [default = none / 90N]")
-    parser.add_argument("--time", type=str, nargs=3, metavar=('START_DATE', 'END_DATE', 'MONTHS'),
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period over which to calculate the EOF [default = entire]")
     parser.add_argument("--eof_scaling", type=int, choices=[0, 1, 2, 3],
                         help="Scaling method applied to EOF post calculation [default = None]")

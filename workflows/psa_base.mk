@@ -31,6 +31,14 @@ SF_ANOM_RUNMEAN=${DATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_
 ${SF_ANOM_RUNMEAN} : ${SF_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
 
+SF_ZONAL_ANOM=${DATA_DIR}/sf_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc
+${SF_ZONAL_ANOM} : ${SF_ORIG}		
+	bash ${DATA_SCRIPT_DIR}/calc_zonal_anomaly.sh $< sf $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+
+SF_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
+${SF_ZONAL_ANOM_RUNMEAN} : ${SF_ZONAL_ANOM}
+	cdo ${TSCALE} $< $@
+
 ## Rotated meridional wind
 
 VROT_ORIG=${DATA_DIR}/vrot_${DATASET}_${LEVEL}_daily_native-${NPLABEL}.nc
@@ -42,6 +50,15 @@ ${VROT_ANOM_RUNMEAN} : ${VROT_ORIG}
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
 	ncatted -O -a bounds,time,d,, $@
 	ncks -O -x -v time_bnds $@
+
+
+# PSA demonstration
+
+## EOF analysis
+
+EOF_ANAL=${PSA_DIR}/eof-sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.nc
+${EOF_ANAL} : ${SF_ZONAL_ANOM_RUNMEAN}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_eof.py --maxlat 0.0 --time 1979-01-01 2014-12-31 --eof_scaling 3 --pc_scaling 1 $< streamfunction $@
 
 
 # PSA identification
@@ -88,4 +105,4 @@ ${PLOT_PSA_PHASE} : ${FOURIER_COEFFICIENTS} ${DATES_PSA}
 
 ## Plot the timescale spectrum
 
-#/usr/local/anaconda/bin/python /home/STUDENT/dbirving/climate-analysis/visualisation/plot_timescale_spectrum.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/vrot_ERAInterim_500hPa_daily-anom-wrt-all_native-np20N260E.nc vrot  /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/figures/vrot-r2spectrum_ERAInterim_500hPa_daily-anom-wrt-all_native-np20N260E.png --latitude -10 10 --runmean 365 180 90 60 30 15 10 5 1 --scaling R2 --valid_lon 115 230 --window 10 --date_curve dummy_DJF_dates.txt DJF --date_curve dummy_MAM_dates.txt MAM --date_curve dummy_JJA_dates.txt JJA --date_curve dummy_SON_dates.txt SON
+#/usr/local/anaconda/bin/python /home/STUDENT/dbirving/climate-analysis/visualisation/plot_timescale_spectrum.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/vrot_ERAInterim_500hPa_daily-anom-wrt-all_native-np20N260E.nc vrot	/mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/figures/vrot-r2spectrum_ERAInterim_500hPa_daily-anom-wrt-all_native-np20N260E.png --latitude -10 10 --runmean 365 180 90 60 30 15 10 5 1 --scaling R2 --valid_lon 115 230 --window 10 --date_curve dummy_DJF_dates.txt DJF --date_curve dummy_MAM_dates.txt MAM --date_curve dummy_JJA_dates.txt JJA --date_curve dummy_SON_dates.txt SON
