@@ -68,14 +68,13 @@ class EofAnalysis:
                 print 'EOF scaling method not recongnised'
                 sys.exit(1)
 
-        attributes = ['']*self.neofs
+        attributes = {}
         for i in range(0, self.neofs):
-            attributes[i] = {'id': 'eof'+str(i + 1),
-                             'long_name': 'Empirical Orthogonal Function '+str(i + 1),
-                             'units': eof_units,
-                             'var_exp': self.var_exp[i],
-                             'reference': 'https://github.com/ajdawson/eof2',
-                             'notes': eof_scaling_text}
+            attributes['eof'+str(i + 1)] = {'long_name': 'Empirical Orthogonal Function '+str(i + 1),
+                                            'units': eof_units,
+                                            'var_exp': float(self.var_exp[i].data),
+                                            'reference': 'http://ajdawson.github.io/eofs/',
+                                            'notes': eof_scaling_text}
   
         return eofs, attributes
      
@@ -95,14 +94,13 @@ class EofAnalysis:
             print 'PC scaling method not recongnised'   
             sys.exit(1)    
         
-        attributes = ['']*self.neofs
+        attributes = {}
         for i in range(0, self.neofs):
-            attributes[i] = {'id': 'pc'+str(i + 1),
-                             'long_name': 'Principle component '+str(i + 1),
-                             'units': pc_units,
-                             'var_exp': self.var_exp[i],
-                             'reference': 'https://github.com/ajdawson/eof2',
-                             'notes': pc_scaling_text}
+            attributes['pc'+str(i + 1)] = {'long_name': 'Principle component '+str(i + 1),
+                                           'units': pc_units,
+                                           'var_exp': float(self.var_exp[i].data),
+                                           'reference': 'http://ajdawson.github.io/eofs/',
+                                           'notes': pc_scaling_text}
 
         return pcs, attributes 
  
@@ -134,8 +132,8 @@ def main(inargs):
     # Perform EOF analysis
     eof_anal = EofAnalysis(cube, **uconv.dict_filter(vars(inargs), uconv.list_kwargs(EofAnalysis.__init__)))
     
-    eof_data, eof_atts = eof_anal.eof(**uconv.dict_filter(vars(inargs), uconv.list_kwargs(eof_anal.eof)))
-    pc_data, pc_atts = eof_anal.pcs(**uconv.dict_filter(vars(inargs), uconv.list_kwargs(eof_anal.pcs)))
+    eof_cube, eof_atts = eof_anal.eof(**uconv.dict_filter(vars(inargs), uconv.list_kwargs(eof_anal.eof)))
+    pc_cube, pc_atts = eof_anal.pcs(**uconv.dict_filter(vars(inargs), uconv.list_kwargs(eof_anal.pcs)))
 
     # Write output file
     d = {}
@@ -145,28 +143,19 @@ def main(inargs):
     
     eof_dims = ['latitude', 'longitude']
     pc_dims = ['time']
-    neofs = numpy.shape(eof_data)[0]
-    for index in xrange(neofs * 2):
-        if index < neofs:
-            var = eof_atts[index].id
-            d[var] = (eof_dims, eof_data[index, ::])
-        else:
-            adj_index = index - neofs
-            var = pc_atts[adj_index].id
-            d[var] = (pc_dims, pc_data[adj_index, ::])
+    for index in xrange(inargs.neofs):
+        d['eof' + str(index + 1)] = (eof_dims, eof_cube.extract(iris.Constraint(eof_number=index)).data)
+        d['pc' + str(index + 1)] = (pc_dims, pc_cube.extract(iris.Constraint(pc_number=index)).data)
             
     dset_out = xray.Dataset(d)
 
-    for index in xrange(neofs * 2):
-        if index < neofs:
-            var = eof_atts[index].id
-            dset_out[var].attrs = eof_atts[index]
-        else:
-            adj_index = index - neofs
-            var = pc_atts[index].id
-            dset_out[var].attrs = pc_atts[adj_index]
+    for index in xrange(inargs.neofs):
+        eof_var = 'eof'+str(index + 1)
+        pc_var = 'pc'+str(index + 1)
+        dset_out[eof_var].attrs = eof_atts[eof_var]
+        dset_out[pc_var].attrs = pc_atts[pc_var]
 
-    gio.set_dim_atts(dset_out, time_coord, lat_coord, lon_coord)
+    gio.set_dim_atts(dset_out, str(time_coord.units))
 
     outfile_metadata = {inargs.infile: cube.attributes['history']}
 
@@ -212,7 +201,7 @@ author:
     parser.add_argument("longname", type=str, help="Long name for input variable")
     parser.add_argument("outfile", type=str, help="Output file name")
             
-    parser.add_argument("--neofs", type=int,
+    parser.add_argument("--neofs", type=int, default=5,
                         help="Number of EOFs for output [default=5]")
     parser.add_argument("--maxlat", type=float,
                         help="Can restrict region by setting a maximum latitude [default = none / 90N]")

@@ -115,7 +115,7 @@ def main(inargs):
                                'long_name': 'rotated_northward_wind',
                                'units': str(v_cube.units),
                                'notes': 'North Pole at lat=%s, lon=%s. Data defined on rotated grid.' %(np_lat, np_lon)}
-    gio.set_dim_atts(dset_out, time_coord, lat_coord, lon_coord)
+    gio.set_dim_atts(dset_out, str(time_coord.units))
 
     outfile_metadata = {inargs.infileU: u_cube.attributes['history'],
                         inargs.infileV: v_cube.attributes['history']}

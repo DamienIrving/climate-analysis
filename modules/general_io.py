@@ -279,7 +279,7 @@ def _sel_or_slice(inargs, dim, kw_dict):
     return kw_dict
 
 
-def set_dim_atts(dset_out, time_coord, latitude_coord, longitude_coord):
+def set_dim_atts(dset_out, time_units):
     """Set dimension attributes.
     
     Used when writing a new file using xray when the data
@@ -289,16 +289,16 @@ def set_dim_atts(dset_out, time_coord, latitude_coord, longitude_coord):
     
     dset_out['time'].attrs = {'calendar': 'standard', 
                               'long_name': 'time',
-                              'units': str(time_coord.units),
+                              'units': time_units,
                               'axis': 'T'}
     dset_out['latitude'].attrs = {'standard_name': 'latitude',
                                   'long_name': 'latitude',
                                   'units': 'degrees_north',
                                   'axis': 'Y'}
     dset_out['longitude'].attrs = {'standard_name': 'longitude',
-                                  'long_name': 'longitude',
-                                  'units': 'degrees_east',
-                                  'axis': 'X'}
+                                   'long_name': 'longitude',
+                                   'units': 'degrees_east',
+                                   'axis': 'X'}
     
     return dset_out
 
