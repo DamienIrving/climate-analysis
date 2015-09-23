@@ -42,9 +42,10 @@ while IFS= read -r datetime; do
     date=`echo ${datetime} | cut -d 'T' -f 1`
     year=`echo ${date} | cut -d '-' -f 1`
 
-    mkdir -p ${outdir}/${year}_10S-10N_PSAactive
+    yroutdir=${outdir}/${year}_10S-10N_PSAactive
+    mkdir -p ${yroutdir}
 
-    ofile_sfanom=${outdir}/${year}_10S-10N/psa_check_${date}_10S-10N_sfanom.png
+    ofile_sfanom=${yroutdir}/psa_check_${date}_10S-10N_sfanom.png
     echo ${ofile_sfanom}
 
     ${python_exe} ${code_dir}/plot_map.py 1 3 \
@@ -65,7 +66,7 @@ while IFS= read -r datetime; do
 
     # fix required if I want high-res line
 
-    ofile_vrot=${outdir}/${year}_10S-10N/psa_check_${date}_10S-10N_vrot.png
+    ofile_vrot=${yroutdir}/psa_check_${date}_10S-10N_vrot.png
     echo ${ofile_vrot}
 
     ${python_exe} ${code_dir}/plot_map.py 1 1 \
@@ -86,7 +87,7 @@ while IFS= read -r datetime; do
     # fix required if I want to use contourf
     # fix required if I want high res line
 
-    ofile_hilbert=${outdir}/${year}_10S-10N/psa_check_${date}_10S-10N_hilbert.png
+    ofile_hilbert=${yroutdir}/psa_check_${date}_10S-10N_hilbert.png
     echo ${ofile_hilbert}
 
     ${python_exe} ${code_dir}/plot_hilbert.py ${vrotfile} ${vrotvar} \
