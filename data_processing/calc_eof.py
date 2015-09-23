@@ -33,6 +33,11 @@ except ImportError:
 
 # Define functions and classes
 
+season_constraints = {'DJF': iris.Constraint(time=lambda t: t in [iris.time.PartialDateTime(month=1), iris.time.PartialDateTime(month=2), iris.time.PartialDateTime(month=12)]),
+                      'MAM': iris.Constraint(time=lambda t: iris.time.PartialDateTime(month=3) <= t <= iris.time.PartialDateTime(month=5)),
+                      'JJA': iris.Constraint(time=lambda t: iris.time.PartialDateTime(month=6) <= t <= iris.time.PartialDateTime(month=8)),
+                      'SON': iris.Constraint(time=lambda t: iris.time.PartialDateTime(month=9) <= t <= iris.time.PartialDateTime(month=11))}
+
 class EofAnalysis:
     """Perform an EOF analysis. 
     
@@ -121,8 +126,13 @@ def main(inargs):
     except AttributeError:
         lat_constraint = iris.Constraint()
 
+    try:
+        season_constraint = season_constraints[inargs.season]
+    except AttributeError:
+        season_constraint = iris.Constraint()
+
     with iris.FUTURE.context(cell_datetime_objects=True):
-        cube = iris.load_cube(inargs.infile, inargs.longname & time_constraint & lat_constraint)
+        cube = iris.load_cube(inargs.infile, inargs.longname & time_constraint & season_constraint & lat_constraint)
 
     coord_names = [coord.name() for coord in cube.coords()]
     assert coord_names == ['time', 'latitude', 'longitude']
@@ -203,12 +213,15 @@ author:
     parser.add_argument("longname", type=str, help="Long name for input variable")
     parser.add_argument("outfile", type=str, help="Output file name")
             
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
+                        help="Time period over which to calculate the EOF [default = entire]")
+    parser.add_argument("--season", type=str, choices=['DJF', 'MAM', 'JJA', 'SON'], default=None,
+                        help="Restrict analysis to a particular season [default = annual]")
+
     parser.add_argument("--neofs", type=int, default=5,
                         help="Number of EOFs for output [default=5]")
     parser.add_argument("--maxlat", type=float,
                         help="Can restrict region by setting a maximum latitude [default = none / 90N]")
-    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
-                        help="Time period over which to calculate the EOF [default = entire]")
     parser.add_argument("--eof_scaling", type=int, choices=[0, 1, 2, 3],
                         help="Scaling method applied to EOF post calculation [default = None]")
     parser.add_argument("--pc_scaling", type=int, choices=[0, 1, 2],
