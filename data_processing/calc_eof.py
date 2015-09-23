@@ -70,7 +70,8 @@ class EofAnalysis:
 
         attributes = {}
         for i in range(0, self.neofs):
-            attributes['eof'+str(i + 1)] = {'long_name': 'Empirical Orthogonal Function '+str(i + 1),
+            attributes['eof'+str(i + 1)] = {'long_name': 'empirical_orthogonal_function_'+str(i + 1),
+                                            'standard_name': 'empirical_orthogonal_function_'+str(i + 1),
                                             'units': eof_units,
                                             'var_exp': float(self.var_exp[i].data),
                                             'reference': 'http://ajdawson.github.io/eofs/',
@@ -96,7 +97,8 @@ class EofAnalysis:
         
         attributes = {}
         for i in range(0, self.neofs):
-            attributes['pc'+str(i + 1)] = {'long_name': 'Principle component '+str(i + 1),
+            attributes['pc'+str(i + 1)] = {'long_name': 'principle_component_'+str(i + 1),
+                                           'standard_name': 'principle_component_'+str(i + 1),
                                            'units': pc_units,
                                            'var_exp': float(self.var_exp[i].data),
                                            'reference': 'http://ajdawson.github.io/eofs/',
