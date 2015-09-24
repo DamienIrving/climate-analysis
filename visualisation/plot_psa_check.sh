@@ -59,10 +59,10 @@ while IFS= read -r datetime; do
     --contour_levels ${sf_ticks} \
     --spstereo_limit -20 \
     --figure_size 16.0 6.5 \
-    --line -10 -10 115 230 green solid RotatedPole_260E_20N low \
-    --line 10 10 115 230 green solid RotatedPole_260E_20N low \
+    --line -10 -10 115 235 green solid RotatedPole_260E_20N low \
+    --line 10 10 115 235 green solid RotatedPole_260E_20N low \
     --line -10 10 115 115 green solid RotatedPole_260E_20N low \
-    --line -10 10 230 230 green solid RotatedPole_260E_20N low 
+    --line -10 10 235 235 green solid RotatedPole_260E_20N low 
 
     # fix required if I want high-res line
 
@@ -79,10 +79,10 @@ while IFS= read -r datetime; do
     --palette RdBu_r \
     --no_grid_lines \
     --figure_size 8.0 5.0 \
-    --line -10 -10 115 230 green solid RotatedPole_260E_20N low \
-    --line 10 10 115 230 green solid RotatedPole_260E_20N low \
+    --line -10 -10 115 235 green solid RotatedPole_260E_20N low \
+    --line 10 10 115 235 green solid RotatedPole_260E_20N low \
     --line -10 10 115 115 green solid RotatedPole_260E_20N low \
-    --line -10 10 230 230 green solid RotatedPole_260E_20N low 
+    --line -10 10 235 235 green solid RotatedPole_260E_20N low 
 
     # fix required if I want to use contourf
     # fix required if I want high res line
@@ -91,7 +91,7 @@ while IFS= read -r datetime; do
     echo ${ofile_hilbert}
 
     ${python_exe} ${code_dir}/plot_hilbert.py ${vrotfile} ${vrotvar} \
-    ${ofile_hilbert} 1 1 --latitude -10 10 --dates ${date} --highlights 4 5 6 7 --valid_lon 115 230 \
+    ${ofile_hilbert} 1 1 --latitude -10 10 --dates ${date} --highlights 4 5 6 7 --valid_lon 115 235 \
     --periodogram --wavenumbers 1 8 --envelope 4 7 --envelope 1 20
 
 done < "${datefile}"

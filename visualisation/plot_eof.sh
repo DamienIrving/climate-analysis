@@ -31,9 +31,9 @@ ${python_exe} ${code_dir}/plot_map.py 2 2 \
 --region sh \
 --units correlation \
 --colourbar_ticks -1 -0.8 -0.6 -0.4 -0.2 0 0.2 0.4 0.6 0.8 1.0 \
---line -10 -10 115 230 green solid RotatedPole_260E_20N low \
---line 10 10 115 230 green solid RotatedPole_260E_20N low \
+--line -10 -10 115 235 green solid RotatedPole_260E_20N low \
+--line 10 10 115 235 green solid RotatedPole_260E_20N low \
 --line -10 10 115 115 green solid RotatedPole_260E_20N low \
---line -10 10 230 230 green solid RotatedPole_260E_20N low \
+--line -10 10 235 235 green solid RotatedPole_260E_20N low \
 
 #--output_projection SouthPolarStereo \
