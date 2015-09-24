@@ -89,7 +89,7 @@ ${PLOT_PSA_PHASE} : ${FOURIER_COEFFICIENTS} ${DATES_PSA}
 
 .PHONY : psa_check
 psa_check : ${DATES_PSA} ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
-	bash ${VIS_SCRIPT_DIR}/plot_psa_check.sh $<  $(word 2,$^) streamfunction $(word 3,$^) rotated_northward_wind vrot ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
+	bash ${VIS_SCRIPT_DIR}/plot_psa_check.sh $<  $(word 2,$^) streamfunction $(word 3,$^) rotated_northward_wind vrot 1986 1988 ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
 # PSA analysis
