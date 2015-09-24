@@ -128,10 +128,10 @@ def first_localmax_index(data):
 
 def _get_coefficients(data, lon_axis, 
                       min_freq, max_freq,
-                      long_name, units):
+                      long_name, units,
+                      outdata_dict):
     """Calculate magnitude and phase coefficients for each frequency."""
 
-    outdata_dict = {}
     exclusion = None
     for freq in range(min_freq, max_freq + 1):
         filtered_signal = numpy.apply_along_axis(filter_signal, -1, 
@@ -195,7 +195,8 @@ def extract_data(dset, inargs):
 
 def _filter_data(data, lon_axis,
                  min_freq, max_freq,
-                 var, long_name, units, outtype):
+                 var, long_name, units, 
+                 outtype, outdata_dict):
     """Filter data.
     
     Can perform either a hilbert transform (i.e. inverse Fourier transform 
@@ -230,7 +231,7 @@ def _filter_data(data, lon_axis,
             'units': units,
             'notes': filter_text}
 
-    outdata_dict = {method_short+var: (outdata, atts)}
+    outdata_dict[method_short+var] = (outdata, atts)
 
     return outdata_dict
 
@@ -288,6 +289,60 @@ def spectrum(signal_fft, freqs, scaling='amplitude', variance=None):
     return result, pos_freqs
 
 
+def count_sign_change(data):
+    """Count the number of times the data changes sign."""
+
+    assert data.ndim == 1, "Input array must be one dimensional"
+
+    asign = numpy.sign(data)
+    sz = asign == 0
+    while sz.any():
+        asign[sz] = numpy.roll(asign, 1)[sz]
+        sz = asign == 0
+    signchange = ((numpy.roll(asign, 1) - asign) != 0).astype(int)
+    signchange[0] = 0
+
+    return numpy.sum(signchange)
+
+
+def _get_sign_change(data, outdata_dict):
+    """ """
+
+    sign_change_data = numpy.apply_along_axis(count_sign_change, -1, data)
+
+    sign_change_atts = {'standard_name': 'sign_change_count',
+                        'long_name': 'sign_change_count',
+                        'units': '',
+                        'notes': 'count of number of times signal sign (pos/neg) changed'}
+
+    outdata_dict['sign_count'] = (sign_change_data, sign_change_atts)
+
+    return outdata_dict
+
+
+def _get_env_max(data, lon_axis,
+                 min_freq, max_freq,
+                 units, outdata_dict):
+    """Get the maximum envelope value."""
+
+    outdata = numpy.apply_along_axis(filter_signal, -1, 
+                                     data, lon_axis, 
+                                     min_freq, max_freq, 
+                                     'negative')
+    outdata = numpy.max(2 * numpy.abs(outdata), axis=-1)
+    
+    method_note = 'maximum value of wave envelope'
+    filter_text = _get_filter_text(method_note, min_freq, max_freq)
+    atts = {'standard_name': 'envelope_maximum',
+            'long_name': 'envelope_maximum',
+            'units': units,
+            'notes': filter_text}
+
+    outdata_dict['env_max'] = (outdata, atts)
+
+    return outdata_dict
+
+
 def main(inargs):
     """Run the program."""
     
@@ -297,15 +352,25 @@ def main(inargs):
     darray, long_name, units = extract_data(dset_in, inargs)
 
     # Perform task
+    outdata_dict = {}
     if inargs.outtype == 'coefficients':
         outdata_dict = _get_coefficients(darray.values, darray['longitude'].values, 
                                          inargs.min_freq, inargs.max_freq,
-                                         long_name, units)
+                                         long_name, units, outdata_dict)
+        if inargs.sign_change:
+            outdata_dict = _get_sign_change(darray.values, outdata_dict)
+
+        if inargs.env_max:
+            env_max_min_freq, env_max_max_freq = inargs.env_max
+            outdata_dict = _get_env_max(darray.values, darray['longitude'].values,
+                                        env_max_min_freq, env_max_max_freq,
+                                        units, outdata_dict)
         dims = darray.dims[:-1]
     else:
         outdata_dict = _filter_data(darray.values, darray['longitude'].values, 
-                                   inargs.min_freq, inargs.max_freq,
-                                   inargs.var, long_name, units, inargs.outtype)
+                                    inargs.min_freq, inargs.max_freq,
+                                    inargs.var, long_name, units, 
+                                    inargs.outtype, outdata_dict)
         dims = darray.dims
         
     # Write the output file
@@ -367,6 +432,12 @@ references:
 
     parser.add_argument("--avelat", action="store_true", default=False,
                         help="Average the data over the latitude axis before performing Fourier transform")
+
+    parser.add_argument("--sign_change", action="store_true", default=False,
+                        help="for a coefficients outtype, add an extra output variable which represents the count of times the signal changes sign")
+    parser.add_argument("--env_max", type=int, nargs=2, metavar=('MIN_FREQ', 'MAX_FREQ'), default=None,
+                        help="for a coefficients outtype, add an extra output variable for the maximum envelope value") 
+
 
     args = parser.parse_args()            
 
