@@ -95,6 +95,10 @@ def main(inargs):
 
     final = rank_df.loc[rank_df['duration'] > inargs.min_duration]
 
+    # Reject days that change sign too much
+    if inargs.max_sign_change:
+        final = final.loc[final['sign_count'] <= inargs.max_sign_change]
+
     # Optional filtering by season
     if inargs.season_filter:
         season = inargs.season_filter
@@ -132,6 +136,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--min_duration", type=int, default=20, 
                         help="minimum duration for a PSA event [default = 20]")
+    parser.add_argument("--max_sign_change", type=int, default=5, 
+                        help="maximum number of times the signal can change sign over the search domain [default = 5]")
 
     parser.add_argument("--season_filter", type=str, choices=('DJF', 'MAM', 'JJA', 'SON'), default=None, 
                         help="only keep the selected season [default = no season filter]")

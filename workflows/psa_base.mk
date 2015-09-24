@@ -67,7 +67,7 @@ ${EOF_ANAL} : ${SF_ZONAL_ANOM_RUNMEAN}
 
 FOURIER_COEFFICIENTS=${PSA_DIR}/fourier-vrot_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.nc 
 ${FOURIER_COEFFICIENTS} : ${VROT_ANOM_RUNMEAN}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_fourier_transform.py $< vrot $@ 1 10 coefficients --latitude ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --valid_lon ${LON_SEARCH_MIN} ${LON_SEARCH_MAX} --avelat
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_fourier_transform.py $< vrot $@ 1 10 coefficients --latitude ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --valid_lon ${LON_SEARCH_MIN} ${LON_SEARCH_MAX} --avelat --sign_change --env_max 4 7
 
 ## Hilbert transformed signal
 
@@ -78,7 +78,7 @@ ${INVERSE_FT} : ${VROT_ANOM_RUNMEAN}
 ## PSA date list
 DATES_PSA=${PSA_DIR}/dates-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.txt 
 ${DATES_PSA} : ${FOURIER_COEFFICIENTS}
-	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ 
+	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --min_duration 1 --max_sign_change 5  
 
 ## PSA phase plot (histogram)
 PLOT_PSA_PHASE=${PSA_DIR}/psa-phase_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
