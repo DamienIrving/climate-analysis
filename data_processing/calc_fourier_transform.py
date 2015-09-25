@@ -290,19 +290,34 @@ def spectrum(signal_fft, freqs, scaling='amplitude', variance=None):
 
 
 def count_sign_change(data):
-    """Count the number of times the data changes sign."""
+    """Count the number of times the data series changes sign.
+    
+    Works by determining the sign of all the values (-1, 0 or 1)
+      and then replaces zeros with the next non-zero value, since
+      -1 to/from 0 or 1 to/from 0 changes do not count as a sign
+      change in this context.
+    
+    """
 
     assert data.ndim == 1, "Input array must be one dimensional"
 
-    asign = numpy.sign(data)
-    sz = asign == 0
-    while sz.any():
-        asign[sz] = numpy.roll(asign, 1)[sz]
-        sz = asign == 0
-    signchange = ((numpy.roll(asign, 1) - asign) != 0).astype(int)
-    signchange[0] = 0
-
-    return numpy.sum(signchange)
+    signs = numpy.sign(data)
+    
+    counter = -2
+    while signs[-1] == 0:
+        signs[-1] = signs[counter]
+        counter = counter - 1   
+        
+    for i in range(len(signs)):
+        counter = 1
+        while signs[i] == 0:
+            signs[i] = signs[i+counter]
+            counter = counter + 1
+    
+    diffs = numpy.abs(numpy.diff(signs))
+    change_count = numpy.sum(diffs == 2)
+    
+    return change_count
 
 
 def _get_sign_change(data, outdata_dict):
