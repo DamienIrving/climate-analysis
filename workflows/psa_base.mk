@@ -75,18 +75,22 @@ INVERSE_FT=${PSA_DIR}/ift-${WAVE_LABEL}-vrot_${DATASET}_${LEVEL}-${LAT_LABEL}-${
 ${INVERSE_FT} : ${VROT_ANOM_RUNMEAN}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_fourier_transform.py $< vrot $@ ${WAVE_MIN} ${WAVE_MAX} hilbert --latitude ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --valid_lon ${LON_SEARCH_MIN} ${LON_SEARCH_MAX} --avelat
 
-## PSA date list
-DATES_PSA=${PSA_DIR}/dates-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.txt 
-${DATES_PSA} : ${FOURIER_COEFFICIENTS}
+## PSA date lists
+ALL_DATES_PSA=${PSA_DIR}/dates-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.txt 
+${ALL_DATES_PSA} : ${FOURIER_COEFFICIENTS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --min_duration 1 --max_sign_change 5  
+
+FILTERED_DATES_PSA=${PSA_DIR}/dates-psa_duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.txt 
+${FILTERED_DATES_PSA} : ${FOURIER_COEFFICIENTS}
+	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --min_duration ${DURATION} --max_sign_change 5  
 
 
 # Visualisation
 
 ## PSA phase plot (histogram)
-PLOT_PSA_PHASE=${PSA_DIR}/psa-phase_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
-${PLOT_PSA_PHASE} : ${FOURIER_COEFFICIENTS} ${DATES_PSA}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_phase.py $< wave6_phase number $(word 2,$^) $@ --seasonal
+PLOT_PSA_PHASE=${PSA_DIR}/psa-phase_wave${PHASE}_duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
+${PLOT_PSA_PHASE} : ${FOURIER_COEFFICIENTS} ${FILTERED_DATES_PSA}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_phase.py $< wave${PHASE}_phase number $(word 2,$^) $@ --seasonal
 
 ## PSA seasonality plot (histogram)
 
@@ -95,14 +99,14 @@ ${PLOT_PSA_PHASE} : ${FOURIER_COEFFICIENTS} ${DATES_PSA}
 ## PSA duration plot (histogram)
 
 PLOT_DURATION=${PSA_DIR}/psa-duration_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
-${PLOT_DURATION} : ${DATES_PSA}
+${PLOT_DURATION} : ${ALL_DATES_PSA}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_date_list.py $< $@ --plot_types duration_histogram
 
 
 ## PSA check (spatial map and FT for given dates)
 
 .PHONY : psa_check
-psa_check : ${DATES_PSA} ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
+psa_check : ${FILTERED_DATES_PSA} ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_check.sh $<  $(word 2,$^) streamfunction $(word 3,$^) rotated_northward_wind vrot 1986 1988 ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
 
 
