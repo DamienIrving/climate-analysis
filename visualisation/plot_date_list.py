@@ -121,8 +121,6 @@ def plot_duration(ax, df, label=None):
         else:
             false_count = false_count + event[1]
 
-    pdb.set_trace()
-
     #ajust for fact that two consecutive dates are required for a true
     ones = duration_data.count(1)
     false_count = false_count - ones
