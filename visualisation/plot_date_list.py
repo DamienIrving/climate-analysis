@@ -97,6 +97,55 @@ def get_seasonal_index(nc_file, var, start, end):
     return filtered_dates_metric_aggregate_df, metric_metadata
 
 
+def plot_duration(ax, df, label=None):
+    """Plot a bar chart showing the distribution of event duration.
+
+    Args:
+      ax (AxesSubplot): plot axis
+      date_list (pandas DataFrame): The list of dates
+
+    """
+
+    # Get the duration data
+    df['dates'] = df.index
+    df['time_delta'] = df['dates'].diff()
+    in_event = df['time_delta'] < pandas.tslib.Timedelta('2 days')
+
+    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(in_event)] 
+
+    duration_data = []
+    false_count = 0
+    for event in grouped_events:
+        if event[0]:
+            duration_data.append(event[1])
+        else:
+            false_count = false_count + event[1]
+
+    pdb.set_trace()
+
+    #ajust for fact that two consecutive dates are required for a true
+    ones = duration_data.count(1)
+    false_count = false_count - ones
+    duration_data = numpy.array(duration_data) + 1
+    duration_data = numpy.concatenate((duration_data, numpy.array([1] * false_count)))
+
+    # Bin it
+    bin_res = 1
+    bin_edge_start = duration_data.min() - (bin_res / 2.)
+    bin_edge_end = duration_data.max() + bin_res + (bin_res / 2.)
+    bin_centers = numpy.arange(duration_data.min(), duration_data.max() + bin_res, bin_res)
+    hist, bin_edges = numpy.histogram(duration_data, bins=numpy.arange(bin_edge_start, bin_edge_end, bin_res))
+
+    # Plot
+    width = 0.8
+    ax.bar(bin_centers, hist, width, color='0.7')
+    ax.set_ylabel('Duration')
+    ax.set_xlabel('Frequency')
+
+    if label:
+        ax.text(0.97, 0.95, label, transform=ax.transAxes, fontsize='large')
+
+
 def plot_index_dots(ax, x, index_data, bar_heights, upper_threshold=1.0, lower_threshold=-1.0):
     """Plot dots."""
 
@@ -205,45 +254,6 @@ def time_filter(df, start_date, end_date):
         filtered_df = df
 
     return filtered_df
-
-
-def plot_duration(ax, df, label=None):
-    """Plot a bar chart showing the distribution of event duration.
-
-    Args:
-      ax (AxesSubplot): plot axis
-      date_list (pandas DataFrame): The list of dates
-
-    """
-
-    # Get the duration data
-    df['dates'] = df.index
-    df['time_delta'] = df['dates'].diff()
-    in_event = df['time_delta'] < pandas.tslib.Timedelta('2 days')
-
-    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(in_event)] 
-
-    duration_data = []
-    for event in grouped_events:
-        if event[0] and event[1] > 1:
-            duration_data.append(event[1])
-    duration_data = numpy.array(duration_data)
-
-    # Bin it
-    bin_res = 1
-    bin_edge_start = duration_data.min() - (bin_res / 2.)
-    bin_edge_end = duration_data.max() + bin_res + (bin_res / 2.)
-    bin_centers = numpy.arange(duration_data.min(), duration_data.max() + bin_res, bin_res)
-    hist, bin_edges = numpy.histogram(duration_data, bins=numpy.arange(bin_edge_start, bin_edge_end, bin_res))
-
-    # Plot
-    width = 0.8
-    ax.bar(bin_centers, hist, width, color='0.7')
-    ax.set_ylabel('Duration')
-    ax.set_xlabel('Frequency')
-
-    if label:
-        ax.text(0.97, 0.95, label, transform=ax.transAxes, fontsize='large')
 
 
 def main(inargs):
