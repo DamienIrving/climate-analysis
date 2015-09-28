@@ -9,7 +9,7 @@ function usage {
     echo "   sf_file:      Streamfunction file"
     echo "   freq:         Frequency to filter phase against"
     echo "   duration:     Minimum event duration"
-    echo "   outfile:      Output file name"
+    echo "   outfile:      Output file name, which includes the word season which will be replaced"
     echo "   python_exe:   Python executable"
     echo "   code_dir:     Directory that psa_date_list.py and calc_composite.py are in"
     echo "   vis_dir:      Directory that plot_map.py is in"
@@ -55,16 +55,20 @@ done
 
 # Generate the plot
 
-${python_exe} ${vis_dir}/plot_map.py 3 2 \
---output_projection PlateCarree_Dateline --subplot_headings 0-10 10-20 20-30 30-40 40-50 50-60 \
---infile ${temp_dir}/sf-composite_phase0-10.nc streamfunction_annual none none none contour0 1 PlateCarree \
---infile ${temp_dir}/sf-composite_phase10-20.nc streamfunction_annual none none none contour0 2 PlateCarree \
---infile ${temp_dir}/sf-composite_phase20-30.nc streamfunction_annual none none none contour0 3 PlateCarree \
---infile ${temp_dir}/sf-composite_phase30-40.nc streamfunction_annual none none none contour0 4 PlateCarree \
---infile ${temp_dir}/sf-composite_phase40-50.nc streamfunction_annual none none none contour0 5 PlateCarree \
---infile ${temp_dir}/sf-composite_phase50-60.nc streamfunction_annual none none none contour0 6 PlateCarree \
---contour_levels -12 -10 -8 -6 -4 -2 0 2 4 6 8 10 12 \
---figure_size 12 8 --exclude_blanks --region sh \
---ofile ${outfile}
+for season in DJF MAM JJA SON annual; do
 
+    new_outfile=`echo ${outfile} | sed s/season/${season}/`
+
+    ${python_exe} ${vis_dir}/plot_map.py 3 2 \
+    --output_projection PlateCarree_Dateline --subplot_headings 0-10 10-20 20-30 30-40 40-50 50-60 \
+    --infile ${temp_dir}/sf-composite_phase0-10.nc streamfunction_${season} none none none contour0 1 PlateCarree \
+    --infile ${temp_dir}/sf-composite_phase10-20.nc streamfunction_${season} none none none contour0 2 PlateCarree \
+    --infile ${temp_dir}/sf-composite_phase20-30.nc streamfunction_${season} none none none contour0 3 PlateCarree \
+    --infile ${temp_dir}/sf-composite_phase30-40.nc streamfunction_${season} none none none contour0 4 PlateCarree \
+    --infile ${temp_dir}/sf-composite_phase40-50.nc streamfunction_${season} none none none contour0 5 PlateCarree \
+    --infile ${temp_dir}/sf-composite_phase50-60.nc streamfunction_${season} none none none contour0 6 PlateCarree \
+    --contour_levels -12 -10 -8 -6 -4 -2 0 2 4 6 8 10 12 \
+    --figure_size 12 8 --exclude_blanks --region sh --title ${season}\
+    --ofile ${new_outfile}
+done
 rm ${temp_files[@]}

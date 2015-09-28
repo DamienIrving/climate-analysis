@@ -93,7 +93,7 @@ ${PLOT_PSA_PHASE_HIST} : ${FOURIER_COEFFICIENTS} ${FILTERED_DATES_PSA}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_phase_histogram.py $< wave${FREQ}_phase number $(word 2,$^) $@ --seasonal
 
 ## PSA phase plot (composites)
-PLOT_PSA_PHASE_COMP=${PSA_DIR}/psa-phase-composites_wave${FREQ}-duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
+PLOT_PSA_PHASE_COMP=${PSA_DIR}/psa-phase-composites_wave${FREQ}-duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all-season_native-${NPLABEL}.png
 ${PLOT_PSA_PHASE_COMP} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_phase_composites.sh $< $(word 2,$^) ${FREQ} ${DURATION} $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 
