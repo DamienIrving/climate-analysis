@@ -5,6 +5,7 @@ from datetime import datetime
 import argparse, numpy, pandas, calendar
 from pandas.tseries.resample import TimeGrouper
 from scipy import stats
+from itertools import groupby
 
 import matplotlib
 matplotlib.use('Agg')
@@ -185,17 +186,64 @@ def plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=None, index_var=No
 def time_filter(df, start_date, end_date):
     """Remove times that are not within the start/end bounds."""
 
-    datetime_start = datetime.strptime(start_date, '%Y-%m-%d')
-    start_selection = df.index >= datetime_start
+    if start_date:
+        datetime_start = datetime.strptime(start_date, '%Y-%m-%d')
+        start_selection = df.index >= datetime_start
 
-    datetime_end = datetime.strptime(end_date, '%Y-%m-%d')
-    end_selection = df.index <= datetime_end
+    if end_date:
+        datetime_end = datetime.strptime(end_date, '%Y-%m-%d')
+        end_selection = df.index <= datetime_end
 
-    combined_selection = start_selection & end_selection
-
-    filtered_df = df[combined_selection] 
+    if start_date and end_date:
+        selection = start_selection & end_selection
+        filtered_df = df[combined_selection] 
+    elif start_date:
+        filtered_df = df[start_selection] 
+    elif end_date:
+        filtered_df = df[end_selection]
+    else:
+        filtered_df = df
 
     return filtered_df
+
+
+def plot_duration(ax, df, label=None):
+    """Plot a bar chart showing the distribution of event duration.
+
+    Args:
+      ax (AxesSubplot): plot axis
+      date_list (pandas DataFrame): The list of dates
+
+    """
+
+    # Get the duration data
+    df['dates'] = df.index
+    df['time_delta'] = df['dates'].diff()
+    in_event = df['time_delta'] < pandas.tslib.Timedelta('2 days')
+
+    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(in_event)] 
+
+    duration_data = []
+    for event in grouped_events:
+        if event[0] and event[1] > 1:
+            duration_data.append(event[1])
+    duration_data = numpy.array(duration_data)
+
+    # Bin it
+    bin_res = 1
+    bin_edge_start = duration_data.min() - (bin_res / 2.)
+    bin_edge_end = duration_data.max() + bin_res + (bin_res / 2.)
+    bin_centers = numpy.arange(duration_data.min(), duration_data.max() + bin_res, bin_res)
+    hist, bin_edges = numpy.histogram(duration_data, bins=numpy.arange(bin_edge_start, bin_edge_end, bin_res))
+
+    # Plot
+    width = 0.8
+    ax.bar(bin_centers, hist, width, color='0.7')
+    ax.set_ylabel('Duration')
+    ax.set_xlabel('Frequency')
+
+    if label:
+        ax.text(0.97, 0.95, label, transform=ax.transAxes, fontsize='large')
 
 
 def main(inargs):
@@ -222,7 +270,7 @@ def main(inargs):
 
     labels = ['(a)', '(b)', '(c)'] 
     for index, plot_type in enumerate(inargs.plot_types):
-        assert plot_type in ('monthly_totals_histogram', 'seasonal_values_stackplot')
+        assert plot_type in ('monthly_totals_histogram', 'seasonal_values_stackplot', 'duration_histogram')
         
         plotnum = index + 1
         ax = plt.subplot(nrows, ncols, plotnum)
@@ -233,6 +281,7 @@ def main(inargs):
             monthly_data = aggregate_data(monthly_filtered_dates_df, timescale='monthly', method='sum') 
             month_days = monthly_filtered_dates_df.groupby(lambda x: x.month).size()
             plot_monthly_totals(ax, monthly_data, month_days, label=labels[index])
+
         elif plot_type == 'seasonal_values_stackplot':
             seasonal_start, seasonal_end = get_seasonal_bounds(inargs.start, inargs.end)
             seasonal_filtered_dates_df = fill_out_dates(filtered_dates_df, seasonal_start, seasonal_end)
@@ -246,6 +295,9 @@ def main(inargs):
                 index_var = None
             plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=seasonal_index, index_var=index_var,
                                     leg_loc=inargs.leg_loc, label=labels[index])
+
+        elif plot_type == 'duration_histogram':
+            plot_duration(ax, filtered_dates_df, label=labels[index])
 
     fig.savefig(inargs.outfile, bbox_inches='tight')
     metadata_dict = {inargs.infile: datetime_metadata}
@@ -279,7 +331,7 @@ author:
     parser.add_argument("--start", type=str, help="Time start filter (e.g. 1979-02-31)", default=None)
     parser.add_argument("--end", type=str, help="Time end filter (e.g. 2012-12-31)", default=None)
     parser.add_argument("--plot_types", type=str, nargs='*', default=('monthly_totals_histogram', 'seasonal_values_stackplot'),
-                        choices=('monthly_totals_histogram', 'seasonal_values_stackplot'),
+                        choices=('monthly_totals_histogram', 'seasonal_values_stackplot', 'duration_histogram'),
                         help="Types of plots to include")
 
     # Plot options

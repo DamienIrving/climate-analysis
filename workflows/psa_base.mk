@@ -80,10 +80,24 @@ DATES_PSA=${PSA_DIR}/dates-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${T
 ${DATES_PSA} : ${FOURIER_COEFFICIENTS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --min_duration 1 --max_sign_change 5  
 
+
+# Visualisation
+
 ## PSA phase plot (histogram)
 PLOT_PSA_PHASE=${PSA_DIR}/psa-phase_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
 ${PLOT_PSA_PHASE} : ${FOURIER_COEFFICIENTS} ${DATES_PSA}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_phase.py $< wave7_phase number $(word 2,$^) $@ --seasonal
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_phase.py $< wave6_phase number $(word 2,$^) $@ --seasonal
+
+## PSA seasonality plot (histogram)
+
+# FIXME
+
+## PSA duration plot (histogram)
+
+PLOT_DURATION=${PSA_DIR}/psa-duration_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
+${PLOT_DURATION} : ${DATES_PSA}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_date_list.py $< $@ --plot_types duration_histogram
+
 
 ## PSA check (spatial map and FT for given dates)
 
