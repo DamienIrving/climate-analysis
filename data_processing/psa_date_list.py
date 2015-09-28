@@ -77,27 +77,31 @@ def main(inargs):
 
     # Select the ones where wave 5 and 6 are in the top 3 amplitudes
     # (worst ranking must be 8 + 9 = 17) 
-    top = (rank_df['wave5_amp'].values + rank_df['wave6_amp'].values) >= 17
+    included = (rank_df['wave5_amp'].values + rank_df['wave6_amp'].values) >= 17
 
-    # Generate duration information
-    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(top)]  
-
-    # Select all days where duration > minimum threshold
-    duration = []
-    for event in grouped_events:
-        if event[0]:
-            data = [event[1]] * event[1]
-        else:
-            data = [0] * event[1]
-        duration.append(data)
-
-    rank_df['duration'] = reduce(operator.add, duration)
-
-    final = rank_df.loc[rank_df['duration'] > inargs.min_duration]
+    final = rank_df.loc[included]
 
     # Reject days that change sign too much
     if inargs.max_sign_change:
         final = final.loc[final['sign_count'] <= inargs.max_sign_change]
+
+    # Optional filtering by duration
+    if inargs.duration_filter:
+	final['dates'] = final.index
+	final['time_delta'] = final['dates'].diff()
+	in_event = final['time_delta'] < pandas.tslib.Timedelta('2 days')
+	grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(in_event)] 
+
+	#select all days where duration > minimum threshold
+	duration = []
+	for event in grouped_events:
+            if event[0]:
+        	data = [event[1]] * event[1]
+            else:
+        	data = [0] * event[1]
+            duration.append(data)
+	final['duration'] = reduce(operator.add, duration)
+	final = final.loc[final['duration'] > inargs.duration_filter]
 
     # Optional filtering by season
     if inargs.season_filter:
@@ -106,16 +110,10 @@ def main(inargs):
         bools_subset = (months_subset == season_months[season][0]) + (months_subset == season_months[season][1]) + (months_subset == season_months[season][2])
         final = final.loc[bools_subset]
 
-    # Optional filtering by wave number
-    if inargs.freq_filter:
-        target_amp = 'wave%i_amp' %(inargs.freq_filter)
-        final = final.loc[final[target_amp] == 10]
-
     # Optional filtering by wave phase
     if inargs.phase_filter:
-        assert inargs.freq_filter, "Must give a freq_filter to use phase filter"
-        phase_min, phase_max = inargs.phase_filter
-        target_phase = 'wave%i_phase' %(inargs.freq_filter)
+        freq, phase_min, phase_max = inargs.phase_filter
+        target_phase = 'wave%i_phase' %(freq)
         final = final.loc[(final[target_phase] > phase_min) & (final[target_phase] < phase_max)]
 
     # Write outputs
@@ -134,17 +132,15 @@ if __name__ == '__main__':
     parser.add_argument("fourier_file", type=str, help="Input file name")
     parser.add_argument("output_file", type=str, help="Output file name")
 
-    parser.add_argument("--min_duration", type=int, default=20, 
-                        help="minimum duration for a PSA event [default = 20]")
     parser.add_argument("--max_sign_change", type=int, default=5, 
                         help="maximum number of times the signal can change sign over the search domain [default = 5]")
 
+    parser.add_argument("--duration_filter", type=int, default=None, 
+                        help="minimum duration for a PSA event [default = no filter]")
     parser.add_argument("--season_filter", type=str, choices=('DJF', 'MAM', 'JJA', 'SON'), default=None, 
                         help="only keep the selected season [default = no season filter]")
-    parser.add_argument("--freq_filter", type=int, default=None, 
-                        help="only keep times where freq_filter is most dominant [default = no filter]")
-    parser.add_argument("--phase_filter", type=float, nargs=2, metavar=['MIN', 'MAX'], default=None, 
-                        help="phase range to retain [default = all]")
+    parser.add_argument("--phase_filter", type=float, nargs=3, metavar=['FREQ', 'MIN_PHASE', 'MAX_PHASE'], default=None, 
+                        help="phase range to retain at the given frequecy. [default = no filter]")
 
 
     args = parser.parse_args()            

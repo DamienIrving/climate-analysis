@@ -88,9 +88,15 @@ ${FILTERED_DATES_PSA} : ${FOURIER_COEFFICIENTS}
 # Visualisation
 
 ## PSA phase plot (histogram)
-PLOT_PSA_PHASE=${PSA_DIR}/psa-phase_wave${PHASE}_duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
-${PLOT_PSA_PHASE} : ${FOURIER_COEFFICIENTS} ${FILTERED_DATES_PSA}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_phase.py $< wave${PHASE}_phase number $(word 2,$^) $@ --seasonal
+PLOT_PSA_PHASE_HIST=${PSA_DIR}/psa-phase-histogram_wave${FREQ}-duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
+${PLOT_PSA_PHASE_HIST} : ${FOURIER_COEFFICIENTS} ${FILTERED_DATES_PSA}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_phase_histogram.py $< wave${FREQ}_phase number $(word 2,$^) $@ --seasonal
+
+## PSA phase plot (composites)
+PLOT_PSA_PHASE_COMP=${PSA_DIR}/psa-phase-composites_wave${FREQ}-duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
+${PLOT_PSA_PHASE_COMP} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN}
+	bash ${VIS_SCRIPT_DIR}/plot_psa_phase_composites.sh $< $(word 2,$^) ${FREQ} ${DURATION} $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
+
 
 ## PSA seasonality plot (histogram)
 
@@ -108,6 +114,13 @@ ${PLOT_DURATION} : ${ALL_DATES_PSA}
 .PHONY : psa_check
 psa_check : ${FILTERED_DATES_PSA} ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_check.sh $<  $(word 2,$^) streamfunction $(word 3,$^) rotated_northward_wind vrot 1986 1988 ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
+
+
+
+
+
+
+
 
 
 # PSA analysis

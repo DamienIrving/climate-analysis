@@ -41,9 +41,9 @@ WAVE_MIN=4
 WAVE_MAX=7
 WAVE_LABEL=w${WAVE_MIN}${WAVE_MAX}
 
-PHASE=5
-DURATION=30
+FREQ=6
+DURATION=5
 
 
 
-TARGET=${PSA_DIR}/psa-phase_wave${PHASE}_duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
+TARGET=${PSA_DIR}/psa-phase-composites_wave${FREQ}-duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
