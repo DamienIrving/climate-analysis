@@ -6,6 +6,7 @@ import numpy, pandas
 import xray
 import operator
 from itertools import groupby
+from scipy import stats
 from scipy.stats import rankdata
 
 import matplotlib
@@ -78,8 +79,8 @@ def fix_boundary_data(data):
     return data
         
 
-def plot_phase(df, ofile):
-    """ """
+def plot_phase(df, min_duration, ofile):
+    """Plot a line graph showing phase throughout PSA event lifecycle."""
 
     # Collect up all the event phase info
     event_phase_list = []
@@ -102,16 +103,24 @@ def plot_phase(df, ofile):
     amp_min = numpy.min(sum(event_amp_list, []))
 
     # Create the plot
-    fig = plt.figure(figsize=(8,13))
+    fig = plt.figure(figsize=(8,11))
     for phases, amps in zip(event_phase_list, event_amp_list):
-        if len(phases) > 10:
+        if len(phases) > min_duration:
             x_axis = numpy.arange(0, len(phases))
             phase_data = fix_boundary_data(phases)
             amp_data = numpy.array(amps)
+
+            slope, intercept, r_value, p_value, std_err = stats.linregress(x_axis, phase_data)
+            if slope > 0.2:
+                cmap = 'Reds'
+            elif slope < -0.2:
+                cmap = 'Blues'
+            else:
+                cmap = 'Greys'
             
             points = numpy.array([x_axis, phase_data]).T.reshape(-1, 1, 2)
             segments = numpy.concatenate([points[:-1], points[1:]], axis=1)
-            lc = LineCollection(segments, cmap=plt.get_cmap('Greys_r'), norm=plt.Normalize(amp_min, amp_max))
+            lc = LineCollection(segments, cmap=plt.get_cmap(cmap), norm=plt.Normalize(amp_min, amp_max))
             lc.set_array(amp_data)
             lc.set_linewidth(3)
             plt.gca().add_collection(lc)
@@ -119,8 +128,8 @@ def plot_phase(df, ofile):
     plt.xlim(0, df['duration'].max())
     plt.ylim(0, 83)
 
-    #plt.set_xlabel('day')
-    #plt.set_ylabel('wave 6 phase')
+    plt.xlabel('day')
+    plt.ylabel('wave 6 phase')
    
     plt.savefig(ofile, bbox_inches='tight')
 
@@ -163,35 +172,38 @@ def main(inargs):
         duration.append(data)
     final['duration'] = reduce(operator.add, duration)
 
-    # Optional filtering by duration
-    if inargs.duration_filter:
-	final = final.loc[final['duration'] > inargs.duration_filter]
+    if inargs.event_plot:
+        assert not inargs.phase_filter and not inargs.season_filter, \
+        "Have not added functionality to filter by phase or season for event plot"
+        plot_phase(final, inargs.duration_filter, inargs.output_file)
+    else: 
+	# Optional filtering by duration
+	if inargs.duration_filter:
+	    final = final.loc[final['duration'] > inargs.duration_filter]
 
-    # Optional filtering by season
-    if inargs.season_filter:
-        season = inargs.season_filter
-        months_subset = pandas.to_datetime(final.index.values).month
-        bools_subset = (months_subset == season_months[season][0]) + (months_subset == season_months[season][1]) + (months_subset == season_months[season][2])
-        final = final.loc[bools_subset]
+	# Optional filtering by season
+	if inargs.season_filter:
+            season = inargs.season_filter
+            months_subset = pandas.to_datetime(final.index.values).month
+            bools_subset = (months_subset == season_months[season][0]) + (months_subset == season_months[season][1]) + (months_subset == season_months[season][2])
+            final = final.loc[bools_subset]
 
-    # Optional filtering by wave phase
-    if inargs.phase_filter:
-        freq, phase_min, phase_max = inargs.phase_filter
-        target_phase = 'wave%i_phase' %(freq)
-        final = final.loc[(final[target_phase] > phase_min) & (final[target_phase] < phase_max)]
+	# Optional filtering by wave phase
+	if inargs.phase_filter:
+            freq, phase_min, phase_max = inargs.phase_filter
+            target_phase = 'wave%i_phase' %(freq)
+            final = final.loc[(final[target_phase] > phase_min) & (final[target_phase] < phase_max)]
 
-    if inargs.event_phase_plot:
-        plot_phase(final, inargs.event_phase_plot)
+	# Write date file
+	gio.write_dates(inargs.output_file, final.index.values)
 
-    # Write outputs
-    gio.write_dates(inargs.output_file, final.index.values)
     metadata_dict = {inargs.fourier_file: dset_in.attrs['history']}
     gio.write_metadata(inargs.output_file, file_info=metadata_dict)
 
 
 if __name__ == '__main__':
 
-    description='Create a psa date list from Fourier information'
+    description='Create a psa date list (or event summary plot) from Fourier information'
     parser = argparse.ArgumentParser(description=description, 
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -202,6 +214,9 @@ if __name__ == '__main__':
     parser.add_argument("--max_sign_change", type=int, default=5, 
                         help="maximum number of times the signal can change sign over the search domain [default = 5]")
 
+    parser.add_argument("--event_plot", action="store_true", default=False,
+                        help="switch for creating a phase/amplitude summary plot instead [default: False]")
+
     parser.add_argument("--duration_filter", type=int, default=None, 
                         help="minimum duration for a PSA event [default = no filter]")
     parser.add_argument("--season_filter", type=str, choices=('DJF', 'MAM', 'JJA', 'SON'), default=None, 
@@ -209,8 +224,6 @@ if __name__ == '__main__':
     parser.add_argument("--phase_filter", type=float, nargs=3, metavar=['FREQ', 'MIN_PHASE', 'MAX_PHASE'], default=None, 
                         help="phase range to retain at the given frequecy. [default = no filter]")
 
-    parser.add_argument("--event_phase_plot", type=str, default=None, 
-                        help="name of output file for optional event phase plot [default = None]")
 
     args = parser.parse_args()            
     main(args)
