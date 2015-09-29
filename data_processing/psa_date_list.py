@@ -8,6 +8,9 @@ import operator
 from itertools import groupby
 from scipy.stats import rankdata
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 # Import my modules
 
@@ -63,6 +66,45 @@ except ImportError:
 season_months = {'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
                  'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
 
+def fix_boundary_data(data):
+    """If a data series straddles 0/60, adjust accordingly."""
+
+    data = numpy.array(data) 
+    diffs = numpy.abs(numpy.diff(data))
+    if diffs.max() > 50:
+        data = numpy.where(data < 30, data + 60, data)
+
+    return data
+        
+
+def plot_phase(df, ofile):
+    """ """
+
+    # Collect up all the event phase info
+    event_phase_list = []
+    current_event = []
+    for index, row in df.iterrows():
+        if row['duration'] == 0:
+            event_phase_list.append(current_event)
+            current_event = [row['wave6_phase']]
+        else:
+            current_event.append(row['wave6_phase'])
+    event_phase_list.pop(0)    
+
+    fig = plt.figure()
+    ax = plt.subplot(1, 1, 1)
+    for event in event_phase_list:
+        if len(event) > 10:
+            x_axis = numpy.arange(0, len(event))
+            phase_data = fix_boundary_data(event)
+            ax.plot(x_axis, phase_data, linewidth=2.0)
+
+    ax.set_xlabel('day')
+    ax.set_ylabel('wave 6 phase')
+   
+    plt.savefig(ofile, bbox_inches='tight')
+
+
 def main(inargs):
     """Run the program"""
 
@@ -85,22 +127,24 @@ def main(inargs):
     if inargs.max_sign_change:
         final = final.loc[final['sign_count'] <= inargs.max_sign_change]
 
+    # Compile event duration information
+    final['dates'] = final.index
+    final['time_delta'] = final['dates'].diff()
+    in_event = final['time_delta'] < pandas.tslib.Timedelta('2 days')
+    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(in_event)] 
+
+    #select all days where duration > minimum threshold
+    duration = []
+    for event in grouped_events:
+        if event[0]:
+            data = [event[1]] * event[1]
+        else:
+            data = [0] * event[1]
+        duration.append(data)
+    final['duration'] = reduce(operator.add, duration)
+
     # Optional filtering by duration
     if inargs.duration_filter:
-	final['dates'] = final.index
-	final['time_delta'] = final['dates'].diff()
-	in_event = final['time_delta'] < pandas.tslib.Timedelta('2 days')
-	grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(in_event)] 
-
-	#select all days where duration > minimum threshold
-	duration = []
-	for event in grouped_events:
-            if event[0]:
-        	data = [event[1]] * event[1]
-            else:
-        	data = [0] * event[1]
-            duration.append(data)
-	final['duration'] = reduce(operator.add, duration)
 	final = final.loc[final['duration'] > inargs.duration_filter]
 
     # Optional filtering by season
@@ -115,6 +159,9 @@ def main(inargs):
         freq, phase_min, phase_max = inargs.phase_filter
         target_phase = 'wave%i_phase' %(freq)
         final = final.loc[(final[target_phase] > phase_min) & (final[target_phase] < phase_max)]
+
+    if inargs.event_phase_plot:
+        plot_phase(final, inargs.event_phase_plot)
 
     # Write outputs
     gio.write_dates(inargs.output_file, final.index.values)
@@ -142,6 +189,8 @@ if __name__ == '__main__':
     parser.add_argument("--phase_filter", type=float, nargs=3, metavar=['FREQ', 'MIN_PHASE', 'MAX_PHASE'], default=None, 
                         help="phase range to retain at the given frequecy. [default = no filter]")
 
+    parser.add_argument("--event_phase_plot", type=str, default=None, 
+                        help="name of output file for optional event phase plot [default = None]")
 
     args = parser.parse_args()            
     main(args)
