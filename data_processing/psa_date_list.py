@@ -11,6 +11,7 @@ from scipy.stats import rankdata
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.collections import LineCollection
 
 # Import my modules
 
@@ -82,25 +83,44 @@ def plot_phase(df, ofile):
 
     # Collect up all the event phase info
     event_phase_list = []
-    current_event = []
+    event_amp_list = []
+    current_event_phase = []
+    current_event_amp = []
     for index, row in df.iterrows():
         if row['duration'] == 0:
-            event_phase_list.append(current_event)
-            current_event = [row['wave6_phase']]
+            event_phase_list.append(current_event_phase)
+            event_amp_list.append(current_event_amp)
+            current_event_phase = [row['wave6_phase']]
+            current_event_amp = [row['env_max']]
         else:
-            current_event.append(row['wave6_phase'])
+            current_event_phase.append(row['wave6_phase'])
+            current_event_amp.append(row['env_max'])
     event_phase_list.pop(0)    
+    event_amp_list.pop(0)
 
-    fig = plt.figure()
-    ax = plt.subplot(1, 1, 1)
-    for event in event_phase_list:
-        if len(event) > 10:
-            x_axis = numpy.arange(0, len(event))
-            phase_data = fix_boundary_data(event)
-            ax.plot(x_axis, phase_data, linewidth=2.0)
+    amp_max = numpy.max(sum(event_amp_list, []))
+    amp_min = numpy.min(sum(event_amp_list, []))
 
-    ax.set_xlabel('day')
-    ax.set_ylabel('wave 6 phase')
+    # Create the plot
+    fig = plt.figure(figsize=(8,13))
+    for phases, amps in zip(event_phase_list, event_amp_list):
+        if len(phases) > 10:
+            x_axis = numpy.arange(0, len(phases))
+            phase_data = fix_boundary_data(phases)
+            amp_data = numpy.array(amps)
+            
+            points = numpy.array([x_axis, phase_data]).T.reshape(-1, 1, 2)
+            segments = numpy.concatenate([points[:-1], points[1:]], axis=1)
+            lc = LineCollection(segments, cmap=plt.get_cmap('Greys_r'), norm=plt.Normalize(amp_min, amp_max))
+            lc.set_array(amp_data)
+            lc.set_linewidth(3)
+            plt.gca().add_collection(lc)
+
+    plt.xlim(0, df['duration'].max())
+    plt.ylim(0, 83)
+
+    #plt.set_xlabel('day')
+    #plt.set_ylabel('wave 6 phase')
    
     plt.savefig(ofile, bbox_inches='tight')
 
