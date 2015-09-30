@@ -94,12 +94,24 @@ def running_mean(data, window):
     return central_runmean
 
 
-def plot_epochs(ax, df_subset, phase_freq, window, phase_res):
-    """Add epoch lines."""
+def plot_extra_smooth(category, ax, df_subset, phase_freq, window, phase_res):
+    """Add extra smoothed histogram lines."""
 
-    year_subset = pandas.to_datetime(df_subset['time'].values).year
-    early_bools = year_subset < 1991
-    late_bools = year_subset > 2002 
+    assert category in ['epochs', 'gradient']
+
+    if category == 'epochs':
+        comparison_data = pandas.to_datetime(df_subset['time'].values).year
+        bound1 = 1991
+        bound2 = 2002
+        labels = ['1979-1990', '1991-2002', '2003-2014']
+    elif category == 'gradient':
+        comparison_data = df_subset['event_gradient'].values
+        bound1 = -0.2
+        bound2 = 0.2
+        labels = ['backwards', 'stationary', 'forward']
+
+    early_bools = comparison_data < bound1
+    late_bools = comparison_data > bound2
     mid_bools = numpy.invert(early_bools + late_bools)
 
     df_subset_early = df_subset.loc[early_bools]
@@ -110,13 +122,13 @@ def plot_epochs(ax, df_subset, phase_freq, window, phase_res):
     hist_mid, smooth_hist_mid, bin_centers_mid = phase_histogram(df_subset_mid[phase_freq].values, window, phase_res)
     hist_late, smooth_hist_late, bin_centers_late = phase_histogram(df_subset_late[phase_freq].values, window, phase_res)
 
-    plot_histogram(ax, hist_early, smooth_hist_early, bin_centers_early, no_hist=True, label='1979-1990')
-    plot_histogram(ax, hist_mid, smooth_hist_mid, bin_centers_mid, no_hist=True, label='1991-2002')
-    plot_histogram(ax, hist_late, smooth_hist_late, bin_centers_late, no_hist=True,label='2003-2014')
+    plot_histogram(ax, hist_early, smooth_hist_early, bin_centers_early, no_hist=True, label=labels[0])
+    plot_histogram(ax, hist_mid, smooth_hist_mid, bin_centers_mid, no_hist=True, label=labels[1])
+    plot_histogram(ax, hist_late, smooth_hist_late, bin_centers_late, no_hist=True,label=labels[2])
 
 
 def plot_phase_distribution(df, phase_freq, phase_res, window, ofile, 
-                            seasonal=False, epochs=False, start_end=False):
+                            seasonal=False, epochs=False, gradient=False, start_end=False):
     """Plot a phase distribution histogram."""    
     
     if seasonal:
@@ -145,10 +157,10 @@ def plot_phase_distribution(df, phase_freq, phase_res, window, ofile,
         plot_histogram(ax, hist, smooth_hist, bin_centers, label='1979-2014')
 
         if epochs:
-            plot_epochs(ax, df_subset, phase_freq, window, phase_res) 
+            plot_extra_smooth('epochs', ax, df_subset, phase_freq, window, phase_res) 
 
-        if start_end:
-            print 'FIXME'  
+        if gradient:
+            plot_extra_smooth('gradient', ax, df_subset, phase_freq, window, phase_res) 
     
         ax.set_title(season)
         font = font_manager.FontProperties(size='x-small')
@@ -193,7 +205,8 @@ def main(inargs):
     if inargs.type == 'phase_distribution':
         plot_phase_distribution(filtered_df, phase_freq, inargs.phase_res, 
                                 inargs.window, inargs.ofile,
-                                seasonal=inargs.seasonal, epochs=inargs.epochs, start_end=inargs.start_end)
+                                seasonal=inargs.seasonal, epochs=inargs.epochs, 
+                                gradient=inargs.gradient, start_end=inargs.start_end)
     elif inargs.type == 'event_summary':
         plot_event_summary(filtered_df, phase_freq, inargs.ofile)
 
@@ -240,6 +253,8 @@ author:
                         help="switch for plotting the 4 seasons for phase distribution plot [default: False]")
     parser.add_argument("--epochs", action="store_true", default=False,
                         help="switch for plotting epoch lines on phase distribution plot [default: False]")
+    parser.add_argument("--gradient", action="store_true", default=False,
+                        help="switch for plotting gradient lines on phase distribution plot [default: False]")
     parser.add_argument("--start_end", action="store_true", default=False,
                         help="switch for plotting start and end histogram on phase distribution plot [default: False]")
 
