@@ -81,6 +81,19 @@ def event_info(df, freq):
     df['event_phase'] = phase_list
     df['event_gradient'] = gradient_list
 
+    # Flag start and end data times
+    start_bool = [False] * len(df.index)
+    end_bool = [False] * len(df.index)
+    row_num = 0
+    for index, row in df.iterrows():
+        if row['in_event'] == False:
+            start_bool[row_num] = True
+            end_bool[row_num + row['event_duration'] - 1] = True
+        row_num = row_num + 1    
+
+    df['event_start'] = start_bool
+    df['event_end'] = end_bool
+
     return df
   
 

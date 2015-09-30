@@ -115,7 +115,8 @@ def plot_epochs(ax, df_subset, phase_freq, window, phase_res):
     plot_histogram(ax, hist_late, smooth_hist_late, bin_centers_late, no_hist=True,label='2003-2014')
 
 
-def plot_phase_distribution(df, phase_freq, phase_res, window, ofile, seasonal=False, epochs=False):
+def plot_phase_distribution(df, phase_freq, phase_res, window, ofile, 
+                            seasonal=False, epochs=False, start_end=False):
     """Plot a phase distribution histogram."""    
     
     if seasonal:
@@ -145,6 +146,9 @@ def plot_phase_distribution(df, phase_freq, phase_res, window, ofile, seasonal=F
 
         if epochs:
             plot_epochs(ax, df_subset, phase_freq, window, phase_res) 
+
+        if start_end:
+            print 'FIXME'  
     
         ax.set_title(season)
         font = font_manager.FontProperties(size='x-small')
@@ -189,7 +193,7 @@ def main(inargs):
     if inargs.type == 'phase_distribution':
         plot_phase_distribution(filtered_df, phase_freq, inargs.phase_res, 
                                 inargs.window, inargs.ofile,
-                                seasonal=inargs.seasonal, epochs=inargs.epochs)
+                                seasonal=inargs.seasonal, epochs=inargs.epochs, start_end=inargs.start_end)
     elif inargs.type == 'event_summary':
         plot_event_summary(filtered_df, phase_freq, inargs.ofile)
 
@@ -236,6 +240,8 @@ author:
                         help="switch for plotting the 4 seasons for phase distribution plot [default: False]")
     parser.add_argument("--epochs", action="store_true", default=False,
                         help="switch for plotting epoch lines on phase distribution plot [default: False]")
+    parser.add_argument("--start_end", action="store_true", default=False,
+                        help="switch for plotting start and end histogram on phase distribution plot [default: False]")
 
     args = parser.parse_args()            
     main(args)
