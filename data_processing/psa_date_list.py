@@ -6,6 +6,7 @@ import numpy, pandas
 import xray
 import operator
 from itertools import groupby
+from scipy import stats
 from scipy.stats import rankdata
 
 # Import my modules
@@ -41,7 +42,41 @@ def fix_boundary_data(data):
         data = numpy.where(data < 30, data + 60, data)
 
     return data
-        
+   
+     
+def event_info(df, freq):
+    """Add columns to the DataFrame that contain event information."""
+
+    df['dates'] = df.index
+    df['time_delta'] = df['dates'].diff()
+    df['in_event'] = df['time_delta'] < pandas.tslib.Timedelta('2 days')
+
+    # Event number
+    event_number = -1
+    event_list = []
+    for index, row in df.iterrows():
+        if not row['in_event']:
+            event_number = event_number + 1
+        event_list.append(event_number)
+    df['event_number'] = event_list
+
+    # Event duration and gradient
+    duration_list = []
+    gradient_list = []
+    target_freq = 'wave%i_phase' %(freq)
+    for event in range(0, event_number + 1):
+        event_duration = event_list.count(event)
+        duration_list = duration_list + [event_duration] * event_duration
+
+        phase_data = df[target_freq].loc[df['event_number'] == event].values
+        slope, intercept, r_value, p_value, std_err = stats.linregress(numpy.arange(0, event_duration), phase_data)
+        gradient_list = gradient_list + [slope] * event_duration
+
+    df['event_duration'] = duration_list
+    df['event_gradient'] = gradient_list
+ 
+    return df
+  
 
 def main(inargs):
     """Run the program"""
@@ -58,32 +93,17 @@ def main(inargs):
     # Select the ones where wave 5 and 6 are in the top 3 amplitudes
     # (worst ranking must be 8 + 9 = 17) 
     included = (rank_df['wave5_amp'].values + rank_df['wave6_amp'].values) >= 17
-
     final = rank_df.loc[included]
 
     # Reject days that change sign too much
     if inargs.max_sign_change:
         final = final.loc[final['sign_count'] <= inargs.max_sign_change]
 
-    # Compile event duration information
-    final['dates'] = final.index
-    final['time_delta'] = final['dates'].diff()
-    in_event = final['time_delta'] < pandas.tslib.Timedelta('2 days')
-    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(in_event)] 
-
-    #select all days where duration > minimum threshold
-    duration = []
-    for event in grouped_events:
-        if event[0]:
-            data = [event[1]] * event[1]
-        else:
-            data = [0] * event[1]
-        duration.append(data)
-    final['duration'] = reduce(operator.add, duration)
+    final = event_info(final, inargs.freq)
 
     if inargs.full_stats:
         assert not inargs.phase_filter and not inargs.season_filter and not inargs.duration_filter, \
-        "Cannot filter by phase, season or duration for full stats, because zero duration info needed to separate events"
+        "Cannot filter by phase, season or duration for full stats, because then they would not be full!"
         final.to_csv(inargs.output_file)
 
     else: 
@@ -100,8 +120,8 @@ def main(inargs):
 
         # Optional filtering by wave phase
         if inargs.phase_filter:
-            freq, phase_min, phase_max = inargs.phase_filter
-            target_phase = 'wave%i_phase' %(freq)
+            phase_min, phase_max = inargs.phase_filter
+            target_phase = 'wave%i_phase' %(inargs.freq)
             final = final.loc[(final[target_phase] > phase_min) & (final[target_phase] < phase_max)]
 
         # Write date file
@@ -123,6 +143,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--max_sign_change", type=int, default=5, 
                         help="maximum number of times the signal can change sign over the search domain [default = 5]")
+    parser.add_argument("--freq", type=int, default=6, 
+                        help="frequency used for phase filtering and event gradient calculation [default = 6]")
 
     parser.add_argument("--full_stats", action="store_true", default=False,
                         help="switch for outputting a full stats file instead of just dates [default: False]")
@@ -131,7 +153,7 @@ if __name__ == '__main__':
                         help="minimum duration for a PSA event [default = no filter]")
     parser.add_argument("--season_filter", type=str, choices=('DJF', 'MAM', 'JJA', 'SON'), default=None, 
                         help="only keep the selected season [default = no season filter]")
-    parser.add_argument("--phase_filter", type=float, nargs=3, metavar=['FREQ', 'MIN_PHASE', 'MAX_PHASE'], default=None, 
+    parser.add_argument("--phase_filter", type=float, nargs=2, metavar=['MIN_PHASE', 'MAX_PHASE'], default=None, 
                         help="phase range to retain at the given frequecy. [default = no filter]")
 
     args = parser.parse_args()            
