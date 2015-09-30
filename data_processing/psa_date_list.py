@@ -33,17 +33,20 @@ except ImportError:
 season_months = {'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
                  'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
 
-def fix_boundary_data(data):
+def fix_boundary_data(data, freq):
     """If a data series straddles 0/60, adjust accordingly."""
 
-    data = numpy.array(data) 
-    diffs = numpy.abs(numpy.diff(data))
-    if diffs.max() > 50:
-        data = numpy.where(data < 30, data + 60, data)
+    assert freq == 6, "At the moment fix_boundary_data() is hard-wired to a freq of 6"
+
+    data = numpy.array(data)
+    if len(data) > 1: 
+	diffs = numpy.abs(numpy.diff(data))
+	if diffs.max() > 50:
+            data = numpy.where(data < 30, data + 60, data)
 
     return data
-   
-     
+
+
 def event_info(df, freq):
     """Add columns to the DataFrame that contain event information."""
 
@@ -63,18 +66,21 @@ def event_info(df, freq):
     # Event duration and gradient
     duration_list = []
     gradient_list = []
+    phase_list = []
     target_freq = 'wave%i_phase' %(freq)
     for event in range(0, event_number + 1):
         event_duration = event_list.count(event)
+        event_phase_data = fix_boundary_data(df[target_freq].loc[df['event_number'] == event].values, freq)
+        event_gradient, intercept, r_value, p_value, std_err = stats.linregress(numpy.arange(0, event_duration), event_phase_data)
+        
         duration_list = duration_list + [event_duration] * event_duration
-
-        phase_data = df[target_freq].loc[df['event_number'] == event].values
-        slope, intercept, r_value, p_value, std_err = stats.linregress(numpy.arange(0, event_duration), phase_data)
-        gradient_list = gradient_list + [slope] * event_duration
+        phase_list = phase_list + list(event_phase_data)
+        gradient_list = gradient_list + [event_gradient] * event_duration
 
     df['event_duration'] = duration_list
+    df['event_phase'] = phase_list
     df['event_gradient'] = gradient_list
- 
+
     return df
   
 

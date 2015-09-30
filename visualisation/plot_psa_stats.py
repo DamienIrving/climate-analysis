@@ -36,54 +36,37 @@ except ImportError:
 season_months = {'annual': None, 'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
                  'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
 
-
 def plot_event_summary(df, phase_freq, min_duration, ofile):
     """Line graph showing phase/amplitude throughout the lifecycle of each PSA event."""
 
-    # Collect up all the event phase info
-    event_phase_list = []
-    event_amp_list = []
-    current_event_phase = []
-    current_event_amp = []
-    for index, row in df.iterrows():
-        if row['duration'] == 0:
-            event_phase_list.append(current_event_phase)
-            event_amp_list.append(current_event_amp)
-            current_event_phase = [row[phase_freq]]
-            current_event_amp = [row['env_max']]
-        else:
-            current_event_phase.append(row[phase_freq])
-            current_event_amp.append(row['env_max'])
-    event_phase_list.pop(0)    
-    event_amp_list.pop(0)
-
-    amp_max = numpy.max(sum(event_amp_list, []))
-    amp_min = numpy.min(sum(event_amp_list, []))
+    amp_max = df['env_max'].max()
+    amp_min = df['env_max'].min()
+    duration_max =  df['event_duration'].max()
+    event_numbers = numpy.unique(df['event_number'].values)
 
     # Create the plot
     fig = plt.figure(figsize=(8,11))
-    for phases, amps in zip(event_phase_list, event_amp_list):
-        if len(phases) > min_duration:
-            x_axis = numpy.arange(0, len(phases))
-            phase_data = fix_boundary_data(phases)
-            amp_data = numpy.array(amps)
+    for event in event_numbers:
+        phase_data = df['event_phase'].loc[df['event_number'] == event].values
+        amp_data = df['env_max'].loc[df['event_number'] == event].values
+        gradient = df['event_gradient'].loc[df['event_number'] == event].values[0]
+        x_axis = numpy.arange(0, len(phase_data))
 
-            slope, intercept, r_value, p_value, std_err = stats.linregress(x_axis, phase_data)
-            if slope > 0.2:
-                cmap = 'Reds'
-            elif slope < -0.2:
-                cmap = 'Blues'
-            else:
-                cmap = 'Greys'
-            
-            points = numpy.array([x_axis, phase_data]).T.reshape(-1, 1, 2)
-            segments = numpy.concatenate([points[:-1], points[1:]], axis=1)
-            lc = LineCollection(segments, cmap=plt.get_cmap(cmap), norm=plt.Normalize(amp_min, amp_max))
-            lc.set_array(amp_data)
-            lc.set_linewidth(3)
-            plt.gca().add_collection(lc)
+        if gradient > 0.2:
+            cmap = 'Reds'
+        elif gradient < -0.2:
+            cmap = 'Blues'
+        else:
+            cmap = 'Greys'
 
-    plt.xlim(0, df['duration'].max())
+        points = numpy.array([x_axis, phase_data]).T.reshape(-1, 1, 2)
+        segments = numpy.concatenate([points[:-1], points[1:]], axis=1)
+        lc = LineCollection(segments, cmap=plt.get_cmap(cmap), norm=plt.Normalize(amp_min, amp_max))
+        lc.set_array(amp_data)
+        lc.set_linewidth(3)
+        plt.gca().add_collection(lc)
+
+    plt.xlim(0, duration_max)
     plt.ylim(0, 83)
 
     plt.xlabel('day')
@@ -168,16 +151,17 @@ def plot_histogram(hist, smooth_hist, bin_centers, nrows, ncols, season, plotnum
 def main(inargs):
     """Run program."""
 
-    # Read the data
+    # Read the data and apply filters
     df = pandas.read_csv(inargs.infile)
-    phase_freq = 'wave%i_phase' %(inargs.freq)
-    
+    filtered_df = df.loc[df['event_duration'] >= inargs.min_duration]
+
     # Create the desired plot
+    phase_freq = 'wave%i_phase' %(inargs.freq)
     if inargs.type == 'phase_distribution':
-        plot_phase_distribution(df, phase_freq, inargs.phase_res, 
+        plot_phase_distribution(filtered_df, phase_freq, inargs.phase_res, 
                                 inargs.window, seasonal=inargs.seasonal)
     elif inargs.type == 'event_summary':
-        plot_event_summary(df, phase_freq, inargs.min_duration, inargs.ofile)
+        plot_event_summary(filtered_df, phase_freq, inargs.min_duration, inargs.ofile)
 
     # Sort out metadata
     file_body = inargs.infile.split('.')[0]
@@ -209,7 +193,7 @@ author:
                         help="Desired plot")    
     parser.add_argument("ofile", type=str, help="Output file name")
 
-    parser.add_argument("--phase_freq", type=int, default=6, 
+    parser.add_argument("--freq", type=int, default=6, 
                         help="Frequency to use to indicate the wave phase [default: 6]")
     parser.add_argument("--phase_res", type=float, default=1.0, 
                         help="Phase resolution (e.g. if phase data is deg lon, res is spacing between lons [default: 1.0]")
@@ -221,7 +205,5 @@ author:
     parser.add_argument("--seasonal", action="store_true", default=False,
                         help="switch for plotting the 4 seasons for phase distribution plot [default: False]")
 
-    
-    
     args = parser.parse_args()            
     main(args)

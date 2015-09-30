@@ -78,11 +78,17 @@ ${INVERSE_FT} : ${VROT_ANOM_RUNMEAN}
 ## PSA date lists
 ALL_DATES_PSA=${PSA_DIR}/dates-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.txt 
 ${ALL_DATES_PSA} : ${FOURIER_COEFFICIENTS}
-	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --min_duration 1 --max_sign_change 5  
+	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --max_sign_change 5  
 
 FILTERED_DATES_PSA=${PSA_DIR}/dates-psa_duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.txt 
 ${FILTERED_DATES_PSA} : ${FOURIER_COEFFICIENTS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --duration_filter ${DURATION} --max_sign_change 5  
+
+## PSA stats lists
+ALL_STATS_PSA=${PSA_DIR}/stats-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.csv 
+${ALL_STATS_PSA} : ${FOURIER_COEFFICIENTS}
+	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --max_sign_change 5  --full_stats
+
 
 
 # Visualisation
@@ -110,8 +116,8 @@ ${PLOT_DURATION} : ${ALL_DATES_PSA}
 
 ## Event phase/amplitude plot (line graph)
 EVENT_PLOT=${PSA_DIR}/psa-event-summary_wave6-duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
-${EVENT_PLOT} : ${FOURIER_COEFFICIENTS}
-	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --max_sign_change 5 --duration_filter ${DURATION} --event_plot
+${EVENT_PLOT} : ${ALL_STATS_PSA}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_stats.py $< event_summary $@ --min_duration ${DURATION}
 
 
 ## PSA check (spatial map and FT for given dates)
