@@ -11,6 +11,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+import matplotlib.font_manager as font_manager
 
 # Import my modules
 
@@ -36,7 +37,7 @@ except ImportError:
 season_months = {'annual': None, 'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
                  'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
 
-def plot_event_summary(df, phase_freq, min_duration, ofile):
+def plot_event_summary(df, phase_freq, ofile):
     """Line graph showing phase/amplitude throughout the lifecycle of each PSA event."""
 
     amp_max = df['env_max'].max()
@@ -93,7 +94,28 @@ def running_mean(data, window):
     return central_runmean
 
 
-def plot_phase_distribution(df, phase_freq, phase_res, window, seasonal=False):
+def plot_epochs(ax, df_subset, phase_freq, window, phase_res):
+    """Add epoch lines."""
+
+    year_subset = pandas.to_datetime(df_subset['time'].values).year
+    early_bools = year_subset < 1991
+    late_bools = year_subset > 2002 
+    mid_bools = numpy.invert(early_bools + late_bools)
+
+    df_subset_early = df_subset.loc[early_bools]
+    df_subset_mid = df_subset.loc[mid_bools]
+    df_subset_late = df_subset.loc[late_bools]
+
+    hist_early, smooth_hist_early, bin_centers_early = phase_histogram(df_subset_early[phase_freq].values, window, phase_res)
+    hist_mid, smooth_hist_mid, bin_centers_mid = phase_histogram(df_subset_mid[phase_freq].values, window, phase_res)
+    hist_late, smooth_hist_late, bin_centers_late = phase_histogram(df_subset_late[phase_freq].values, window, phase_res)
+
+    plot_histogram(ax, hist_early, smooth_hist_early, bin_centers_early, no_hist=True, label='1979-1990')
+    plot_histogram(ax, hist_mid, smooth_hist_mid, bin_centers_mid, no_hist=True, label='1991-2002')
+    plot_histogram(ax, hist_late, smooth_hist_late, bin_centers_late, no_hist=True,label='2003-2014')
+
+
+def plot_phase_distribution(df, phase_freq, phase_res, window, ofile, seasonal=False, epochs=False):
     """Plot a phase distribution histogram."""    
     
     if seasonal:
@@ -108,6 +130,9 @@ def plot_phase_distribution(df, phase_freq, phase_res, window, seasonal=False):
     fig = plt.figure(figsize=figure_size)
     for plot_num, season in enumerate(season_list):
 
+        ax = plt.subplot(nrows, ncols, plot_num + 1)
+        plt.sca(ax)
+
         if not season == 'annual':
             months_subset = pandas.to_datetime(df['time'].values).month
             bools_subset = (months_subset == season_months[season][0]) + (months_subset == season_months[season][1]) + (months_subset == season_months[season][2])
@@ -115,13 +140,22 @@ def plot_phase_distribution(df, phase_freq, phase_res, window, seasonal=False):
         else:
             df_subset = df
 
-        hist, smooth_hist, bin_centers = phase_histogram(df_subset[phase_freq].values, window)
-        plot_histogram(hist, smooth_hist, bin_centers, nrows, ncols, season, plot_num + 1)	
+        hist, smooth_hist, bin_centers = phase_histogram(df_subset[phase_freq].values, window, phase_res)
+        plot_histogram(ax, hist, smooth_hist, bin_centers, label='1979-2014')
+
+        if epochs:
+            plot_epochs(ax, df_subset, phase_freq, window, phase_res) 
     
-    fig.savefig(inargs.ofile, bbox_inches='tight')
+        ax.set_title(season)
+        font = font_manager.FontProperties(size='x-small')
+        ax.legend(loc=1, prop=font)
+        ax.set_ylabel('Frequency', fontsize='x-small')
+        ax.set_xlabel('Longitude', fontsize='x-small')
+
+    fig.savefig(ofile, bbox_inches='tight')
 
 
-def phase_histogram(phase_data, smoothing_window, phase_res=1.0):
+def phase_histogram(phase_data, smoothing_window, phase_res):
     """Calculate the phase data and bin it (i.e. create histogram)."""
 
     assert type(phase_data) == numpy.ndarray
@@ -135,17 +169,12 @@ def phase_histogram(phase_data, smoothing_window, phase_res=1.0):
     return hist, smooth_hist, bin_centers
 
 
-def plot_histogram(hist, smooth_hist, bin_centers, nrows, ncols, season, plotnum):
+def plot_histogram(ax, hist, smooth_hist, bin_centers, no_hist=False, label=None):
     """Plot the phase histogram."""
 
-    ax = plt.subplot(nrows, ncols, plotnum)
-    plt.sca(ax)
-
-    ax.bar(bin_centers, hist, color='0.7')
-    ax.plot(bin_centers, smooth_hist) 
-    plt.title(season)
-    ax.set_ylabel('Frequency', fontsize='x-small')
-    ax.set_xlabel('Longitude', fontsize='x-small')
+    if not no_hist:
+        ax.bar(bin_centers, hist, color='0.7')
+    ax.plot(bin_centers, smooth_hist, label=label) 
 
 
 def main(inargs):
@@ -159,9 +188,10 @@ def main(inargs):
     phase_freq = 'wave%i_phase' %(inargs.freq)
     if inargs.type == 'phase_distribution':
         plot_phase_distribution(filtered_df, phase_freq, inargs.phase_res, 
-                                inargs.window, seasonal=inargs.seasonal)
+                                inargs.window, inargs.ofile,
+                                seasonal=inargs.seasonal, epochs=inargs.epochs)
     elif inargs.type == 'event_summary':
-        plot_event_summary(filtered_df, phase_freq, inargs.min_duration, inargs.ofile)
+        plot_event_summary(filtered_df, phase_freq, inargs.ofile)
 
     # Sort out metadata
     file_body = inargs.infile.split('.')[0]
@@ -204,6 +234,8 @@ author:
 
     parser.add_argument("--seasonal", action="store_true", default=False,
                         help="switch for plotting the 4 seasons for phase distribution plot [default: False]")
+    parser.add_argument("--epochs", action="store_true", default=False,
+                        help="switch for plotting epoch lines on phase distribution plot [default: False]")
 
     args = parser.parse_args()            
     main(args)
