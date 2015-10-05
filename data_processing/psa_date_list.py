@@ -160,8 +160,8 @@ if __name__ == '__main__':
     parser.add_argument("fourier_file", type=str, help="Input file name")
     parser.add_argument("output_file", type=str, help="Output file name")
 
-    parser.add_argument("--max_sign_change", type=int, default=5, 
-                        help="maximum number of times the signal can change sign over the search domain [default = 5]")
+    parser.add_argument("--max_sign_change", type=int, default=None, 
+                        help="maximum number of times the signal can change sign over the search domain [default = None; i.e. not applied]")
     parser.add_argument("--freq", type=int, default=6, 
                         help="frequency used for phase filtering and event gradient calculation [default = 6]")
 
