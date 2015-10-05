@@ -109,23 +109,23 @@ def plot_duration(ax, df, label=None):
     # Get the duration data
     df['dates'] = df.index
     df['time_delta'] = df['dates'].diff()
-    in_event = df['time_delta'] < pandas.tslib.Timedelta('2 days')
+    df['in_event'] = df['time_delta'] < pandas.tslib.Timedelta('2 days')
 
-    grouped_events = [(k, sum(1 for i in g)) for k,g in groupby(in_event)] 
+    # Number the events
+    event_number = -1
+    event_list = []
+    for index, row in df.iterrows():
+        if not row['in_event']:
+            event_number = event_number + 1
+        event_list.append(event_number)
 
-    duration_data = []
-    false_count = 0
-    for event in grouped_events:
-        if event[0]:
-            duration_data.append(event[1])
-        else:
-            false_count = false_count + event[1]
+    # Get their duration
+    duration_list = []
+    for event in range(0, event_number + 1):
+        event_duration = event_list.count(event)
+        duration_list.append(event_duration)
 
-    #ajust for fact that two consecutive dates are required for a true
-    ones = duration_data.count(1)
-    false_count = false_count - ones
-    duration_data = numpy.array(duration_data) + 1
-    duration_data = numpy.concatenate((duration_data, numpy.array([1] * false_count)))
+    duration_data = numpy.array(duration_list)
 
     # Bin it
     bin_res = 1
