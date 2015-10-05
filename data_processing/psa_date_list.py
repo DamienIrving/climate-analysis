@@ -128,7 +128,7 @@ def main(inargs):
     else: 
         # Optional filtering by duration
         if inargs.duration_filter:
-            final = final.loc[final['duration'] > inargs.duration_filter]
+            final = final.loc[final['event_duration'] > inargs.duration_filter]
 
         # Optional filtering by season
         if inargs.season_filter:
