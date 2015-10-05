@@ -45,7 +45,7 @@ for start_phase in "${start_phases[@]}"; do
     temp_sfcomp_file=${temp_dir}/sf-composite_phase${start_phase}-${end_phase}.nc
     
     ${python_exe} ${code_dir}/psa_date_list.py ${fourier_file} ${temp_date_file} \
-    --duration_filter ${duration} --max_sign_change 5 --phase_filter ${freq} ${start_phase} ${end_phase}
+    --duration_filter ${duration} --phase_filter ${freq} ${start_phase} ${end_phase}
     
     ${python_exe} ${code_dir}/calc_composite.py ${sf_file} sf ${temp_sfcomp_file} \
     --date_file ${temp_date_file} --region sh --no_sig

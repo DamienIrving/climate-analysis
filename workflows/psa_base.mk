@@ -96,7 +96,7 @@ ${ALL_STATS_PSA} : ${FOURIER_COEFFICIENTS}
 ## PSA phase plot (histogram)
 PLOT_PSA_PHASE_HIST=${PSA_DIR}/psa-phase-histogram_wave${FREQ}-duration-gt${DURATION}-seasonal_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
 ${PLOT_PSA_PHASE_HIST} : ${ALL_STATS_PSA}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_stats.py $< phase_distribution $@ --min_duration ${DURATION} --seasonal --epochs
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_stats.py $< phase_distribution $@ --min_duration ${DURATION} --seasonal --epochs --phase_res 0.75
 
 ## PSA phase plot (composites)
 PLOT_PSA_PHASE_COMP=${PSA_DIR}/psa-phase-composites_wave${FREQ}-duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all-season_native-${NPLABEL}.png
