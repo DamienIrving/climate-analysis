@@ -78,7 +78,7 @@ ${INVERSE_FT} : ${VROT_ANOM_RUNMEAN}
 ## PSA date lists
 ALL_DATES_PSA=${PSA_DIR}/dates-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.txt 
 ${ALL_DATES_PSA} : ${FOURIER_COEFFICIENTS}
-	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --max_sign_change 5  
+	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ 
 
 FILTERED_DATES_PSA=${PSA_DIR}/dates-psa_duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.txt 
 ${FILTERED_DATES_PSA} : ${FOURIER_COEFFICIENTS}
@@ -87,7 +87,7 @@ ${FILTERED_DATES_PSA} : ${FOURIER_COEFFICIENTS}
 ## PSA stats lists
 ALL_STATS_PSA=${PSA_DIR}/stats-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.csv 
 ${ALL_STATS_PSA} : ${FOURIER_COEFFICIENTS}
-	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --max_sign_change 5  --full_stats
+	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --full_stats
 
 
 
