@@ -243,7 +243,7 @@ def time_filter(df, start_date, end_date):
 
     if start_date and end_date:
         selection = start_selection & end_selection
-        filtered_df = df[combined_selection] 
+        filtered_df = df[selection] 
     elif start_date:
         filtered_df = df[start_selection] 
     elif end_date:
@@ -350,7 +350,11 @@ author:
     parser.add_argument("--figure_size", type=float, default=(16.0, 7.0), nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
     parser.add_argument("--seasonal_dots", type=str, nargs=2, metavar=("FILE", "VAR"), default=None,
-                        help="add some dots to show prominant seasons for a particular metric")
+                        help="add some dots to show prominant seasons for a particular metric") 
 
-    args = parser.parse_args()            
+    args = parser.parse_args()
+    
+    print "Input file:", args.infile
+    print "Output file:", args.outfile
+      
     main(args)
