@@ -42,8 +42,10 @@ WAVE_MAX=7
 WAVE_LABEL=w${WAVE_MIN}${WAVE_MAX}
 
 FREQ=6
-DURATION=5
+DURATION=10
+
+VAR_SHORT=tas
+VAR_LONG=surface_air_temperature
 
 
-
-TARGET=${PSA_DIR}/psa-phase-composites_wave${FREQ}-duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
+TARGET=${PSA_DIR}/psa-${VAR_SHORT}-composite-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png

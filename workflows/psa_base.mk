@@ -51,6 +51,13 @@ ${VROT_ANOM_RUNMEAN} : ${VROT_ORIG}
 	ncatted -O -a bounds,time,d,, $@
 	ncks -O -x -v time_bnds $@
 
+## Composite variable
+
+VAR_ORIG=${DATA_DIR}/${VAR_SHORT}_${DATASET}_surface_daily_native.nc
+VAR_ANOM_RUNMEAN=${DATA_DIR}/${VAR_SHORT}_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
+${VAR_ANOM_RUNMEAN} : ${VAR_ORIG} 
+	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
+
 
 # PSA demonstration
 
@@ -103,15 +110,12 @@ PLOT_PSA_PHASE_COMP=${PSA_DIR}/psa-phase-composites_wave${FREQ}-duration-gt${DUR
 ${PLOT_PSA_PHASE_COMP} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_phase_composites.sh $< $(word 2,$^) ${FREQ} ${DURATION} $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 
-
 ## PSA seasonality plot (histogram)
 
 PLOT_SEASONALITY=${PSA_DIR}/psa-seasonality-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
 ${PLOT_SEASONALITY} : ${FOURIER_COEFFICIENTS}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_phase_seasonality.sh $< ${FREQ} $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 	
-
-
 ## PSA duration plot (histogram)
 
 PLOT_DURATION=${PSA_DIR}/psa-duration_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
@@ -123,6 +127,11 @@ EVENT_PLOT=${PSA_DIR}/psa-event-summary_wave6-duration-gt${DURATION}_${DATASET}_
 ${EVENT_PLOT} : ${ALL_STATS_PSA}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_stats.py $< event_summary $@ --min_duration ${DURATION}
 
+## PSA variable composites plot (spatial)
+
+PLOT_VARCOMPS=${PSA_DIR}/psa-${VAR_SHORT}-composite-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
+${PLOT_VARCOMPS} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN} ${VAR_ANOM_RUNMEAN}
+	bash ${VIS_SCRIPT_DIR}/plot_psa_var_composites.sh $< $(word 2,$^) $(word 3,$^) ${VAR_SHORT} ${VAR_LONG} ${FREQ} $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## PSA check (spatial map and FT for given dates)
 
