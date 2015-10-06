@@ -34,21 +34,20 @@ temp_files=()
 
 # Generate a date list and calculate composite for each phase range
 
-for start_phase in "${start_phases[@]}"; do
+for central_phase in "${central_phases[@]}"; do
     start_phase=`expr $central_phase - 5`
     end_phase=`expr $central_phase + 5`
    
-    new_outfile=`echo ${outfile} | sed s/phase_range/phase${start_phase}-${end_phase}/`
+    new_outfile=`echo ${outfile} | sed s/phase-range/phase${start_phase}-${end_phase}/`
 
     temp_date_file=${temp_dir}/dates_phase${start_phase}-${end_phase}.txt
     
     ${python_exe} ${code_dir}/psa_date_list.py ${fourier_file} ${temp_date_file} \
-    --freq ${freq} --duration_filter ${duration} --phase_filter ${start_phase} ${end_phase}
+    --freq ${freq} --phase_filter ${start_phase} ${end_phase}
     
     ${python_exe} ${vis_dir}/plot_date_list.py ${temp_date_file} ${new_outfile} \
-    --plot_types monthly_totals_histogram seasonal_values_stackplot --start 1979-01-01 --end 2015-12-31
+    --plot_types monthly_totals_histogram seasonal_values_stackplot --start 1979-01-01 --end 2015-01-31
 
-    temp_files+=(${temp_date_file} ${temp_sfcomp_file})
+    rm $temp_date_file
 done
 
-rm ${temp_files[@]}

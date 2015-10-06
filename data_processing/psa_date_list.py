@@ -47,6 +47,23 @@ def fix_boundary_data(data, freq):
     return data
 
 
+def set_phase_bounds(user_bounds, freq):
+    """Make sure phase remains within the associated bounds."""
+
+    phase_min, phase_max = user_bounds
+    max_value = 360. / freq
+    if phase_min > max_value:
+        phase_min = phase_min - max_value
+
+    if phase_max > max_value:
+        phase_max = phase_max - max_value
+
+    assert phase_min < max_value
+    assert phase_max < max_value
+
+    return phase_min, phase_max
+
+
 def event_info(df, freq):
     """Add columns to the DataFrame that contain event information."""
 
@@ -139,9 +156,14 @@ def main(inargs):
 
         # Optional filtering by wave phase
         if inargs.phase_filter:
-            phase_min, phase_max = inargs.phase_filter
+            phase_min, phase_max = set_phase_bounds(inargs.phase_filter, inargs.freq)
             target_phase = 'wave%i_phase' %(inargs.freq)
-            final = final.loc[(final[target_phase] > phase_min) & (final[target_phase] < phase_max)]
+            min_bools = (final[target_phase] > phase_min).values
+            max_bools = (final[target_phase] < phase_max).values
+            if phase_min < phase_max:
+                final = final.loc[numpy.logical_and(min_bools, max_bools)]
+            else:
+                final = final.loc[numpy.logical_or(min_bools, max_bools)]
 
         # Write date file
         gio.write_dates(inargs.output_file, final.index.values)

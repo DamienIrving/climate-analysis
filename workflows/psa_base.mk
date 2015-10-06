@@ -106,10 +106,10 @@ ${PLOT_PSA_PHASE_COMP} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN}
 
 ## PSA seasonality plot (histogram)
 
-PLOT_SEASONALITY=${PSA_DIR}/psa-seasonality_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
-${PLOT_SEASONALITY} : ${ALL_DATES_PSA}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_date_list.py $< $@ --plot_types monthly_totals_histogram seasonal_values_stackplot --start 1979-01-01 --end 2015-01-31
-
+PLOT_SEASONALITY=${PSA_DIR}/psa-seasonality-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
+${PLOT_SEASONALITY} : ${FOURIER_COEFFICIENTS}
+	bash ${VIS_SCRIPT_DIR}/plot_psa_phase_seasonality.sh $< ${FREQ} $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
+	
 
 
 ## PSA duration plot (histogram)
