@@ -82,7 +82,7 @@ ${ALL_DATES_PSA} : ${FOURIER_COEFFICIENTS}
 
 FILTERED_DATES_PSA=${PSA_DIR}/dates-psa_duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.txt 
 ${FILTERED_DATES_PSA} : ${FOURIER_COEFFICIENTS}
-	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --duration_filter ${DURATION} --max_sign_change 5  
+	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --duration_filter ${DURATION}  
 
 ## PSA stats lists
 ALL_STATS_PSA=${PSA_DIR}/stats-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.csv 
@@ -106,7 +106,11 @@ ${PLOT_PSA_PHASE_COMP} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN}
 
 ## PSA seasonality plot (histogram)
 
-# FIXME
+PLOT_SEASONALITY=${PSA_DIR}/psa-seasonality_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
+${PLOT_SEASONALITY} : ${ALL_DATES_PSA}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_date_list.py $< $@ --plot_types monthly_totals_histogram seasonal_values_stackplot --start 1979-01-01 --end 2015-01-31
+
+
 
 ## PSA duration plot (histogram)
 
