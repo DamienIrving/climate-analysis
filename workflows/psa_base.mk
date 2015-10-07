@@ -163,12 +163,15 @@ ${PLOT_VARCOMPS} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN} ${VAR_ANOM_RUNMEAN
 psa_check : ${FILTERED_DATES_PSA} ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_check.sh $<	 $(word 2,$^) streamfunction $(word 3,$^) rotated_northward_wind vrot 1986 1988 ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
 
-## SAM vs ENSO
+## SAM vs ENSO plots
 
 SAM_VS_NINO34_PLOT=${INDEX_DIR}/sam-vs-nino34-wave6phase_${DATASET}_surface_${TSCALE_LABEL}_native.png
 ${SAM_VS_NINO34_PLOT} : ${SAM_INDEX} ${NINO34_INDEX} ${FOURIER_COEFFICIENTS} ${ALL_DATES_PSA}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) sam $(word 2,$^) nino34 $@ --colour $(word 3,$^) wave6_phase --zero_lines --cmap Greys --ylabel nino34 --xlabel SAM --date_filter $(word 4,$^) --quadrant_text
 
+SAM_VS_NINO34_PLOTS=${INDEX_DIR}/sam-vs-nino34-phase-range_${DATASET}_surface_${TSCALE_LABEL}_native.png
+${SAM_VS_NINO34_PLOTS} : ${SAM_INDEX} ${NINO34_INDEX} ${FOURIER_COEFFICIENTS}
+	bash ${VIS_SCRIPT_DIR}/plot_psa-phase-vs-enso-sam.sh $(word 1,$^) $(word 2,$^) nino34 $(word 3,$^) env_max $(word 3,$^) ${FREQ} $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 
 
