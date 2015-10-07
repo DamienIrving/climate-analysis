@@ -58,6 +58,30 @@ VAR_ANOM_RUNMEAN=${DATA_DIR}/${VAR_SHORT}_${DATASET}_surface_${TSCALE_LABEL}-ano
 ${VAR_ANOM_RUNMEAN} : ${VAR_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
 
+## Southern Annular Mode
+
+PSL_ORIG=${DATA_DIR}/psl_${DATASET}_surface_daily_native-shextropics30.nc
+PSL_RUNMEAN=${DATA_DIR}/psl_${DATASET}_surface_${TSCALE_LABEL}_native-shextropics30.nc
+${PSL_RUNMEAN} : ${PSL_ORIG}
+	cdo ${TSCALE} $< $@
+
+SAM_INDEX=${INDEX_DIR}/sam_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
+${SAM_INDEX} : ${PSL_RUNMEAN}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py SAM $< psl $@
+
+## Nino 3.4
+
+TOS_ORIG=${DATA_DIR}/tos_${DATASET}_surface_daily_native-tropicalpacific.nc
+TOS_RUNMEAN=${DATA_DIR}/tos_${DATASET}_surface_${TSCALE_LABEL}_native-tropicalpacific.nc
+${TOS_RUNMEAN} : ${TOS_ORIG}
+	cdo ${TSCALE} $< $@
+
+NINO34_INDEX=${INDEX_DIR}/nino34_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
+${NINO34_INDEX} : ${TOS_RUNMEAN}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py NINO34 $< tos $@
+
+
+
 
 # PSA demonstration
 
@@ -137,11 +161,13 @@ ${PLOT_VARCOMPS} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN} ${VAR_ANOM_RUNMEAN
 
 .PHONY : psa_check
 psa_check : ${FILTERED_DATES_PSA} ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
-	bash ${VIS_SCRIPT_DIR}/plot_psa_check.sh $<  $(word 2,$^) streamfunction $(word 3,$^) rotated_northward_wind vrot 1986 1988 ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
+	bash ${VIS_SCRIPT_DIR}/plot_psa_check.sh $<	 $(word 2,$^) streamfunction $(word 3,$^) rotated_northward_wind vrot 1986 1988 ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
 
+## SAM vs ENSO
 
-
-
+SAM_VS_NINO34_PLOT=${INDEX_DIR}/sam-vs-nino34-wave6phase_${DATASET}_surface_${TSCALE_LABEL}_native.png
+${SAM_VS_NINO34_PLOT} : ${SAM_INDEX} ${NINO34_INDEX} ${FOURIER_COEFFICIENTS} ${ALL_DATES_PSA}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) sam $(word 2,$^) nino34 $@ --colour $(word 3,$^) wave6_phase --zero_lines --cmap Greys --ylabel nino34 --xlabel SAM --date_filter $(word 4,$^)
 
 
 

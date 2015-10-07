@@ -30,9 +30,13 @@ for directory in cwd.split('/')[1:]:
 modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 
+processing_dir = os.path.join(repo_dir, 'data_processing')
+sys.path.append(processing_dir)
+
 try:
     import general_io as gio
     import convenient_universal as uconv
+    import calc_composite
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -130,10 +134,15 @@ def main(inargs):
         target_yvar = inargs.yvar
 
     # Filter data
-    if inargs.filter:
-        threshold = uconv.get_threshold(dataframe[inargs.filter[0]], inargs.filter[1])
-        selector = dataframe[inargs.filter[0]] >= threshold
+    if inargs.threshold_filter:
+        threshold = uconv.get_threshold(dataframe[inargs.threshold_filter[0]], inargs.threshold_filter[1])
+        selector = dataframe[inargs.threshold_filter[0]] >= threshold
         dataframe = dataframe[selector]
+
+    if inargs.date_filter:
+        dt_list, dt_list_metadata = calc_composite.get_datetimes(dataframe, inargs.date_filter)
+        pdb.set_trace()
+        dataframe = dataframe.sel(time=dtlist)
 
     # Generate plot
     c_data = dataframe[inargs.colour[1]] if inargs.colour else None
@@ -185,8 +194,10 @@ author:
                         help="Latitude to select from colour file")
 
     # Data options
-    parser.add_argument("--filter", type=str, nargs=2, metavar=('METRIC', 'THRESHOLD'), default=None, 
+    parser.add_argument("--theshold_filter", type=str, nargs=2, metavar=('METRIC', 'THRESHOLD'), default=None, 
                         help="Remove values where metric is below threshold. Threshold can be percentile (e.g. 90pct) or raw value.")
+    parser.add_argument("--date_filter", type=str, default=None, 
+                        help="Name of date file containing the list of dates to be included [default = None]")
     parser.add_argument("--normalise", action="store_true", default=False,
                         help="Switch for normalising the x and y input data [default: False]")
     parser.add_argument("--thin", type=int, default=1,
