@@ -140,9 +140,8 @@ def main(inargs):
         dataframe = dataframe[selector]
 
     if inargs.date_filter:
-        dt_list, dt_list_metadata = calc_composite.get_datetimes(dataframe, inargs.date_filter)
-        pdb.set_trace()
-        dataframe = dataframe.sel(time=dtlist)
+        dt_list, metadata_dict[inargs.date_filter] = calc_composite.get_datetimes(dataframe, inargs.date_filter)
+        dataframe = dataframe[dataframe.index.isin(dt_list)]
 
     # Generate plot
     c_data = dataframe[inargs.colour[1]] if inargs.colour else None
@@ -194,7 +193,7 @@ author:
                         help="Latitude to select from colour file")
 
     # Data options
-    parser.add_argument("--theshold_filter", type=str, nargs=2, metavar=('METRIC', 'THRESHOLD'), default=None, 
+    parser.add_argument("--threshold_filter", type=str, nargs=2, metavar=('METRIC', 'THRESHOLD'), default=None, 
                         help="Remove values where metric is below threshold. Threshold can be percentile (e.g. 90pct) or raw value.")
     parser.add_argument("--date_filter", type=str, default=None, 
                         help="Name of date file containing the list of dates to be included [default = None]")

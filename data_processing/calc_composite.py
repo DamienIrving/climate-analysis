@@ -40,15 +40,20 @@ season_months = {'annual': None, 'DJF': (12, 1, 2), 'MAM': (3, 4, 5),
 def get_datetimes(darray, date_file):
     """Generate a list of datetimes common to darray and date_file."""
 
+    try:
+        time_values = darray['time'].values
+    except KeyError:
+        time_values = darray.index.values 
+
     if date_file:
-        time_dim = map(str, darray['time'].values)
+        time_dim = map(str, time_values)     
         date_list, date_metadata = gio.read_dates(date_file)
     
         match_dates, miss_dates = uconv.match_dates(date_list, time_dim)
         match_dates = map(numpy.datetime64, match_dates)
 
     else:
-        match_dates = darray['time'].values
+        match_dates = time_values
         date_metadata = None
 
     return match_dates, date_metadata
