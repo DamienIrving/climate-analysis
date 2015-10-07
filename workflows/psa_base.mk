@@ -167,7 +167,7 @@ psa_check : ${FILTERED_DATES_PSA} ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
 
 SAM_VS_NINO34_PLOT=${INDEX_DIR}/sam-vs-nino34-wave6phase_${DATASET}_surface_${TSCALE_LABEL}_native.png
 ${SAM_VS_NINO34_PLOT} : ${SAM_INDEX} ${NINO34_INDEX} ${FOURIER_COEFFICIENTS} ${ALL_DATES_PSA}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) sam $(word 2,$^) nino34 $@ --colour $(word 3,$^) wave6_phase --zero_lines --cmap Greys --ylabel nino34 --xlabel SAM --date_filter $(word 4,$^)
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_scatter.py $(word 1,$^) sam $(word 2,$^) nino34 $@ --colour $(word 3,$^) wave6_phase --zero_lines --cmap Greys --ylabel nino34 --xlabel SAM --date_filter $(word 4,$^) --quadrant_text
 
 
 

@@ -61,10 +61,12 @@ def scatter_plot(x_data, y_data,
                  outfile, 
                  c_data=None, cmap='Greys',
                  zero_lines=False, thin=1, 
-                 plot_trend=False, trend_colour='r'):
+                 plot_trend=False, trend_colour='r',
+                 quadrant_labels=None):
     """Create scatterplot."""
 
-    plt.figure()
+    fig = plt.figure()
+    ax = plt.axes()
 
     if zero_lines:
         plt.axhline(y=0, linestyle='-', color='0.5')
@@ -81,6 +83,12 @@ def scatter_plot(x_data, y_data,
         p = numpy.polyfit(x, y, 1)
         print p
         plt.plot(x, p[0]*x+p[1], trend_colour)
+
+    if quadrant_labels:
+        plt.text(0.87, 0.95, quadrant_labels[0], fontsize='small', transform=ax.transAxes)
+        plt.text(0.87, 0.04, quadrant_labels[1], fontsize='small', transform=ax.transAxes)
+        plt.text(0.03, 0.04, quadrant_labels[2], fontsize='small', transform=ax.transAxes)
+        plt.text(0.03, 0.95, quadrant_labels[3], fontsize='small', transform=ax.transAxes)
     
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -100,6 +108,34 @@ def read_data(infile, var, subset={}):
     metadata = dset.attrs['history']
 
     return dataframe, metadata
+
+
+def get_quadrant_text(x_data, y_data):
+    """Calculate the percetage of data points that fall in each quadrant."""
+
+    total = len(x_data)
+    top_right = (numpy.sum((x_data >= 0) & (y_data >= 0)) / float(total)) * 100
+    bottom_right = (numpy.sum((x_data >= 0) & (y_data < 0)) / float(total)) * 100
+    bottom_left = (numpy.sum((x_data < 0) & (y_data < 0)) / float(total)) * 100
+    top_left = (numpy.sum((x_data < 0) & (y_data >= 0)) / float(total)) * 100
+
+    result = map(round, [top_right, bottom_right, bottom_left, top_left])
+
+    return map(int, result)
+
+
+def get_quadrant_labels(values, brackets=None):
+    """Create the quadrant labels and include bracketed value if needed."""
+
+    labels = []
+    for i in range(0, len(values)):
+        if brackets:
+            label = '%i(%i)%%' %(values[i], brackets[i])
+        else:
+            label = '%i%%' %(values[i])
+        labels.append(label)
+
+    return labels
 
 
 def main(inargs):
@@ -133,15 +169,33 @@ def main(inargs):
         target_xvar = inargs.xvar
         target_yvar = inargs.yvar
 
+    # Get the quadrant info
+    if inargs.quadrant_text:
+        quadrant_pct = get_quadrant_text(dataframe[target_xvar], dataframe[target_yvar])
+    else:
+        quadrant_pct = None
+
     # Filter data
+    filtered = False
     if inargs.threshold_filter:
         threshold = uconv.get_threshold(dataframe[inargs.threshold_filter[0]], inargs.threshold_filter[1])
         selector = dataframe[inargs.threshold_filter[0]] >= threshold
         dataframe = dataframe[selector]
+        filtered = True
 
     if inargs.date_filter:
         dt_list, metadata_dict[inargs.date_filter] = calc_composite.get_datetimes(dataframe, inargs.date_filter)
         dataframe = dataframe[dataframe.index.isin(dt_list)]
+        filtered = True
+
+    # Get the quadrant labels
+    if filtered and inargs.quadrant_text:
+        filtered_quadrant_pct = get_quadrant_text(dataframe[target_xvar], dataframe[target_yvar])
+        quadrant_labels = get_quadrant_labels(filtered_quadrant_pct, brackets=quadrant_pct)
+    elif inargs.quadrant_text:
+        quadrant_labels = get_quadrant_lables(quadrant_pct)
+    else:
+        quadrant_labels = None
 
     # Generate plot
     c_data = dataframe[inargs.colour[1]] if inargs.colour else None
@@ -153,7 +207,8 @@ def main(inargs):
                  inargs.ofile, 
                  c_data=c_data, cmap=inargs.cmap, 
                  zero_lines=inargs.zero_lines, thin=inargs.thin, 
-                 plot_trend=inargs.trend_line, trend_colour=inargs.trend_colour)
+                 plot_trend=inargs.trend_line, trend_colour=inargs.trend_colour,
+                 quadrant_labels=quadrant_labels)
 
     gio.write_metadata(inargs.ofile, file_info=metadata_dict)
 
@@ -205,6 +260,8 @@ author:
     # Plot options
     parser.add_argument("--trend_line", action="store_true", default=False,
                         help="Switch for a linear line of best fit [default: False]")
+    parser.add_argument("--quadrant_text", action="store_true", default=False,
+                        help="Show the percentage values in each quadrant [default: False]")
     parser.add_argument("--trend_colour", type=str, default='r',
                         help="Colour of linear line of best fit [default: red]")
     parser.add_argument("--zero_lines", action="store_true", default=False,
