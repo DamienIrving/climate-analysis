@@ -13,12 +13,11 @@ function usage {
     echo "   invar:       Input variable name"
     echo "   outfile:     Output file name"
     echo "   outvar:      Output variable name"
-    echo "   cdofix:      Script for replacing attributes that cdo strips"
     echo "   e.g. bash $0 zfile.nc z new-zgfile.nc zg ~/climate-analysis/data_processing/cdo_fix.sh"
     exit 1
 }
 
-nargs=5
+nargs=4
 if [[ $# -ne $nargs ]] ; then
   usage
 fi
@@ -27,17 +26,15 @@ infile=$1
 invar=$2
 outfile=$3
 outvar=$4
-cdofix=$5
 
 if [[ "${outvar}" = "zg" ]] ; then
     cdo invertlat -sellonlatbox,0,359.9,-90,90  -divc,9.80665 -daymean ${infile} ${outfile}   # Divude by standard gravity to go from geopotential to geopotential height
 elif [[ "${outvar}" = "pr" ]] ; then
     cdo invertlat -sellonlatbox,0,359.9,-90,90 -mulc,1000 -daysum -shifttime,-12hour ${infile} ${outfile}  # Get the daily rainfall totals
 else
-    cdo invertlat -sellonlatbox,0,359.9,-90,90 -daymean ${infile} ${outfile} 
+    cdo invertlat -sellonlatbox,0,359.9,-90,90 -daymean ${infile} ${outfile}
 fi
 
-bash ${cdofix} ${outfile} ${invar}            # Put back the required attributes that CDO strips
 ncrename -O -v ${invar},${outvar} ${outfile}
 ncatted -O -a calendar,global,d,, ${outfile}  # Iris does not like this
 
