@@ -189,14 +189,47 @@ def plot_monthly_totals(ax, monthly_data, month_days, label=None):
     if label:
         ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
 
+def plot_trend_subplot(trend_dict, color_dict):
+    """Insert a subplot showing the linear trend."""
+    
+    fig = plt.gcf()
+    x = 0.653
+    y = 0.76
+    width = 0.13
+    height = 0.13
+    subax = fig.add_axes([x, y, width, height])
+ 
+    x_vals = []
+    colors = []
+    for season in ['SON', 'JJA', 'MAM', 'DJF', 'annual']:
+        x_vals.append(trend_dict[season][0])
+        colors.append(color_dict[season])
+    y_pos = numpy.arange(0, len(trend_dict.keys()))
 
-def plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=None, index_var=None, leg_loc=7, label=None):
+    subax.barh(y_pos, numpy.array(x_vals), align='center', color=colors)
+
+    subax.spines['left'].set_visible(False)
+    subax.spines['right'].set_visible(False)
+    subax.spines['top'].set_visible(False)
+    subax.set_yticklabels([])
+    subax.yaxis.set_ticks([])
+    subax.xaxis.set_ticks_position('bottom')
+    subax.tick_params(axis='x', labelsize='x-small')
+    subax.set_xlabel('Trend (events/year)')
+    subax.xaxis.get_label().set_fontsize('xx-small')
+
+    
+def plot_seasonal_stackplot(ax, seasonal_data, 
+                            seasonal_index=None, index_var=None, 
+                            y_buffer=1.0,
+                            leg_loc=7, label=None):
     """Plot a stacked histogram showing the seasonal values for each year."""
      
     # Count up 
     assert len(seasonal_data['count']) % 4.0 == 0, "Date range must ensure each season is equally represented"
 
     season_keys = {2: 'DJF', 5: 'MAM', 8: 'JJA', 11: 'SON'}
+    season_colors = {'DJF': '#b2df8a', 'MAM': '#33a02c', 'JJA': '#a6cee3', 'SON': '#1f78b4', 'annual': 'black'}
     season_counts = {}
     season_index_groupings = {}
     for i in range(0,4):
@@ -204,29 +237,39 @@ def plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=None, index_var=No
         season_counts[season_keys[month]] = seasonal_data['count'][i::4]
         if index_var:
             season_index_groupings[season_keys[month]] = seasonal_index[index_var][i::4]
+    season_counts['annual'] = season_counts['DJF'].as_matrix() + season_counts['MAM'].as_matrix() + season_counts['JJA'].as_matrix() + season_counts['SON'].as_matrix()
+
+    # Get trends
+    season_trends = {}
+    for season, data in season_counts.iteritems():
+        slope, intercept, r_value, p_value, std_err = stats.linregress(numpy.arange(0, len(data)), data)
+        season_trends[season] = [slope, p_value]
 
     # Plot
     start_year = season_counts['MAM'].index[0].year
     end_year = season_counts['MAM'].index[-1].year
 
     x = numpy.arange(start_year, end_year + 1)
-    pdjf = ax.bar(x, season_counts['DJF'], color='#b2df8a')
-    pmam = ax.bar(x, season_counts['MAM'], color='#33a02c', bottom=season_counts['DJF'])
-    pjja = ax.bar(x, season_counts['JJA'], color='#a6cee3', bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix())
-    pson = ax.bar(x, season_counts['SON'], color='#1f78b4', bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix()+season_counts['JJA'].as_matrix())
+    pdjf = ax.bar(x, season_counts['DJF'], color=season_colors['DJF'])
+    pmam = ax.bar(x, season_counts['MAM'], color=season_colors['MAM'], bottom=season_counts['DJF'])
+    pjja = ax.bar(x, season_counts['JJA'], color=season_colors['JJA'], bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix())
+    pson = ax.bar(x, season_counts['SON'], color=season_colors['SON'], bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix()+season_counts['JJA'].as_matrix())
 
-    season_counts['annual'] = season_counts['DJF'].as_matrix() + season_counts['MAM'].as_matrix() + season_counts['JJA'].as_matrix() + season_counts['SON'].as_matrix()
     if index_var:
         plot_index_dots(ax, x, season_index_groupings, annual_totals)
 
+    plot_trend_subplot(season_trends, season_colors)
+    lower_limit, upper_limit = ax.get_ylim()
+    ax.set_ylim([lower_limit, upper_limit * y_buffer])
+    
     ax.set_ylabel('Total days')
     ax.legend( (pdjf[0], pmam[0], pjja[0], pson[0]), ('DJF', 'MAM', 'JJA', 'SON') )
     if label:
         ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
 
     # Stats
-    for season, counts in season_counts.iteritems():
-        slope, intercept, r_value, p_value, std_err = stats.linregress(x, counts)
+    for season, data in season_trends.iteritems():
+        slope, p_value = data
         print '%s: trend = %f events/year, p = %f' %(season, slope, p_value)
 
     
@@ -302,7 +345,7 @@ def main(inargs):
                 seasonal_index = None
                 index_var = None
             plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=seasonal_index, index_var=index_var,
-                                    leg_loc=inargs.leg_loc, label=labels[index])
+                                    y_buffer=inargs.y_buffer, leg_loc=inargs.leg_loc, label=labels[index])
 
         elif plot_type == 'duration_histogram':
             plot_duration(ax, filtered_dates_df, label=labels[index])
@@ -345,6 +388,9 @@ author:
     # Plot options
     parser.add_argument("--leg_loc", type=int, default=0,
                         help="Location of legend for line graph [default = 0 = top right] (7 = centre right)")
+    parser.add_argument("--y_buffer", type=float, default=1.0,
+                        help="Multiply y-axis upper bound by this amount [default = 1.0]")
+
     parser.add_argument("--dimensions", type=int, nargs=2, metavar=("NROWS", "NCOLS"), default=None,
                         help="dimensions of the plot")
     parser.add_argument("--figure_size", type=float, default=(16.0, 7.0), nargs=2, metavar=('WIDTH', 'HEIGHT'),
