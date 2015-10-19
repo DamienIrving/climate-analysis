@@ -51,6 +51,7 @@ class EofAnalysis:
         self.neofs = neofs
         self.solver = eofs.iris.Eof(cube, weights='coslat')
         self.var_exp = self.solver.varianceFraction(neigs=neofs)
+        self.north_test = self.solver.northTest(neigs=neofs, vfscaled=True)
 
 
     def eof(self, eof_scaling=0):
@@ -79,6 +80,7 @@ class EofAnalysis:
                                             'standard_name': 'empirical_orthogonal_function_'+str(i + 1),
                                             'units': eof_units,
                                             'var_exp': float(self.var_exp[i].data),
+                                            'north_error': float(self.north_test[i].data),
                                             'reference': 'http://ajdawson.github.io/eofs/',
                                             'notes': eof_scaling_text}
   
@@ -106,6 +108,7 @@ class EofAnalysis:
                                            'standard_name': 'principle_component_'+str(i + 1),
                                            'units': pc_units,
                                            'var_exp': float(self.var_exp[i].data),
+                                           'north_error': float(self.north_test[i].data),
                                            'reference': 'http://ajdawson.github.io/eofs/',
                                            'notes': pc_scaling_text}
 
@@ -194,9 +197,17 @@ reference:
 
 example:
 
-note:
+notes:
   The data are area weighted according the the sqrt of the cosine of the latitude, as 
   recommended by Wilks2011
+
+  The north_error represents the typical errors for eigenvalues, scaled by the sum of the eigenvalues. 
+  This yields typical errors with the same scale as the values returned by the variance explained
+  (i.e. a fractional value).
+
+  The method of North et al. (1982) is used to compute the typical error for each eigenvalue. 
+  It is assumed that the number of times in the input data set is the same as the number of independent realizations.
+  If this assumption is not valid then the result may be inappropriate.
 
 author:
   Damien Irving, d.irving@student.unimelb.edu.au
