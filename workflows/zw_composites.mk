@@ -93,7 +93,7 @@ ${COMP_SUMMARY_PLOT_INDEX_HIGH} : ${COMP_SF_ZONAL_ANOM_RUNMEAN_INDEX_HIGH} ${COM
 ### Temporal histograms
 DATES_INDEX_HIGH_PLOT=${INDEX_DIR}/dates-summary_${INDEX}gt${INDEX_HIGH_THRESH}_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native.png
 ${DATES_INDEX_HIGH_PLOT} : ${DATES_${INDEX_CAPS}_HIGH}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_date_list.py $< $@ --start ${START} --end ${END}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_date_list.py $< $@ --start ${START} --end ${END} --y_buffer 1.3
 
 ## Index < low threshold
 

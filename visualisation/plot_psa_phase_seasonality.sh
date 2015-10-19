@@ -46,7 +46,8 @@ for central_phase in "${central_phases[@]}"; do
     --freq ${freq} --phase_filter ${start_phase} ${end_phase}
     
     ${python_exe} ${vis_dir}/plot_date_list.py ${temp_date_file} ${new_outfile} \
-    --plot_types monthly_totals_histogram seasonal_values_stackplot --start 1979-01-01 --end 2015-01-31
+    --plot_types monthly_totals_histogram seasonal_values_stackplot \
+    --start 1979-01-01 --end 2015-01-31 --y_buffer 1.3
 
     rm $temp_date_file
 done

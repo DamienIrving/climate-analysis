@@ -194,18 +194,26 @@ def plot_trend_subplot(trend_dict, color_dict):
     
     fig = plt.gcf()
     x = 0.653
-    y = 0.76
+    y = 0.7625
     width = 0.13
     height = 0.13
     subax = fig.add_axes([x, y, width, height])
  
     x_vals = []
     colors = []
-    for season in ['SON', 'JJA', 'MAM', 'DJF', 'annual']:
-        x_vals.append(trend_dict[season][0])
+    for index, season in enumerate(['SON', 'JJA', 'MAM', 'DJF', 'annual']):
+        slope, p_value = trend_dict[season]
+        x_vals.append(slope)
         colors.append(color_dict[season])
+        
+        if p_value < 0.05:
+            subax.plot(slope + 0.035, numpy.array([index]), color=color_dict[season],
+                       marker="*", linestyle='None')
+        elif p_value < 0.1:
+            subax.plot(slope + 0.035, numpy.array([index]), color=color_dict[season],
+                       marker="o", linestyle='None')
+        
     y_pos = numpy.arange(0, len(trend_dict.keys()))
-
     subax.barh(y_pos, numpy.array(x_vals), align='center', color=colors)
 
     subax.spines['left'].set_visible(False)
@@ -250,18 +258,26 @@ def plot_seasonal_stackplot(ax, seasonal_data,
     end_year = season_counts['MAM'].index[-1].year
 
     x = numpy.arange(start_year, end_year + 1)
-    pdjf = ax.bar(x, season_counts['DJF'], color=season_colors['DJF'])
-    pmam = ax.bar(x, season_counts['MAM'], color=season_colors['MAM'], bottom=season_counts['DJF'])
-    pjja = ax.bar(x, season_counts['JJA'], color=season_colors['JJA'], bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix())
-    pson = ax.bar(x, season_counts['SON'], color=season_colors['SON'], bottom=season_counts['DJF'].as_matrix()+season_counts['MAM'].as_matrix()+season_counts['JJA'].as_matrix())
+    pdjf = ax.bar(x, season_counts['DJF'], color=season_colors['DJF'], align='center')
+    pmam = ax.bar(x, season_counts['MAM'], color=season_colors['MAM'], align='center',
+                  bottom=season_counts['DJF'])
+    pjja = ax.bar(x, season_counts['JJA'], color=season_colors['JJA'], align='center',
+                  bottom=season_counts['DJF'].as_matrix() + season_counts['MAM'].as_matrix())
+    pson = ax.bar(x, season_counts['SON'], color=season_colors['SON'], align='center',
+                  bottom=season_counts['DJF'].as_matrix() + season_counts['MAM'].as_matrix() + season_counts['JJA'].as_matrix())
 
     if index_var:
         plot_index_dots(ax, x, season_index_groupings, annual_totals)
 
     plot_trend_subplot(season_trends, season_colors)
-    lower_limit, upper_limit = ax.get_ylim()
-    ax.set_ylim([lower_limit, upper_limit * y_buffer])
     
+    y_lower_limit, y_upper_limit = ax.get_ylim()
+    ax.set_ylim([y_lower_limit, y_upper_limit * y_buffer])
+    
+    x_lower_limit, x_upper_limit = ax.get_xlim()
+    ax.set_xlim([start_year - 1, x_upper_limit])
+    
+    ax.xaxis.set_ticks_position('bottom')
     ax.set_ylabel('Total days')
     ax.legend( (pdjf[0], pmam[0], pjja[0], pson[0]), ('DJF', 'MAM', 'JJA', 'SON') )
     if label:
