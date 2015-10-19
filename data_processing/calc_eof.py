@@ -215,7 +215,7 @@ author:
             
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period over which to calculate the EOF [default = entire]")
-    parser.add_argument("--season", type=str, choices=['DJF', 'MAM', 'JJA', 'SON'], default=None,
+    parser.add_argument("--season", type=str, choices=['DJF', 'MAM', 'JJA', 'SON'],
                         help="Restrict analysis to a particular season [default = annual]")
 
     parser.add_argument("--neofs", type=int, default=5,
