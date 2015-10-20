@@ -79,19 +79,23 @@ def plot_periodogram(plot_axis, data_dict, wmin, wmax):
     """Add a small periodgram to the plot."""
 
     fig = plt.gcf()
-    x = 0.15
-    y = 0.15
-    width = 0.2
-    height = 0.2
+    x = 0.195
+    y = 0.715
+    width = 0.16
+    height = 0.16
     subax = fig.add_axes([x, y, width, height])
     xvals = numpy.arange(wmin, wmax + 1)
     yvals = []
     for w in xvals:
         yvals.append(data_dict['positive', w, w].max()) 
 
-    subax.plot(xvals, numpy.array(yvals), marker='o')    
-    subax.set_yticklabels([])
-    #subax.xaxis.get_label().set_fontsize('x-small')
+    subax.plot(xvals, numpy.array(yvals), marker='o', color='black')    
+    subax.set_ylabel('amplitude ($ms^{-1}$)')
+    subax.set_xlabel('wavenumber')
+    subax.yaxis.get_label().set_fontsize('xx-small')
+    subax.xaxis.get_label().set_fontsize('xx-small')
+    subax.tick_params(axis='x', labelsize='xx-small')
+    subax.tick_params(axis='y', labelsize='xx-small')
 
 
 def plot_hilbert(data_dict, date_list,
@@ -103,7 +107,8 @@ def plot_hilbert(data_dict, date_list,
                  env_list=[],
                  ybounds=None,
                  figure_size=None,
-                 periodogram=False):
+                 periodogram=False,
+                 no_title=False):
     """Create the plot."""
 
     fig = plt.figure(figsize=figure_size)
@@ -146,12 +151,12 @@ def plot_hilbert(data_dict, date_list,
 
         # Plot individual wavenumber components
         for wavenum in range(wmin, wmax):
-            color = 'red' if wavenum in highlights else '0.5' 
+            color = '#1b9e77' if wavenum in highlights else '0.5' 
             ax.plot(xaxis, 2*filtered_signal['positive', wavenum, wavenum], color=color, linestyle='--')
         ax.plot(xaxis, 2*filtered_signal['positive', wmax, wmax], color='0.5', linestyle='--', label='Fourier components')
 
         # Plot reconstructed signal and envelope
-        env_colors = ['blue', 'orange', 'cyan']
+        env_colors = ['#d95f02', 'blue', 'orange', 'cyan']
         count = 0
         for emin, emax in env_list:
             tag = 'wave envelope (waves %i-%i)'  %(emin, emax)
@@ -163,14 +168,15 @@ def plot_hilbert(data_dict, date_list,
 
         # Plot original signal
         tag = 'meridional wind, %s'  %(lat_tag)
-        ax.plot(xaxis, data, color='#1b9e77', label=tag, linewidth=2.0)
+        ax.plot(xaxis, data, color='#7570b3', label=tag, linewidth=2.0)
 
         # Plot details
         ax.set_xlim(0, 360)
         if ybounds:
             ax.set_ylim(ybounds) 
 
-        ax.set_title(date)
+        if not no_title:
+            ax.set_title(date)
         
         ax.set_ylabel('$m s^{-1}$', fontsize='medium')
         ax.set_xlabel('longitude', fontsize='medium')
@@ -207,7 +213,8 @@ def main(inargs):
                  figure_size=inargs.figure_size,
                  highlights=inargs.highlights,
                  env_list=inargs.envelope,
-                 periodogram=inargs.periodogram)
+                 periodogram=inargs.periodogram,
+                 no_title=inargs.no_title)
 
     gio.write_metadata(inargs.ofile, file_info={inargs.infile: dset_in.attrs['history']})
 
@@ -240,6 +247,8 @@ if __name__ == '__main__':
 
     parser.add_argument("--periodogram", action="store_true", default=False,
                         help="Plot a periodogram in the corner")
+    parser.add_argument("--no_title", action="store_true", default=False,
+                        help="Do not plot title")
 
     parser.add_argument("--ybounds", type=float, nargs=2, metavar=('LOWER', 'UPPER'), default=None,
                         help="y-axis bounds (there are defaults set for each timescale)")
