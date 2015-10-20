@@ -159,6 +159,8 @@ def timescale_plot(ax, inargs, label=None):
     if label:
         ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
 
+    return metadata_dict
+
 
 def main(inargs):
     """Run the program."""
@@ -169,13 +171,20 @@ def main(inargs):
         print 'figure width: %s' %(str(fig.get_figwidth()))
         print 'figure height: %s' %(str(fig.get_figheight()))
 
-    ax1 = plt.subplot(1, 2, 1)
-    ax2 = plt.subplot(1, 2, 2)
+    assert inargs.date_curve or inargs.runmean
 
-    # Generate the plots
-    metadata_dict = composite_plot(ax1, inargs, label='(a)')
-    timescale_plot(ax2, inargs, label='(b)')
-    
+    if inargs.date_curve and inargs.runmean:
+        ax1 = plt.subplot(1, 2, 1)
+        ax2 = plt.subplot(1, 2, 2)
+        metadata_dict = composite_plot(ax1, inargs, label='(a)')
+        temp = timescale_plot(ax2, inargs, label='(b)')
+    elif inargs.date_curve:
+        ax = plt.subplot(1, 1, 1)
+        metadata_dict = composite_plot(ax, inargs)
+    elif inargs.runmean:
+        ax = plt.subplot(1, 1, 1)
+        metadata_dict = timescale_plot(ax, inargs)
+
     plt.savefig(inargs.outfile, bbox_inches='tight')
     plt.clf()
 
@@ -208,9 +217,11 @@ author:
     parser.add_argument("variable", type=str, help="Input file variable")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    # Additional curves for the left panel
+    # Information about each panel
+    parser.add_argument("--runmean", type=int, nargs='*', default=None,
+                        help="Running mean windows to include (e.g. 1 5 30 60 90 180 365). If none, panel will not be plotted.")
     parser.add_argument("--date_curve", type=str, action='append', default=[], metavar=('DATE_FILE', 'LABEL'), nargs=2,
-                        help="Date filtered curve for the left hand panel")
+                        help="Date filtered curve for the left hand panel. If none, panel will not be plotted.")
 			
     # Input data options
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
@@ -223,8 +234,6 @@ author:
     # Analysis options
     parser.add_argument("--window", type=int, default=8,
                         help="upper limit on the frequencies included in the plot [default=8]")
-    parser.add_argument("--runmean", type=int, nargs='*', default=None,
-                        help="running mean windows to include (e.g. 1 5 30 60 90 180 365)")
     parser.add_argument("--scaling", type=str, choices=('amplitude', 'power', 'R2'), default='R2',
                         help="scaling applied to the amplitude of the spectal density [default=None]")
 
