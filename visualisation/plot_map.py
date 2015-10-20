@@ -224,12 +224,15 @@ def multiplot(cube_dict, nrows, ncols,
               grid_lines=True,
               grid_labels=False,
               #headings
-              title=None, subplot_headings=None,
+              title=None, title_size='large', 
+              subplot_headings=None, subplot_heading_size='medium',
               #colourbar
               no_colourbar=False,
               colour_type='smooth',
               colourbar_type='global', colourbar_orientation='horizontal', global_colourbar_span=0.6,
+              colourbar_number_size='small',
               global_units=None,
+              units_size='small',
               palette='hot_r', extend='neither', colourbar_ticks=None,
               #contours
               contour_levels=None,
@@ -257,7 +260,7 @@ def multiplot(cube_dict, nrows, ncols,
     set_spacing(colourbar_type, colourbar_orientation, subplot_spacing)
 
     if title:
-        fig.suptitle(title.replace('_',' '))
+        fig.suptitle(title.replace('_',' '), fontsize=title_size)
 
     axis_list = []
     layers = range(0, max_layers + 1)
@@ -285,7 +288,7 @@ def multiplot(cube_dict, nrows, ncols,
             # Mini header
             try:
                 if not subplot_headings[plotnum - 1].lower() == 'none':
-                    plt.title(subplot_headings[plotnum - 1].replace("_", " "))
+                    plt.title(subplot_headings[plotnum - 1].replace("_", " "), fontsize=subplot_heading_size)
             except (TypeError, IndexError):
                 pass
 
@@ -309,7 +312,7 @@ def multiplot(cube_dict, nrows, ncols,
                                      palette, extend, colourbar_ticks)
                     units = global_units if global_units else colour_cube.units.symbol
                     if colourbar_type == 'individual':
-                        set_individual_colourbar(colourbar_orientation, cf, units)
+                        set_individual_colourbar(colourbar_orientation, cf, units, units_size, colourbar_number_size)
                     colour_plot_switch = True
                     if layer > 0:
                         print "WARNING: More than one colour layer. Only the uppermost will show."
@@ -371,7 +374,7 @@ def multiplot(cube_dict, nrows, ncols,
                 plt.gca().gridlines(draw_labels=grid_labels)
             if not no_colourbar:
                 if colourbar_type == 'global' and colour_plot_switch:
-                    set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units)       
+                    set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units, units_size, colourbar_number_size)       
 
     fig.savefig(ofile, bbox_inches='tight')
 
@@ -508,7 +511,7 @@ def plot_lines(line_list):
                  transform=input_projections[input_projection])
 
 
-def set_global_colourbar(orientation, span, cf, fig, units):
+def set_global_colourbar(orientation, span, cf, fig, units, units_size, number_size):
     """Define the global colourbar."""
 
     assert orientation in ('horizontal', 'vertical')
@@ -532,21 +535,22 @@ def set_global_colourbar(orientation, span, cf, fig, units):
 
     # Label the colour bar and add ticks
     if units in units_dict.keys():
-        cbar.set_label(units_dict[units])
+        cbar.set_label(units_dict[units], fontsize=units_size)
     else:
-        cbar.set_label(units.replace("_", " "))
-    #cbar.ax.tick_params(length=0)
+        cbar.set_label(units.replace("_", " "), fontsize=units_size)
+    cbar.ax.tick_params(labelsize=number_size)
 
 
-def set_individual_colourbar(orientation, cf, units):
+def set_individual_colourbar(orientation, cf, units, label_size, number_size):
     """Define the colourbar for an individual plot."""
 
     cbar = plt.colorbar(cf, orientation=orientation)
 
     if units in units_dict.keys():
-        cbar.set_label(units_dict[units])
+        cbar.set_label(units_dict[units], fontsize=label_size)
     else:
-        cbar.set_label(units.replace("_", " "))
+        cbar.set_label(units.replace("_", " "), fontsize=label_size)
+    cbar.ax.tick_params(labelsize=number_size)
 
 
 def set_spacing(colourbar_type, colourbar_orientation, subplot_spacing):
@@ -628,7 +632,9 @@ def main(inargs):
               grid_labels=inargs.grid_labels,
               #headings
               title=inargs.title,
+              title_size=inargs.title_size,
               subplot_headings=inargs.subplot_headings,
+              subplot_heading_size=inargs.subplot_heading_size,
               #colourbar
               no_colourbar=inargs.no_colourbar,
               colourbar_orientation=inargs.colourbar_orientation,
@@ -637,6 +643,8 @@ def main(inargs):
               global_colourbar_span=inargs.global_colourbar_span,
               colourbar_ticks=inargs.colourbar_ticks,
               global_units=inargs.units,
+              units_size=inargs.units_size,
+              colourbar_number_size=inargs.colourbar_number_size,
               palette=inargs.palette, extend=inargs.extend,
               #contours
               contour_levels=inargs.contour_levels,
@@ -730,10 +738,15 @@ example:
                         help="switch for turning off grid lines [default: False]")
 
     # Headings
+    text_sizes = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
     parser.add_argument("--title", type=str, default=None,
                         help="plot title [default: None]")
+    parser.add_argument("--title_size", type=str, default='large', choices=text_sizes,
+                        help="plot title size [default: large]")
     parser.add_argument("--subplot_headings", type=str, nargs='*', default=None,
                         help="list of subplot headings (in order from top left to bottom right, write none for a blank)")
+    parser.add_argument("--subplot_heading_size", type=str, default='medium', choices=text_sizes,
+                        help="subplot heading size [default: medium]")
 
     # Colourbar
     parser.add_argument("--no_colourbar", action="store_true", default=False,
@@ -750,10 +763,14 @@ example:
                         help="Colourbar colours [defualt: hot_r]")
     parser.add_argument("--colourbar_ticks", type=float, nargs='*', default=None,
                         help="list of tick marks to appear on the colourbar [default = auto]")
+    parser.add_argument("--colourbar_number_size", type=str, default='small', choices=text_sizes,
+                        help="size of the colourbar numbers [default: small]") 
     parser.add_argument("--extend", type=str, choices=('both', 'neither', 'min', 'max'), default='neither',
                         help="selector for arrow points at either end of colourbar [default: neither]")
     parser.add_argument("--units", type=str, default=None, 
                         help="Units (recognised units: ms-1)")
+    parser.add_argument("--units_size", type=str, default='small', choices=text_sizes,
+                        help="Size of the units label [default: small]")
 
     # Contour lines
     parser.add_argument("--contour_levels", type=float, nargs='*', default=None,
