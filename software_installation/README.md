@@ -6,13 +6,12 @@ My preferred setup is as follows:
 * Simple data processing with netCDF files: [CDO](https://code.zmaw.de/projects/cdo)
 * Programming with Python: [Anaconda](http://continuum.io/downloads) plus these additional Python libraries:
 
-    * [cdat-lite](https://pypi.python.org/pypi/cdat-lite/6.0rc2)
     * [gitpython](http://gitpython.readthedocs.org/en/stable/)
-    * [cdo](https://code.zmaw.de/projects/cdo/wiki/Cdo%7Brbpy%7D#Python)
     * [windspharm](http://ajdawson.github.io/windspharm/)
     * [eofs](http://ajdawson.github.io/eofs/)
     * [iris & cartopy](http://scitools.org.uk/)
     * [xray](http://xray.readthedocs.org/en/stable/)
+    * [seaborn](http://stanford.edu/~mwaskom/software/seaborn/)
 
 * Quick data visualisation: [UV-CDAT](http://uvcdat.llnl.gov/) 
 
@@ -25,7 +24,7 @@ It's a free scientific Python distribution that comes with most of the libraries
 For installing extra libraries alongside Anaconda,
 I first search [Anaconda.org](https://anaconda.org/) to see if `conda` can be used 
 (conda is the library installer that comes with Anaconda).
-If a binstar isn't available, 
+If the package isn't available on anaconda.org, 
 then I use the generic python package installer (`pip` or `easy_install`). 
 This approach avoids the need to install things myself from binaries or source code, 
 which is a nightmare and in most cases doesn't work.
@@ -63,9 +62,6 @@ I have installed software on machines that run Ubuntu 12.04 and CentOS 7.
 
 ##### Additional libraries
 
-Installed:
-conda install -c http://conda.anaconda.org/ioos iris
-* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/ajdawson cdat-lite`
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/ajdawson windspharm`
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/ajdawson eofs`
 * `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/scitools iris` 
@@ -73,7 +69,7 @@ conda install -c http://conda.anaconda.org/ioos iris
   * For the latest version: `$ sudo conda install -c http://conda.anaconda.org/ioos iris` 
 * `$ sudo /usr/local/anaconda/bin/conda install xray dask netCDF4 bottleneck`
 * `$ sudo /usr/local/anaconda/bin/pip install gitpython`
-* `$ sudo /usr/local/anaconda/bin/pip install cdo`
+* `$ sudo /usr/local/anaconda/bin/conda install seaborn`
 
 ### UV-CDAT
 
@@ -156,9 +152,8 @@ but I haven't tried this.
 
 Installed:  
 
-* `$ /Users/damienirving/anaconda/bin/conda install -c https://conda.binstar.org/scitools iris` (installs cartopy too)
-* `$ /Users/damienirving/anaconda/bin/conda install -c https://conda.binstar.org/scitools cdat-lite`
-* `$ /Users/damienirving/anaconda/bin/conda install xray dask netCDF4 bottleneck`
+* `$ /Users/damienirving/anaconda/bin/conda install -c https://conda.anaconda.org/ioos iris` (installs cartopy too)
+* `$ /Users/damienirving/anaconda/bin/conda install xray dask netCDF4 bottleneck seaborn`
 * `$ /Users/damienirving/anaconda/bin/pip install gitpython`
 
 Outstanding (i.e. things I still need to install or can't):  
