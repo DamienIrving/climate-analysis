@@ -11,6 +11,11 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+try:
+    import seaborn
+    seaborn.set_context('paper')
+except ImportError:
+    pass
 
 # Import my modules
 
@@ -136,7 +141,7 @@ def plot_duration(ax, df, label=None):
 
     # Plot
     width = 0.8
-    ax.bar(bin_centers, hist, width, color='0.7')
+    ax.bar(bin_centers, hist, width, align='center') #color='0.7')
     ax.set_ylabel('Duration')
     ax.set_xlabel('Frequency')
 
@@ -342,12 +347,17 @@ def main(inargs):
         plotnum = index + 1
         ax = plt.subplot(nrows, ncols, plotnum)
         plt.sca(ax)
-
+        
+        if inargs.labels:
+            label = labels[index]
+        else:
+            label=None
+            
         if plot_type == 'monthly_totals_histogram':
             monthly_filtered_dates_df = fill_out_dates(filtered_dates_df, inargs.start, inargs.end)
             monthly_data = aggregate_data(monthly_filtered_dates_df, timescale='monthly', method='sum') 
             month_days = monthly_filtered_dates_df.groupby(lambda x: x.month).size()
-            plot_monthly_totals(ax, monthly_data, month_days, label=labels[index])
+            plot_monthly_totals(ax, monthly_data, month_days, label=label)
 
         elif plot_type == 'seasonal_values_stackplot':
             seasonal_start, seasonal_end = get_seasonal_bounds(inargs.start, inargs.end)
@@ -361,10 +371,10 @@ def main(inargs):
                 seasonal_index = None
                 index_var = None
             plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=seasonal_index, index_var=index_var,
-                                    y_buffer=inargs.y_buffer, leg_loc=inargs.leg_loc, label=labels[index])
+                                    y_buffer=inargs.y_buffer, leg_loc=inargs.leg_loc, label=label)
 
         elif plot_type == 'duration_histogram':
-            plot_duration(ax, filtered_dates_df, label=labels[index])
+            plot_duration(ax, filtered_dates_df, label=label)
 
     fig.savefig(inargs.outfile, bbox_inches='tight')
     metadata_dict = {inargs.infile: datetime_metadata}
@@ -409,10 +419,12 @@ author:
 
     parser.add_argument("--dimensions", type=int, nargs=2, metavar=("NROWS", "NCOLS"), default=None,
                         help="dimensions of the plot")
-    parser.add_argument("--figure_size", type=float, default=(16.0, 7.0), nargs=2, metavar=('WIDTH', 'HEIGHT'),
+    parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
     parser.add_argument("--seasonal_dots", type=str, nargs=2, metavar=("FILE", "VAR"), default=None,
                         help="add some dots to show prominant seasons for a particular metric") 
+    parser.add_argument("--labels", action="store_true", default=False,
+                        help="Switch for labelling each plot with a, b, c, etc [default: False]")
 
     args = parser.parse_args()
     
