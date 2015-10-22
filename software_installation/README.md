@@ -5,13 +5,15 @@ My preferred setup is as follows:
 * Simple manipulation of netCDF files: [NCO](http://nco.sourceforge.net/)
 * Simple data processing with netCDF files: [CDO](https://code.zmaw.de/projects/cdo)
 * Programming with Python: [Anaconda](http://continuum.io/downloads) plus these additional Python libraries:
-
+  * General purpose libraries I use extensively:
     * [gitpython](http://gitpython.readthedocs.org/en/stable/)
-    * [windspharm](http://ajdawson.github.io/windspharm/)
-    * [eofs](http://ajdawson.github.io/eofs/)
     * [iris & cartopy](http://scitools.org.uk/)
     * [xray](http://xray.readthedocs.org/en/stable/)
     * [seaborn](http://stanford.edu/~mwaskom/software/seaborn/)
+  * Libraries I use for discrete tasks:
+    * [windspharm](http://ajdawson.github.io/windspharm/)
+    * [eofs](http://ajdawson.github.io/eofs/)
+    * [pyqt-fit](http://pythonhosted.org/PyQt-Fit/index.html)
 
 * Quick data visualisation: [UV-CDAT](http://uvcdat.llnl.gov/) 
 
@@ -70,6 +72,7 @@ I have installed software on machines that run Ubuntu 12.04 and CentOS 7.
 * `$ sudo /usr/local/anaconda/bin/conda install xray dask netCDF4 bottleneck`
 * `$ sudo /usr/local/anaconda/bin/pip install gitpython`
 * `$ sudo /usr/local/anaconda/bin/conda install seaborn`
+* `$ sudo /usr/local/anaconda/bin/pip install -i https://pypi.anaconda.org/pypi/simple pyqt-fit`
 
 ### UV-CDAT
 
@@ -155,6 +158,7 @@ Installed:
 * `$ /Users/damienirving/anaconda/bin/conda install -c https://conda.anaconda.org/ioos iris` (installs cartopy too)
 * `$ /Users/damienirving/anaconda/bin/conda install xray dask netCDF4 bottleneck seaborn`
 * `$ /Users/damienirving/anaconda/bin/pip install gitpython`
+* `$ /Users/damienirving/anaconda/bin/pip/install -i https://pypi.anaconda.org/pypi/simple pyqt-fit`
 
 Outstanding (i.e. things I still need to install or can't):  
 
