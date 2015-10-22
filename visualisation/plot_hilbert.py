@@ -13,6 +13,9 @@ import numpy
 import matplotlib.pyplot as plt
 import xray
 
+import seaborn
+seaborn.set_context('paper')
+
 
 # Import my modules
 
@@ -80,9 +83,9 @@ def plot_periodogram(plot_axis, data_dict, wmin, wmax):
 
     fig = plt.gcf()
     x = 0.195
-    y = 0.715
+    y = 0.70
     width = 0.16
-    height = 0.16
+    height = 0.18
     subax = fig.add_axes([x, y, width, height])
     xvals = numpy.arange(wmin, wmax + 1)
     yvals = []
@@ -147,7 +150,7 @@ def plot_hilbert(data_dict, date_list,
                                                                                               max_freq=wave_max, 
                                                                                               exclude=filt)
 
-        ax.axhline(y=0.0, linestyle='-', color='0.8')
+        #ax.axhline(y=0.0, linestyle='-', color='0.8')
 
         # Plot individual wavenumber components
         for wavenum in range(wmin, wmax):
@@ -159,15 +162,15 @@ def plot_hilbert(data_dict, date_list,
         env_colors = ['#d95f02', 'blue', 'orange', 'cyan']
         count = 0
         for emin, emax in env_list:
-            tag = 'wave envelope (waves %i-%i)'  %(emin, emax)
+            tag = 'wave envelope (wavenumbers %i-%i)'  %(emin, emax)
             ax.plot(xaxis, numpy.abs(2*filtered_signal['positive', emin, emax]), color=env_colors[count], label=tag, linewidth=2.0)
 
-            tag = 'reconstructed signal (waves %i-%i)'  %(emin, emax)
+            tag = 'reconstructed signal (wavenumbers %i-%i)'  %(emin, emax)
             ax.plot(xaxis, 2*filtered_signal['positive', emin, emax], color=env_colors[count], linestyle='--', label=tag, linewidth=2.0)
             count = count + 1
 
         # Plot original signal
-        tag = 'meridional wind, %s'  %(lat_tag)
+        tag = 'mean meridional wind, %s'  %(lat_tag)
         ax.plot(xaxis, data, color='#7570b3', label=tag, linewidth=2.0)
 
         # Plot details
@@ -178,11 +181,11 @@ def plot_hilbert(data_dict, date_list,
         if not no_title:
             ax.set_title(date)
         
-        ax.set_ylabel('$m s^{-1}$', fontsize='medium')
-        ax.set_xlabel('longitude', fontsize='medium')
+        ax.set_ylabel('$m s^{-1}$')# fontsize='medium')
+        ax.set_xlabel('longitude')# fontsize='medium')
 
         handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles[::-1], labels[::-1], fontsize='small', loc=4)
+        ax.legend(handles[::-1], labels[::-1], loc=4) #fontsize='small',
         
         # Make a little subplot
         if periodogram:
