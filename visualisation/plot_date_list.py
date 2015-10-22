@@ -11,11 +11,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-try:
-    import seaborn
-    seaborn.set_context('paper')
-except ImportError:
-    pass
+import seaborn
+seaborn.set_context('paper')
 
 # Import my modules
 
@@ -132,18 +129,20 @@ def plot_duration(ax, df, label=None):
 
     duration_data = numpy.array(duration_list)
 
-    # Bin it
-    bin_res = 1
-    bin_edge_start = duration_data.min() - (bin_res / 2.)
-    bin_edge_end = duration_data.max() + bin_res + (bin_res / 2.)
-    bin_centers = numpy.arange(duration_data.min(), duration_data.max() + bin_res, bin_res)
-    hist, bin_edges = numpy.histogram(duration_data, bins=numpy.arange(bin_edge_start, bin_edge_end, bin_res))
+    ax = seaborn.distplot(duration_data, kde=False, norm_hist=True)
 
-    # Plot
-    width = 0.8
-    ax.bar(bin_centers, hist, width, align='center') #color='0.7')
-    ax.set_ylabel('Duration')
-    ax.set_xlabel('Frequency')
+    # Bin it
+#    bin_res = 1
+#    bin_edge_start = duration_data.min() - (bin_res / 2.)
+#    bin_edge_end = duration_data.max() + bin_res + (bin_res / 2.)
+#    bin_centers = numpy.arange(duration_data.min(), duration_data.max() + bin_res, bin_res)
+#    hist, bin_edges = numpy.histogram(duration_data, bins=numpy.arange(bin_edge_start, bin_edge_end, bin_res))
+
+#    # Plot
+#    width = 0.8
+#    ax.bar(bin_centers, hist, width, align='center') #color='0.7')
+    ax.set_xlabel('Duration (days)')
+    ax.set_ylabel('Density')
 
     if label:
         ax.text(0.97, 0.95, label, transform=ax.transAxes, fontsize='large')
