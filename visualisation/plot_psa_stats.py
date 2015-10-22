@@ -13,6 +13,9 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import matplotlib.font_manager as font_manager
 
+import seaborn
+seaborn.set_context('paper')
+
 # Import my modules
 
 cwd = os.getcwd()
@@ -127,8 +130,8 @@ def plot_extra_smooth(category, ax, df_subset, phase_freq, window, phase_res):
     plot_smooth_histogram(ax, smooth_hist_late, bin_centers_late,label=labels[2])
 
 
-def plot_phase_distribution(df, phase_freq, phase_res, window, ofile, 
-                            seasonal=False, epochs=False, gradient=False, start_end=False):
+def plot_phase_distribution(df, phase_freq, freq, phase_res, window, ofile, 
+                            seasonal=False, epochs=False, gradient=False, start_end=False, ymax=None):
     """Plot a phase distribution histogram."""    
     
     if seasonal:
@@ -181,6 +184,13 @@ def plot_phase_distribution(df, phase_freq, phase_res, window, ofile,
         ax.set_ylabel('Frequency', fontsize='x-small')
         ax.set_xlabel('Longitude', fontsize='x-small')
 
+        xstart = 0 - (phase_res / 2.0)
+        xend = (360. / freq) - (phase_res / 2.0)
+
+        ax.set_xlim((xstart, xend))
+        if ymax:
+            ax.set_ylim((0, ymax))
+
     fig.savefig(ofile, bbox_inches='tight')
 
 
@@ -206,7 +216,7 @@ def phase_histogram(phase_data, smoothing_window, phase_res):
 def plot_histogram(ax, hist, bin_centers):
     """Plot the phase histogram as a bar chart."""
 
-    ax.bar(bin_centers, hist, color='0.7')
+    ax.bar(bin_centers, hist, color='0.7', align='center')
 
 #    start_end_hist = numpy.add(start_hist, end_hist)
 #    remainder_hist = numpy.subtract(total_hist, start_end_hist)
@@ -232,10 +242,11 @@ def main(inargs):
     # Create the desired plot
     phase_freq = 'wave%i_phase' %(inargs.freq)
     if inargs.type == 'phase_distribution':
-        plot_phase_distribution(filtered_df, phase_freq, inargs.phase_res, 
+        plot_phase_distribution(filtered_df, phase_freq, inargs.freq, inargs.phase_res, 
                                 inargs.window, inargs.ofile,
                                 seasonal=inargs.seasonal, epochs=inargs.epochs, 
-                                gradient=inargs.gradient, start_end=inargs.start_end)
+                                gradient=inargs.gradient, start_end=inargs.start_end,
+                                ymax=inargs.ymax)
     elif inargs.type == 'event_summary':
         plot_event_summary(filtered_df, phase_freq, inargs.ofile)
 
@@ -277,6 +288,8 @@ author:
                         help="Running mean window [default: 10]")
     parser.add_argument("--min_duration", type=int, default=0, 
                         help="Minimum event duration [default: 0]")
+    parser.add_argument("--ymax", type=float, default=None, 
+                        help="Maximum y axis value for all plots [default: auto]")
 
     parser.add_argument("--seasonal", action="store_true", default=False,
                         help="switch for plotting the 4 seasons for phase distribution plot [default: False]")
