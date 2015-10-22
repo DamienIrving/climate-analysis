@@ -7,7 +7,7 @@ Description:  Plot some periodograms
 
 # Import general Python modules
 
-import os, sys, pdb
+import os, sys, pdb, itertools
 import numpy, pandas
 import argparse
 import xray
@@ -15,6 +15,9 @@ import xray
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+import seaborn
+seaborn.set_context('paper')
 
 # Import my modules
 
@@ -132,17 +135,15 @@ def timescale_plot(ax, inargs, label=None):
         runmean_windows = inargs.runmean
     else:
         runmean_windows = [1]
-    
-    colors = ['#ffffd9', '#edf8b1', '#c7e9b4', '#7fcdbb', '#41b6c4', 
-              '#1d91c0', '#225ea8', '#253494', '#081d58'] 
- 
-    for index, step in enumerate(runmean_windows):
+     
+    palette = itertools.cycle(seaborn.cubehelix_palette(9, rot=-.4))
+    for step in runmean_windows:
         darray, indep_var, metadata_dict = read_data(inargs, step)
         	
         spectrum_temporal_mean, spectrum_freqs_1D = transform_data(darray.values, indep_var, inargs.scaling)
         
         ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
-                label=str(step), marker='o', color=colors[index], linewidth=2.0)
+                label=str(step), marker='o', color=next(palette), linewidth=2.0)
 
     ax.set_xlim([1, inargs.window])
     ax.set_xlabel('wavenumber ($k$)')
