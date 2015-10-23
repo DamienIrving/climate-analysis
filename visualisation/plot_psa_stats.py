@@ -1,11 +1,12 @@
 # Import general Python modules
 
-import os, sys, pdb
+import os, sys, pdb, itertools
 import math
 import numpy
 import pandas
 import argparse
 from scipy import stats
+import pyqt_fit
 
 import matplotlib
 matplotlib.use('Agg')
@@ -14,7 +15,9 @@ from matplotlib.collections import LineCollection
 import matplotlib.font_manager as font_manager
 
 import seaborn
-seaborn.set_context('paper')
+seaborn.set_context("paper")
+seaborn.set_palette("deep") #"colorblind"
+palette = itertools.cycle(seaborn.color_palette())
 
 # Import my modules
 
@@ -79,25 +82,8 @@ def plot_event_summary(df, phase_freq, ofile):
     plt.savefig(ofile, bbox_inches='tight')
 
 
-def running_mean(data, window):
-    """Calculate the running mean.
-
-    This is especially for the case where the start and end points join up.
-
-    """
-    
-    temp = numpy.append(data, data)
-    padded_data = numpy.append(temp, data)
-
-    ds = pandas.Series(padded_data)
-    runmean = pandas.rolling_mean(ds, window, center=True).values  #labels are right edge if center=False
-
-    central_runmean = runmean[len(data):len(data)*2]
-
-    return central_runmean
-
-
-def plot_extra_smooth(category, ax, df_subset, phase_freq, window, phase_res):
+def plot_extra_smooth(category, ax, df_subset, phase_freq,
+                      bin_centers, valid_min, valid_max, phase_res):
     """Add extra smoothed histogram lines."""
 
     assert category in ['epochs', 'gradient']
@@ -121,13 +107,9 @@ def plot_extra_smooth(category, ax, df_subset, phase_freq, window, phase_res):
     df_subset_mid = df_subset.loc[mid_bools]
     df_subset_late = df_subset.loc[late_bools]
 
-    hist_early, smooth_hist_early, bin_centers_early = phase_histogram(df_subset_early[phase_freq].values, window, phase_res)
-    hist_mid, smooth_hist_mid, bin_centers_mid = phase_histogram(df_subset_mid[phase_freq].values, window, phase_res)
-    hist_late, smooth_hist_late, bin_centers_late = phase_histogram(df_subset_late[phase_freq].values, window, phase_res)
-
-    plot_smooth_histogram(ax, smooth_hist_early, bin_centers_early, label=labels[0])
-    plot_smooth_histogram(ax, smooth_hist_mid, bin_centers_mid, label=labels[1])
-    plot_smooth_histogram(ax, smooth_hist_late, bin_centers_late,label=labels[2])
+    ax = plot_kde(ax, df_subset_early[phase_freq].values, bin_centers, valid_min, valid_max, phase_res, label=labels[0], color=next(palette))
+    ax = plot_kde(ax, df_subset_mid[phase_freq].values,bin_centers, valid_min, valid_max, phase_res, label=labels[1], color=next(palette))
+    ax = plot_kde(ax, df_subset_late[phase_freq].values, bin_centers, valid_min, valid_max, phase_res, label=labels[2], color=next(palette))
 
 
 def plot_phase_distribution(df, phase_freq, freq, phase_res, window, ofile, 
@@ -143,6 +125,13 @@ def plot_phase_distribution(df, phase_freq, freq, phase_res, window, ofile,
         nrows, ncols = 1, 1
         figure_size = None
 
+    valid_min = 0.0
+    valid_max = (360. / freq) - phase_res
+    bin_edge_start = valid_min - (phase_res / 2.0)
+    bin_edge_end = valid_max + (phase_res / 2.0)
+    bin_edges = numpy.arange(bin_edge_start, bin_edge_end + phase_res, phase_res)
+    bin_centers = numpy.arange(valid_min, valid_max + phase_res, phase_res)
+
     fig = plt.figure(figsize=figure_size)
     for plot_num, season in enumerate(season_list):
 
@@ -155,81 +144,43 @@ def plot_phase_distribution(df, phase_freq, freq, phase_res, window, ofile,
             df_subset = df.loc[bools_subset]
         else:
             df_subset = df
+        phase_data = df_subset[phase_freq].values
 
-        total_hist, total_smooth_hist, total_bin_centers = phase_histogram(df_subset[phase_freq].values, window, phase_res)
+        assert phase_data.min() >= valid_min
+        assert phase_data.max() <= valid_max
 
-#        # Get start and end for forward moving events
-#        forward_bools = df_subset['event_gradient'] > 0.2
-#        forward_start_bools = numpy.logical_and(forward_bools.values, df_subset['event_start'].values)
-#        forward_end_bools = numpy.logical_and(forward_bools.values, df_subset['event_end'].values)
-#
-#        forward_start_df = df_subset.loc[forward_start_bools]
-#        forward_start_hist, forward_start_smooth_hist, forward_start_bin_centers = phase_histogram(forward_start_df[phase_freq].values, window, phase_res)
-#
-#        forward_end_df = df_subset.loc[forward_end_bools]
-#        forward_end_hist, forward_end_smooth_hist, forward_end_bin_centers = phase_histogram(forward_end_df[phase_freq].values, window, phase_res)
+        first_color = next(palette)
 
-        plot_histogram(ax, total_hist, total_bin_centers)
-        plot_smooth_histogram(ax, total_smooth_hist, total_bin_centers, label='1979-2014')
+        ax = seaborn.distplot(phase_data, bins=bin_edges, kde=False, color=first_color)
+        ax = plot_kde(ax, phase_data, bin_centers, valid_min, valid_max, phase_res, label='1979-2014', color=first_color)
 
         if epochs:
-            plot_extra_smooth('epochs', ax, df_subset, phase_freq, window, phase_res) 
+            plot_extra_smooth('epochs', ax, df_subset, phase_freq, bin_centers, valid_min, valid_max, phase_res) 
 
         if gradient:
-            plot_extra_smooth('gradient', ax, df_subset, phase_freq, window, phase_res) 
+            plot_extra_smooth('gradient', ax, df_subset, phase_freq, bin_centers, valid_min, valid_max, phase_res) 
     
         ax.set_title(season)
         font = font_manager.FontProperties(size='x-small')
         ax.legend(loc=1, prop=font)
         ax.set_ylabel('Frequency', fontsize='x-small')
         ax.set_xlabel('Longitude', fontsize='x-small')
-
-        xstart = 0 - (phase_res / 2.0)
-        xend = (360. / freq) - (phase_res / 2.0)
-
-        ax.set_xlim((xstart, xend))
+        ax.set_xlim((bin_edge_start, bin_edge_end))
         if ymax:
             ax.set_ylim((0, ymax))
 
     fig.savefig(ofile, bbox_inches='tight')
 
 
-def phase_histogram(phase_data, smoothing_window, phase_res):
-    """Calculate the phase data and bin it (i.e. create histogram)."""
+def plot_kde(ax, phase_data, bin_centers, lower_bound, upper_bound, phase_res, label, color=None):
+    """Plot the kernel density estimate."""
 
-    assert type(phase_data) == numpy.ndarray
+    est = pyqt_fit.kde.KDE1D(phase_data, lower=lower_bound, upper=upper_bound, method=pyqt_fit.kde_methods.cyclic)
+    kde_freq = est(bin_centers) * phase_res * len(phase_data)
 
-    bin_edge_start = phase_data.min() - (phase_res / 2.)
-    bin_edge_end = phase_data.max() + phase_res + (phase_res / 2.)
-    bin_centers = numpy.arange(phase_data.min(), phase_data.max() + phase_res, phase_res)
+    ax.plot(bin_centers, kde_freq, label=label, color=color) 
 
-#    bin_edge_start = -0.375
-#    bin_edge_end = 60.375
-#    bin_centers = numpy.arange(0, 60, 0.75)
-
-    hist, bin_edges = numpy.histogram(phase_data, bins=numpy.arange(bin_edge_start, bin_edge_end, phase_res)) #range=(bin_edge_start, bin_edge_end))
-    smooth_hist = running_mean(hist, smoothing_window)
-
-    return hist, smooth_hist, bin_centers
-
-
-def plot_histogram(ax, hist, bin_centers):
-    """Plot the phase histogram as a bar chart."""
-
-    ax.bar(bin_centers, hist, color='0.7', align='center')
-
-#    start_end_hist = numpy.add(start_hist, end_hist)
-#    remainder_hist = numpy.subtract(total_hist, start_end_hist)
-#
-#    ax.bar(bin_centers, start_hist, color='green')
-#    ax.bar(bin_centers, end_hist, color='red', bottom=start_hist)
-#    ax.bar(bin_centers, remainder_hist, color='0.7', bottom=start_end_hist)
-   
-
-def plot_smooth_histogram(ax, smooth_hist, bin_centers, label=None):
-    """Plot the smoothed histogram as a line."""
-
-    ax.plot(bin_centers, smooth_hist, label=label) 
+    return ax
 
 
 def main(inargs):
