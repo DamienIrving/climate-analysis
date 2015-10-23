@@ -129,7 +129,7 @@ def plot_duration(ax, df, label=None):
 
     duration_data = numpy.array(duration_list)
 
-    ax = seaborn.distplot(duration_data, kde=False, norm_hist=True)
+    ax = seaborn.distplot(duration_data, kde=False)
 
     # Bin it
 #    bin_res = 1
