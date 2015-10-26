@@ -6,6 +6,7 @@ import numpy
 import pandas
 import argparse
 from scipy import stats
+from scipy.signal import argrelextrema
 import pyqt_fit
 
 import matplotlib
@@ -43,12 +44,53 @@ except ImportError:
 season_months = {'annual': None, 'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
                  'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
 
+def kde_stats(kde_data, kde_bins, width, label):
+    """Print kde stats to the screen."""
+    
+    local_maxima = argrelextrema(kde_data, numpy.greater)
+    local_minima = argrelextrema(kde_data, numpy.less)
+    
+    print label
+    print "Local maxima"
+    for maxima_index in local_maxima[0]:
+        print broad_extrema(width, maxima_index, kde_data, kde_bins, 'maxima')
+
+#    print "Local minima"
+#    for minima_index in local_minima[0]:
+#        print broad_extrema(width, minima_index, kde_data, kde_bins, 'minima')
+
+
+def broad_extrema(width, extrema_index, data, bins, extrema_type):
+    """Select the n largest/smallest values around an extrema."""
+    
+    assert extrema_type in ['maxima', 'minima']
+    
+    left_index = extrema_index
+    right_index = extrema_index
+    for i in range(0, width):
+        right_value = data[right_index + 1]
+        left_value = data[left_index - 1]
+        
+        if extrema_type == 'maxima':
+            if right_value >= left_value:
+                right_index = right_index + 1
+            else:
+                left_index = left_index - 1
+        elif extrema_type == 'minima':
+            if right_value <= left_value:
+                right_index = right_index + 1
+            else:
+                left_index = left_index - 1
+    
+    return bins[left_index], bins[right_index]
+
+
 def gradient_stats(gradient_list):
     """Print gradient statistics to screen"""
     
     print "gradient mean:", numpy.mean(gradient_list)
     print "gradient std:", numpy.std(gradient_list)
-    
+
 
 def plot_phase_progression(ax, df, freq, gradient_limit):
     """Create the plot showing how the phase changes over time."""
@@ -108,6 +150,8 @@ def plot_duration_histogram(ax, df):
 
     duration_data = numpy.array(duration_list)
 
+    print 'mean event duration:', duration_data.mean()
+
     seaborn.distplot(duration_data, kde=False)
     plt.ylabel('frequency')
     plt.xlabel('duration (days)')
@@ -133,7 +177,8 @@ def plot_event_summary(df, freq, min_duration, gradient_limit, ofile):
 
 
 def plot_extra_smooth(category, ax, df_subset, phase_freq,
-                      bin_centers, valid_min, valid_max, phase_res):
+                      bin_centers, valid_min, valid_max,
+                      phase_res):
     """Add extra smoothed histogram lines."""
 
     assert category in ['epochs', 'gradient']
@@ -157,14 +202,21 @@ def plot_extra_smooth(category, ax, df_subset, phase_freq,
     df_subset_mid = df_subset.loc[mid_bools]
     df_subset_late = df_subset.loc[late_bools]
 
-    ax = plot_kde(ax, df_subset_early[phase_freq].values, bin_centers, valid_min, valid_max, phase_res, label=labels[0], color=next(palette))
-    ax = plot_kde(ax, df_subset_mid[phase_freq].values,bin_centers, valid_min, valid_max, phase_res, label=labels[1], color=next(palette))
-    ax = plot_kde(ax, df_subset_late[phase_freq].values, bin_centers, valid_min, valid_max, phase_res, label=labels[2], color=next(palette))
+    ax = plot_kde(ax, df_subset_early[phase_freq].values, bin_centers, 
+                  valid_min, valid_max, phase_res,
+                  label=labels[0], color=next(palette))
+    ax = plot_kde(ax, df_subset_mid[phase_freq].values,bin_centers,
+                  valid_min, valid_max, phase_res,
+                  label=labels[1], color=next(palette))
+    ax = plot_kde(ax, df_subset_late[phase_freq].values, bin_centers, 
+                  valid_min, valid_max, phase_res,
+                  label=labels[2], color=next(palette))
 
 
-def plot_phase_distribution(df, phase_freq, freq, phase_res, window, ofile, 
+def plot_phase_distribution(df, phase_freq, freq, phase_res, ofile, 
                             seasonal=False, epochs=False, gradient=False, 
-                            start_end=False, ymax=None, phase_groups=None):
+                            start_end=False, ymax=None,
+                            phase_groups=None, subset_width=10):
     """Plot a phase distribution histogram."""    
     
     if seasonal:
@@ -203,13 +255,17 @@ def plot_phase_distribution(df, phase_freq, freq, phase_res, window, ofile,
         first_color = next(palette)
 
         ax = seaborn.distplot(phase_data, bins=bin_edges, kde=False, color=first_color)
-        ax = plot_kde(ax, phase_data, bin_centers, valid_min, valid_max, phase_res, label='1979-2014', color=first_color)
+        ax = plot_kde(ax, phase_data, bin_centers, 
+                      valid_min, valid_max, phase_res,
+                      label='1979-2014', color=first_color, subset_width=subset_width)
 
         if epochs:
-            plot_extra_smooth('epochs', ax, df_subset, phase_freq, bin_centers, valid_min, valid_max, phase_res) 
+            plot_extra_smooth('epochs', ax, df_subset, phase_freq, 
+                              bin_centers, valid_min, valid_max, phase_res) 
 
         if gradient:
-            plot_extra_smooth('gradient', ax, df_subset, phase_freq, bin_centers, valid_min, valid_max, phase_res) 
+            plot_extra_smooth('gradient', ax, df_subset, phase_freq, 
+                              bin_centers, valid_min, valid_max, phase_res) 
     
         if phase_groups:
             for group in phase_groups:
@@ -229,7 +285,10 @@ def plot_phase_distribution(df, phase_freq, freq, phase_res, window, ofile,
     fig.savefig(ofile, bbox_inches='tight')
 
 
-def plot_kde(ax, phase_data, bin_centers, lower_bound, upper_bound, phase_res, label, color=None):
+def plot_kde(ax, phase_data, bin_centers,
+             lower_bound, upper_bound, 
+             phase_res, label,
+             color=None, subset_width=None):
     """Plot the kernel density estimate."""
 
     est = pyqt_fit.kde.KDE1D(phase_data, lower=lower_bound, upper=upper_bound, method=pyqt_fit.kde_methods.cyclic)
@@ -237,8 +296,8 @@ def plot_kde(ax, phase_data, bin_centers, lower_bound, upper_bound, phase_res, l
 
     ax.plot(bin_centers, kde_freq, label=label, color=color) 
 
-#    print kde_freq
-#    print bin_centers
+    if subset_width:
+        kde_stats(kde_freq, bin_centers, subset_width, label)  
 
     return ax
 
@@ -253,11 +312,11 @@ def main(inargs):
     phase_freq = 'wave%i_phase' %(inargs.freq)
     if inargs.type == 'phase_distribution':
         filtered_df = df.loc[df['event_duration'] >= inargs.min_duration]
-        plot_phase_distribution(filtered_df, phase_freq, inargs.freq, inargs.phase_res, 
-                                inargs.window, inargs.ofile,
+        plot_phase_distribution(filtered_df, phase_freq, inargs.freq, inargs.phase_res, inargs.ofile,
                                 seasonal=inargs.seasonal, epochs=inargs.epochs, 
                                 gradient=inargs.gradient, start_end=inargs.start_end,
-                                ymax=inargs.ymax, phase_groups=inargs.phase_group)
+                                ymax=inargs.ymax, phase_groups=inargs.phase_group,
+                                subset_width=inargs.subset_width)
     elif inargs.type == 'event_summary':
         plot_event_summary(df, inargs.freq, inargs.min_duration, inargs.gradient_limit, inargs.ofile)
 
@@ -308,8 +367,8 @@ author:
                         help="Absolute value of limit for defining stationary events [default: 0.25]")
  
     # phase distribution options
-    parser.add_argument("--window", type=int, default=10, 
-                        help="Running mean window [default: 10]")
+    parser.add_argument("--subset_width", type=int, default=None, 
+                        help="Print the bounds of the local extrema according to this width [default: None]")
     parser.add_argument("--phase_group", type=float, nargs=2, action='append', default=None, 
                         help="Plot vertical lines to indicate a phase grouping [default: None]")
     parser.add_argument("--seasonal", action="store_true", default=False,
