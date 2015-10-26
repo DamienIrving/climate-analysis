@@ -43,6 +43,12 @@ except ImportError:
 season_months = {'annual': None, 'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
                  'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
 
+def gradient_stats(gradient_list):
+    """Print gradient statistics to screen"""
+    
+    print "gradient mean:", numpy.mean(gradient_list)
+    print "gradient std:", numpy.std(gradient_list)
+    
 
 def plot_phase_progression(ax, df, freq, gradient_limit):
     """Create the plot showing how the phase changes over time."""
@@ -52,12 +58,14 @@ def plot_phase_progression(ax, df, freq, gradient_limit):
     duration_max =  df['event_duration'].max()
     event_numbers = numpy.unique(df['event_number'].values)
     
+    all_gradients = []
     for event in event_numbers:
         phase_data = df['event_phase'].loc[df['event_number'] == event].values
         amp_data = df['env_max'].loc[df['event_number'] == event].values
         gradient = df['event_gradient'].loc[df['event_number'] == event].values[0]
         x_axis = numpy.arange(0, len(phase_data))
 
+        all_gradients.append(gradient)
         if gradient > gradient_limit:
             cmap = seaborn.light_palette('red', as_cmap=True)
         elif gradient < -(gradient_limit):
@@ -71,6 +79,8 @@ def plot_phase_progression(ax, df, freq, gradient_limit):
         lc.set_array(amp_data)
         lc.set_linewidth(3)
         plt.gca().add_collection(lc)
+
+    gradient_stats(all_gradients)
 
     plt.xlim(0, duration_max)
     plt.ylim(0, df['event_phase'].max() + 1)
@@ -153,7 +163,8 @@ def plot_extra_smooth(category, ax, df_subset, phase_freq,
 
 
 def plot_phase_distribution(df, phase_freq, freq, phase_res, window, ofile, 
-                            seasonal=False, epochs=False, gradient=False, start_end=False, ymax=None):
+                            seasonal=False, epochs=False, gradient=False, 
+                            start_end=False, ymax=None, phase_groups=None):
     """Plot a phase distribution histogram."""    
     
     if seasonal:
@@ -200,6 +211,12 @@ def plot_phase_distribution(df, phase_freq, freq, phase_res, window, ofile,
         if gradient:
             plot_extra_smooth('gradient', ax, df_subset, phase_freq, bin_centers, valid_min, valid_max, phase_res) 
     
+        if phase_groups:
+            for group in phase_groups:
+                start, end = group
+                plt.axvline(x=start, linestyle='--', color='0.4')
+                plt.axvline(x=end, linestyle='--', color='0.4')
+    
         ax.set_title(season)
         font = font_manager.FontProperties(size='x-small')
         ax.legend(loc=1, prop=font)
@@ -220,6 +237,9 @@ def plot_kde(ax, phase_data, bin_centers, lower_bound, upper_bound, phase_res, l
 
     ax.plot(bin_centers, kde_freq, label=label, color=color) 
 
+#    print kde_freq
+#    print bin_centers
+
     return ax
 
 
@@ -237,7 +257,7 @@ def main(inargs):
                                 inargs.window, inargs.ofile,
                                 seasonal=inargs.seasonal, epochs=inargs.epochs, 
                                 gradient=inargs.gradient, start_end=inargs.start_end,
-                                ymax=inargs.ymax)
+                                ymax=inargs.ymax, phase_groups=inargs.phase_group)
     elif inargs.type == 'event_summary':
         plot_event_summary(df, inargs.freq, inargs.min_duration, inargs.gradient_limit, inargs.ofile)
 
@@ -290,6 +310,8 @@ author:
     # phase distribution options
     parser.add_argument("--window", type=int, default=10, 
                         help="Running mean window [default: 10]")
+    parser.add_argument("--phase_group", type=float, nargs=2, action='append', default=None, 
+                        help="Plot vertical lines to indicate a phase grouping [default: None]")
     parser.add_argument("--seasonal", action="store_true", default=False,
                         help="switch for plotting the 4 seasons for phase distribution plot [default: False]")
     parser.add_argument("--epochs", action="store_true", default=False,
