@@ -43,42 +43,82 @@ except ImportError:
 season_months = {'annual': None, 'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
                  'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
 
-def plot_event_summary(df, phase_freq, ofile):
-    """Line graph showing phase/amplitude throughout the lifecycle of each PSA event."""
 
+def plot_phase_progression(ax, df, freq, gradient_limit):
+    """Create the plot showing how the phase changes over time."""
+    
     amp_max = df['env_max'].max()
     amp_min = df['env_max'].min()
     duration_max =  df['event_duration'].max()
     event_numbers = numpy.unique(df['event_number'].values)
-
-    # Create the plot
-    fig = plt.figure(figsize=(8,11))
+    
     for event in event_numbers:
         phase_data = df['event_phase'].loc[df['event_number'] == event].values
         amp_data = df['env_max'].loc[df['event_number'] == event].values
         gradient = df['event_gradient'].loc[df['event_number'] == event].values[0]
         x_axis = numpy.arange(0, len(phase_data))
 
-        if gradient > 0.2:
-            cmap = 'Reds'
-        elif gradient < -0.2:
-            cmap = 'Blues'
+        if gradient > gradient_limit:
+            cmap = seaborn.light_palette('red', as_cmap=True)
+        elif gradient < -(gradient_limit):
+            cmap = seaborn.light_palette('blue', as_cmap=True)
         else:
-            cmap = 'Greys'
+            cmap = seaborn.light_palette('grey', as_cmap=True)
 
         points = numpy.array([x_axis, phase_data]).T.reshape(-1, 1, 2)
         segments = numpy.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments, cmap=plt.get_cmap(cmap), norm=plt.Normalize(amp_min, amp_max))
+        lc = LineCollection(segments, cmap=cmap, norm=plt.Normalize(amp_min, amp_max))
         lc.set_array(amp_data)
         lc.set_linewidth(3)
         plt.gca().add_collection(lc)
 
     plt.xlim(0, duration_max)
-    plt.ylim(0, 83)
+    plt.ylim(0, df['event_phase'].max() + 1)
 
     plt.xlabel('day')
-    plt.ylabel(phase_freq)
-   
+    plt.ylabel('wavenumber '+str(freq)+' phase')
+    plt.text(0.95, 0.96, '(b)', transform=ax.transAxes, fontsize='large')
+
+
+def plot_duration_histogram(ax, df):
+    """Plot a bar chart showing the distribution of event duration.
+ 
+    Args:
+      ax (AxesSubplot): plot axis
+      df (pandas DataFrame): The list of dates
+      
+    """
+
+    event_data = df['event_number'].values
+    event_list = list(event_data)
+    duration_list = []
+    for event in range(0, event_data.max() + 1):
+        event_duration = event_list.count(event)
+        duration_list.append(event_duration)
+
+    duration_data = numpy.array(duration_list)
+
+    seaborn.distplot(duration_data, kde=False)
+    plt.ylabel('frequency')
+    plt.xlabel('duration (days)')
+    plt.text(0.90, 0.91, '(a)', transform=ax.transAxes, fontsize='large')
+
+
+def plot_event_summary(df, freq, min_duration, gradient_limit, ofile):
+    """Create the event summary plot"""
+
+    fig = plt.figure(figsize=(8, 16))
+
+    ax0 = plt.subplot2grid((4, 2), (0, 0))
+    ax1 = plt.subplot2grid((4, 2), (1, 0), rowspan=2, colspan=3)
+
+    plt.sca(ax0)
+    plot_duration_histogram(ax0, df)
+
+    plt.sca(ax1)
+    filtered_df = df.loc[df['event_duration'] >= min_duration]
+    plot_phase_progression(ax1, filtered_df, freq, gradient_limit)
+
     plt.savefig(ofile, bbox_inches='tight')
 
 
@@ -188,18 +228,18 @@ def main(inargs):
 
     # Read the data and apply filters
     df = pandas.read_csv(inargs.infile)
-    filtered_df = df.loc[df['event_duration'] >= inargs.min_duration]
 
     # Create the desired plot
     phase_freq = 'wave%i_phase' %(inargs.freq)
     if inargs.type == 'phase_distribution':
+        filtered_df = df.loc[df['event_duration'] >= inargs.min_duration]
         plot_phase_distribution(filtered_df, phase_freq, inargs.freq, inargs.phase_res, 
                                 inargs.window, inargs.ofile,
                                 seasonal=inargs.seasonal, epochs=inargs.epochs, 
                                 gradient=inargs.gradient, start_end=inargs.start_end,
                                 ymax=inargs.ymax)
     elif inargs.type == 'event_summary':
-        plot_event_summary(filtered_df, phase_freq, inargs.ofile)
+        plot_event_summary(df, inargs.freq, inargs.min_duration, inargs.gradient_limit, inargs.ofile)
 
     # Sort out metadata
     file_body = inargs.infile.split('.')[0]
@@ -231,17 +271,25 @@ author:
                         help="Desired plot")    
     parser.add_argument("ofile", type=str, help="Output file name")
 
+    # data details
     parser.add_argument("--freq", type=int, default=6, 
                         help="Frequency to use to indicate the wave phase [default: 6]")
-    parser.add_argument("--phase_res", type=float, default=1.0, 
-                        help="Phase resolution (e.g. if phase data is deg lon, res is spacing between lons [default: 1.0]")
-    parser.add_argument("--window", type=int, default=10, 
-                        help="Running mean window [default: 10]")
-    parser.add_argument("--min_duration", type=int, default=0, 
-                        help="Minimum event duration [default: 0]")
+    parser.add_argument("--phase_res", type=float, default=None, 
+                        help="Phase resolution (e.g. if phase data is deg lon, res is spacing between lons [default: None]")       
+
+    # options that apply to any plot type
     parser.add_argument("--ymax", type=float, default=None, 
                         help="Maximum y axis value for all plots [default: auto]")
+    parser.add_argument("--min_duration", type=int, default=0, 
+                        help="Minimum event duration [default: 0]")
 
+    # event summary options
+    parser.add_argument("--gradient_limit", type=float, default=0.25, 
+                        help="Absolute value of limit for defining stationary events [default: 0.25]")
+ 
+    # phase distribution options
+    parser.add_argument("--window", type=int, default=10, 
+                        help="Running mean window [default: 10]")
     parser.add_argument("--seasonal", action="store_true", default=False,
                         help="switch for plotting the 4 seasons for phase distribution plot [default: False]")
     parser.add_argument("--epochs", action="store_true", default=False,
