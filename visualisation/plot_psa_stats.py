@@ -52,11 +52,11 @@ def kde_stats(kde_data, kde_bins, width, label):
     print label
     print "Local maxima"
     for maxima_index in local_maxima[0]:
-        print broad_extrema(width, maxima_index, kde_data, kde_bins, 'maxima')
+        print kde_bins[maxima_index], broad_extrema(width, maxima_index, kde_data, kde_bins, 'maxima')
 
     print "Local minima"
     for minima_index in local_minima[0]:
-        print broad_extrema(width, minima_index, kde_data, kde_bins, 'minima')
+        print kde_bins[minima_index], broad_extrema(width, minima_index, kde_data, kde_bins, 'minima')
 
 def check_index(index, valid_min, valid_max):
     """Check that an index doesn't exceed the valid bounds."""
@@ -171,7 +171,7 @@ def plot_duration_histogram(ax, df):
 
     seaborn.distplot(duration_data, kde=False)
     plt.ylabel('frequency')
-    plt.xlabel('duration (days)')
+    plt.xlabel('event duration (days)')
     plt.text(0.90, 0.91, '(a)', transform=ax.transAxes, fontsize='large')
 
 
@@ -284,8 +284,12 @@ def plot_phase_distribution(df, phase_freq, freq, phase_res, ofile,
                 plt.axvspan(start, end, alpha=0.2, color='grey')
     
         ax.set_title(season, fontsize='small')
-        ax.set_ylabel('Frequency', fontsize='x-small')
-        ax.set_xlabel('Longitude', fontsize='x-small')
+        if plot_num in [1, 3, 5]:
+            ax.set_ylabel('Frequency') #fontsize='x-small')
+        
+        if plot_num in [5, 6]:
+            ax.set_xlabel('Phase ($^{\circ}$E)') #fontsize='x-small')
+
         ax.set_xlim((bin_edge_start, bin_edge_end))
         if ymax:
             ax.set_ylim((0, ymax))
