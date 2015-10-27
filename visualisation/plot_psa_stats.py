@@ -18,7 +18,6 @@ import matplotlib.font_manager as font_manager
 import seaborn
 seaborn.set_context("paper")
 seaborn.set_palette("deep") #"colorblind"
-palette = itertools.cycle(seaborn.color_palette())
 
 # Import my modules
 
@@ -41,7 +40,7 @@ except ImportError:
 
 # Define functions
 
-season_months = {'annual': None, 'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
+season_months = {'Annual': None, 'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
                  'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
 
 def kde_stats(kde_data, kde_bins, width, label):
@@ -55,32 +54,50 @@ def kde_stats(kde_data, kde_bins, width, label):
     for maxima_index in local_maxima[0]:
         print broad_extrema(width, maxima_index, kde_data, kde_bins, 'maxima')
 
-#    print "Local minima"
-#    for minima_index in local_minima[0]:
-#        print broad_extrema(width, minima_index, kde_data, kde_bins, 'minima')
+    print "Local minima"
+    for minima_index in local_minima[0]:
+        print broad_extrema(width, minima_index, kde_data, kde_bins, 'minima')
 
+def check_index(index, valid_min, valid_max):
+    """Check that an index doesn't exceed the valid bounds."""
+    
+    if index >= valid_max:
+        index = index - valid_max
+        
+    if index < valid_min:
+        index = index + valid_max
+ 
+    return index
+    
 
 def broad_extrema(width, extrema_index, data, bins, extrema_type):
     """Select the n largest/smallest values around an extrema."""
     
     assert extrema_type in ['maxima', 'minima']
     
+    step = bins[1] - bins[0]
+    max_index = ((bins.max() + step) / step) - 1
+    
     left_index = extrema_index
     right_index = extrema_index
     for i in range(0, width):
-        right_value = data[right_index + 1]
-        left_value = data[left_index - 1]
+
+        new_right_index = check_index(right_index + 1, 0, max_index)
+        new_left_index = check_index(left_index - 1, 0, max_index)
+    
+        right_value = data[new_right_index]
+        left_value = data[new_left_index]
         
         if extrema_type == 'maxima':
             if right_value >= left_value:
-                right_index = right_index + 1
+                right_index = new_right_index
             else:
-                left_index = left_index - 1
+                left_index = new_left_index
         elif extrema_type == 'minima':
             if right_value <= left_value:
-                right_index = right_index + 1
+                right_index = new_right_index
             else:
-                left_index = left_index - 1
+                left_index = new_left_index
     
     return bins[left_index], bins[right_index]
 
@@ -178,7 +195,7 @@ def plot_event_summary(df, freq, min_duration, gradient_limit, ofile):
 
 def plot_extra_smooth(category, ax, df_subset, phase_freq,
                       bin_centers, valid_min, valid_max,
-                      phase_res):
+                      phase_res, palette):
     """Add extra smoothed histogram lines."""
 
     assert category in ['epochs', 'gradient']
@@ -214,19 +231,10 @@ def plot_extra_smooth(category, ax, df_subset, phase_freq,
 
 
 def plot_phase_distribution(df, phase_freq, freq, phase_res, ofile, 
-                            seasonal=False, epochs=False, gradient=False, 
+                            epochs=False, gradient=False, 
                             start_end=False, ymax=None,
                             phase_groups=None, subset_width=10):
     """Plot a phase distribution histogram."""    
-    
-    if seasonal:
-        season_list = ['DJF', 'MAM', 'JJA', 'SON']
-        nrows, ncols = 2, 2
-        figure_size = (12, 10)
-    else:
-        season_list = ['annual']
-        nrows, ncols = 1, 1
-        figure_size = None
 
     valid_min = 0.0
     valid_max = (360. / freq) - phase_res
@@ -234,14 +242,16 @@ def plot_phase_distribution(df, phase_freq, freq, phase_res, ofile,
     bin_edge_end = valid_max + (phase_res / 2.0)
     bin_edges = numpy.arange(bin_edge_start, bin_edge_end + phase_res, phase_res)
     bin_centers = numpy.arange(valid_min, valid_max + phase_res, phase_res)
+    
+    season_list = ['Annual', 'DJF', 'MAM', 'JJA', 'SON']
+    plotnum_list = [1, 3, 4, 5, 6]
+    fig = plt.figure(figsize=(10, 12))
+    for plot_num, season in zip(plotnum_list, season_list):
 
-    fig = plt.figure(figsize=figure_size)
-    for plot_num, season in enumerate(season_list):
-
-        ax = plt.subplot(nrows, ncols, plot_num + 1)
+        ax = plt.subplot(3, 2, plot_num )
         plt.sca(ax)
 
-        if not season == 'annual':
+        if not season == 'Annual':
             months_subset = pandas.to_datetime(df['time'].values).month
             bools_subset = (months_subset == season_months[season][0]) + (months_subset == season_months[season][1]) + (months_subset == season_months[season][2])
             df_subset = df.loc[bools_subset]
@@ -251,7 +261,8 @@ def plot_phase_distribution(df, phase_freq, freq, phase_res, ofile,
 
         assert phase_data.min() >= valid_min
         assert phase_data.max() <= valid_max
-
+        
+        palette = itertools.cycle(seaborn.color_palette())
         first_color = next(palette)
 
         ax = seaborn.distplot(phase_data, bins=bin_edges, kde=False, color=first_color)
@@ -261,7 +272,7 @@ def plot_phase_distribution(df, phase_freq, freq, phase_res, ofile,
 
         if epochs:
             plot_extra_smooth('epochs', ax, df_subset, phase_freq, 
-                              bin_centers, valid_min, valid_max, phase_res) 
+                              bin_centers, valid_min, valid_max, phase_res, palette) 
 
         if gradient:
             plot_extra_smooth('gradient', ax, df_subset, phase_freq, 
@@ -270,17 +281,17 @@ def plot_phase_distribution(df, phase_freq, freq, phase_res, ofile,
         if phase_groups:
             for group in phase_groups:
                 start, end = group
-                plt.axvline(x=start, linestyle='--', color='0.4')
-                plt.axvline(x=end, linestyle='--', color='0.4')
+                plt.axvspan(start, end, alpha=0.2, color='grey')
     
-        ax.set_title(season)
-        font = font_manager.FontProperties(size='x-small')
-        ax.legend(loc=1, prop=font)
+        ax.set_title(season, fontsize='small')
         ax.set_ylabel('Frequency', fontsize='x-small')
         ax.set_xlabel('Longitude', fontsize='x-small')
         ax.set_xlim((bin_edge_start, bin_edge_end))
         if ymax:
             ax.set_ylim((0, ymax))
+        if season == 'Annual':
+             font = font_manager.FontProperties(size='medium')
+             ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., prop=font)
 
     fig.savefig(ofile, bbox_inches='tight')
 
@@ -313,7 +324,7 @@ def main(inargs):
     if inargs.type == 'phase_distribution':
         filtered_df = df.loc[df['event_duration'] >= inargs.min_duration]
         plot_phase_distribution(filtered_df, phase_freq, inargs.freq, inargs.phase_res, inargs.ofile,
-                                seasonal=inargs.seasonal, epochs=inargs.epochs, 
+                                epochs=inargs.epochs, 
                                 gradient=inargs.gradient, start_end=inargs.start_end,
                                 ymax=inargs.ymax, phase_groups=inargs.phase_group,
                                 subset_width=inargs.subset_width)
@@ -371,8 +382,6 @@ author:
                         help="Print the bounds of the local extrema according to this width [default: None]")
     parser.add_argument("--phase_group", type=float, nargs=2, action='append', default=None, 
                         help="Plot vertical lines to indicate a phase grouping [default: None]")
-    parser.add_argument("--seasonal", action="store_true", default=False,
-                        help="switch for plotting the 4 seasons for phase distribution plot [default: False]")
     parser.add_argument("--epochs", action="store_true", default=False,
                         help="switch for plotting epoch lines on phase distribution plot [default: False]")
     parser.add_argument("--gradient", action="store_true", default=False,
