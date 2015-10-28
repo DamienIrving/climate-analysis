@@ -225,7 +225,7 @@ def multiplot(cube_dict, nrows, ncols,
               grid_labels=False,
               #headings
               title=None, title_size='large', 
-              subplot_headings=None, subplot_heading_size='medium',
+              subplot_headings=None, side_headings=None, subplot_heading_size='medium',
               #colourbar
               no_colourbar=['False'],
               colour_type='smooth',
@@ -299,7 +299,15 @@ def multiplot(cube_dict, nrows, ncols,
             ax = plt.subplot(nrows, ncols, plotnum, projection=out_proj_object)
             plt.sca(ax)
 
-            # Mini header
+            # Mini headers
+            try:
+                if not side_headings[plotnum - 1].lower() == 'none':
+                    #ax.set_ylabel(side_headings[plotnum - 1].replace("_", " "), fontsize=subplot_heading_size)
+                    plt.text(-0.1, 0.6, side_headings[plotnum - 1].replace("_", " "), fontsize=subplot_heading_size, transform=ax.transAxes, rotation='vertical')                    
+                    #ax.set_title(side_headings[plotnum - 1].replace("_", " "), fontsize=subplot_heading_size, rotation='vertical', x=-0.1, y=0.5)
+            except (TypeError, IndexError):
+                pass
+
             try:
                 if not subplot_headings[plotnum - 1].lower() == 'none':
                     plt.title(subplot_headings[plotnum - 1].replace("_", " "), fontsize=subplot_heading_size)
@@ -576,7 +584,7 @@ def set_spacing(colourbar_type, colourbar_orientation, subplot_spacing):
     The automatic spacing performed by matplotlib will fill the 
     available space (e.g. in a 2 by 2 array the subplots will gravitate
     towards the corners), so final tweaking of the spacing between sub-plots 
-    can be achieved by altering  the width and height of the figure itself. 
+    can be achieved by altering the width and height of the figure itself. 
 
     """
 
@@ -648,6 +656,7 @@ def main(inargs):
               title=inargs.title,
               title_size=inargs.title_size,
               subplot_headings=inargs.subplot_headings,
+              side_headings=inargs.side_headings,
               subplot_heading_size=inargs.subplot_heading_size,
               #colourbar
               no_colourbar=inargs.no_colourbar,
@@ -761,6 +770,8 @@ example:
                         help="list of subplot headings (in order from top left to bottom right, write none for a blank)")
     parser.add_argument("--subplot_heading_size", type=str, default='medium', choices=text_sizes,
                         help="subplot heading size [default: medium]")
+    parser.add_argument("--side_headings", type=str, nargs='*', default=None,
+                        help="list of side (vertical) headings (in order from top left to bottom right, write none for a blank)")
 
     # Colourbar
     parser.add_argument("--palette", type=str, nargs='*', default=['hot_r',],
