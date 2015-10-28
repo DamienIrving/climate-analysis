@@ -231,7 +231,7 @@ def multiplot(cube_dict, nrows, ncols,
               colour_type='smooth',
               colourbar_type='global', colourbar_orientation='horizontal', global_colourbar_span=0.6,
               colourbar_number_size='small',
-              global_units=None,
+              units=[None],
               units_size='small',
               palette=['hot_r',], extend='neither', colourbar_ticks=None,
               #contours
@@ -269,6 +269,7 @@ def multiplot(cube_dict, nrows, ncols,
     output_projection = duplicate_input(output_projection, nrows, ncols, "projection")
     region = duplicate_input(region, nrows, ncols, "region")
     palette = duplicate_input(palette, nrows, ncols, "palette")
+    units = duplicate_input(units, nrows, ncols, "units")
     if colourbar_ticks:
         colourbar_ticks = duplicate_input(colourbar_ticks, nrows, ncols, "colourbar ticks")
 
@@ -285,6 +286,8 @@ def multiplot(cube_dict, nrows, ncols,
             out_proj_object = output_projections[out_proj_name]
             out_region_name = region[plotnum - 1]
             palette_name = palette[plotnum - 1]
+            units_name = units[plotnum - 1]
+
             if colourbar_ticks:
                 colourbar_tick_list = colourbar_ticks[plotnum -1]
             else:
@@ -319,9 +322,9 @@ def multiplot(cube_dict, nrows, ncols,
                     colour_cube = cube_dict[(colour_label, plotnum)]
                     cf = plot_colour(colour_cube, ax, colour_type, colourbar_type, 
                                      palette_name, extend, colourbar_tick_list)
-                    units = global_units if global_units else colour_cube.units.symbol
+                    units_name = units_name if units_name else colour_cube.units.symbol
                     if colourbar_type == 'individual':
-                        set_individual_colourbar(colourbar_orientation, cf, units, units_size, colourbar_number_size)
+                        set_individual_colourbar(colourbar_orientation, cf, units_name, units_size, colourbar_number_size)
                     colour_plot_switch = True
                     if layer > 0:
                         print "WARNING: More than one colour layer. Only the uppermost will show."
@@ -383,7 +386,7 @@ def multiplot(cube_dict, nrows, ncols,
                 plt.gca().gridlines(draw_labels=grid_labels)
             if not no_colourbar:
                 if colourbar_type == 'global' and colour_plot_switch:
-                    set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units, units_size, colourbar_number_size)       
+                    set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units_name, units_size, colourbar_number_size)       
 
     fig.savefig(ofile, bbox_inches='tight')
 
@@ -651,7 +654,7 @@ def main(inargs):
               colour_type=inargs.colour_type,
               global_colourbar_span=inargs.global_colourbar_span,
               colourbar_ticks=inargs.colourbar_ticks,
-              global_units=inargs.units,
+              units=inargs.units,
               units_size=inargs.units_size,
               colourbar_number_size=inargs.colourbar_number_size,
               palette=inargs.palette, extend=inargs.extend,
@@ -761,7 +764,7 @@ example:
     parser.add_argument("--palette", type=str, nargs='*', default=['hot_r',],
                         help="""colorbar palette:
                                 default is hot_r
-                                specify a palette for all plots (order top left to bottom right, write none for blank)
+                                specify a palette for all plots (order top left to bottom right)
                                 or indicate a single choice to be applied to all plots""")
 
     parser.add_argument("--no_colourbar", action="store_true", default=False,
@@ -781,13 +784,17 @@ example:
                                 specify a tick list for all plots by making mutliple calls to colourbar_ticks 
                                 (order top left to bottom right)
                                 or indicate a single choice to be applied to all plots""")
-
     parser.add_argument("--colourbar_number_size", type=str, default='small', choices=text_sizes,
                         help="size of the colourbar numbers [default: small]") 
+
     parser.add_argument("--extend", type=str, choices=('both', 'neither', 'min', 'max'), default='neither',
                         help="selector for arrow points at either end of colourbar [default: neither]")
-    parser.add_argument("--units", type=str, default=None, 
-                        help="Units (recognised units: ms-1)")
+
+    parser.add_argument("--units", type=str, nargs='*', default=[None], 
+                        help="""Units (recognised units: ms-1)
+                                default is file units
+                                specify a unit for all plots (order top left to bottom right)
+                                or indicate a single choice to be applied to all plots""")
     parser.add_argument("--units_size", type=str, default='small', choices=text_sizes,
                         help="Size of the units label [default: small]")
 

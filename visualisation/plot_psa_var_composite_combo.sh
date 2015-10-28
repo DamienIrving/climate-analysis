@@ -123,7 +123,7 @@ ${python_exe} ${vis_dir}/plot_map.py 2 3 \
 --palette ${tas_palette} ${pr_palette} ${sic_palette} ${tas_palette} ${pr_palette} ${sic_palette} \
 --colourbar_ticks ${tas_ticks} --colourbar_ticks ${pr_ticks} --colourbar_ticks ${sic_ticks} \
 --colourbar_ticks ${tas_ticks} --colourbar_ticks ${pr_ticks} --colourbar_ticks ${sic_ticks} \
---extend both
+--extend both --units K mm/day ice_fraction K mm/day ice_fraction
 
 
 #rm ${temp_files[@]}
