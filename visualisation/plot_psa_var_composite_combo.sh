@@ -120,12 +120,10 @@ ${python_exe} ${vis_dir}/plot_map.py 2 3 \
 --hatch_styles bwdlines_tight \
 --contour_levels ${levels} \
 --figure_size 12 12 \
---palette ${tas_palette} ${pr_palette} ${sic_palette} ${tas_palette} ${pr_palette} ${sic_palette}
-
-#--colourbar_ticks ${ticks} \
-#--palette ${palette} \
-
-#--extend ${extend} \
+--palette ${tas_palette} ${pr_palette} ${sic_palette} ${tas_palette} ${pr_palette} ${sic_palette} \
+--colourbar_ticks ${tas_ticks} --colourbar_ticks ${pr_ticks} --colourbar_ticks ${sic_ticks} \
+--colourbar_ticks ${tas_ticks} --colourbar_ticks ${pr_ticks} --colourbar_ticks ${sic_ticks} \
+--extend both
 
 
 #rm ${temp_files[@]}
