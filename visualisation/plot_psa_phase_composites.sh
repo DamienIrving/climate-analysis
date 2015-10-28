@@ -4,19 +4,28 @@
 #
 
 function usage {
-    echo "USAGE: bash $0 fourier_file sf_file freq outfile python_exe code_dir vis_dir temp_dir"
-    echo "   fourier_file: Fourier transform file name"
-    echo "   sf_file:      Streamfunction file"
-    echo "   freq:         Frequency to filter phase against"
-    echo "   outfile:      Output file name, which includes the word season which will be replaced"
-    echo "   python_exe:   Python executable"
-    echo "   code_dir:     Directory that psa_date_list.py and calc_composite.py are in"
-    echo "   vis_dir:      Directory that plot_map.py is in"
-    echo "   temp_dir:     Directory to store temporary data files"
+    echo "USAGE: bash $0 fourier_file sf_file freq outfile psa_pos_start psa_pos_end psa_neg_start psa_neg_end" 
+    echo "               min1_start min1_end min2_start min2_end python_exe code_dir vis_dir temp_dir"
+    echo "   fourier_file:  Fourier transform file name"
+    echo "   sf_file:       Streamfunction file"
+    echo "   freq:          Frequency to filter phase against"
+    echo "   outfile:       Output file name, which includes the word season which will be replaced"
+    echo "   psa_pos_start  Start of PSA positive phase grouping" 
+    echo "   psa_pos_end    End of PSA positive phase grouping"
+    echo "   psa_neg_start  Start of PSA negative phase grouping" 
+    echo "   psa_neg_end    End of PSA negative phase grouping"
+    echo "   min1_start     Start of first minima phase grouping" 
+    echo "   min1_end       End of first minima phase grouping"
+    echo "   min2_start     Start of first minima phase grouping" 
+    echo "   min2_end       End of first minima phase grouping"
+    echo "   python_exe:    Python executable"
+    echo "   code_dir:      Directory that psa_date_list.py and calc_composite.py are in"
+    echo "   vis_dir:       Directory that plot_map.py is in"
+    echo "   temp_dir:      Directory to store temporary data files"
     exit 1
 }
 
-nargs=8
+nargs=16
 
 if [ $# -ne $nargs ] ; then
   usage
@@ -26,18 +35,26 @@ fourier_file=$1
 sf_file=$2
 freq=$3
 outfile=$4
-python_exe=$5
-code_dir=$6
-vis_dir=$7
-temp_dir=$8
+psa_pos_start=$5   
+psa_pos_end=$6   
+psa_neg_start=$7  
+psa_neg_end=$8    
+min1_start=$9      
+min1_end=${10}       
+min2_start=${11}    
+min2_end=${12}       
+python_exe=${13}
+code_dir=${14}
+vis_dir=${15}
+temp_dir=${16}
 
 temp_files=()
 
 
 # Generate a date list and calculate composite for each phase range
 
-start_phases=( 4.5 22.5 37.5 50.25 )
-end_phases=( 19.5 37.5 52.5 6.0 )
+start_phases=( ${psa_pos_start} ${min1_start} ${psa_neg_start} ${min2_start} )
+end_phases=( ${psa_pos_end} ${min1_end} ${psa_neg_end} ${min2_end} )
 for idx in "${!start_phases[@]}"; do
     
     start_phase=${start_phases[$idx]}
