@@ -227,7 +227,7 @@ def multiplot(cube_dict, nrows, ncols,
               title=None, title_size='large', 
               subplot_headings=None, subplot_heading_size='medium',
               #colourbar
-              no_colourbar=False,
+              no_colourbar=['False'],
               colour_type='smooth',
               colourbar_type='global', colourbar_orientation='horizontal', global_colourbar_span=0.6,
               colourbar_number_size='small',
@@ -270,6 +270,8 @@ def multiplot(cube_dict, nrows, ncols,
     region = duplicate_input(region, nrows, ncols, "region")
     palette = duplicate_input(palette, nrows, ncols, "palette")
     units = duplicate_input(units, nrows, ncols, "units")
+    no_colourbar = duplicate_input(no_colourbar, nrows, ncols, "no colourbar switch")
+    no_colourbar = map(eval, no_colourbar)
     if colourbar_ticks:
         colourbar_ticks = duplicate_input(colourbar_ticks, nrows, ncols, "colourbar ticks")
 
@@ -287,12 +289,12 @@ def multiplot(cube_dict, nrows, ncols,
             out_region_name = region[plotnum - 1]
             palette_name = palette[plotnum - 1]
             units_name = units[plotnum - 1]
+            no_colourbar_switch = no_colourbar[plotnum - 1]
 
             if colourbar_ticks:
                 colourbar_tick_list = colourbar_ticks[plotnum -1]
             else:
                 colourbar_tick_list = None 
-
 
             ax = plt.subplot(nrows, ncols, plotnum, projection=out_proj_object)
             plt.sca(ax)
@@ -323,7 +325,7 @@ def multiplot(cube_dict, nrows, ncols,
                     cf = plot_colour(colour_cube, ax, colour_type, colourbar_type, 
                                      palette_name, extend, colourbar_tick_list)
                     units_name = units_name if units_name else colour_cube.units.symbol
-                    if colourbar_type == 'individual':
+                    if colourbar_type == 'individual' and not no_colourbar_switch:
                         set_individual_colourbar(colourbar_orientation, cf, units_name, units_size, colourbar_number_size)
                     colour_plot_switch = True
                     if layer > 0:
@@ -384,7 +386,7 @@ def multiplot(cube_dict, nrows, ncols,
             plt.gca().coastlines()
             if grid_lines:
                 plt.gca().gridlines(draw_labels=grid_labels)
-            if not no_colourbar:
+            if not no_colourbar_switch:
                 if colourbar_type == 'global' and colour_plot_switch:
                     set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units_name, units_size, colourbar_number_size)       
 
@@ -767,8 +769,11 @@ example:
                                 specify a palette for all plots (order top left to bottom right)
                                 or indicate a single choice to be applied to all plots""")
 
-    parser.add_argument("--no_colourbar", action="store_true", default=False,
-                        help="switch for not plotting the colourbar")
+    parser.add_argument("--no_colourbar", type=str, nargs='*', choices=('True', 'False'), default=['False'],
+                        help="""switch for not plotting the colourbar:
+                                default is False
+                                specify true or false for all plots (order top left to bottom right)
+                                or indicate a single choice to be applied to all plots""")
     parser.add_argument("--colour_type", type=str, default='smooth', choices=('smooth', 'pixels'),
                         help="how to present the colours [default=smooth]")
     parser.add_argument("--colourbar_type", type=str, default='global', choices=('individual', 'global'),
