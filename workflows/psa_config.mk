@@ -45,6 +45,7 @@ DURATION=10
 
 VAR_SHORT=tas
 VAR_LONG=surface_air_temperature
+VAR_ANOM_RUNMEAN=${DATA_DIR}/${VAR_SHORT}_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
 
 ## Phase groupings
 
@@ -61,4 +62,4 @@ MIN2_START=50.25
 MIN2_END=6.0
 
 
-TARGET=${PSA_DIR}/psa-phase-composites_wave${FREQ}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
+TARGET=${PSA_DIR}/psa-var-composites-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png

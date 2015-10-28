@@ -51,11 +51,21 @@ ${VROT_ANOM_RUNMEAN} : ${VROT_ORIG}
 	ncatted -O -a bounds,time,d,, $@
 	ncks -O -x -v time_bnds $@
 
-## Composite variable
+## Composite variables (tas, pr, sic)
 
-VAR_ORIG=${DATA_DIR}/${VAR_SHORT}_${DATASET}_surface_daily_native.nc
-VAR_ANOM_RUNMEAN=${DATA_DIR}/${VAR_SHORT}_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
-${VAR_ANOM_RUNMEAN} : ${VAR_ORIG} 
+TAS_ORIG=${DATA_DIR}/tas_${DATASET}_surface_daily_native.nc
+TAS_ANOM_RUNMEAN=${DATA_DIR}/tas_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
+${TAS_ANOM_RUNMEAN} : ${TAS_ORIG} 
+	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
+
+PR_ORIG=${DATA_DIR}/pr_${DATASET}_surface_daily_native.nc
+PR_ANOM_RUNMEAN=${DATA_DIR}/pr_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
+${PR_ANOM_RUNMEAN} : ${PR_ORIG} 
+	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
+
+SIC_ORIG=${DATA_DIR}/sic_${DATASET}_surface_daily_native.nc
+SIC_ANOM_RUNMEAN=${DATA_DIR}/sic_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
+${SIC_ANOM_RUNMEAN} : ${SIC_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
 
 ## Southern Annular Mode
@@ -150,6 +160,12 @@ ${EVENT_PLOT} : ${ALL_STATS_PSA}
 PLOT_VARCOMPS=${PSA_DIR}/psa-${VAR_SHORT}-composite-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
 ${PLOT_VARCOMPS} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN} ${VAR_ANOM_RUNMEAN}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_var_composites.sh $< $(word 2,$^) $(word 3,$^) ${VAR_SHORT} ${VAR_LONG} ${FREQ} $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
+
+PLOT_VARCOMPS_ALL=${PSA_DIR}/psa-var-composites-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
+${PLOT_VARCOMPS_ALL} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN} ${TAS_ANOM_RUNMEAN} ${PR_ANOM_RUNMEAN} ${SIC_ANOM_RUNMEAN} 
+	bash ${VIS_SCRIPT_DIR}/plot_psa_var_composite_combo.sh $< $(word 2,$^) $(word 3,$^) $(word 4,$^) $(word 5,$^) ${FREQ} $@ ${PSA_POS_START} ${PSA_POS_END} ${PSA_NEG_START} ${PSA_NEG_END} ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
+
+
 
 ## PSA check (spatial map and FT for given dates)
 
