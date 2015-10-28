@@ -233,7 +233,7 @@ def multiplot(cube_dict, nrows, ncols,
               colourbar_number_size='small',
               global_units=None,
               units_size='small',
-              palette='hot_r', extend='neither', colourbar_ticks=None,
+              palette=['hot_r',], extend='neither', colourbar_ticks=None,
               #contours
               contour_levels=None,
               contour_labels=False,
@@ -268,6 +268,7 @@ def multiplot(cube_dict, nrows, ncols,
 
     output_projection = duplicate_input(output_projection, nrows, ncols, "projection")
     region = duplicate_input(region, nrows, ncols, "region")
+    palette = duplicate_input(palette, nrows, ncols, "palette")
 
     if len(output_projection) == 1:
         output_projection = output_projection * (nrows * ncols)
@@ -281,6 +282,7 @@ def multiplot(cube_dict, nrows, ncols,
             out_proj_name = output_projection[plotnum - 1]
             out_proj_object = output_projections[out_proj_name]
             out_region_name = region[plotnum - 1]
+            palette_name = palette[plotnum - 1]
 
             ax = plt.subplot(nrows, ncols, plotnum, projection=out_proj_object)
             plt.sca(ax)
@@ -309,7 +311,7 @@ def multiplot(cube_dict, nrows, ncols,
                 try:
                     colour_cube = cube_dict[(colour_label, plotnum)]
                     cf = plot_colour(colour_cube, ax, colour_type, colourbar_type, 
-                                     palette, extend, colourbar_ticks)
+                                     palette_name, extend, colourbar_ticks)
                     units = global_units if global_units else colour_cube.units.symbol
                     if colourbar_type == 'individual':
                         set_individual_colourbar(colourbar_orientation, cf, units, units_size, colourbar_number_size)
@@ -749,6 +751,12 @@ example:
                         help="subplot heading size [default: medium]")
 
     # Colourbar
+    parser.add_argument("--palette", type=str, nargs='*', default=['hot_r',],
+                        help="""colorbar palette:
+                                default is hot_r
+                                specify a palette for all plots(order top left to bottom right, write none for blank)
+                                or indicate a single choice to be applied to all plots""")
+
     parser.add_argument("--no_colourbar", action="store_true", default=False,
                         help="switch for not plotting the colourbar")
     parser.add_argument("--colour_type", type=str, default='smooth', choices=('smooth', 'pixels'),
@@ -759,8 +767,7 @@ example:
                         help="orientation of colourbar [default: horizontal]")
     parser.add_argument("--global_colourbar_span", type=float, default=0.6,
                         help="the span of the global colour bar (expressed as a fraction) [default: 0.6]")
-    parser.add_argument("--palette", type=str, default='hot_r',
-                        help="Colourbar colours [defualt: hot_r]")
+
     parser.add_argument("--colourbar_ticks", type=float, nargs='*', default=None,
                         help="list of tick marks to appear on the colourbar [default = auto]")
     parser.add_argument("--colourbar_number_size", type=str, default='small', choices=text_sizes,

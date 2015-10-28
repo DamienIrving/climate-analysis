@@ -50,36 +50,36 @@ temp_dir=${15}
 temp_files=()
 
 
-start_phases=( ${psa_pos_start} ${psa_neg_start} )
-end_phases=( ${psa_pos_end} ${psa_neg_end} )
-for idx in "${!start_phases[@]}"; do
-    
-    start_phase=${start_phases[$idx]}
-    end_phase=${end_phases[$idx]}
-    
-    temp_date_file=${temp_dir}/dates_phase-group${idx}.txt
-    temp_sfcomp_file=${temp_dir}/sf-composite_phase-group${idx}.nc
-    temp_tascomp_file=${temp_dir}/tas-composite_phase-group${idx}.nc
-    temp_prcomp_file=${temp_dir}/pr-composite_phase-group${idx}.nc
-    temp_siccomp_file=${temp_dir}/sic-composite_phase-group${idx}.nc
-    
-    ${python_exe} ${code_dir}/psa_date_list.py ${fourier_file} ${temp_date_file} \
-    --freq ${freq} --phase_filter ${start_phase} ${end_phase}
-    
-    ${python_exe} ${code_dir}/calc_composite.py ${sf_file} sf ${temp_sfcomp_file} \
-    --date_file ${temp_date_file} --region sh --no_sig
-    
-    ${python_exe} ${code_dir}/calc_composite.py ${tas_file} tas ${temp_tascomp_file} \
-    --date_file ${temp_date_file} --region sh
-    
-    ${python_exe} ${code_dir}/calc_composite.py ${pr_file} pr ${temp_prcomp_file} \
-    --date_file ${temp_date_file} --region sh
-    
-    ${python_exe} ${code_dir}/calc_composite.py ${sic_file} sic ${temp_siccomp_file} \
-    --date_file ${temp_date_file} --region sh
-    
-    temp_files+=(${temp_date_file} ${temp_sfcomp_file} ${temp_tascomp_file} ${temp_prcomp_file} ${temp_siccomp_file})
-done
+#start_phases=( ${psa_pos_start} ${psa_neg_start} )
+#end_phases=( ${psa_pos_end} ${psa_neg_end} )
+#for idx in "${!start_phases[@]}"; do
+#    
+#    start_phase=${start_phases[$idx]}
+#    end_phase=${end_phases[$idx]}
+#    
+#    temp_date_file=${temp_dir}/dates_phase-group${idx}.txt
+#    temp_sfcomp_file=${temp_dir}/sf-composite_phase-group${idx}.nc
+#    temp_tascomp_file=${temp_dir}/tas-composite_phase-group${idx}.nc
+#    temp_prcomp_file=${temp_dir}/pr-composite_phase-group${idx}.nc
+#    temp_siccomp_file=${temp_dir}/sic-composite_phase-group${idx}.nc
+#    
+#    ${python_exe} ${code_dir}/psa_date_list.py ${fourier_file} ${temp_date_file} \
+#    --freq ${freq} --phase_filter ${start_phase} ${end_phase}
+#    
+#    ${python_exe} ${code_dir}/calc_composite.py ${sf_file} sf ${temp_sfcomp_file} \
+#    --date_file ${temp_date_file} --region sh --no_sig
+#    
+#    ${python_exe} ${code_dir}/calc_composite.py ${tas_file} tas ${temp_tascomp_file} \
+#    --date_file ${temp_date_file} --region sh
+#    
+#    ${python_exe} ${code_dir}/calc_composite.py ${pr_file} pr ${temp_prcomp_file} \
+#    --date_file ${temp_date_file} --region sh
+#    
+#    ${python_exe} ${code_dir}/calc_composite.py ${sic_file} sic ${temp_siccomp_file} \
+#    --date_file ${temp_date_file} --region sh
+#    
+#    temp_files+=(${temp_date_file} ${temp_sfcomp_file} ${temp_tascomp_file} ${temp_prcomp_file} ${temp_siccomp_file})
+#done
 
 levels="-6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6" 
 
@@ -119,7 +119,8 @@ ${python_exe} ${vis_dir}/plot_map.py 2 3 \
 --hatch_bounds 0.0 0.01 \
 --hatch_styles bwdlines_tight \
 --contour_levels ${levels} \
---figure_size 12 12 
+--figure_size 12 12 \
+--palette ${tas_palette} ${pr_palette} ${sic_palette} ${tas_palette} ${pr_palette} ${sic_palette}
 
 #--colourbar_ticks ${ticks} \
 #--palette ${palette} \
