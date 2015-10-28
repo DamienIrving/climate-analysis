@@ -48,4 +48,4 @@ VAR_SHORT=tas
 VAR_LONG=surface_air_temperature
 
 
-TARGET=${PSA_DIR}/psa-${VAR_SHORT}-composite-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
+TARGET=${PSA_DIR}/psa-phase-composites_wave${FREQ}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
