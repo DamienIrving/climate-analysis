@@ -90,6 +90,12 @@ def main(inargs):
         g.y = dataframe_selection[inargs.yvar].values
 
         g = g.plot_joint(plt.scatter, color=colors[index])
+	if inargs.ylabel:
+            plt.ylabel(inargs.ylabel.replace('_',' '))
+
+        if inargs.xlabel:
+            plt.xlabel(inargs.xlabel.replace('_',' '))
+	
         g = g.plot_marginals(seaborn.distplot, kde=True, color=colors[index])
 
     plt.savefig(inargs.ofile, bbox_inches='tight')
