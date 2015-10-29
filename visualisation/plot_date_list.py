@@ -159,16 +159,16 @@ def plot_trend_subplot(ax, trend_dict, color_dict, label=None):
         colors.append(color_dict[season])
         
         if p_value < 0.05:
-            ax.plot(slope + 0.055, numpy.array([index]), color=color_dict[season],
-                    marker="*", linestyle='None', markersize=13)
+            ax.plot(slope + 0.065, numpy.array([index]), color=color_dict[season],
+                    marker="*", linestyle='None', markersize=11)
         elif p_value < 0.1:
-            ax.plot(slope + 0.055, numpy.array([index]), color=color_dict[season],
-                    marker="o", linestyle='None', markersize=13)
+            ax.plot(slope + 0.065, numpy.array([index]), color=color_dict[season],
+                    marker="o", linestyle='None', markersize=11)
         
     y_pos = numpy.arange(0, len(trend_dict.keys()))
     ax.barh(y_pos, numpy.array(x_vals), align='center', color=colors)
     if label:
-        ax.text(0.03, 0.90, label, transform=ax.transAxes, fontsize='large')
+        ax.text(0.89, 0.90, label, transform=ax.transAxes, fontsize='large')
 
     ax.spines['left'].set_visible(False)
     ax.spines['right'].set_visible(False)
