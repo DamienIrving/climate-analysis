@@ -99,55 +99,6 @@ def get_seasonal_index(nc_file, var, start, end):
     return filtered_dates_metric_aggregate_df, metric_metadata
 
 
-def plot_duration(ax, df, label=None):
-    """Plot a bar chart showing the distribution of event duration.
-
-    Args:
-      ax (AxesSubplot): plot axis
-      date_list (pandas DataFrame): The list of dates
-
-    """
-
-    # Get the duration data
-    df['dates'] = df.index
-    df['time_delta'] = df['dates'].diff()
-    df['in_event'] = df['time_delta'] < pandas.tslib.Timedelta('2 days')
-
-    # Number the events
-    event_number = -1
-    event_list = []
-    for index, row in df.iterrows():
-        if not row['in_event']:
-            event_number = event_number + 1
-        event_list.append(event_number)
-
-    # Get their duration
-    duration_list = []
-    for event in range(0, event_number + 1):
-        event_duration = event_list.count(event)
-        duration_list.append(event_duration)
-
-    duration_data = numpy.array(duration_list)
-
-    ax = seaborn.distplot(duration_data, kde=False)
-
-    # Bin it
-#    bin_res = 1
-#    bin_edge_start = duration_data.min() - (bin_res / 2.)
-#    bin_edge_end = duration_data.max() + bin_res + (bin_res / 2.)
-#    bin_centers = numpy.arange(duration_data.min(), duration_data.max() + bin_res, bin_res)
-#    hist, bin_edges = numpy.histogram(duration_data, bins=numpy.arange(bin_edge_start, bin_edge_end, bin_res))
-
-#    # Plot
-#    width = 0.8
-#    ax.bar(bin_centers, hist, width, align='center') #color='0.7')
-    ax.set_xlabel('Duration (days)')
-    ax.set_ylabel('Density')
-
-    if label:
-        ax.text(0.97, 0.95, label, transform=ax.transAxes, fontsize='large')
-
-
 def plot_index_dots(ax, x, index_data, bar_heights, upper_threshold=1.0, lower_threshold=-1.0):
     """Plot dots."""
 
@@ -189,46 +140,45 @@ def plot_monthly_totals(ax, monthly_data, month_days, label=None):
 
     ax.set_ylabel('Percentage of days')
     ax.xaxis.set_ticks(x+width/2.)
-    ax.xaxis.set_ticklabels(calendar.month_abbr[1:])
+    months = calendar.month_abbr[1:]
+    ax.xaxis.set_ticklabels(map(lambda x: x[0], months))
     if label:
-        ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
+        ax.text(0.03, 0.90, label, transform=ax.transAxes, fontsize='large')
 
-def plot_trend_subplot(trend_dict, color_dict):
+
+def plot_trend_subplot(ax, trend_dict, color_dict, label=None):
     """Insert a subplot showing the linear trend."""
-    
-    fig = plt.gcf()
-    x = 0.653
-    y = 0.7625
-    width = 0.13
-    height = 0.13
-    subax = fig.add_axes([x, y, width, height])
  
     x_vals = []
     colors = []
     for index, season in enumerate(['SON', 'JJA', 'MAM', 'DJF', 'annual']):
         slope, p_value = trend_dict[season]
+        print '%s: trend = %f events/year, p = %f' %(season, slope, p_value)
+
         x_vals.append(slope)
         colors.append(color_dict[season])
         
         if p_value < 0.05:
-            subax.plot(slope + 0.035, numpy.array([index]), color=color_dict[season],
-                       marker="*", linestyle='None')
+            ax.plot(slope + 0.055, numpy.array([index]), color=color_dict[season],
+                    marker="*", linestyle='None', markersize=13)
         elif p_value < 0.1:
-            subax.plot(slope + 0.035, numpy.array([index]), color=color_dict[season],
-                       marker="o", linestyle='None')
+            ax.plot(slope + 0.055, numpy.array([index]), color=color_dict[season],
+                    marker="o", linestyle='None', markersize=13)
         
     y_pos = numpy.arange(0, len(trend_dict.keys()))
-    subax.barh(y_pos, numpy.array(x_vals), align='center', color=colors)
+    ax.barh(y_pos, numpy.array(x_vals), align='center', color=colors)
+    if label:
+        ax.text(0.03, 0.90, label, transform=ax.transAxes, fontsize='large')
 
-    subax.spines['left'].set_visible(False)
-    subax.spines['right'].set_visible(False)
-    subax.spines['top'].set_visible(False)
-    subax.set_yticklabels([])
-    subax.yaxis.set_ticks([])
-    subax.xaxis.set_ticks_position('bottom')
-    subax.tick_params(axis='x', labelsize='x-small')
-    subax.set_xlabel('Trend (events/year)')
-    subax.xaxis.get_label().set_fontsize('xx-small')
+    ax.spines['left'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.set_yticklabels([])
+    ax.yaxis.set_ticks([])
+    ax.xaxis.set_ticks_position('bottom')
+    ax.tick_params(axis='x', labelsize='x-small')
+    ax.set_xlabel('Trend (events/year)')
+    ax.xaxis.get_label().set_fontsize('xx-small')
 
     
 def plot_seasonal_stackplot(ax, seasonal_data, 
@@ -272,8 +222,6 @@ def plot_seasonal_stackplot(ax, seasonal_data,
 
     if index_var:
         plot_index_dots(ax, x, season_index_groupings, annual_totals)
-
-    plot_trend_subplot(season_trends, season_colors)
     
     y_lower_limit, y_upper_limit = ax.get_ylim()
     ax.set_ylim([y_lower_limit, y_upper_limit * y_buffer])
@@ -283,14 +231,12 @@ def plot_seasonal_stackplot(ax, seasonal_data,
     
     ax.xaxis.set_ticks_position('bottom')
     ax.set_ylabel('Total days')
-    ax.legend( (pdjf[0], pmam[0], pjja[0], pson[0]), ('DJF', 'MAM', 'JJA', 'SON') )
+    ax.legend( (pdjf[0], pmam[0], pjja[0], pson[0]), ('DJF', 'MAM', 'JJA', 'SON'), fontsize='medium', ncol=4 )
+ 
     if label:
-        ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
+        ax.text(0.02, 0.94, label, transform=ax.transAxes, fontsize='large')
 
-    # Stats
-    for season, data in season_trends.iteritems():
-        slope, p_value = data
-        print '%s: trend = %f events/year, p = %f' %(season, slope, p_value)
+    return season_trends, season_colors
 
     
 def time_filter(df, start_date, end_date):
@@ -333,48 +279,37 @@ def main(inargs):
         print 'figure width: %s' %(str(fig.get_figwidth()))
         print 'figure height: %s' %(str(fig.get_figheight()))
 
-    if inargs.dimensions:
-        nrows, ncols = inargs.dimensions
+    ax0 = plt.subplot2grid((3, 2), (0, 0), rowspan=2, colspan=2)
+    ax1 = plt.subplot2grid((3, 2), (2, 0))
+    ax2 = plt.subplot2grid((3, 2), (2, 1))
+
+    # Seasonal stackplot
+    plt.sca(ax0)
+    seasonal_start, seasonal_end = get_seasonal_bounds(inargs.start, inargs.end)
+    seasonal_filtered_dates_df = fill_out_dates(filtered_dates_df, seasonal_start, seasonal_end)
+    seasonal_data = aggregate_data(seasonal_filtered_dates_df, timescale='seasonal', method='sum')
+    if inargs.seasonal_dots:
+        seasonal_index, dots_metadata = get_seasonal_index(inargs.seasonal_dots[0], inargs.seasonal_dots[1], seasonal_start, seasonal_end)
+        index_var = inargs.seasonal_dots[1]
+        metadata_dict = {inargs.seasonal_dots[0]: dots_metadata}
     else:
-        nrows = 1
-        ncols = len(inargs.plot_types)
+        seasonal_index = None
+        index_var = None
+    season_trends, season_colors = plot_seasonal_stackplot(ax0, seasonal_data, seasonal_index=seasonal_index, index_var=index_var,
+                                                           y_buffer=inargs.y_buffer, leg_loc=inargs.leg_loc, label='(a)')
 
-    labels = ['(a)', '(b)', '(c)'] 
-    for index, plot_type in enumerate(inargs.plot_types):
-        assert plot_type in ('monthly_totals_histogram', 'seasonal_values_stackplot', 'duration_histogram')
-        
-        plotnum = index + 1
-        ax = plt.subplot(nrows, ncols, plotnum)
-        plt.sca(ax)
-        
-        if inargs.labels:
-            label = labels[index]
-        else:
-            label=None
-            
-        if plot_type == 'monthly_totals_histogram':
-            monthly_filtered_dates_df = fill_out_dates(filtered_dates_df, inargs.start, inargs.end)
-            monthly_data = aggregate_data(monthly_filtered_dates_df, timescale='monthly', method='sum') 
-            month_days = monthly_filtered_dates_df.groupby(lambda x: x.month).size()
-            plot_monthly_totals(ax, monthly_data, month_days, label=label)
+    # Monthly totals
+    plt.sca(ax1)
+    monthly_filtered_dates_df = fill_out_dates(filtered_dates_df, inargs.start, inargs.end)
+    monthly_data = aggregate_data(monthly_filtered_dates_df, timescale='monthly', method='sum') 
+    month_days = monthly_filtered_dates_df.groupby(lambda x: x.month).size()
+    plot_monthly_totals(ax1, monthly_data, month_days, label='(b)')
 
-        elif plot_type == 'seasonal_values_stackplot':
-            seasonal_start, seasonal_end = get_seasonal_bounds(inargs.start, inargs.end)
-            seasonal_filtered_dates_df = fill_out_dates(filtered_dates_df, seasonal_start, seasonal_end)
-            seasonal_data = aggregate_data(seasonal_filtered_dates_df, timescale='seasonal', method='sum')
-            if inargs.seasonal_dots:
-                seasonal_index, dots_metadata = get_seasonal_index(inargs.seasonal_dots[0], inargs.seasonal_dots[1], seasonal_start, seasonal_end)
-                index_var = inargs.seasonal_dots[1]
-                metadata_dict = {inargs.seasonal_dots[0]: dots_metadata}
-            else:
-                seasonal_index = None
-                index_var = None
-            plot_seasonal_stackplot(ax, seasonal_data, seasonal_index=seasonal_index, index_var=index_var,
-                                    y_buffer=inargs.y_buffer, leg_loc=inargs.leg_loc, label=label)
+    # Season trends
+    plt.sca(ax2)
+    plot_trend_subplot(ax2, season_trends, season_colors, label='(c)')
 
-        elif plot_type == 'duration_histogram':
-            plot_duration(ax, filtered_dates_df, label=label)
-
+    # Output
     fig.savefig(inargs.outfile, bbox_inches='tight')
     metadata_dict = {inargs.infile: datetime_metadata}
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)
@@ -406,9 +341,6 @@ author:
     # Selectors
     parser.add_argument("--start", type=str, help="Time start filter (e.g. 1979-02-31)", default=None)
     parser.add_argument("--end", type=str, help="Time end filter (e.g. 2012-12-31)", default=None)
-    parser.add_argument("--plot_types", type=str, nargs='*', default=('monthly_totals_histogram', 'seasonal_values_stackplot'),
-                        choices=('monthly_totals_histogram', 'seasonal_values_stackplot', 'duration_histogram'),
-                        help="Types of plots to include")
 
     # Plot options
     parser.add_argument("--leg_loc", type=int, default=0,
@@ -416,14 +348,10 @@ author:
     parser.add_argument("--y_buffer", type=float, default=1.0,
                         help="Multiply y-axis upper bound by this amount [default = 1.0]")
 
-    parser.add_argument("--dimensions", type=int, nargs=2, metavar=("NROWS", "NCOLS"), default=None,
-                        help="dimensions of the plot")
     parser.add_argument("--figure_size", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
     parser.add_argument("--seasonal_dots", type=str, nargs=2, metavar=("FILE", "VAR"), default=None,
                         help="add some dots to show prominant seasons for a particular metric") 
-    parser.add_argument("--labels", action="store_true", default=False,
-                        help="Switch for labelling each plot with a, b, c, etc [default: False]")
 
     args = parser.parse_args()
     
