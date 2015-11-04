@@ -138,7 +138,7 @@ def plot_monthly_totals(ax, monthly_data, month_days, label=None):
 
     ax.bar(x, monthly_pct, width, color='0.7')
 
-    ax.set_ylabel('Percentage of days')
+    ax.set_ylabel('Percentage of data times')
     ax.xaxis.set_ticks(x+width/2.)
     months = calendar.month_abbr[1:]
     ax.xaxis.set_ticklabels(map(lambda x: x[0], months))
@@ -153,7 +153,7 @@ def plot_trend_subplot(ax, trend_dict, color_dict, label=None):
     colors = []
     for index, season in enumerate(['SON', 'JJA', 'MAM', 'DJF', 'annual']):
         slope, p_value = trend_dict[season]
-        print '%s: trend = %f events/year, p = %f' %(season, slope, p_value)
+        print '%s: trend = %f data times per year, p = %f' %(season, slope, p_value)
 
         x_vals.append(slope)
         colors.append(color_dict[season])
@@ -177,7 +177,7 @@ def plot_trend_subplot(ax, trend_dict, color_dict, label=None):
     ax.yaxis.set_ticks([])
     ax.xaxis.set_ticks_position('bottom')
     ax.tick_params(axis='x', labelsize='x-small')
-    ax.set_xlabel('Trend (events/year)')
+    ax.set_xlabel('Trend (data times per year)')
     ax.xaxis.get_label().set_fontsize('xx-small')
 
     
@@ -230,7 +230,7 @@ def plot_seasonal_stackplot(ax, seasonal_data,
     ax.set_xlim([start_year - 1, x_upper_limit])
     
     ax.xaxis.set_ticks_position('bottom')
-    ax.set_ylabel('Total days')
+    ax.set_ylabel('Total data times')
     ax.legend( (pdjf[0], pmam[0], pjja[0], pson[0]), ('DJF', 'MAM', 'JJA', 'SON'), fontsize='medium', ncol=4 )
  
     if label:
