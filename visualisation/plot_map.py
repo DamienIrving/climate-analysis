@@ -216,6 +216,7 @@ def multiplot(cube_dict, nrows, ncols,
               output_projection=['PlateCarree_Dateline',],
               blank_plots=[],
               max_layers=0,
+              dpi=None,
               #spatial bounds
               spstereo_limit=-30,
               region=['None',],
@@ -399,7 +400,8 @@ def multiplot(cube_dict, nrows, ncols,
                 if colourbar_type == 'global' and colour_plot_switch:
                     set_global_colourbar(colourbar_orientation, global_colourbar_span, cf, fig, units_name, units_size, colourbar_number_size)       
 
-    fig.savefig(ofile, bbox_inches='tight')
+    dpi = dpi if dpi else plt.savefig.func_globals['rcParams']['figure.dpi']
+    fig.savefig(ofile, bbox_inches='tight', dpi=dpi)
 
 
 def plot_colour(cube, ax,
@@ -646,6 +648,7 @@ def main(inargs):
               subplot_spacing=inargs.subplot_spacing,
               blank_plots=blanks,
               max_layers=max_layers,
+              dpi=inargs.dpi,
               #spatial bounds
               spstereo_limit=inargs.spstereo_limit,
               region=inargs.region,
@@ -738,6 +741,8 @@ example:
                         help="size of the figure (in inches)")
     parser.add_argument("--subplot_spacing", type=float, default=0.05,
                         help="minimum spacing between subplots [default=0.05]")
+    parser.add_argument("--dpi", type=float, default=None,
+                        help="Figure resolution in dots per square inch [default=auto]")
 
     # Spatial bounds
     region_choices = gio.regions.keys()
