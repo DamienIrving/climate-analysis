@@ -221,6 +221,7 @@ def multiplot(cube_dict, nrows, ncols,
               region=['None',],
               #lines
               line_list=None,
+              line_width=1.0,
               grid_lines=True,
               grid_labels=False,
               #headings
@@ -388,7 +389,7 @@ def multiplot(cube_dict, nrows, ncols,
 
             # Add lines
             if line_list:
-                plot_lines(line_list)
+                plot_lines(line_list, line_width=line_width)
 
             # Add plot features
             plt.gca().coastlines()
@@ -491,7 +492,7 @@ def plot_hatching(cube, ax, hatch_bounds, hatch_styles):
     #     plt.scatter(xPoints,yPoints,s=1, c='k', marker='.', alpha=0.5) 
 
 
-def plot_lines(line_list):
+def plot_lines(line_list, line_width=1.0):
     """Add lines to the plot.
     
     Args:
@@ -529,7 +530,7 @@ def plot_lines(line_list):
 
         plt.plot(lons, lats, 
                  linestyle=line_style_dict[style], 
-                 color=color, 
+                 color=color, linewidth=line_width,
                  transform=input_projections[input_projection])
 
 
@@ -650,6 +651,7 @@ def main(inargs):
               region=inargs.region,
               #lines
               line_list=inargs.line,
+              line_width=inargs.line_width,
               grid_lines=not inargs.no_grid_lines,
               grid_labels=inargs.grid_labels,
               #headings
@@ -755,10 +757,13 @@ example:
                                 STYLE can be 'solid' or 'dashed', 
                                 COLOUR can be a name or fraction for grey shading
                                 RES can be 'low' or 'high'""")
+    parser.add_argument("--line_width", type=float, default=1.0,
+                        help="width of custom lines [default: 1.0]")
     parser.add_argument("--grid_labels", action="store_true", default=False,
                         help="switch for having grid labels [default: False]")
     parser.add_argument("--no_grid_lines", action="store_true", default=False,
                         help="switch for turning off grid lines [default: False]")
+
 
     # Headings
     text_sizes = ['xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large']
