@@ -58,6 +58,7 @@ def kde_stats(kde_data, kde_bins, width, label):
     for minima_index in local_minima[0]:
         print kde_bins[minima_index], broad_extrema(width, minima_index, kde_data, kde_bins, 'minima')
 
+
 def check_index(index, valid_min, valid_max):
     """Check that an index doesn't exceed the valid bounds."""
     
@@ -144,7 +145,7 @@ def plot_phase_progression(ax, df, freq, gradient_limit):
     plt.xlim(0, duration_max)
     plt.ylim(0, df['event_phase'].max() + 1)
 
-    plt.xlabel('day')
+    plt.xlabel('data time')
     plt.ylabel('wavenumber '+str(freq)+' phase')
     plt.text(0.95, 0.96, '(b)', transform=ax.transAxes, fontsize='large')
 
@@ -171,7 +172,7 @@ def plot_duration_histogram(ax, df):
 
     seaborn.distplot(duration_data, kde=False)
     plt.ylabel('frequency')
-    plt.xlabel('event duration (days)')
+    plt.xlabel('event duration (data times)')
     plt.text(0.90, 0.91, '(a)', transform=ax.transAxes, fontsize='large')
 
 
