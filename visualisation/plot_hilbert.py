@@ -184,8 +184,9 @@ def plot_hilbert(data_dict, date_list,
         ax.set_ylabel('$m s^{-1}$')# fontsize='medium')
         ax.set_xlabel('longitude')# fontsize='medium')
 
-        handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles[::-1], labels[::-1], loc=4) #fontsize='small',
+        if index == (len(date_list) - 1):
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(handles[::-1], labels[::-1], loc=4) #fontsize='small',
         
         # Make a little subplot
         if periodogram:
