@@ -108,6 +108,7 @@ def plot_hilbert(data_dict, date_list,
                  outfile='test.png',
                  highlights=[],
                  env_list=[],
+                 legend_list=[],
                  ybounds=None,
                  figure_size=None,
                  periodogram=False,
@@ -184,7 +185,7 @@ def plot_hilbert(data_dict, date_list,
         ax.set_ylabel('$m s^{-1}$')# fontsize='medium')
         ax.set_xlabel('longitude')# fontsize='medium')
 
-        if index == (len(date_list) - 1):
+        if index in legend_list:
             handles, labels = ax.get_legend_handles_labels()
             ax.legend(handles[::-1], labels[::-1], loc=4) #fontsize='small',
         
@@ -207,6 +208,11 @@ def main(inargs):
                                       inargs.dates)    
 
     # Create the plot
+    if not inargs.legend_list:
+        legend_list = []
+    else:
+        legend_list = inargs.legend_list
+
     wmin, wmax = inargs.wavenumbers
     plot_hilbert(data_dict, inargs.dates,
                  wmin, wmax,
@@ -217,6 +223,7 @@ def main(inargs):
                  figure_size=inargs.figure_size,
                  highlights=inargs.highlights,
                  env_list=inargs.envelope,
+                 legend_list=legend_list,
                  periodogram=inargs.periodogram,
                  no_title=inargs.no_title)
 
@@ -249,6 +256,8 @@ if __name__ == '__main__':
     parser.add_argument("--envelope", type=int, action='append', nargs=2, metavar=('WAVE_MIN', 'WAVE_MAX'), default=[],
                         help="Envelope to plot")
 
+    parser.add_argument("--legend_list", type=int, nargs='*', default=None,
+                        help="Figures to include a legend on [default = all]")
     parser.add_argument("--periodogram", action="store_true", default=False,
                         help="Plot a periodogram in the corner")
     parser.add_argument("--no_title", action="store_true", default=False,
