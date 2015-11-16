@@ -273,6 +273,8 @@ def main(inargs):
     dates_df = pandas.DataFrame(ones, index=map(lambda x: datetime.strptime(x, '%Y-%m-%d'), date_list), columns=['count'])
     filtered_dates_df = time_filter(dates_df, inargs.start, inargs.end)
 
+    print 'number of data times:', filtered_dates_df.size
+
     # Create the plot
     fig = plt.figure(figsize=inargs.figure_size)
     if not inargs.figure_size:
