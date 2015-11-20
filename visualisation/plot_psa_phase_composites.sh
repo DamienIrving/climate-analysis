@@ -80,7 +80,7 @@ ${python_exe} ${vis_dir}/plot_map.py 2 2 \
 --infile ${temp_dir}/sf-composite_phase1.nc streamfunction_annual none none none contour0 2 PlateCarree \
 --infile ${temp_dir}/sf-composite_phase2.nc streamfunction_annual none none none contour0 3 PlateCarree \
 --infile ${temp_dir}/sf-composite_phase3.nc streamfunction_annual none none none contour0 4 PlateCarree \
---contour_levels -12 -10 -8 -6 -4 -2 0 2 4 6 8 10 12 \
+--contour_levels -10.5 -9.0 -7.5 -6.0 -4.5 -3.0 -1.5 0 1.5 3.0 4.5 6.0 7.5 9.0 10.5 \
 --figure_size 12 5 --region sh \
 --ofile ${outfile}
 

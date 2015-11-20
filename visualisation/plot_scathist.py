@@ -89,7 +89,7 @@ def main(inargs):
         g.x = dataframe_selection[inargs.xvar].values
         g.y = dataframe_selection[inargs.yvar].values
 
-        g = g.plot_joint(plt.scatter, color=colors[index])
+        g = g.plot_joint(plt.scatter, color=colors[index])  #, alpha=0.5)
 	if inargs.ylabel:
             plt.ylabel(inargs.ylabel.replace('_',' '))
 

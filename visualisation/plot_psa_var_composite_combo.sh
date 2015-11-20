@@ -81,7 +81,7 @@ for idx in "${!start_phases[@]}"; do
     temp_files+=(${temp_date_file} ${temp_sfcomp_file} ${temp_tascomp_file} ${temp_prcomp_file} ${temp_siccomp_file})
 done
 
-levels="-6 -5 -4 -3 -2 -1 0 1 2 3 4 5 6" 
+levels="-10.5 -9.0 -7.5 -6.0 -4.5 -3.0 -1.5 0 1.5 3.0 4.5 6.0 7.5 9.0 10.5" 
 
 tas_ticks="-2.5 -2.0 -1.5 -1.0 -0.5 0 0.5 1.0 1.5 2.0 2.5" 
 tas_palette=RdBu_r
