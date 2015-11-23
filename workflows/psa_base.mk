@@ -140,7 +140,7 @@ EOF_ANAL=${PSA_DIR}/eof-sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-a
 ${EOF_ANAL} : ${SF_ZONAL_ANOM_RUNMEAN}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_eof.py --maxlat 0.0 --time 1979-01-01 2014-12-31 --eof_scaling 3 --pc_scaling 1 $< streamfunction $@
 
-PLOT_EOF=${PSA_DIR}/eof-sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.png
+PLOT_EOF=${PSA_DIR}/eof-sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.${FIG_TYPE}
 ${PLOT_EOF} : ${EOF_ANAL}
 	bash ${VIS_SCRIPT_DIR}/plot_eof.sh $< $@ ${PYTHON} ${VIS_SCRIPT_DIR}
 
@@ -162,47 +162,47 @@ psa_check : ${FILTERED_DATES_PSA} ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
 
 ## Timescale spectrum
 
-PLOT_SPECTRUM=${PSA_DIR}/figures/vrot-r2spectrum_${DATASET}_${LEVEL}_daily-anom-wrt-all_native-${NPLABEL}.png
+PLOT_SPECTRUM=${PSA_DIR}/figures/vrot-r2spectrum_${DATASET}_${LEVEL}_daily-anom-wrt-all_native-${NPLABEL}.${FIG_TYPE}
 ${PLOT_SPECTRUM} : ${VROT_ANOM_DAILY}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_timescale_spectrum.py $< vrot $@ --latitude ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --runmean 365 180 90 60 30 15 10 5 1 --scaling R2 --valid_lon ${LON_SEARCH_MIN} ${LON_SEARCH_MAX} --window 10 --figure_size 7 6
 
 ## PSA phase plot (histogram)
 
-PLOT_PSA_PHASE_HIST=${PSA_DIR}/psa-phase-histogram_wave${FREQ}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
+PLOT_PSA_PHASE_HIST=${PSA_DIR}/psa-phase-histogram_wave${FREQ}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.${FIG_TYPE}
 ${PLOT_PSA_PHASE_HIST} : ${ALL_STATS_PSA}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_stats.py $< phase_distribution $@ --epochs --phase_res 0.75 --subset_width 20 --phase_group 4.5 19.5 --phase_group 37.5 52.5
 
 ## PSA phase plot (composites)
 
-PLOT_PSA_PHASE_COMP=${PSA_DIR}/psa-phase-composites_wave${FREQ}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
+PLOT_PSA_PHASE_COMP=${PSA_DIR}/psa-phase-composites_wave${FREQ}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.${FIG_TYPE}
 ${PLOT_PSA_PHASE_COMP} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_phase_composites.sh $< $(word 2,$^) ${FREQ} $@ ${PSA_POS_START} ${PSA_POS_END} ${PSA_NEG_START} ${PSA_NEG_END} ${MIN1_START} ${MIN1_END} ${MIN2_START} ${MIN2_END} ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## PSA seasonality plot (histogram)
 
-PLOT_SEASONALITY=${PSA_DIR}/psa-seasonality-group_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
+PLOT_SEASONALITY=${PSA_DIR}/psa-seasonality-group_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.${FIG_TYPE} 
 ${PLOT_SEASONALITY} : ${FOURIER_COEFFICIENTS}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_phase_seasonality.sh $< ${FREQ} $@ ${PSA_POS_START} ${PSA_POS_END} ${PSA_NEG_START} ${PSA_NEG_END} ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## Event phase/amplitude plot wiith duration historgram (line graph)
 
-EVENT_PLOT=${PSA_DIR}/psa-event-summary_wave${FREQ}-duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
+EVENT_PLOT=${PSA_DIR}/psa-event-summary_wave${FREQ}-duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.${FIG_TYPE}
 ${EVENT_PLOT} : ${ALL_STATS_PSA}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_stats.py $< event_summary $@ --min_duration ${DURATION} --gradient_limit 0.25
 
 ## PSA variable composites plot (spatial)
 
-PLOT_VARCOMPS=${PSA_DIR}/psa-${VAR_SHORT}-composite-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
+PLOT_VARCOMPS=${PSA_DIR}/psa-${VAR_SHORT}-composite-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.${FIG_TYPE} 
 ${PLOT_VARCOMPS} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN} ${VAR_ANOM_RUNMEAN}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_var_composites.sh $< $(word 2,$^) $(word 3,$^) ${VAR_SHORT} ${VAR_LONG} ${FREQ} $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 
-PLOT_VARCOMPS_ALL=${PSA_DIR}/psa-var-composites-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
+PLOT_VARCOMPS_ALL=${PSA_DIR}/psa-var-composites-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.${FIG_TYPE} 
 ${PLOT_VARCOMPS_ALL} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN} ${TAS_ANOM_RUNMEAN} ${PR_ANOM_RUNMEAN} ${SIC_ANOM_RUNMEAN} 
 	bash ${VIS_SCRIPT_DIR}/plot_psa_var_composite_combo.sh $< $(word 2,$^) $(word 3,$^) $(word 4,$^) $(word 5,$^) ${FREQ} $@ ${PSA_POS_START} ${PSA_POS_END} ${PSA_NEG_START} ${PSA_NEG_END} ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## SAM vs ENSO plot
 
-SAM_VS_NINO34_PLOT=${PSA_DIR}/nino34-vs-sam_psa-phases_ERAInterim_surface_030day-runmean_native.png
+SAM_VS_NINO34_PLOT=${PSA_DIR}/nino34-vs-sam_psa-phases_ERAInterim_surface_030day-runmean_native.${FIG_TYPE}
 ${SAM_VS_NINO34_PLOT} : ${SAM_INDEX} ${NINO34_INDEX} ${FOURIER_COEFFICIENTS} 
 	bash ${VIS_SCRIPT_DIR}/plot_psa-phase-vs-enso-sam.sh $< $(word 2,$^) nino34 $(word 3,$^) ${FREQ} $@ ${PSA_POS_START} ${PSA_POS_END} ${PSA_NEG_START} ${PSA_NEG_END} ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 

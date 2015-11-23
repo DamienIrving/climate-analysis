@@ -14,6 +14,7 @@ PYTHON=/usr/local/anaconda/bin/python
 DATA_SCRIPT_DIR=~/climate-analysis/data_processing
 VIS_SCRIPT_DIR=~/climate-analysis/visualisation
 
+FIG_TYPE=eps
 
 # Analysis details
 
