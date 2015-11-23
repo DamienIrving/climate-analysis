@@ -16,6 +16,7 @@ include psa_config.mk
 
 all : ${TARGET}
 
+
 # Core variables
 
 V_ORIG=${DATA_DIR}/va_${DATASET}_${LEVEL}_daily_native.nc
@@ -91,17 +92,6 @@ ${NINO34_INDEX} : ${TOS_RUNMEAN}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py NINO34 $< tos $@
 
 
-
-
-# PSA demonstration
-
-## EOF analysis
-
-EOF_ANAL=${PSA_DIR}/eof-sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.nc
-${EOF_ANAL} : ${SF_ZONAL_ANOM_RUNMEAN}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_eof.py --maxlat 0.0 --time 1979-01-01 2014-12-31 --eof_scaling 3 --pc_scaling 1 $< streamfunction $@
-
-
 # PSA identification
 
 ## Phase and amplitude of each Fourier component
@@ -131,8 +121,26 @@ ${ALL_STATS_PSA} : ${FOURIER_COEFFICIENTS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --full_stats
 
 
+# PSA demonstration
 
-# Visualisation
+## EOF analysis (would need to manually edit for monthly tstep data)
+
+EOF_ANAL=${PSA_DIR}/eof-sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.nc
+${EOF_ANAL} : ${SF_ZONAL_ANOM_RUNMEAN}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_eof.py --maxlat 0.0 --time 1979-01-01 2014-12-31 --eof_scaling 3 --pc_scaling 1 $< streamfunction $@
+
+PLOT_EOF=${PSA_DIR}/eof-sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-sh-zonal-anom.png
+${PLOT_EOF} : ${EOF_ANAL}
+	bash ${VIS_SCRIPT_DIR}/plot_eof.sh $< $@ ${PYTHON} ${VIS_SCRIPT_DIR}
+
+## Rotation example
+
+.PHONY : plot_rotation
+plot_rotation : ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
+	bash ${VIS_SCRIPT_DIR}/plot_psa_rotation.sh $< $(word 2,$^) ${EXAMPLE_DATE} ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
+
+
+# Results visualisation
 
 ## PSA phase plot (histogram)
 PLOT_PSA_PHASE_HIST=${PSA_DIR}/psa-phase-histogram_wave${FREQ}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
@@ -177,24 +185,3 @@ SAM_VS_NINO34_PLOT=${PSA_DIR}/nino34-vs-sam_psa-phases_ERAInterim_surface_030day
 ${SAM_VS_NINO34_PLOT} : ${SAM_INDEX} ${NINO34_INDEX} ${FOURIER_COEFFICIENTS} 
 	bash ${VIS_SCRIPT_DIR}/plot_psa-phase-vs-enso-sam.sh $< $(word 2,$^) nino34 $(word 3,$^) ${FREQ} $@ ${PSA_POS_START} ${PSA_POS_END} ${PSA_NEG_START} ${PSA_NEG_END} ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 
-
-# PSA analysis
-
-## Composites for each of the phase groupings
-
-### Get dates for the specific phases
-
-#/usr/local/anaconda/bin/python ~/climate-analysis/data_processing/psa_date_list.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/fourier-vrot_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E.nc /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/dates-psa_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E_wave7phase29-39.txt --phase_filter 29 39
-
-### Calculate the composite
-
-#/usr/local/anaconda/bin/python ~/climate-analysis/data_processing/calc_composite.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/sf_ERAInterim_500hPa_030day-runmean-anom-wrt-all_native.nc sf /mnt/meteo0/data/simmonds/dbirving/temp/sf-psa-w5-phase62-70_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E.nc --date_file /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/dates-psa-w5-phase62-70_ERAInterim_500hPa-lat10S10Nmean-lon115E230Ezeropad_030day-runmean-anom-wrt-all_native-np20N260E.txt --no_sig
-
-### Plot the composite
-
-#bash plot_psa_phase_composites.sh
-
-
-## Plot the timescale spectrum
-
-#/usr/local/anaconda/bin/python /home/STUDENT/dbirving/climate-analysis/visualisation/plot_timescale_spectrum.py /mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/vrot_ERAInterim_500hPa_daily-anom-wrt-all_native-np20N260E.nc vrot	/mnt/meteo0/data/simmonds/dbirving/ERAInterim/data/psa/figures/vrot-r2spectrum_ERAInterim_500hPa_daily-anom-wrt-all_native-np20N260E.png --latitude -10 10 --runmean 365 180 90 60 30 15 10 5 1 --scaling R2 --valid_lon 115 230 --window 10 --date_curve dummy_DJF_dates.txt DJF --date_curve dummy_MAM_dates.txt MAM --date_curve dummy_JJA_dates.txt JJA --date_curve dummy_SON_dates.txt SON
