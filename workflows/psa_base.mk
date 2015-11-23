@@ -17,6 +17,7 @@ include psa_config.mk
 all : ${TARGET}
 
 
+
 # Core variables
 
 V_ORIG=${DATA_DIR}/va_${DATASET}_${LEVEL}_daily_native.nc
@@ -45,6 +46,12 @@ ${SF_ZONAL_ANOM_RUNMEAN} : ${SF_ZONAL_ANOM}
 VROT_ORIG=${DATA_DIR}/vrot_${DATASET}_${LEVEL}_daily_native-${NPLABEL}.nc
 ${VROT_ORIG} : ${U_ORIG} ${V_ORIG}
 	bash ${DATA_SCRIPT_DIR}/calc_vrot.sh ${NPLAT} ${NPLON} $< eastward_wind $(word 2,$^) northward_wind $@ ${PYTHON} ${DATA_SCRIPT_DIR} ${TEMPDATA_DIR}
+
+VROT_ANOM_DAILY=${DATA_DIR}/vrot_${DATASET}_${LEVEL}_daily-anom-wrt-all_native-${NPLABEL}.nc
+${VROT_ANOM_DAILY} : ${VROT_ORIG} 
+	cdo ydaysub $< -ydayavg $< $@
+	ncatted -O -a bounds,time,d,, $@
+	ncks -O -x -v time_bnds $@
 
 VROT_ANOM_RUNMEAN=${DATA_DIR}/vrot_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.nc
 ${VROT_ANOM_RUNMEAN} : ${VROT_ORIG} 
@@ -92,6 +99,7 @@ ${NINO34_INDEX} : ${TOS_RUNMEAN}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climate_index.py NINO34 $< tos $@
 
 
+
 # PSA identification
 
 ## Phase and amplitude of each Fourier component
@@ -107,6 +115,7 @@ ${INVERSE_FT} : ${VROT_ANOM_RUNMEAN}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_fourier_transform.py $< vrot $@ ${WAVE_MIN} ${WAVE_MAX} hilbert --latitude ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --valid_lon ${LON_SEARCH_MIN} ${LON_SEARCH_MAX} --avelat
 
 ## PSA date lists
+
 ALL_DATES_PSA=${PSA_DIR}/dates-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.txt 
 ${ALL_DATES_PSA} : ${FOURIER_COEFFICIENTS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ 
@@ -116,9 +125,11 @@ ${FILTERED_DATES_PSA} : ${FOURIER_COEFFICIENTS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --duration_filter ${DURATION}  
 
 ## PSA stats lists
+
 ALL_STATS_PSA=${PSA_DIR}/stats-psa_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.csv 
 ${ALL_STATS_PSA} : ${FOURIER_COEFFICIENTS}
 	${PYTHON} ${DATA_SCRIPT_DIR}/psa_date_list.py $< $@ --full_stats
+
 
 
 # PSA demonstration
@@ -139,15 +150,30 @@ ${PLOT_EOF} : ${EOF_ANAL}
 plot_rotation : ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_rotation.sh $< $(word 2,$^) ${EXAMPLE_DATE} ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
 
+## PSA check (spatial map and FT for given dates)
+
+.PHONY : psa_check
+psa_check : ${FILTERED_DATES_PSA} ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
+	bash ${VIS_SCRIPT_DIR}/plot_psa_check.sh $< $(word 2,$^) streamfunction $(word 3,$^) rotated_northward_wind vrot 1986 1988 ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
+
+
 
 # Results visualisation
 
+## Timescale spectrum
+
+PLOT_SPECTRUM=${PSA_DIR}/figures/vrot-r2spectrum_${DATASET}_${LEVEL}_daily-anom-wrt-all_native-${NPLABEL}.png
+${PLOT_SPECTRUM} : ${VROT_ANOM_DAILY}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_timescale_spectrum.py $< vrot $@ --latitude ${LAT_SEARCH_MIN} ${LAT_SEARCH_MAX} --runmean 365 180 90 60 30 15 10 5 1 --scaling R2 --valid_lon ${LON_SEARCH_MIN} ${LON_SEARCH_MAX} --window 10 --figure_size 7 6
+
 ## PSA phase plot (histogram)
+
 PLOT_PSA_PHASE_HIST=${PSA_DIR}/psa-phase-histogram_wave${FREQ}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
 ${PLOT_PSA_PHASE_HIST} : ${ALL_STATS_PSA}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_stats.py $< phase_distribution $@ --epochs --phase_res 0.75 --subset_width 20 --phase_group 4.5 19.5 --phase_group 37.5 52.5
 
 ## PSA phase plot (composites)
+
 PLOT_PSA_PHASE_COMP=${PSA_DIR}/psa-phase-composites_wave${FREQ}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
 ${PLOT_PSA_PHASE_COMP} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_phase_composites.sh $< $(word 2,$^) ${FREQ} $@ ${PSA_POS_START} ${PSA_POS_END} ${PSA_NEG_START} ${PSA_NEG_END} ${MIN1_START} ${MIN1_END} ${MIN2_START} ${MIN2_END} ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
@@ -159,6 +185,7 @@ ${PLOT_SEASONALITY} : ${FOURIER_COEFFICIENTS}
 	bash ${VIS_SCRIPT_DIR}/plot_psa_phase_seasonality.sh $< ${FREQ} $@ ${PSA_POS_START} ${PSA_POS_END} ${PSA_NEG_START} ${PSA_NEG_END} ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
 
 ## Event phase/amplitude plot wiith duration historgram (line graph)
+
 EVENT_PLOT=${PSA_DIR}/psa-event-summary_wave${FREQ}-duration-gt${DURATION}_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png
 ${EVENT_PLOT} : ${ALL_STATS_PSA}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_psa_stats.py $< event_summary $@ --min_duration ${DURATION} --gradient_limit 0.25
@@ -172,12 +199,6 @@ ${PLOT_VARCOMPS} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN} ${VAR_ANOM_RUNMEAN
 PLOT_VARCOMPS_ALL=${PSA_DIR}/psa-var-composites-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.png 
 ${PLOT_VARCOMPS_ALL} : ${FOURIER_COEFFICIENTS} ${SF_ANOM_RUNMEAN} ${TAS_ANOM_RUNMEAN} ${PR_ANOM_RUNMEAN} ${SIC_ANOM_RUNMEAN} 
 	bash ${VIS_SCRIPT_DIR}/plot_psa_var_composite_combo.sh $< $(word 2,$^) $(word 3,$^) $(word 4,$^) $(word 5,$^) ${FREQ} $@ ${PSA_POS_START} ${PSA_POS_END} ${PSA_NEG_START} ${PSA_NEG_END} ${PYTHON} ${DATA_SCRIPT_DIR} ${VIS_SCRIPT_DIR} ${TEMPDATA_DIR}
-
-## PSA check (spatial map and FT for given dates)
-
-.PHONY : psa_check
-psa_check : ${FILTERED_DATES_PSA} ${SF_ANOM_RUNMEAN} ${VROT_ANOM_RUNMEAN}
-	bash ${VIS_SCRIPT_DIR}/plot_psa_check.sh $< $(word 2,$^) streamfunction $(word 3,$^) rotated_northward_wind vrot 1986 1988 ${MAP_DIR} ${PYTHON} ${VIS_SCRIPT_DIR}
 
 ## SAM vs ENSO plot
 
