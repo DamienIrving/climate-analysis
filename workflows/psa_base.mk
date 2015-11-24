@@ -32,6 +32,7 @@ ${SF_ORIG} : ${U_ORIG} ${V_ORIG}
 SF_ANOM_RUNMEAN=${DATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native.nc
 ${SF_ANOM_RUNMEAN} : ${SF_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
+	bash ${DATA_SCRIPT_DIR}/fix_time_bounds.sh $@ ${PYTHON} ${DATA_SCRIPT_DIR}
 
 SF_ZONAL_ANOM=${DATA_DIR}/sf_${DATASET}_${LEVEL}_daily_native-zonal-anom.nc
 ${SF_ZONAL_ANOM} : ${SF_ORIG}		
@@ -40,6 +41,7 @@ ${SF_ZONAL_ANOM} : ${SF_ORIG}
 SF_ZONAL_ANOM_RUNMEAN=${DATA_DIR}/sf_${DATASET}_${LEVEL}_${TSCALE_LABEL}_native-zonal-anom.nc 
 ${SF_ZONAL_ANOM_RUNMEAN} : ${SF_ZONAL_ANOM}
 	cdo ${TSCALE} $< $@
+	bash ${DATA_SCRIPT_DIR}/fix_time_bounds.sh $@ ${PYTHON} ${DATA_SCRIPT_DIR}
 
 ## Rotated meridional wind
 
@@ -50,14 +52,11 @@ ${VROT_ORIG} : ${U_ORIG} ${V_ORIG}
 VROT_ANOM_DAILY=${DATA_DIR}/vrot_${DATASET}_${LEVEL}_daily-anom-wrt-all_native-${NPLABEL}.nc
 ${VROT_ANOM_DAILY} : ${VROT_ORIG} 
 	cdo ydaysub $< -ydayavg $< $@
-	ncatted -O -a bounds,time,d,, $@
-	ncks -O -x -v time_bnds $@
 
 VROT_ANOM_RUNMEAN=${DATA_DIR}/vrot_${DATASET}_${LEVEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.nc
 ${VROT_ANOM_RUNMEAN} : ${VROT_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
-	ncatted -O -a bounds,time,d,, $@
-	ncks -O -x -v time_bnds $@
+	bash ${DATA_SCRIPT_DIR}/fix_time_bounds.sh $@ ${PYTHON} ${DATA_SCRIPT_DIR}
 
 ## Composite variables (tas, pr, sic)
 
@@ -65,16 +64,19 @@ TAS_ORIG=${DATA_DIR}/tas_${DATASET}_surface_daily_native.nc
 TAS_ANOM_RUNMEAN=${DATA_DIR}/tas_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
 ${TAS_ANOM_RUNMEAN} : ${TAS_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
+	bash ${DATA_SCRIPT_DIR}/fix_time_bounds.sh $@ ${PYTHON} ${DATA_SCRIPT_DIR}
 
 PR_ORIG=${DATA_DIR}/pr_${DATASET}_surface_daily_native.nc
 PR_ANOM_RUNMEAN=${DATA_DIR}/pr_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
 ${PR_ANOM_RUNMEAN} : ${PR_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
+	bash ${DATA_SCRIPT_DIR}/fix_time_bounds.sh $@ ${PYTHON} ${DATA_SCRIPT_DIR}
 
 SIC_ORIG=${DATA_DIR}/sic_${DATASET}_surface_daily_native.nc
 SIC_ANOM_RUNMEAN=${DATA_DIR}/sic_${DATASET}_surface_${TSCALE_LABEL}-anom-wrt-all_native.nc
 ${SIC_ANOM_RUNMEAN} : ${SIC_ORIG} 
 	cdo ${TSCALE} -ydaysub $< -ydayavg $< $@
+	bash ${DATA_SCRIPT_DIR}/fix_time_bounds.sh $@ ${PYTHON} ${DATA_SCRIPT_DIR}
 
 ## Southern Annular Mode
 
@@ -82,6 +84,7 @@ PSL_ORIG=${DATA_DIR}/psl_${DATASET}_surface_daily_native-shextropics30.nc
 PSL_RUNMEAN=${DATA_DIR}/psl_${DATASET}_surface_${TSCALE_LABEL}_native-shextropics30.nc
 ${PSL_RUNMEAN} : ${PSL_ORIG}
 	cdo ${TSCALE} $< $@
+	bash ${DATA_SCRIPT_DIR}/fix_time_bounds.sh $@ ${PYTHON} ${DATA_SCRIPT_DIR}
 
 SAM_INDEX=${INDEX_DIR}/sam_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
 ${SAM_INDEX} : ${PSL_RUNMEAN}
@@ -93,6 +96,7 @@ TOS_ORIG=${DATA_DIR}/tos_${DATASET}_surface_daily_native-tropicalpacific.nc
 TOS_RUNMEAN=${DATA_DIR}/tos_${DATASET}_surface_${TSCALE_LABEL}_native-tropicalpacific.nc
 ${TOS_RUNMEAN} : ${TOS_ORIG}
 	cdo ${TSCALE} $< $@
+	bash ${DATA_SCRIPT_DIR}/fix_time_bounds.sh $@ ${PYTHON} ${DATA_SCRIPT_DIR}
 
 NINO34_INDEX=${INDEX_DIR}/nino34_${DATASET}_surface_${TSCALE_LABEL}_native.nc 
 ${NINO34_INDEX} : ${TOS_RUNMEAN}
