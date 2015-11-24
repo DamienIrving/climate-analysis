@@ -35,11 +35,19 @@ def main(inargs):
     """Run the program."""
 
     dset = xray.open_dataset(inargs.infile)
-    
-    dset = dset.drop('x')
-    
+
+    try:
+        dset = dset.drop('bnds')
+    except ValueError:
+        print "Did not delete time bounds variable"
+
+    try:
+        dset.coords['time'].attrs.pop('bounds')
+    except KeyError:
+        pass
+
     gio.set_global_atts(dset, dset.attrs, {inargs.infile: dset.attrs['history'],})
-    dset.to_netcdf(inargs.outfile,) #format='NETCDF3_CLASSIC')
+    dset.to_netcdf(inargs.outfile)
 
 
 if __name__ == '__main__':
