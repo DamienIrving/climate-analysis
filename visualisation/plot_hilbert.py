@@ -257,7 +257,7 @@ if __name__ == '__main__':
                         help="Envelope to plot")
 
     parser.add_argument("--legend_list", type=int, nargs='*', default=None,
-                        help="Figures to include a legend on [default = all]")
+                        help="Figures to include a legend on (start counting from 0) [default = none]")
     parser.add_argument("--periodogram", action="store_true", default=False,
                         help="Plot a periodogram in the corner")
     parser.add_argument("--no_title", action="store_true", default=False,
