@@ -98,7 +98,8 @@ def main(inargs):
 	
         g = g.plot_marginals(seaborn.distplot, kde=True, color=colors[index])
 
-    plt.savefig(inargs.ofile, bbox_inches='tight')
+    dpi = inargs.dpi if inargs.dpi else plt.savefig.func_globals['rcParams']['figure.dpi']
+    plt.savefig(inargs.ofile, bbox_inches='tight', dpi=dpi)
     gio.write_metadata(inargs.ofile, file_info=metadata_dict)
 
 
@@ -136,7 +137,8 @@ author:
                         help="x-axis label")
     parser.add_argument("--ylabel", type=str, default=None,
                         help="y-axis label")
-
+    parser.add_argument("--dpi", type=float, default=None,
+                        help="Figure resolution in dots per square inch [default=auto]")
 
     args = parser.parse_args()            
     main(args)
