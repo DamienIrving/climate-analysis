@@ -176,7 +176,7 @@ def plot_duration_histogram(ax, df):
     plt.text(0.90, 0.91, '(a)', transform=ax.transAxes, fontsize='large')
 
 
-def plot_event_summary(df, freq, min_duration, gradient_limit, ofile):
+def plot_event_summary(df, freq, min_duration, gradient_limit, ofile, dpi):
     """Create the event summary plot"""
 
     fig = plt.figure(figsize=(8, 16))
@@ -191,7 +191,7 @@ def plot_event_summary(df, freq, min_duration, gradient_limit, ofile):
     filtered_df = df.loc[df['event_duration'] >= min_duration]
     plot_phase_progression(ax1, filtered_df, freq, gradient_limit)
 
-    plt.savefig(ofile, bbox_inches='tight')
+    plt.savefig(ofile, bbox_inches='tight', dpi=dpi)
 
 
 def plot_extra_smooth(category, ax, df_subset, phase_freq,
@@ -231,7 +231,7 @@ def plot_extra_smooth(category, ax, df_subset, phase_freq,
                   label=labels[2], color=next(palette))
 
 
-def plot_phase_distribution(df, phase_freq, freq, phase_res, ofile, 
+def plot_phase_distribution(df, phase_freq, freq, phase_res, ofile, dpi, 
                             epochs=False, gradient=False, 
                             start_end=False, ymax=None,
                             phase_groups=None, subset_width=10):
@@ -298,7 +298,7 @@ def plot_phase_distribution(df, phase_freq, freq, phase_res, ofile,
              font = font_manager.FontProperties(size='medium')
              ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0., prop=font)
 
-    fig.savefig(ofile, bbox_inches='tight')
+    fig.savefig(ofile, bbox_inches='tight', dpi=dpi)
 
 
 def plot_kde(ax, phase_data, bin_centers,
@@ -325,16 +325,19 @@ def main(inargs):
     df = pandas.read_csv(inargs.infile)
 
     # Create the desired plot
+    dpi = inargs.dpi if inargs.dpi else plt.savefig.func_globals['rcParams']['figure.dpi']
+    print 'dpi:', dpi
+
     phase_freq = 'wave%i_phase' %(inargs.freq)
     if inargs.type == 'phase_distribution':
         filtered_df = df.loc[df['event_duration'] >= inargs.min_duration]
-        plot_phase_distribution(filtered_df, phase_freq, inargs.freq, inargs.phase_res, inargs.ofile,
+        plot_phase_distribution(filtered_df, phase_freq, inargs.freq, inargs.phase_res, inargs.ofile, dpi,
                                 epochs=inargs.epochs, 
                                 gradient=inargs.gradient, start_end=inargs.start_end,
                                 ymax=inargs.ymax, phase_groups=inargs.phase_group,
                                 subset_width=inargs.subset_width)
     elif inargs.type == 'event_summary':
-        plot_event_summary(df, inargs.freq, inargs.min_duration, inargs.gradient_limit, inargs.ofile)
+        plot_event_summary(df, inargs.freq, inargs.min_duration, inargs.gradient_limit, inargs.ofile, dpi)
 
     # Sort out metadata
     file_body = inargs.infile.split('.')[0]
@@ -377,6 +380,8 @@ author:
                         help="Maximum y axis value for all plots [default: auto]")
     parser.add_argument("--min_duration", type=int, default=0, 
                         help="Minimum event duration [default: 0]")
+    parser.add_argument("--dpi", type=float, default=None,
+                        help="Figure resolution in dots per square inch [default=auto]")
 
     # event summary options
     parser.add_argument("--gradient_limit", type=float, default=0.25, 
