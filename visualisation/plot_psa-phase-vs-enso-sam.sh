@@ -63,6 +63,6 @@ for idx in "${!start_phases[@]}"; do
 done
 
 
-${python_exe} ${vis_dir}/plot_scathist.py ${sam_file} sam ${enso_file} ${enso_var} ${outfile} --subset all --subset ${temp_dir}/dates_phase0.txt --subset ${temp_dir}/dates_phase1.txt --ylabel Nino_3.4 --xlabel SAM
+${python_exe} ${vis_dir}/plot_scathist.py ${sam_file} sam ${enso_file} ${enso_var} ${outfile} --subset all --subset ${temp_dir}/dates_phase0.txt --subset ${temp_dir}/dates_phase1.txt --ylabel Nino_3.4 --xlabel SAM --dpi 300
 
 rm ${temp_files[@]}
