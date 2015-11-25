@@ -7,7 +7,7 @@ I share corresponding log files on Figshare (see my profile page
 [here](http://figshare.com/authors/Damien_Irving/726490))
 that show how the code in this repository was used to generate the key results.
 The rationale for this approach to reproducible research is outlined
-[here](https://www.authorea.com/users/5641/articles/15874/_show_article).
+[here](http://journals.ametsoc.org/doi/abs/10.1175/BAMS-D-15-00010.1).
 
 
 ## Table of contents

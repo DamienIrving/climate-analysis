@@ -65,4 +65,4 @@ MIN2_START=50.25
 MIN2_END=6.0
 
 
-TARGET=plot_rotation
+TARGET=${PSA_DIR}/psa-var-composites-phase-range_${DATASET}_${LEVEL}-${LAT_LABEL}-${LON_LABEL}_${TSCALE_LABEL}-anom-wrt-all_native-${NPLABEL}.${FIG_TYPE}  

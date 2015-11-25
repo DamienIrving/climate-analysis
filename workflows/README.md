@@ -12,8 +12,9 @@ makefiles related to that workflow
 
 #### Zonal wave analysis
 
-*Reference:* Irving DB, Simmonds I (in preparation).
-A novel approach to diagnosing Southern Hemisphere planetary wave activity and its influence on regional climate variability.
+*Reference:* Irving D, Simmonds I (2015).
+[A novel approach to diagnosing Southern Hemisphere planetary wave activity and its influence on regional climate variability](http://journals.ametsoc.org/doi/abs/10.1175/JCLI-D-15-0287.1).
+*Journal of Climate*. 28, 9041-9057. doi:10.1175/JCLI-D-15-0287.1.
 
 * Config file: `zw_config.mk`
 * Basic analyses that underpin the rest: `zw_base.mk`
@@ -24,8 +25,8 @@ A novel approach to diagnosing Southern Hemisphere planetary wave activity and i
 
 #### PSA pattern analysis
 
-*Reference:* Irving DB, Simmonds I (in preparation).
-The Pacific-South America Pattern: a climatology
+*Reference:* Irving D, Simmonds I (in preparation).
+A new method for identifying the Pacific-South American pattern and its influence on regional climate variability.
 
 * Config file: `psa_config.mk`
-* Workflow for basic climatology: `psa_climatology.mk`
+* Everything else: `psa_base.mk`
