@@ -108,18 +108,20 @@ def composite_plot(ax, inargs, runave=30, label=None):
     """Plot periodogram that compares composites."""
 
     darray, indep_var, metadata_dict = read_data(inargs, runave)
-    inargs.date_curve.append([None, 'all'])
 
     colors = ['#fbb4b9', '#f768a1', '#ae017e', 'red', 'blue', 'green']
     cindex = 0
-    for date_file, leglabel in inargs.date_curve:        
+    for date_file, leglabel in inargs.date_curve:
+        if date_file == 'all':
+            date_file = None        
         match_dates, date_metadata = calc_composite.get_datetimes(darray, date_file)
         data_filtered = darray.sel(time=match_dates)
 
         spectrum_temporal_mean, spectrum_freqs_1D = transform_data(data_filtered.values, indep_var, inargs.scaling)
 
         ax.plot(spectrum_freqs_1D, spectrum_temporal_mean, 
-                label=leglabel, marker='o', color=colors[cindex], linewidth=2.0)
+                marker='o', color=colors[cindex], linewidth=2.0,
+                label=leglabel.replace("_", " "))
 
         if date_file:
             metadata_dict[date_file] = date_metadata
@@ -236,7 +238,7 @@ author:
     parser.add_argument("--runmean", type=int, nargs='*', default=None,
                         help="Running mean windows to include (e.g. 1 5 30 60 90 180 365). If none, panel will not be plotted.")
     parser.add_argument("--date_curve", type=str, action='append', default=[], metavar=('DATE_FILE', 'LABEL'), nargs=2,
-                        help="Date filtered curve for the left hand panel. If none, panel will not be plotted.")
+                        help="""Date filtered curve for the left hand panel. If none, panel will not be plotted. Use keyword 'all' for all timesteps.""")
 			
     # Input data options
     parser.add_argument("--latitude", type=float, nargs=2, metavar=('START', 'END'),
