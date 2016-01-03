@@ -52,15 +52,29 @@ def running_mean(darray, window):
     return xray.DataArray(dframe)
 
 
+def subset_data(dset_in, inargs):
+    """Subset the input data"""
+
+    subset_dict = gio.get_subset_kwargs(inargs)
+    try:
+        if inargs.latitude[0] == inargs.latitude[1]:
+            subset_dict['method'] = 'nearest'
+            darray = dset_in[inargs.variable].sel(**subset_dict)
+        else:
+            darray = dset_in[inargs.variable].sel(**subset_dict).mean('latitude')
+    except AttributeError:
+        darray = dset_in[inargs.variable].sel(**subset_dict).mean('latitude')
+
+    return darray
+
+
 def read_data(inargs, runmean_window):
     """Read input data into an xray DataArray."""
 
     dset_in = xray.open_dataset(inargs.infile)
     gio.check_xrayDataset(dset_in, inargs.variable)
 
-    subset_dict = gio.get_subset_kwargs(inargs)
-    #subset_dict['method'] = 'nearest'
-    darray = dset_in[inargs.variable].sel(**subset_dict).mean('latitude')
+    darray = subset_data(dset_in, inargs)
     indep_var = darray['longitude'].values
 
     if inargs.valid_lon:
