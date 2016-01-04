@@ -37,6 +37,7 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -60,10 +61,6 @@ output_projections = {'PlateCarree': ccrs.PlateCarree(),
                       'Orthographic': ccrs.Orthographic(central_longitude=240, central_latitude=-45),
                       'RotatedPole_260E_20N_shift180': ccrs.RotatedPole(260, 20, central_rotated_longitude=180),
                      }
-
-units_dict = {'ms-1': '$m s^{-1}$',
-              'm.s-1': '$m s^{-1}$',
-              '1000000 m2.s-1': '$10^6$m$^2$s$^{-1}$'}
 
 line_style_dict = {'dashed': '--',
                    'solid': '-'}
@@ -559,10 +556,7 @@ def set_global_colourbar(orientation, span, cf, fig, units, units_size, number_s
     cbar = plt.colorbar(cf, colorbar_axes, orientation=orientation)
 
     # Label the colour bar and add ticks
-    if units in units_dict.keys():
-        cbar.set_label(units_dict[units], fontsize=units_size)
-    else:
-        cbar.set_label(units.replace("_", " "), fontsize=units_size)
+    cbar.set_label(uconv.fix_label(units), fontsize=units_size)
     cbar.ax.tick_params(labelsize=number_size)
 
 

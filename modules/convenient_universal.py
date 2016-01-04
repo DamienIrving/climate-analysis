@@ -159,8 +159,15 @@ def find_nearest(array, value):
 def fix_label(label):
     """Fix axis label taken from the command line."""
 
-    label = label.replace('_', ' ')
-    label = label.replace('degE', '$^{\circ}$E')
+    replace_dict = {'_': ' ',
+                    'degE': '$^{\circ}$E',
+                    'ms-1': '$m s^{-1}$',
+                    'm.s-1': '$m s^{-1}$',
+                    '1000000 m2.s-1': '$10^6$m$^2$s$^{-1}$'
+                   } 
+
+    for value, replacement in replace_dict.iteritems():
+        label = label.replace(value, replacement)
 
     return label 
 
