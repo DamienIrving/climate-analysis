@@ -17,6 +17,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+import seaborn
+seaborn.set_context('paper')
+
 
 # Import my modules
 
@@ -59,7 +62,7 @@ def normalise_series(series):
 def scatter_plot(x_data, y_data, 
                  xlabel, ylabel,
                  outfile, 
-                 c_data=None, cmap='Greys',
+                 c_data=None, cmap='Greys', clabel=None,
                  zero_lines=False, thin=1, 
                  plot_trend=False, trend_colour='r',
                  quadrant_labels=None):
@@ -77,8 +80,10 @@ def scatter_plot(x_data, y_data,
     c = c_data[::thin] if type(c_data) == pandas.core.series.Series else 'k'
     
     plt.scatter(x, y, c=c, cmap=cmap)
-    plt.colorbar()
-
+    cbar = plt.colorbar()
+    if clabel:
+        cbar.set_label(clabel)
+        
     if plot_trend:
         p = numpy.polyfit(x, y, 1)
         print p
@@ -199,13 +204,14 @@ def main(inargs):
 
     # Generate plot
     c_data = dataframe[inargs.colour[1]] if inargs.colour else None
-    xlabel = inargs.xlabel.replace('_',' ') if inargs.xlabel else inargs.xvar
-    ylabel = inargs.ylabel.replace('_',' ') if inargs.ylabel else inargs.yvar
+    xlabel = uconv.fix_label(inargs.xlabel) if inargs.xlabel else inargs.xvar
+    ylabel = uconv.fix_label(inargs.ylabel) if inargs.ylabel else inargs.yvar
+    clabel = uconv.fix_label(inargs.clabel) if inargs.clabel else None
 
     scatter_plot(dataframe[target_xvar], dataframe[target_yvar], 
                  xlabel, ylabel,
                  inargs.ofile, 
-                 c_data=c_data, cmap=inargs.cmap, 
+                 c_data=c_data, cmap=inargs.cmap, clabel=clabel, 
                  zero_lines=inargs.zero_lines, thin=inargs.thin, 
                  plot_trend=inargs.trend_line, trend_colour=inargs.trend_colour,
                  quadrant_labels=quadrant_labels)
@@ -272,6 +278,8 @@ author:
                         help="x-axis label")
     parser.add_argument("--ylabel", type=str, default=None,
                         help="y-axis label")
+    parser.add_argument("--clabel", type=str, default=None,
+                        help="colourbar label")
 
 
     args = parser.parse_args()            

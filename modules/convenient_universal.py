@@ -8,6 +8,7 @@ Functions:
   dict_filter        -- Filter dictionary according to specified keys
   find_nearest       -- Find the closest array item to value
   find_duplicates    -- Return list of duplicates in a list
+  fix_label          -- Fix formatting of an axis label taken from the command line
   get_threshold      -- Turn the user input threshold into a numeric threshold
   hi_lo              -- Determine the new highest and lowest value.
   list_kwargs        -- List keyword arguments of a function
@@ -153,6 +154,15 @@ def find_nearest(array, value):
     
     idx = (numpy.abs(numpy.array(array) - value)).argmin()
     return array[idx]
+
+
+def fix_label(label):
+    """Fix axis label taken from the command line."""
+
+    label = label.replace('_', ' ')
+    label = label.replace('degE', '$^{\circ}$E')
+
+    return label 
 
 
 def get_threshold(data, threshold_str, axis=None):
