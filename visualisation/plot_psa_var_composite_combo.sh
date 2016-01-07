@@ -70,13 +70,13 @@ for idx in "${!start_phases[@]}"; do
     --date_file ${temp_date_file} --region sh --no_sig
     
     ${python_exe} ${code_dir}/calc_composite.py ${tas_file} tas ${temp_tascomp_file} \
-    --date_file ${temp_date_file} --region sh
+    --date_file ${temp_date_file} --region sh --no_sig #
     
     ${python_exe} ${code_dir}/calc_composite.py ${pr_file} pr ${temp_prcomp_file} \
-    --date_file ${temp_date_file} --region sh
+    --date_file ${temp_date_file} --region sh --no_sig #
     
     ${python_exe} ${code_dir}/calc_composite.py ${sic_file} sic ${temp_siccomp_file} \
-    --date_file ${temp_date_file} --region sh
+    --date_file ${temp_date_file} --region sh --no_sig #
     
     temp_files+=(${temp_date_file} ${temp_sfcomp_file} ${temp_tascomp_file} ${temp_prcomp_file} ${temp_siccomp_file})
 done
@@ -101,12 +101,6 @@ ${python_exe} ${vis_dir}/plot_map.py 2 3 \
 --infile ${temp_dir}/pr-composite_phase-group1.nc precipitation_annual none none none colour0 5 PlateCarree \
 --infile ${temp_dir}/sic-composite_phase-group1.nc sea_ice_fraction_annual none none none colour0 6 PlateCarree \
 --colourbar_type individual \
---infile ${temp_dir}/tas-composite_phase-group0.nc p_value_annual none none none hatching0 1 PlateCarree \
---infile ${temp_dir}/pr-composite_phase-group0.nc p_value_annual none none none hatching0 2 PlateCarree \
---infile ${temp_dir}/sic-composite_phase-group0.nc p_value_annual none none none hatching0 3 PlateCarree \
---infile ${temp_dir}/tas-composite_phase-group1.nc p_value_annual none none none hatching0 4 PlateCarree \
---infile ${temp_dir}/pr-composite_phase-group1.nc p_value_annual none none none hatching0 5 PlateCarree \
---infile ${temp_dir}/sic-composite_phase-group1.nc p_value_annual none none none hatching0 6 PlateCarree \
 --output_projection SouthPolarStereo \
 --subplot_headings surface_temperature precipitation sea_ice none none none \
 --infile ${temp_dir}/sf-composite_phase-group0.nc streamfunction_annual none none none contour0 1 PlateCarree \
@@ -125,9 +119,38 @@ ${python_exe} ${vis_dir}/plot_map.py 2 3 \
 --colourbar_ticks ${tas_ticks} --colourbar_ticks ${pr_ticks} --colourbar_ticks ${sic_ticks} \
 --extend both --units K mm/day ice_fraction K mm/day ice_fraction \
 --no_colourbar False False False False False False \
---side_headings PSA_positive none none PSA_negative none none 
+--side_headings PSA_positive none none PSA_negative none none \
+--infile ${temp_dir}/tas-composite_phase-group0.nc p_value_annual none none none hatching0 1 PlateCarree \
+--infile ${temp_dir}/pr-composite_phase-group0.nc p_value_annual none none none hatching0 2 PlateCarree \
+--infile ${temp_dir}/sic-composite_phase-group0.nc p_value_annual none none none hatching0 3 PlateCarree \
+--infile ${temp_dir}/tas-composite_phase-group1.nc p_value_annual none none none hatching0 4 PlateCarree \
+--infile ${temp_dir}/pr-composite_phase-group1.nc p_value_annual none none none hatching0 5 PlateCarree \
+--infile ${temp_dir}/sic-composite_phase-group1.nc p_value_annual none none none hatching0 6 PlateCarree \
 
 #--subplot_spacing 0.01
+
+
+# Negative phase plot with no significance stippling (for presentation)
+
+#${python_exe} ${vis_dir}/plot_map.py 1 3 \
+#--infile ${temp_dir}/tas-composite_phase-group1.nc surface_air_temperature_annual none none none colour0 1 PlateCarree \
+#--infile ${temp_dir}/pr-composite_phase-group1.nc precipitation_annual none none none colour0 2 PlateCarree \
+#--infile ${temp_dir}/sic-composite_phase-group1.nc sea_ice_fraction_annual none none none colour0 3 PlateCarree \
+#--colourbar_type individual \
+#--output_projection SouthPolarStereo \
+#--subplot_headings surface_temperature precipitation sea_ice \
+#--infile ${temp_dir}/sf-composite_phase-group1.nc streamfunction_annual none none none contour0 1 PlateCarree \
+#--infile ${temp_dir}/sf-composite_phase-group1.nc streamfunction_annual none none none contour0 2 PlateCarree \
+#--infile ${temp_dir}/sf-composite_phase-group1.nc streamfunction_annual none none none contour0 3 PlateCarree \
+#--ofile ${outfile} \
+#--contour_levels ${levels} \
+#--figure_size 12 6 \
+#--palette ${tas_palette} ${pr_palette} ${sic_palette} \
+#--colourbar_ticks ${tas_ticks} --colourbar_ticks ${pr_ticks} --colourbar_ticks ${sic_ticks} \
+#--extend both --units K mm/day ice_fraction \
+#--no_colourbar False False False \
+#--side_headings PSA_negative none none \
+
 
 
 rm ${temp_files[@]}
