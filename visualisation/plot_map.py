@@ -565,10 +565,7 @@ def set_individual_colourbar(orientation, cf, units, label_size, number_size):
 
     cbar = plt.colorbar(cf, orientation=orientation)
 
-    if units in units_dict.keys():
-        cbar.set_label(units_dict[units], fontsize=label_size)
-    else:
-        cbar.set_label(units.replace("_", " "), fontsize=label_size)
+    cbar.set_label(uconv.fix_label(units), fontsize=label_size)
     cbar.ax.tick_params(labelsize=number_size)
 
 
