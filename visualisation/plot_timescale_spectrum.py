@@ -130,16 +130,18 @@ def composite_plot(ax, inargs, runave=30, label=None):
 
     ax.set_xlim([1, inargs.window])
     ax.set_xlabel('wavenumber ($k$)', fontsize=inargs.axis_label_size)
-    
     if inargs.scaling == 'R2':
         ylabel = 'variance explained ($R_k^2$)'
     else:
         ylabel = inargs.scaling
     ax.set_ylabel('average %s' %(ylabel), fontsize=inargs.axis_label_size)
+    ax.tick_params(axis='x', labelsize=inargs.axis_label_size)
+    ax.tick_params(axis='y', labelsize=inargs.axis_label_size)
+
     ax.legend(fontsize=inargs.legend_label_size)
 
     if label:
-        ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
+        ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize=inargs.plot_label_size)
 
     return metadata_dict
 
@@ -163,7 +165,6 @@ def timescale_plot(ax, inargs, label=None):
 
     ax.set_xlim([1, inargs.window])
     ax.set_xlabel('wavenumber ($k$)', fontsize=inargs.axis_label_size)
-    
     if inargs.scaling == 'R2':
         ylabel = 'variance explained ($R_k^2$)'
     else:
@@ -172,9 +173,11 @@ def timescale_plot(ax, inargs, label=None):
     
     handles, labels = ax.get_legend_handles_labels()
     ax.legend(handles[::-1], labels[::-1], fontsize=inargs.legend_label_size)
+    ax.tick_params(axis='x', labelsize=inargs.axis_label_size)
+    ax.tick_params(axis='y', labelsize=inargs.axis_label_size)
 
     if label:
-        ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
+        ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize=inargs.plot_label_size)
 
     return metadata_dict
 
@@ -258,11 +261,13 @@ author:
     parser.add_argument("--figure_size", type=float, default=(14.0, 6.0), nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
 
-    sizes = ('xx-small', 'x-small', 'small', 'medium', 'large')
+    sizes = ('xx-small', 'x-small', 'small', 'medium', 'large', 'x-large')
     parser.add_argument("--axis_label_size", type=str, default='small', choices=sizes,
                         help="Size for the axis markers and labels [default = small]")
     parser.add_argument("--legend_label_size", type=str, default='small', choices=sizes,
                         help="Size for the legend labels [default = small]")
+    parser.add_argument("--plot_label_size", type=str, default='large', choices=sizes,
+                        help="Size for the plot labels [default = large]")
   
     args = parser.parse_args()            
 
