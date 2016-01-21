@@ -92,11 +92,10 @@ def plot_periodogram(plot_axis, data_dict, wmin, wmax):
     for w in xvals:
         yvals.append(data_dict['positive', w, w].max()) 
 
-    subax.plot(xvals, numpy.array(yvals), marker='o', color='black')    
-    subax.set_ylabel('amplitude ($ms^{-1}$)')
-    subax.set_xlabel('wavenumber')
-    subax.yaxis.get_label().set_fontsize('xx-small')
-    subax.xaxis.get_label().set_fontsize('xx-small')
+    subax.plot(xvals, numpy.array(yvals), marker='o', color='black')
+    
+    subax.set_ylabel('amplitude ($ms^{-1}$)', fontsize='xx-small')
+    subax.set_xlabel('wavenumber', fontsize='xx-small')
     subax.tick_params(axis='x', labelsize='xx-small')
     subax.tick_params(axis='y', labelsize='xx-small')
 
@@ -112,7 +111,8 @@ def plot_hilbert(data_dict, date_list,
                  ybounds=None,
                  figure_size=None,
                  periodogram=False,
-                 no_title=False):
+                 no_title=False,
+                 axis_size='small', legend_size='small', title_size='large'):
     """Create the plot."""
 
     fig = plt.figure(figsize=figure_size)
@@ -180,14 +180,16 @@ def plot_hilbert(data_dict, date_list,
             ax.set_ylim(ybounds) 
 
         if not no_title:
-            ax.set_title(date)
+            ax.set_title(date, fontsize=title_size)
         
-        ax.set_ylabel('$m s^{-1}$')# fontsize='medium')
-        ax.set_xlabel('longitude')# fontsize='medium')
+        ax.set_ylabel('$m s^{-1}$', fontsize=axis_size)
+        ax.set_xlabel('longitude', fontsize=axis_size)
+        ax.tick_params(axis='x', labelsize=axis_size)
+        ax.tick_params(axis='y', labelsize=axis_size)
 
         if index in legend_list:
             handles, labels = ax.get_legend_handles_labels()
-            ax.legend(handles[::-1], labels[::-1], loc=4) #fontsize='small',
+            ax.legend(handles[::-1], labels[::-1], loc=4, fontsize=legend_size)
         
         # Make a little subplot
         if periodogram:
@@ -225,7 +227,10 @@ def main(inargs):
                  env_list=inargs.envelope,
                  legend_list=legend_list,
                  periodogram=inargs.periodogram,
-                 no_title=inargs.no_title)
+                 no_title=inargs.no_title,
+                 axis_size=inargs.axis_label_size,
+                 legend_size=inargs.legend_label_size,
+                 title_size=inargs.title_size,)
 
     gio.write_metadata(inargs.ofile, file_info={inargs.infile: dset_in.attrs['history']})
 
@@ -262,6 +267,14 @@ if __name__ == '__main__':
                         help="Plot a periodogram in the corner")
     parser.add_argument("--no_title", action="store_true", default=False,
                         help="Do not plot title")
+
+    sizes = ('xx-small', 'x-small', 'small', 'medium', 'large')
+    parser.add_argument("--axis_label_size", type=str, default='small', choices=sizes,
+                        help="Size for the axis markers and labels [default = small]")
+    parser.add_argument("--legend_label_size", type=str, default='small', choices=sizes,
+                        help="Size for the legend labels [default = small]")
+    parser.add_argument("--title_size", type=str, default='large', choices=sizes,
+                        help="Size for the plot titles [default = large]")
 
     parser.add_argument("--ybounds", type=float, nargs=2, metavar=('LOWER', 'UPPER'), default=None,
                         help="y-axis bounds (there are defaults set for each timescale)")
