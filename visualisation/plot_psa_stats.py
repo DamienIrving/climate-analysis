@@ -146,7 +146,7 @@ def plot_phase_progression(ax, df, freq, gradient_limit):
     plt.ylim(0, df['event_phase'].max() + 1)
 
     plt.xlabel('data time')
-    plt.ylabel('wavenumber '+str(freq)+' phase')
+    plt.ylabel('wavenumber '+str(freq)+' phase ($^{\circ}$E)')
     plt.text(0.95, 0.96, '(b)', transform=ax.transAxes, fontsize='large')
 
 
