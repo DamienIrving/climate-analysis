@@ -129,14 +129,14 @@ def composite_plot(ax, inargs, runave=30, label=None):
         cindex = cindex + 1
 
     ax.set_xlim([1, inargs.window])
-    ax.set_xlabel('wavenumber ($k$)')
+    ax.set_xlabel('wavenumber ($k$)', fontsize=inargs.axis_label_size)
     
     if inargs.scaling == 'R2':
         ylabel = 'variance explained ($R_k^2$)'
     else:
         ylabel = inargs.scaling
-    ax.set_ylabel('average %s' %(ylabel))
-    ax.legend(fontsize='small')
+    ax.set_ylabel('average %s' %(ylabel), fontsize=inargs.axis_label_size)
+    ax.legend(fontsize=inargs.legend_label_size)
 
     if label:
         ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
@@ -162,16 +162,16 @@ def timescale_plot(ax, inargs, label=None):
                 label=str(step), marker='o', color=next(palette), linewidth=2.0)
 
     ax.set_xlim([1, inargs.window])
-    ax.set_xlabel('wavenumber ($k$)')
+    ax.set_xlabel('wavenumber ($k$)', fontsize=inargs.axis_label_size)
     
     if inargs.scaling == 'R2':
         ylabel = 'variance explained ($R_k^2$)'
     else:
         ylabel = inargs.scaling
-    ax.set_ylabel('average %s' %(ylabel))
+    ax.set_ylabel('average %s' %(ylabel), fontsize=inargs.axis_label_size)
     
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles[::-1], labels[::-1], fontsize='small')
+    ax.legend(handles[::-1], labels[::-1], fontsize=inargs.legend_label_size)
 
     if label:
         ax.text(0.03, 0.95, label, transform=ax.transAxes, fontsize='large')
@@ -257,6 +257,12 @@ author:
     # Plot options
     parser.add_argument("--figure_size", type=float, default=(14.0, 6.0), nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
+
+    sizes = ('xx-small', 'x-small', 'small', 'medium', 'large')
+    parser.add_argument("--axis_label_size", type=str, default='small', choices=sizes,
+                        help="Size for the axis markers and labels [default = small]")
+    parser.add_argument("--legend_label_size", type=str, default='small', choices=sizes,
+                        help="Size for the legend labels [default = small]")
   
     args = parser.parse_args()            
 
