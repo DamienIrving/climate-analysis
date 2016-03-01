@@ -1,0 +1,15 @@
+name: default
+channels:
+    - ioos
+dependencies:
+    - python=2.7
+    - eofs
+    - gsw
+    - iris
+    - jupyter
+    - pandas
+    - scipy
+    - seaborn
+    - xray    
+    - pip:
+      - gitpython
