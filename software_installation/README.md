@@ -14,6 +14,8 @@ My preferred setup is as follows:
     * [windspharm](http://ajdawson.github.io/windspharm/)
     * [eofs](http://ajdawson.github.io/eofs/)
     * [pyqt-fit](http://pythonhosted.org/PyQt-Fit/index.html)
+  * Libraries that I might use in future:
+    * [cmocean](http://matplotlib.org/cmocean/) 
     * [python-gsw](https://github.com/TEOS-10/python-gsw)
 
 * Quick data visualisation: [UV-CDAT](http://uvcdat.llnl.gov/) 
@@ -64,6 +66,7 @@ Once you're finished: `source deactivate`
 
 * You may have to specify the path for `activate`; e.g. `/Users/irv033/miniconda2/bin/activate`
 * Sometimes the file has to be explicitly called `environment.yml` in order to work
+* I've submitted [an issue](https://github.com/ioos/conda-recipes/issues/776) with IOOS in the hope that they'll fix the error with installing NCO and CDO using conda
 * `$ sudo /usr/local/anaconda/bin/pip install -i https://pypi.anaconda.org/pypi/simple pyqt-fit`
 * On CentOS the miniconda install required some tweaking:
   * To make it work successfully, I first had to run `yum install bzip2`
