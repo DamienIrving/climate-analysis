@@ -4,16 +4,17 @@ My preferred setup is as follows:
 
 * Simple manipulation of netCDF files: [NCO](http://nco.sourceforge.net/)
 * Simple data processing with netCDF files: [CDO](https://code.zmaw.de/projects/cdo)
-* Programming with Python: [Anaconda](http://continuum.io/downloads) plus these additional Python libraries:
+* Programming with Python:
   * General purpose libraries I use extensively:
     * [gitpython](http://gitpython.readthedocs.org/en/stable/)
     * [iris & cartopy](http://scitools.org.uk/)
-    * [xray](http://xray.readthedocs.org/en/stable/)
+    * [xarray](http://xarray.pydata.org/en/stable/)
     * [seaborn](http://stanford.edu/~mwaskom/software/seaborn/)
-  * Libraries I use for discrete tasks:
+  * Libraries I've used for discrete tasks:
     * [windspharm](http://ajdawson.github.io/windspharm/)
     * [eofs](http://ajdawson.github.io/eofs/)
     * [pyqt-fit](http://pythonhosted.org/PyQt-Fit/index.html)
+    * [python-gsw](https://github.com/TEOS-10/python-gsw)
 
 * Quick data visualisation: [UV-CDAT](http://uvcdat.llnl.gov/) 
 
@@ -21,13 +22,11 @@ My preferred setup is as follows:
     * This is easy to setup on a linux machine, but more difficult on a Mac
       (and near on impossible on a windows machine I would imagine, although I haven't tried)
 
-My approach for installing Python libraries is to first install Anaconda. 
-It's a free scientific Python distribution that comes with most of the libraries you'd ever need.
-For installing extra libraries alongside Anaconda,
-I first search [Anaconda.org](https://anaconda.org/) to see if `conda` can be used 
-(conda is the library installer that comes with Anaconda).
-If the package isn't available on anaconda.org, 
-then I use the generic python package installer (`pip` or `easy_install`). 
+My approach for installing Python libraries is to install [Miniconda](http://conda.pydata.org/miniconda.html)
+so that I can use the `conda` package installer. 
+For packages that aren't automatically available using `conda install`, you can search anaconda.org. 
+Almost all packages I use are available from [anaconda.org/IOOS](http://anaconda.org/ioos).
+Failing this, I use the generic python package installer (`pip` or `easy_install`). 
 This approach avoids the need to install things myself from binaries or source code, 
 which is a nightmare and in most cases doesn't work.
 
@@ -35,72 +34,72 @@ which is a nightmare and in most cases doesn't work.
 
 I have installed software on machines that run Ubuntu 12.04 and CentOS 7.
 
-### NCO
+#### NCO
 
 * The Ubuntu Software Centre has NCO,
   which is the equivalent to `apt-get install nco` at the command line.
 * For CentOS run `yum install nco` 
 
-### CDO
+#### CDO
 
 * The Ubuntu Software Centre has CDO,
   which is the equivalent to `apt-get install cdo` at the command line.
 * `yum` doesn't have cdo on CentOS
 
-### Anaconda
+#### Python
 
-* On Ubuntu 12.04 I [downloaded](http://continuum.io/downloads) and ran their Linux-64bit installer.
-  This can be updated via:
+The easiest thing to do is create an `environment.yml` file (like the yml files in this directory)
+and then create a [conda environment](http://conda.pydata.org/docs/using/envs.html) using the following commands:
 
-    $ sudo /usr/local/anaconda/bin/conda update conda
-    $ sudo /usr/local/anaconda/bin/conda update anaconda
+```
+conda env create environment.yml
+source activate environment_name 
 
-* On CentOS in installed [miniconda](http://conda.pydata.org/miniconda.html) instead.
+```
+The `environment.yml` file is just a text file with the environment name, any channels you want to add,
+and the list of the software that will be installed.
+Once you're finished: `source deactivate`
+
+###### Bugs/possible improvements
+
+* You may have to specify the path for `activate`; e.g. `/Users/irv033/miniconda2/bin/activate`
+* Sometimes the file has to be explicitly called `environment.yml` in order to work
+* `$ sudo /usr/local/anaconda/bin/pip install -i https://pypi.anaconda.org/pypi/simple pyqt-fit`
+* On CentOS the miniconda install required some tweaking:
   * To make it work successfully, I first had to run `yum install bzip2`
   * On resbaz.cloud.edu.au I then had to do the following to make the IPython launcher call the conda IPython:
     * `conda install ipython`
     * `conda install ipython-notebook`
     * edit ``/etc/supervisor.d/ipynb.conf` so that it points to the correct ipython
 
-##### Additional libraries
 
-* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/ajdawson windspharm`
-* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/ajdawson eofs`
-* `$ sudo /usr/local/anaconda/bin/conda install -c https://conda.anaconda.org/scitools iris` 
-  * Installs cartopy too
-  * For the latest version: `$ sudo conda install -c http://conda.anaconda.org/ioos iris` 
-* `$ sudo /usr/local/anaconda/bin/conda install xray dask netCDF4 bottleneck`
-* `$ sudo /usr/local/anaconda/bin/pip install gitpython`
-* `$ sudo /usr/local/anaconda/bin/conda install seaborn`
-* `$ sudo /usr/local/anaconda/bin/pip install -i https://pypi.anaconda.org/pypi/simple pyqt-fit`
-
-### UV-CDAT
+#### UV-CDAT
 
 Installed from binaries (which involves installing a whole heap of dependencies) following the 
 instructions [here](https://github.com/UV-CDAT/uvcdat/wiki/Installation-on-Ubuntu)
 
 
-## Mac OS X (10.9 Mavricks)
+## Mac OS X
 
-### NCO
+#### NCO
 
-##### Homebrew
+###### Homebrew
 
 Using Homebrew (the Mac OS X package manager) type:
 
     $ brew tap homebrew/science  
     $ brew install nco
 
-##### Binaries
+###### Binaries
 
 I didn't have any luck installing the most up-to-date binaries 
 (provided as a tarball `.tar.gz` at the [NCO website](http://nco.sourceforge.net/)) 
 but at that site they provided some old DMG files that worked.
 
 
-### CDO
+#### CDO
 
-##### Homebrew
+###### Homebrew
 
 On the [website](https://code.zmaw.de/projects/cdo) it says that CDO can be installed via 
 homebrew (`brew install cdo`) or macports (`port install cdo`). 
@@ -128,7 +127,7 @@ I used `sudo chgrp staff` (and `sudo cdmod q+w` if need be) to fix the relevant 
 and then started the process again with `brew install cdo` until finally the whole thing installed properly.
 Afterwards, @MacHomebrew suggested `sudo chown -R $USER /usr/local` would fix all of the permissions issues.
 
-##### Binaries
+###### Binaries
 
 I then tried to install from binaries 
 (following [these](https://code.zmaw.de/projects/cdo/embedded/1.6.3/cdo.html#x1-50001.1.1)
@@ -144,28 +143,14 @@ So I'd need to install hdf5 first (via binaries),
 then netCDF and hopefully CDO will work, 
 but I haven't tried this.
 
-### Anaconda
+#### Python
 
-[Downloaded](http://continuum.io/downloads) and ran their Mac installer. This can be updated via:
+As per the Linux instructions.
 
-    $ sudo /users/damienirving/anaconda/bin/conda update conda
-    $ sudo /users/damienirving/anaconda/bin/conda update anaconda
-
-##### Additional libraries
-
-Installed:  
-
-* `$ /Users/damienirving/anaconda/bin/conda install -c https://conda.anaconda.org/ioos iris` (installs cartopy too)
-* `$ /Users/damienirving/anaconda/bin/conda install xray dask netCDF4 bottleneck seaborn`
-* `$ /Users/damienirving/anaconda/bin/pip install gitpython`
-* `$ /Users/damienirving/anaconda/bin/pip/install -i https://pypi.anaconda.org/pypi/simple pyqt-fit`
-
-Outstanding (i.e. things I still need to install or can't):  
-
-* windspharm & eofs (not available via anaconda.org - see [this disucssion](https://github.com/ajdawson/windspharm/issues/39))
+Note that any issues with eofs or windspharm on Mac should be noted [here](https://github.com/ajdawson/windspharm/issues/39).
 
 
-### UV-CDAT
+#### UV-CDAT
 
 The simplest option for installing [UV-CDAT](http://uvcdat.llnl.gov/) is to 
 [download](http://sourceforge.net/projects/cdat/files/Releases/UV-CDAT/1.5/) 
@@ -186,12 +171,12 @@ while there are `.dmg` installation files for qt and gfortran at the same
 [place](http://sourceforge.net/projects/cdat/files/Releases/UV-CDAT/1.5/) 
 that you downloaded the UV-CDAT binary file.
 
-##### Extra packages & uodates 
+###### Extra packages & uodates 
 
 * `$ /usr/local/uvcdat/1.5.1/bin/pip install ipython --upgrade`  (because tefault is very old)
 * `$ /usr/local/uvcdat/1.5.1/bin/pip install readline`  (if tab completion isn't working in IPython)
 
-##### Where everything gets installed
+###### Where everything gets installed
 
 Here's what you'll typically enter at the command line to get access to python,
 ipython and the UV-CDAT GUI:
