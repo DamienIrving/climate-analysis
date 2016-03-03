@@ -187,3 +187,8 @@ ipython and the UV-CDAT GUI:
 * `$ /usr/local/uvcdat/1.5.1/bin/python` 
 * `$ /usr/local/uvcdat/1.5.1/Library/Frameworks/Python.framework/Versions/2.7/bin/ipython notebook &`
 * `$ /usr/local/uvcdat/1.5.1/bin/uvcdat`
+
+## CWS Virtual Lab
+
+* `module avail` to find cdo and nco
+* Install miniconda at `/g/data/r87/dbi599/` 
