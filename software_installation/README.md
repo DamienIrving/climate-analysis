@@ -56,11 +56,14 @@ and then create a [conda environment](http://conda.pydata.org/docs/using/envs.ht
 ```
 conda env create environment.yml
 source activate environment_name 
-
 ```
 The `environment.yml` file is just a text file with the environment name, any channels you want to add,
 and the list of the software that will be installed.
-Once you're finished: `source deactivate`
+Once you're finished:   
+
+```
+source deactivate
+```
 
 ###### Bugs/possible improvements
 
@@ -148,7 +151,9 @@ but I haven't tried this.
 
 #### Python
 
-As per the Linux instructions.
+As per the Linux instructions, with the addition of the following commands (or `nco` and `cdo` could be added to the `environment.yml` file):  
+`conda install -c https://conda.anaconda.org/ioos nco`  
+`conda install -c https://conda.anaconda.org/ioos cdo`  
 
 Note that any issues with eofs or windspharm on Mac should be noted [here](https://github.com/ajdawson/windspharm/issues/39).
 
