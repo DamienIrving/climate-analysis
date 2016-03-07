@@ -69,7 +69,6 @@ source deactivate
 
 * You may have to specify the path for `activate`; e.g. `/Users/irv033/miniconda2/bin/activate`
 * Sometimes the file has to be explicitly called `environment.yml` in order to work
-* I've submitted [an issue](https://github.com/ioos/conda-recipes/issues/776) with IOOS in the hope that they'll fix the error with installing NCO and CDO using conda
 * `$ sudo /usr/local/anaconda/bin/pip install -i https://pypi.anaconda.org/pypi/simple pyqt-fit`
 * On CentOS the miniconda install required some tweaking:
   * To make it work successfully, I first had to run `yum install bzip2`
