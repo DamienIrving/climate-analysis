@@ -22,6 +22,7 @@ import numpy
 from scipy import stats
 import pdb, re
 import inspect
+from statsmodels.tsa.stattools import acf
 
 
 def adjust_lon_range(lons, radians=True, start=0.0):
@@ -80,40 +81,33 @@ def apply_lon_filter(data, lon_bounds):
 def calc_significance(data_subset, data_all, standard_name):
     """Perform significance test.
 
-    The approach for the significance test is to compare the mean of the subsetted
-    data with that of the entire data sample via an independent, two-sample,
-    parametric t-test (for details, see Wilks textbook). 
+    Once sample t-test, with sample size adjusted for autocorrelation.
     
-    POSSIBLE ENHANCEMENT: If equal_var=False perform a Welch t-test, which is for samples
-    with unequal variance (early versions of scipy do not have this option). To test whether
-    the variances are equal or not you use an F-test (i.e. do the test at each grid point and
-    then assign equal_var accordingly). If your data is close to normally distributed you can 
-    use the Barlett test (scipy.stats.bartlett), otherwise the Levene test (scipy.stats.levene).
-    http://stackoverflow.com/questions/21494141/how-do-i-do-a-f-test-in-python
-    
-    POSSIBLE ENHANCEMENT: Account for autocorrelation in the data by calculating an effective
-    sample size (see Wilkes, p 147). I can get the autocorrelation using either
-    genutil.autocorrelation or the acf function in the statsmodels time series analysis
-    python library, however I cannot see how to alter the sample size in stats.ttest_ind.
-
-    POSSIBLE ENHANCEMENT: Consider whether a parametric t-test is appropriate. One of my samples
-    might be very non-normally distributed, which means a non-parametric test might be better. 
+    Reference:
+      Zięba, A. (2010). Metrology and Measurement Systems, XVII(1), 3–16
+      doi:10.2478/v10178-010-0001-0
     
     """
 
-#    alpha = 0.05 
-#    w, p_value = scipy.stats.levene(data_included, data_excluded)
-#    if p_value > alpha:
-#        equal_var = False# Reject the null hypothesis that Var(X) == Var(Y)
-#    else:
-#        equal_var = True
+    # Data must be three dimensional, with time first
+    assert len(data_subset.shape) == 3, "Input data must be 3 dimensional"
+    
+    # Define autocorrelation function
+    n = data_subset.shape[0]
+    autocorr_func = numpy.apply_along_axis(acf, 0, data_subset, nlags=n - 2)
+    
+    # Calculate effective sample size (formula from Zieba2010, eq 12)
+    k = numpy.arange(1, n - 1)
+    
+    r_k_sum = ((n - k[:, None, None]) / float(n)) * autocorr_func[1:] 
+    n_eff = float(n) / (1 + 2 * numpy.sum(r_k_sum))
+    
+    # Calculate significance
+    var_x = data_subset.var(axis=0) / n_eff
+    tvals = (data_subset.mean(axis=0) - data_all.mean(axis=0)) / numpy.sqrt(var_x)
+    pvals = stats.t.sf(numpy.abs(tvals), n - 1) * 2  # two-sided pvalue = Prob(abs(t)>tt)
 
-    t, pvals = stats.mstats.ttest_ind(data_subset, data_all, axis=0) # stats.ttest_ind has an equal_var option that mstats does not
-    print 'WARNING: Significance test assumed equal variances'
-
-    size_subset = data_subset.shape[0]
-    size_all = data_all.shape[0]
-    notes = "Two-tailed p-value from standard independent two sample t-test comparing the subsetted data (size=%s) to a sample containing all the data (size=%s)" %(str(size_subset), str(size_all))
+    notes = "One sample t-test, with sample size adjusted for autocorrelation (Zieba2010, eq 12)" 
     pval_atts = {'standard_name': standard_name,
                  'long_name': standard_name,
                  'units': ' ',

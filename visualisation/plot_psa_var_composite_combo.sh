@@ -110,7 +110,7 @@ ${python_exe} ${vis_dir}/plot_map.py 2 3 \
 --infile ${temp_dir}/sf-composite_phase-group1.nc streamfunction_annual none none none contour0 5 PlateCarree \
 --infile ${temp_dir}/sf-composite_phase-group1.nc streamfunction_annual none none none contour0 6 PlateCarree \
 --ofile ${outfile} \
---hatch_bounds 0.0 0.01 \
+--hatch_bounds 0.0 0.05 \
 --hatch_styles bwdlines_tight \
 --contour_levels ${levels} \
 --figure_size 12 11 \
