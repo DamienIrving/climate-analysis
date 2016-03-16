@@ -14,6 +14,7 @@ My preferred setup is as follows:
     * [windspharm](http://ajdawson.github.io/windspharm/)
     * [eofs](http://ajdawson.github.io/eofs/)
     * [pyqt-fit](http://pythonhosted.org/PyQt-Fit/index.html)
+    * [statsmodels](http://statsmodels.sourceforge.net/stable/)
   * Libraries that I might use in future:
     * [cmocean](http://matplotlib.org/cmocean/) 
     * [python-gsw](https://github.com/TEOS-10/python-gsw)
@@ -153,6 +154,7 @@ but I haven't tried this.
 As per the Linux instructions, with the addition of the following commands (or `nco` and `cdo` could be added to the `environment.yml` file):  
 `conda install -c https://conda.anaconda.org/ioos nco`  
 `conda install -c https://conda.anaconda.org/ioos cdo`  
+`conda install -c https://conda.anaconda.org/statsmodels statsmodels`    
 
 Note that any issues with eofs or windspharm on Mac should be noted [here](https://github.com/ajdawson/windspharm/issues/39).
 
