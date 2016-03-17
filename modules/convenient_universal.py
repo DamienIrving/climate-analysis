@@ -81,11 +81,7 @@ def apply_lon_filter(data, lon_bounds):
 def calc_significance(data_subset, data_all, standard_name):
     """Perform significance test.
 
-    Once sample t-test, with sample size adjusted for autocorrelation.
-    
-    Reference:
-      Zieba, A. (2010). Metrology and Measurement Systems, XVII(1), 3–16
-      doi:10.2478/v10178-010-0001-0
+    One sample t-test, with sample size adjusted for autocorrelation.
     
     """
 
