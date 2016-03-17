@@ -84,7 +84,7 @@ def calc_significance(data_subset, data_all, standard_name):
     Once sample t-test, with sample size adjusted for autocorrelation.
     
     Reference:
-      Zięba, A. (2010). Metrology and Measurement Systems, XVII(1), 3–16
+      Zieba, A. (2010). Metrology and Measurement Systems, XVII(1), 3–16
       doi:10.2478/v10178-010-0001-0
     
     """
