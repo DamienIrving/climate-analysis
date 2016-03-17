@@ -70,13 +70,13 @@ for idx in "${!start_phases[@]}"; do
     --date_file ${temp_date_file} --region sh --no_sig
     
     ${python_exe} ${code_dir}/calc_composite.py ${tas_file} tas ${temp_tascomp_file} \
-    --date_file ${temp_date_file} --region sh --no_sig #
+    --date_file ${temp_date_file} --region sh
     
     ${python_exe} ${code_dir}/calc_composite.py ${pr_file} pr ${temp_prcomp_file} \
-    --date_file ${temp_date_file} --region sh --no_sig #
+    --date_file ${temp_date_file} --region sh
     
     ${python_exe} ${code_dir}/calc_composite.py ${sic_file} sic ${temp_siccomp_file} \
-    --date_file ${temp_date_file} --region sh --no_sig #
+    --date_file ${temp_date_file} --region sh
     
     temp_files+=(${temp_date_file} ${temp_sfcomp_file} ${temp_tascomp_file} ${temp_prcomp_file} ${temp_siccomp_file})
 done
