@@ -1,13 +1,14 @@
 # University of Melbourne computing notes
 
-## Help
-
-How to get in touch with IT support: [Science IT service desk](http://ithelp.science.unimelb.edu.au/servicedesk/)
-
 ## Abyss (abyss.earthsci.unimelb.edu.au)
 
-#### Login  
+#### Login: on campus  
 `ssh -Y STUDENT\\dbirving@abyss`
+
+#### Login: off campus
+`ssh -Y STUDENT\\dbirving@abyss.earthsci.unimelb.edu.au` (works sometimes)
+
+Connect to the university VPN first by going to the CISCO AnyConnect Secure Mobility Client and enter the following URL: http://remote.unimelb.edu.au/student. Your computer then acts like you're on campus.
   
 #### Work areas	 
 `/home/dbirving/` (limited memory, for code only)  
@@ -34,9 +35,14 @@ Fortran compiler:
 
 ## Vortex (vortex.earthsci.unimelb.edu.au)
 
-#### Login
+#### Login: on campus
 `ssh -Y STUDENT\\dbirving@vortex`  
-Note that you can't ssh into vortex from an external machine (need to go via abyss or irvingnix)
+
+#### Login: off campus
+
+You can't ssh into vortex from an external machine (i.e. if not using the VPN). Instead, you need to go via abyss.
+
+Connect to the university VPN first by going to the CISCO AnyConnect Secure Mobility Client and enter the following URL: http://remote.unimelb.edu.au/student. Your computer then acts like you're on campus.
 
 #### Work areas  
 `/home/STUDENT/dbirving/` (limited memory, for code only)  
@@ -53,19 +59,3 @@ UV-CDAT install:
 `/usr/local/uvcdat/1.3.0/bin/cdat` (is actually version 1.3.1)
 
 			
-## Data compute cloud (dcc.nci.org.au)
- 
-#### Login
-`ssh -X dbi599@dcc.nci.org.au`
-
-
-## Desktop (irvingnix.earthsci.unimelb.edu.au)
-
-Operating system: Ubuntu 14.04, 64-bit (it's Debian based)  
-Memory (RAM): 2GB  
-I have sudo admin access, so I need to type 'sudo' at the command line before any admin commands. e.g. sudo apt-get install git-core
-
-
-## ACCESS
-
-Initially apply for an NCI start up account (500 free hours to play around). Permanent access could be obtained via the UniMelb allocation or the CoECSS allocation (that would require getting aligned with the CoECSS somehow). Mike Rezny said that his team at the CoE would help me with running the ACCESS model, even if I wasn't CoECSS aligned. Apparently running the atmosphere part of the model is really easy. The coupled model is a bit of a nightmare.
