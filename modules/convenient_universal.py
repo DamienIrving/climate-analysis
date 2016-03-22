@@ -83,6 +83,9 @@ def calc_significance(data_subset, data_all, standard_name):
 
     One sample t-test, with sample size adjusted for autocorrelation.
     
+    Reference:
+      Zieba (2010). doi:10.2478/v10178-010-0001-0
+    
     """
 
     # Data must be three dimensional, with time first
@@ -96,7 +99,7 @@ def calc_significance(data_subset, data_all, standard_name):
     k = numpy.arange(1, n - 1)
     
     r_k_sum = ((n - k[:, None, None]) / float(n)) * autocorr_func[1:] 
-    n_eff = float(n) / (1 + 2 * numpy.sum(r_k_sum))
+    n_eff = float(n) / (1 + 2 * r_k_sum.sum(axis=0))
     
     # Calculate significance
     var_x = data_subset.var(axis=0) / n_eff

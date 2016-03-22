@@ -34,8 +34,7 @@ except ImportError:
 
 # Define functions
 
-season_months = {'annual': None, 'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 
-                 'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
+season_months = {'annual': None, 'DJF': (12, 1, 2), 'MAM': (3, 4, 5), 'JJA': (6, 7, 8), 'SON': (9, 10, 11)}
 
 def get_datetimes(darray, date_file):
     """Generate a list of datetimes common to darray and date_file."""
