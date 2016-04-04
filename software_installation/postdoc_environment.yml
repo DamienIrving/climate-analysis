@@ -10,6 +10,9 @@ dependencies:
     - pandas
     - scipy
     - seaborn
-    - xray    
+    - xarray
+    - dask
+    - bottleneck
+    - netCDF4    
     - pip:
       - gitpython
