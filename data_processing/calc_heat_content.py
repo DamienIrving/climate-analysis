@@ -10,8 +10,7 @@ Description:  Calculate heat content
 import sys, os, pdb
 import argparse
 import numpy
-import xray
-from scipy import integrate
+import iris
 
 # Import my modules
 
@@ -33,53 +32,75 @@ except ImportError:
 
 # Define functions
 
-def extract_data(dset, inargs):
-    """Extract the data from the input file."""
+def simple_integration(vert_vector, level_steps):
+    """Perform vertical integration for a single lat/lon/time point."""
+    
+    areas = vert_vector * level_steps
+    
+    return areas.sum()
 
-    subset_dict = gio.get_subset_kwargs(inargs)
-    darray = dset[inargs.var].sel(**subset_dict)
 
-    assert darray.dims[1] == 'lev', \
-    'Script is setup to integrate vertically, with level as second coordinate (e.g. time, lev, lat, lon)'
-
-    return darray
+def vertical_constraint(top_level, bottom_level):
+    """Define vertical constraint for cube data loading."""
+    
+    if top_level and bottom_level:
+        level_subset = lambda cell: bottom_level <= cell <= top_level
+        level_constraint = iris.Constraint(depth=level_subset)
+    elif bottom_level:
+        level_subset = lambda cell: cell >= bottom_level
+        level_constraint = iris.Constraint(depth=level_subset)
+    elif top_level:
+        level_subset = lambda cell: cell <= top_level    
+        level_constraint = iris.Constraint(depth=level_subset)
+    else:
+        level_constraint = iris.Constraint()
+    
+    return level_constraint
 
 
 def main(inargs):
     """Run the program."""
     
     # Read the data
-    dset_in = xray.open_dataset(inargs.infile)
-    gio.check_xrayDataset(dset_in, inargs.var)
-    darray = extract_data(dset_in, inargs)
-
-    # Integrate vertically
-    t_int = integrate.simps(darray.values, x=darray['lev'].values, axis=1)
     
-    # Multiply by density and heat capacity
-    # Multiple by the area of the grid cells (wondering if Iris grid areas will work?)
+    level_subset = vertical_constraint(inargs.top_level, inargs.bottom_level)
+    with iris.FUTURE.context(cell_datetime_objects=True):
+        cube = iris.load_cube(inargs.infile, inargs.long_var & level_subset)
 
-    #import iris.analysis.cartography
-    #cube.coord('grid_latitude').guess_bounds()
-    #cube.coord('grid_longitude').guess_bounds()
-    #grid_areas = iris.analysis.cartography.area_weights(cube)
+    coord_names = [coord.name() for coord in cube.coords]
+    assert coord_names == ['time', 'depth', 'latitude', 'longitude']
 
-        
+    time_coord = cube.coord('time')
+    lat_coord = cube.coord('latitude')
+    lon_coord = cube.coord('longitude')
+
+    lev_bounds = cube.coord('depth').bounds
+    #if no bounds: cube.coord('latitude').guess_bounds()
+    lev_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, lev_bounds)
+      
+    # Integrate vertically      
+    ohc_per_m2 = numpy.ma.apply_along_axis(simple_integration, 1, cube.data, lev_diffs)
+    #might want to divide by 10^9
+      
     # Write the output file
-#    d = {}
-#    for dim in dims:
-#        d[dim] = darray[dim]
+    
+    d = {}
+    d['time'] = ('time', time_coord.points)
+    d['latitude'] = ('latitude', lat_coord.points)
+    d['longitude'] = ('longitude', lon_coord.points)
+    d['ohc'] = (['time', 'latitude', 'longitude'], ohc_per_m2.data)
 
-#    for outvar in outdata_dict.keys(): 
-#        d[outvar] = (dims, outdata_dict[outvar][0])
+    dset_out = xray.Dataset(d)
+    dset_out['ohc'].attrs =   {'standard_name': 'ocean_heat_content',
+                               'long_name': 'ocean_heat_content',
+                               'units': 'J m-2',
+                               'notes': 'OHC integrated over ' %(np_lat, np_lon)}  # FIXME
+    gio.set_dim_atts(dset_out, str(time_coord.units))
 
-#    dset_out = xray.Dataset(d)
+    outfile_metadata = {inargs.infile: cube.attributes['history']}
 
-#    for outvar in outdata_dict.keys(): 
-#        dset_out[outvar].attrs = outdata_dict[outvar][1]
-
-#    gio.set_global_atts(dset_out, dset_in.attrs, {inargs.infile: dset_in.attrs['history'],})
-#    dset_out.to_netcdf(inargs.outfile)
+    gio.set_global_atts(dset_out, cube.attributes, outfile_metadata)
+    dset_out.to_netcdf(inargs.outfile,) #format='NETCDF3_CLASSIC')
 
 
 if __name__ == '__main__':
@@ -102,12 +123,17 @@ references:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("infile", type=str, help="Input file name")
-    parser.add_argument("var", type=str, help="Input file variable")
+    parser.add_argument("long_var", type=str, help="Input file variable (the standard or long name)")
     parser.add_argument("outfile", type=str, help="Output file name")
+    
+    parser.add_argument("--top_level", type=float, default=None,
+                        help="Only include data below this vertical level")
+    parser.add_argument("--bottom_level", type=float, default=None,
+                        help="Only include data above this vertical level")
     
     args = parser.parse_args()            
 
-    print 'Input files: ', args.infile
+    print 'Input file: ', args.infile
     print 'Output file: ', args.outfile  
 
     main(args)
