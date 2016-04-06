@@ -11,6 +11,7 @@ import sys, os, pdb
 import argparse
 import numpy
 import iris
+import xray
 
 # Import my modules
 
@@ -55,17 +56,17 @@ def domain_text(level_axis, user_top, user_bottom):
     return level_text
         
 
-def vertical_constraint(top_level, bottom_level):
+def vertical_constraint(min_depth, max_depth):
     """Define vertical constraint for cube data loading."""
     
-    if top_level and bottom_level:
-        level_subset = lambda cell: bottom_level <= cell <= top_level
+    if min_depth and max_depth:
+        level_subset = lambda cell: max_depth <= cell <= min_depth
         level_constraint = iris.Constraint(depth=level_subset)
-    elif bottom_level:
-        level_subset = lambda cell: cell >= bottom_level
+    elif max_depth:
+        level_subset = lambda cell: cell <= max_depth
         level_constraint = iris.Constraint(depth=level_subset)
-    elif top_level:
-        level_subset = lambda cell: cell <= top_level    
+    elif min_depth:
+        level_subset = lambda cell: cell >= min_depth    
         level_constraint = iris.Constraint(depth=level_subset)
     else:
         level_constraint = iris.Constraint()
@@ -78,12 +79,13 @@ def main(inargs):
     
     # Read the data
     
-    level_subset = vertical_constraint(inargs.top_level, inargs.bottom_level)
+    level_subset = vertical_constraint(inargs.min_depth, inargs.max_depth)
     with iris.FUTURE.context(cell_datetime_objects=True):
         cube = iris.load_cube(inargs.infile, inargs.long_var & level_subset)
 
-    coord_names = [coord.name() for coord in cube.coords]
-    assert coord_names == ['time', 'depth', 'latitude', 'longitude']
+    coord_names = [coord.name() for coord in cube.coords()]
+    assert coord_names == ['time', 'depth', 'latitude', 'longitude'], \
+    "Script expects the CMIP standard_names for dimensions in the order time, depth, latitude, longitude"
 
     time_coord = cube.coord('time')
     lat_coord = cube.coord('latitude')
@@ -107,8 +109,8 @@ def main(inargs):
 
     dset_out = xray.Dataset(d)
     notes_text = 'OHC integrated over %s' %(domain_text(lev_coord.points, 
-                                                        inargs.top_level,
-                                                        inargs.bottom_level))
+                                                        inargs.min_depth,
+                                                        inargs.max_depth))
     dset_out['ohc'].attrs =   {'standard_name': 'ocean_heat_content',
                                'long_name': 'ocean_heat_content',
                                'units': '10^%d J m-2' %(inargs.scaling),
@@ -130,7 +132,7 @@ author:
     Damien Irving, irving.damien@gmail.com
 notes:
     The default density and specific heat of seawater are from:
-    Hobbs et al (2016). Journal of Climate, 29(5), 1639–1653. doi:10.1175/JCLI-D-15-0477.1
+    Hobbs et al (2016). Journal of Climate, 29(5), 1639-1653. doi:10.1175/JCLI-D-15-0477.1
 
 """
 
@@ -144,9 +146,9 @@ notes:
     parser.add_argument("long_var", type=str, help="Input file variable (the standard or long name)")
     parser.add_argument("outfile", type=str, help="Output file name")
     
-    parser.add_argument("--top_level", type=float, default=None,
+    parser.add_argument("--min_depth", type=float, default=None,
                         help="Only include data below this vertical level")
-    parser.add_argument("--bottom_level", type=float, default=None,
+    parser.add_argument("--max_depth", type=float, default=None,
                         help="Only include data above this vertical level")
     
     parser.add_argument("--density", type=float, default=1023,
