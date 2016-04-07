@@ -60,7 +60,7 @@ def vertical_constraint(min_depth, max_depth):
     """Define vertical constraint for cube data loading."""
     
     if min_depth and max_depth:
-        level_subset = lambda cell: max_depth <= cell <= min_depth
+        level_subset = lambda cell: min_depth <= cell <= max_depth
         level_constraint = iris.Constraint(depth=level_subset)
     elif max_depth:
         level_subset = lambda cell: cell <= max_depth
@@ -95,10 +95,10 @@ def main(inargs):
     lev_bounds = cube.coord('depth').bounds
     #if no bounds: cube.coord('latitude').guess_bounds()
     lev_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, lev_bounds)
-      
+
     # Integrate vertically      
     integral = numpy.ma.apply_along_axis(simple_integration, 1, cube.data, lev_diffs)
-    ohc_per_m2 = (integral * inargs.density * inargs.specific_heat) / (10^inargs.scaling)
+    ohc_per_m2 = (integral * inargs.density * inargs.specific_heat) / (10**inargs.scaling)
       
     # Write the output file
     d = {}
@@ -156,7 +156,7 @@ notes:
     parser.add_argument("--specific_heat", type=float, default=4000,
                         help="Specific heat of seawater (in J / kg.K). Default of 4000 J/kg.K from Hobbs2016")
     
-    parser.add_argument("--scaling", type=int, default=9,
+    parser.add_argument("--scaling", type=int, default=12,
                         help="Factor by which to scale heat content (default value of 9 gives units of 10^9 J m-2)")
     
     args = parser.parse_args()            
