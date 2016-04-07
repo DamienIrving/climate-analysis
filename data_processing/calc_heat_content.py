@@ -105,7 +105,7 @@ def main(inargs):
     d['time'] = ('time', time_coord.points)
     d['latitude'] = ('latitude', lat_coord.points)
     d['longitude'] = ('longitude', lon_coord.points)
-    d['ohc'] = (['time', 'latitude', 'longitude'], ohc_per_m2.data)
+    d['ohc'] = (['time', 'latitude', 'longitude'], ohc_per_m2)
 
     dset_out = xray.Dataset(d)
     notes_text = 'OHC integrated over %s' %(domain_text(lev_coord.points, 
@@ -114,12 +114,14 @@ def main(inargs):
     dset_out['ohc'].attrs =   {'standard_name': 'ocean_heat_content',
                                'long_name': 'ocean_heat_content',
                                'units': '10^%d J m-2' %(inargs.scaling),
+                               'missing_value': ohc_per_m2.fill_value,
                                'notes': notes_text} 
     gio.set_dim_atts(dset_out, str(time_coord.units))
 
     outfile_metadata = {inargs.infile: cube.attributes['history']}
 
     gio.set_global_atts(dset_out, cube.attributes, outfile_metadata)
+    dset_out['ohc'].encoding['_FillValue'] = ohc_per_m2.fill_value
     dset_out.to_netcdf(inargs.outfile,) #format='NETCDF3_CLASSIC')
 
 
