@@ -1,7 +1,7 @@
 """
 Filename:     calc_heat_content.py
 Author:       Damien Irving, irving.damien@gmail.com
-Description:  Calculate heat content
+Description:  Calculate total heat content
 
 """
 
@@ -11,7 +11,6 @@ import sys, os, pdb
 import argparse
 import numpy
 import iris
-import xray
 
 # Import my modules
 
@@ -32,14 +31,6 @@ except ImportError:
 
 
 # Define functions
-
-def simple_integration(vert_vector, level_steps):
-    """Perform vertical integration for a single lat/lon/time point."""
-    
-    areas = vert_vector * level_steps
-    
-    return areas.sum()
-
 
 def domain_text(level_axis, user_top, user_bottom):
     """Text describing the vertical bounds over which the integration was performed."""
@@ -74,6 +65,40 @@ def vertical_constraint(min_depth, max_depth):
     return level_constraint
 
 
+def region_mask(data_mask, latitudes, north_bound, south_bound, invert=False):
+    """Create mask for excluding points not in region of interest.
+
+    False corresponds to points that are not masked.
+
+    Args:
+      data_mask: The mask corresponding to the original data
+      latitude: Latitude axis
+      invert: If true, invert the latitude bounds matching so that
+        points outside the region are included 
+    """
+
+    if invert:
+        test_north = latitudes < north_bound
+        test_south = latitudes > south_bound
+    else:
+        test_north = latitudes > north_bound
+        test_south = latitudes < south_bound
+
+    combo = data_mask + test_north[numpy.newaxis, numpy.newaxis, ...] + test_south[numpy.newaxis, numpy.newaxis, ...]
+    mask = numpy.where(combo == 0, 0, 1)
+
+    return mask    
+
+
+def heat_content(TdV_data, mask, density, cp):
+    """Calculate the heat content for each timestep."""
+
+    TdV_data.mask = mask    # do I need to create a copy here to avoid function leakage??
+    TdV_sum = TdV_data.sum(axis=(1,2,3))
+
+    return TdV_sum * density * cp  
+
+
 def main(inargs):
     """Run the program."""
     
@@ -81,40 +106,35 @@ def main(inargs):
     
     level_subset = vertical_constraint(inargs.min_depth, inargs.max_depth)
     with iris.FUTURE.context(cell_datetime_objects=True):
-        cube = iris.load_cube(inargs.infile, inargs.long_var & level_subset)
+        temperature_cube = iris.load_cube(inargs.temperature_file, inargs.temperature_var & level_subset)
+        volume_cube = iris.load_cube(inargs.volume_file, inargs.volume_var)
 
-    coord_names = [coord.name() for coord in cube.coords()]
-    assert coord_names == ['time', 'depth', 'latitude', 'longitude'], \
-    "Script expects the CMIP standard_names for dimensions in the order time, depth, latitude, longitude"
+    coord_names = [coord.name() for coord in temperature_cube.coords()]
+    assert coord_names[0] == 'time', "First axis must be time"
 
-    time_coord = cube.coord('time')
-    lat_coord = cube.coord('latitude')
-    lon_coord = cube.coord('longitude')
-    lev_coord = cube.coord('depth')
+    time_coord = temperature_cube.coord('time') 
+    lat_coord = temperature_cube.coord('latitude').points
 
-    lev_bounds = cube.coord('depth').bounds
-    #if no bounds: cube.coord('latitude').guess_bounds()
-    lev_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, lev_bounds)
+    TdV = temperature_cube.data * volume_cube.data[numpy.newaxis, ...]
+    in_region = region_mask(TdV.mask, lat_coord, inargs.lat_bounds[0], inargs.lat_bounds[1])
+    out_region = region_mask(TdV.mask, lat_coord, inargs.lat_bounds[0], inargs.lat_bounds[1], invert=True)
 
-    # Integrate vertically      
-    integral = numpy.ma.apply_along_axis(simple_integration, 1, cube.data, lev_diffs)
-    ohc_per_m2 = (integral * inargs.density * inargs.specific_heat) / (10**inargs.scaling)
+    in_ohc = heat_content(TdV, in_region, inargs.density, inargs.specific_heat)
+    out_ohc = heat_content(TdV, out_region, inargs.density, inargs.specific_heat)
+
+    pdb.set_trace()
+
       
     # Write the output file
-    out_cube = iris.cube.Cube(integral,
-                              standard_name='ocean_heat_content',
-                              long_name='ocean heat content',
-                              var_name='ohc',
-                              units='J',
-                              attributes=cube.attributes,
-                              dim_coords_and_dims=[(coords[0], 0), (coords[2], 1), (coords[3], 2)],
-                              aux_coords_and_dims=[(aux_coords[0], [1, 2]), (aux_coords[1], [1, 2])],
-                         )
-
-
-
-
-
+    #out_cube = iris.cube.Cube(integral,
+    #                      standard_name='ocean_heat_content',
+    #                      long_name='ocean heat content',
+    #                      var_name='ohc',
+    #                      units='J m-2',
+    #                      attributes=cube.attributes,
+    #                      dim_coords_and_dims=[(coords[0], 0), (coords[2], 1), (coords[3], 2)],
+    #                      aux_coords_and_dims=[(aux_coords[0], [1, 2]), (aux_coords[1], [1, 2])],
+    #                     )
 #    notes_text = 'OHC integrated over %s' %(domain_text(lev_coord.points, 
 #                                                        inargs.min_depth,
 #                                                        inargs.max_depth))
@@ -123,8 +143,6 @@ def main(inargs):
 #                               'units': '10^%d J m-2' %(inargs.scaling),
 #                               'missing_value': ohc_per_m2.fill_value,
 #                               'notes': notes_text} 
-
-
 
 if __name__ == '__main__':
 
@@ -139,14 +157,16 @@ notes:
 
 """
 
-    description='Calculate ocean heat content for a region of interest'
+    description='Calculate the total ocean heat content for a region of interest'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infile", type=str, help="Input file name")
-    parser.add_argument("long_var", type=str, help="Input file variable (the standard or long name)")
+    parser.add_argument("temperature_file", type=str, help="Input temperature data file")
+    parser.add_argument("temperature_var", type=str, help="Input temperature variable name (i.e. the standard_name)")
+    parser.add_argument("volume_file", type=str, help="Input volume data file")
+    parser.add_argument("volume_var", type=str, help="Input volume variable name (i.e. the standard_name)")
     parser.add_argument("outfile", type=str, help="Output file name")
     
     parser.add_argument("--min_depth", type=float, default=None,
@@ -166,8 +186,5 @@ notes:
                         help="Factor by which to scale heat content (default value of 9 gives units of 10^9 J m-2)")
     
     args = parser.parse_args()            
-
-    print 'Input file: ', args.infile
-    print 'Output file: ', args.outfile  
 
     main(args)
