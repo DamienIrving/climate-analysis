@@ -64,6 +64,7 @@ def vertical_constraint(min_depth, max_depth):
     
     return level_constraint
 
+
 def in_flag(lat_value, south_bound, north_bound):
     """Determine if a point is in the region of interest.
    
@@ -85,9 +86,12 @@ def region_mask(data_mask, latitudes, south_bound, north_bound, invert=False):
 
     Args:
       data_mask: The mask corresponding to the original data
-      latitude: Latitude axis
+      latitudes: Latitude axis
+      south_bound: Southern boundary of region of interest
+      north_bound: Northern boundary of region of interest 
       invert: If true, invert the latitude bounds matching so that
         points outside the region are included 
+
     """
 
     vin_flag = numpy.vectorize(in_flag)
@@ -95,18 +99,27 @@ def region_mask(data_mask, latitudes, south_bound, north_bound, invert=False):
     if invert:
         in_region = numpy.logical_not(in_region)
 
-    mask = data_mask + in_region[numpy.newaxis, numpy.newaxis, ...]
+    if len(latitudes.shape) == 1:
+        in_region = in_region[numpy.newaxis, numpy.newaxis, numpy.newaxis, ...]
+    elif len(latitudes.shape) == 2:
+        in_region = in_region[numpy.newaxis, numpy.newaxis, ...]
+    else:
+        raise ValueError('Latitude dimension must be 1D or 2D')
+
+    mask = data_mask + in_region
 
     return mask    
 
 
-def heat_content(TdV_data, mask, density, cp):
+def heat_content(TdV_data, mask, density, cp, scale_factor):
     """Calculate the heat content for each timestep."""
 
-    TdV_data.mask = mask    # do I need to create a copy here to avoid function leakage??
+    TdV_data.mask = mask
     TdV_sum = TdV_data.sum(axis=(1,2,3))
 
-    return TdV_sum * density * cp  
+    result = (TdV_sum * density * cp) / eval('1e+%i' %(scale_factor))
+
+    return result
 
 
 def main(inargs):
@@ -121,37 +134,64 @@ def main(inargs):
 
     coord_names = [coord.name() for coord in temperature_cube.coords()]
     assert coord_names[0] == 'time', "First axis must be time"
+    assert len(temperature_cube.data.shape) == 4, "Script expects 4D input data"
 
     time_coord = temperature_cube.coord('time') 
-    lat_coord = temperature_cube.coord('latitude').points
-    lon_coord = temperature_cube.coord('longitude').points
+    lev_coord = temperature_cube.coord('depth')
+    lat_coord = temperature_cube.coord('latitude')
+
+    # Calculate the heat content
 
     TdV = temperature_cube.data * volume_cube.data[numpy.newaxis, ...]
 
-    in_region = region_mask(TdV.mask, lat_coord, inargs.lat_bounds[0], inargs.lat_bounds[1])
-    out_region = region_mask(TdV.mask, lat_coord, inargs.lat_bounds[0], inargs.lat_bounds[1], invert=True)
+    south_lat, north_lat = inargs.lat_bounds
+    in_region = region_mask(TdV.mask, lat_coord.points, south_lat, north_lat)
+    out_region = region_mask(TdV.mask, lat_coord.points, south_lat, north_lat, invert=True)
 
-    in_ohc = heat_content(TdV.copy(), in_region, inargs.density, inargs.specific_heat)
-    out_ohc = heat_content(TdV.copy(), out_region, inargs.density, inargs.specific_heat) 
+    ohc_in = heat_content(TdV.copy(), in_region, inargs.density, inargs.specific_heat, inargs.scaling)
+    ohc_out = heat_content(TdV.copy(), out_region, inargs.density, inargs.specific_heat, inargs.scaling) 
+
+    # Get all the metadata
+
+    units = '10^%d J m-2' %(inargs.scaling)
+
+    depth_text = 'OHC integrated over %s' %(domain_text(lev_coord.points, inargs.min_depth, inargs.max_depth))
+    temperature_cube.attributes['depth_bounds'] = depth_text
+
+    region_text = 'Region of interest: south lat = %f to north lat = %f' %(south_lat, north_lat) 
+    temperature_cube.attributes['region_of_interest'] = region_text
+
+    infile_history = {inargs.temperature_file: temperature_cube.attributes['history'],
+                      inargs.volume_file: volume_cube.attributes['history']}
+    temperature_cube.attributes['history'] = gio.write_metadata(file_info=infile_history)
 
     # Write the output file
-    #out_cube = iris.cube.Cube(integral,
-    #                      standard_name='ocean_heat_content',
-    #                      long_name='ocean heat content',
-    #                      var_name='ohc',
-    #                      units='J m-2',
-    #                      attributes=cube.attributes,
-    #                      dim_coords_and_dims=[(coords[0], 0), (coords[2], 1), (coords[3], 2)],
-    #                      aux_coords_and_dims=[(aux_coords[0], [1, 2]), (aux_coords[1], [1, 2])],
-    #                     )
-#    notes_text = 'OHC integrated over %s' %(domain_text(lev_coord.points, 
-#                                                        inargs.min_depth,
-#                                                        inargs.max_depth))
-#    dset_out['ohc'].attrs =   {'standard_name': 'ocean_heat_content',
-#                               'long_name': 'ocean_heat_content',
-#                               'units': '10^%d J m-2' %(inargs.scaling),
-#                               'missing_value': ohc_per_m2.fill_value,
-#                               'notes': notes_text} 
+
+    iris.std_names.STD_NAMES['ocean_heat_content_in'] = {'canonical_units': units}
+    ohc_in_cube = iris.cube.Cube(ohc_in,
+                                 standard_name='ocean_heat_content_in',
+                                 long_name='ocean heat content within region of interest',
+                                 var_name='ohc_in',
+                                 units=units,
+                                 attributes=temperature_cube.attributes,
+                                 dim_coords_and_dims=[(time_coord, 0)],
+                                 )
+
+    iris.std_names.STD_NAMES['ocean_heat_content_out'] = {'canonical_units': units}
+    ohc_out_cube = iris.cube.Cube(ohc_out,
+                                  standard_name='ocean_heat_content_out',
+                                  long_name='ocean heat content outside region of interest',
+                                  var_name='ohc_out',
+                                  units=units,
+                                  attributes=temperature_cube.attributes,
+                                  dim_coords_and_dims=[(time_coord, 0)],
+                                  )
+
+    cube_list = iris.cube.CubeList([ohc_in_cube, ohc_out_cube])
+    out_cube = cube_list.concatenate()
+
+    iris.save(out_cube, inargs.outfile)
+
 
 if __name__ == '__main__':
 
@@ -191,8 +231,8 @@ notes:
     parser.add_argument("--specific_heat", type=float, default=4000,
                         help="Specific heat of seawater (in J / kg.K). Default of 4000 J/kg.K from Hobbs2016")
     
-    parser.add_argument("--scaling", type=int, default=12,
-                        help="Factor by which to scale heat content (default value of 9 gives units of 10^9 J m-2)")
+    parser.add_argument("--scaling", type=int, default=22,
+                        help="Factor by which to scale heat content (default value of 22 gives units of 10^22 J m-2)")
     
     args = parser.parse_args()            
 
