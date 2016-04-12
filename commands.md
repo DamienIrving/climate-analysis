@@ -1,5 +1,7 @@
 # Common commands
 
+### Command line
+
 | Task   | Command  |
 | :----- | :------  |
 | Remove directory | `rm -r -f` |
@@ -18,15 +20,22 @@
 | Search for patterns in file | `grep -r 'word' *` |
 |                             | `-r` (look through all directories under the current |
 | Search for file names | `find . -name *.txt` |
-| Python debugger | `python -m pdb script.py` |
-|                 | `c` continue until crash |
-|                 | `s` step |
-|                 | `n` next | 
 | Cygwin          | `startx` |
 |                 | `ssh -Y STUDENT\\dbirving@abyss` |
 | Secure copy     | `scp {remote file} {local file destination}` |
 |                 | e.g. `scp STUDENT\\dbirving@abyss:~/directory/script.py .` |
 | Remove netCDF attribute | `ncatted -O -a missing_value,var,d,,` |
+
+### Python
+
+| Task   | Command  |
+| :----- | :------  |
+| Python debugger | `python -m pdb script.py` |
+|                 | `c` continue until crash |
+|                 | `s` step |
+|                 | `n` next | 
+| Expand dimension | `old_array = old_array[numpy.newaxis, ...]` |
+|                  | `numpy.repeat(old_array, x_times, axis=0)`  |
 
 ### Installing Python stuff
 
@@ -43,7 +52,6 @@ There are essentially 3 ways to install things (see this [blog post](https://liv
    `sudo python setup.py install -cython`  
 
 ### Textwrangler
-
 
 * Change font size (zoom doesn't work): View => text display => show fonts
 * Replace tabs with spaces: Text => Detab
