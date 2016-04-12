@@ -64,8 +64,21 @@ def vertical_constraint(min_depth, max_depth):
     
     return level_constraint
 
+def in_flag(lat_value, south_bound, north_bound):
+    """Determine if a point is in the region of interest.
+   
+    Returns false for points that are included (because they don't need
+      to be masked)
 
-def region_mask(data_mask, latitudes, north_bound, south_bound, invert=False):
+    """
+
+    if lat_value < north_bound and lat_value > south_bound:
+        return False
+    else:
+        return True 
+        
+
+def region_mask(data_mask, latitudes, south_bound, north_bound, invert=False):
     """Create mask for excluding points not in region of interest.
 
     False corresponds to points that are not masked.
@@ -77,15 +90,12 @@ def region_mask(data_mask, latitudes, north_bound, south_bound, invert=False):
         points outside the region are included 
     """
 
+    vin_flag = numpy.vectorize(in_flag)
+    in_region = vin_flag(latitudes, south_bound, north_bound)
     if invert:
-        test_north = latitudes < north_bound
-        test_south = latitudes > south_bound
-    else:
-        test_north = latitudes > north_bound
-        test_south = latitudes < south_bound
+        in_region = numpy.logical_not(in_region)
 
-    combo = data_mask + test_north[numpy.newaxis, numpy.newaxis, ...] + test_south[numpy.newaxis, numpy.newaxis, ...]
-    mask = numpy.where(combo == 0, 0, 1)
+    mask = data_mask + in_region[numpy.newaxis, numpy.newaxis, ...]
 
     return mask    
 
@@ -107,24 +117,23 @@ def main(inargs):
     level_subset = vertical_constraint(inargs.min_depth, inargs.max_depth)
     with iris.FUTURE.context(cell_datetime_objects=True):
         temperature_cube = iris.load_cube(inargs.temperature_file, inargs.temperature_var & level_subset)
-        volume_cube = iris.load_cube(inargs.volume_file, inargs.volume_var)
+        volume_cube = iris.load_cube(inargs.volume_file, inargs.volume_var & level_subset)
 
     coord_names = [coord.name() for coord in temperature_cube.coords()]
     assert coord_names[0] == 'time', "First axis must be time"
 
     time_coord = temperature_cube.coord('time') 
     lat_coord = temperature_cube.coord('latitude').points
+    lon_coord = temperature_cube.coord('longitude').points
 
     TdV = temperature_cube.data * volume_cube.data[numpy.newaxis, ...]
+
     in_region = region_mask(TdV.mask, lat_coord, inargs.lat_bounds[0], inargs.lat_bounds[1])
     out_region = region_mask(TdV.mask, lat_coord, inargs.lat_bounds[0], inargs.lat_bounds[1], invert=True)
 
-    in_ohc = heat_content(TdV, in_region, inargs.density, inargs.specific_heat)
-    out_ohc = heat_content(TdV, out_region, inargs.density, inargs.specific_heat)
+    in_ohc = heat_content(TdV.copy(), in_region, inargs.density, inargs.specific_heat)
+    out_ohc = heat_content(TdV.copy(), out_region, inargs.density, inargs.specific_heat) 
 
-    pdb.set_trace()
-
-      
     # Write the output file
     #out_cube = iris.cube.Cube(integral,
     #                      standard_name='ocean_heat_content',
