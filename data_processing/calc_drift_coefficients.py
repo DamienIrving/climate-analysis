@@ -35,11 +35,12 @@ except ImportError:
 # Define functions
 
 def polyfit(data):
-    
+    """Fit polynomial to data."""    
+
     if data[0] == missing_value:
-        return numpy.array([missing_value]*4)[:, None, None]
+        return numpy.array([missing_value]*4)[:, None, None, None]
     else:    
-        return numpy.polyfit(time_axis, data.squeeze(), 3)[:, None, None] 
+        return numpy.polynomial.polynomial.polyfit(time_axis, data.squeeze(), 3)[:, None, None, None] 
 
 
 def main(inargs):
@@ -58,9 +59,11 @@ def main(inargs):
     # Chunk
     dset_rechunked = dset.chunk({'time': ntimes, 'lev' : 1, 'lat' : 1, 'lon' : 1})
     darray = dset_rechunked[inargs.var].data
-    
+    #darray = dset[inargs.var].values
+
     # Calculate coefficients for cubic polynomial
-    coefficients = darray.map_blocks(polyfit, chunks=(4,1,1,1))
+    coefficients = darray.map_blocks(polyfit, chunks=(ntimes, 1, 1, 1))
+    #coefficients = numpy.apply_along_axis(polyfit, 0, darray) 
 
     # Write the output file
     dims = dset[inargs.var].dims[1:]
@@ -81,7 +84,7 @@ def main(inargs):
         dset_out[outvar].attrs['units'] = ' '
         dset_out[outvar].encoding['_FillValue'] = missing_value
 
-    dset.attrs['polynomial'] = 'ax^3 + bx^2 + cx + d'
+    dset.attrs['polynomial'] = 'a + bx + cx^2 + dx^3'
     gio.set_global_atts(dset_out, dset.attrs, {inargs.infiles[-1]: dset.attrs['history'],})
 
     dset_out.to_netcdf(inargs.outfile)
