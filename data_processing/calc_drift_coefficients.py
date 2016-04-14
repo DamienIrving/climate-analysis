@@ -38,9 +38,11 @@ def polyfit(data):
     """Fit polynomial to data."""    
 
     if data[0] == missing_value:
-        return numpy.array([missing_value]*4)[:, None, None, None]
+        #return numpy.array([missing_value]*4)[:, None, None, None]
+        return numpy.array([missing_value]*4)
     else:    
-        return numpy.polynomial.polynomial.polyfit(time_axis, data.squeeze(), 3)[:, None, None, None] 
+        #return numpy.polynomial.polynomial.polyfit(time_axis, data.squeeze(), 3)[:, None, None, None] 
+        return numpy.polynomial.polynomial.polyfit(time_axis, data.squeeze(), 3)
 
 
 def main(inargs):
@@ -57,13 +59,13 @@ def main(inargs):
     missing_value = dset[inargs.var].missing_value
 
     # Chunk
-    dset_rechunked = dset.chunk({'time': ntimes, 'lev' : 1, 'lat' : 1, 'lon' : 1})
-    darray = dset_rechunked[inargs.var].data
-    #darray = dset[inargs.var].values
+    #dset_rechunked = dset.chunk({'time': ntimes, 'lev' : 1, 'lat' : 1, 'lon' : 1})
+    #darray = dset_rechunked[inargs.var].data
+    darray = dset[inargs.var].values
 
     # Calculate coefficients for cubic polynomial
-    coefficients = darray.map_blocks(polyfit, chunks=(ntimes, 1, 1, 1))
-    #coefficients = numpy.apply_along_axis(polyfit, 0, darray) 
+    #coefficients = darray.map_blocks(polyfit, chunks=(ntimes, 1, 1, 1))
+    coefficients = numpy.apply_along_axis(polyfit, 0, darray) 
 
     # Write the output file
     dims = dset[inargs.var].dims[1:]
