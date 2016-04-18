@@ -66,27 +66,31 @@ def main(inargs):
 
     coord_names = [coord.name() for coord in cube.coords(dim_coords=True)]
     assert coord_names[0] == 'time', "First axis must be time"
-   
-    time_axis = cube.coord('time').points 
+
+    time_axis = cube.coord('time').points
 
     # Calculate coefficients for cubic polynomial
     if 'depth' in coord_names:
         assert coord_names[1] == 'depth', 'coordinate order must be time, depth, ...'
         slice_dims = copy.copy(coord_names)
         slice_dims.remove('depth')
-        out_shape = list(cube.data.shape)
+        out_shape = list(cube.shape)
         out_shape[0] = 4
         coefficients = numpy.zeros(out_shape)
         for i, x_slice in enumerate(cube.slices(slice_dims)):
-            coefficients[:,i,::] = numpy.ma.apply_along_axis(polyfit, 0, x_slice.data, time_axis) 
+            coefficients[:,i,::] = numpy.ma.apply_along_axis(polyfit, 0, x_slice.data, time_axis)
+        fill_value = x_slice.data.fill_value 
     else:    
-        coefficients = numpy.ma.apply_along_axis(polyfit, 0, cube.data, time_axis) 
-    coefficients = numpy.ma.masked_values(coefficients, cube.data.fill_value)
+        coefficients = numpy.ma.apply_along_axis(polyfit, 0, cube.data, time_axis)
+        fill_value = cube.data.fill_value 
+    coefficients = numpy.ma.masked_values(coefficients, fill_value)
 
     # Get all the metadata
     cube.attributes['polynomial'] = 'a + bx + cx^2 + dx^3'
     cube.attributes['time_unit'] = str(cube.coord('time').units)
-    cube.attributes['history'] = gio.write_metadata(file_info={inargs.infiles[0]: history[0]})  # FIXME: Is there a better way to deal with lots of files?
+    cube.attributes['time_calendar'] = str(cube.coord('time').units.calendar)
+    cube.attributes['history'] = gio.write_metadata(file_info={inargs.infiles[0]: history[0]})  
+    #FIXME: Is there a better way to deal with lots of files?
 
     # Write the output file
     dim_coords = []
