@@ -8,7 +8,7 @@ Description:  Calculate the polynomial coefficents that characterise model drift
 # Import general Python modules
 
 import sys, os, pdb
-import argparse
+import argparse, copy
 import numpy
 import iris
 
@@ -52,7 +52,7 @@ def polyfit(data, time_axis):
     """Fit polynomial to data."""    
 
     if data.mask[0]:
-        return numpy.array([1e+20]*4)  # FIXME: Missing value handling
+        return numpy.array([data.fill_value]*4) 
     else:    
         return numpy.polynomial.polynomial.polyfit(time_axis, data, 3)
 
@@ -70,13 +70,23 @@ def main(inargs):
     time_axis = cube.coord('time').points 
 
     # Calculate coefficients for cubic polynomial
-    #need to loop through levels here: for i, x_slice in enumerate(cube.slices(['time', 'latitude', 'longitude'])):
-    coefficients = numpy.ma.apply_along_axis(polyfit, 0, cube.data, time_axis) 
+    if 'depth' in coord_names:
+        assert coord_names[1] == 'depth', 'coordinate order must be time, depth, ...'
+        slice_dims = copy.copy(coord_names)
+        slice_dims.remove('depth')
+        out_shape = list(cube.data.shape)
+        out_shape[0] = 4
+        coefficients = numpy.zeros(out_shape)
+        for i, x_slice in enumerate(cube.slices(slice_dims)):
+            coefficients[:,i,::] = numpy.ma.apply_along_axis(polyfit, 0, x_slice.data, time_axis) 
+    else:    
+        coefficients = numpy.ma.apply_along_axis(polyfit, 0, cube.data, time_axis) 
+    coefficients = numpy.ma.masked_values(coefficients, cube.data.fill_value)
 
     # Get all the metadata
     cube.attributes['polynomial'] = 'a + bx + cx^2 + dx^3'
     cube.attributes['time_unit'] = str(cube.coord('time').units)
-    cube.attributes['history'] = gio.write_metadata(file_info=history[0])  # FIXME: This needs to cater for lots of files
+    cube.attributes['history'] = gio.write_metadata(file_info={inargs.infiles[0]: history[0]})  # FIXME: Is there a better way to deal with lots of files?
 
     # Write the output file
     dim_coords = []
@@ -91,14 +101,15 @@ def main(inargs):
         aux_coords = None
         
     out_cubes = []
-    for i, coef in enumerate(['a', 'b', 'c', 'd']):
-        iris.std_names.STD_NAMES['coefficient_a'] = {'canonical_units': ' '}
+    for i, coeff in enumerate(['a', 'b', 'c', 'd']):
+        standard_name = 'coefficient_%s' %(coeff)
+        iris.std_names.STD_NAMES[standard_name] = {'canonical_units': ' '}
         out_cubes.append(iris.cube.Cube(coefficients[i, ...],
-                                        standard_name='coefficient_%s' %(coeff),
+                                        standard_name=standard_name,
                                         long_name='coefficient %s' %(coeff),
                                         var_name=coeff,
                                         units=' ',
-                                        attributes=temperature_cube.attributes,
+                                        attributes=cube.attributes,
                                         dim_coords_and_dims=dim_coords,
                                         aux_coords_and_dims=aux_coords))
 
@@ -116,7 +127,8 @@ example:
 author:
     Damien Irving, irving.damien@gmail.com
 notes:
-    
+    If there's a vertical coordinate is must have the standard_name "depth"    
+
 """
 
     description='Calculate the polynomial coefficents that characterise model drift'
