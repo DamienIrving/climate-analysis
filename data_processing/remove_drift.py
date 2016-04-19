@@ -34,13 +34,29 @@ except ImportError:
 # Define functions
 
 def apply_polynomial(x, axis):
-    """ Apply the cubic polynomial along the time (first) axis."""
+    """Evaluate cubic polynomial.
 
-    result = a * x**3 + b * x**2 + c * x + d  
+    The axis argument is not used but is required for the function to be 
+      used with numpy.apply_over_axes 
+
+    """
+
+    result = a + b * x + c * x**2 + d * x**3  
     
     return result 
 
 
+def check_attributes(data_attrs, control_attrs):
+    """Make sure the correct control run has been used."""
+
+    assert data_attrs['parent_experiment_id'] in [control_attrs['experiment_id'], 'N/A']
+
+    control_rip = 'r%si%sp%s' %(control_attrs['realization'],
+                                control_attrs['initialization_method'],
+                                control_attrs['realization'])
+    assert data_attrs['parent_experiment_rip'] in [control_rip, 'N/A']
+
+    
 def main(inargs):
     """Run the program."""
     
@@ -53,13 +69,15 @@ def main(inargs):
         c_cube = iris.load_cube(inargs.coefficient_file, 'coefficient c')
         d_cube = iris.load_cube(inargs.coefficient_file, 'coefficient d')
 
+    check_attributes(data_cube.attributes, a_cube.attributes)
+
     # Sync the data time axis with the coefficient time axis    
-    in_time_unit = a_cube.attributes['time_unit']
-    in_calendar = a_cube.attributes['time_calendar']
-    new_unit = cf_units.Unit(in_time_unit, calendar=in_calendar) 
-    data_cube.coord('time').convert_units(new_unit)
+    #in_time_unit = a_cube.attributes['time_unit']
+    #in_calendar = a_cube.attributes['time_calendar']
+    #new_unit = cf_units.Unit(in_time_unit, calendar=in_calendar) 
+    #data_cube.coord('time').convert_units(new_unit)
     
-    time_values = data_cube.coord('time').points
+    time_values = data_cube.coord('time').points + data_cube.attributes['branch_time']
 
     # Remove the drift
 #    polynomial = numpy.poly1d([a,b,c,d])
