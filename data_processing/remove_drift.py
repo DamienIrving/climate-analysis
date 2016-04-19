@@ -68,25 +68,12 @@ def main(inargs):
         b_cube = iris.load_cube(inargs.coefficient_file, 'coefficient b')
         c_cube = iris.load_cube(inargs.coefficient_file, 'coefficient c')
         d_cube = iris.load_cube(inargs.coefficient_file, 'coefficient d')
-
     check_attributes(data_cube.attributes, a_cube.attributes)
 
-    # Sync the data time axis with the coefficient time axis    
-    #in_time_unit = a_cube.attributes['time_unit']
-    #in_calendar = a_cube.attributes['time_calendar']
-    #new_unit = cf_units.Unit(in_time_unit, calendar=in_calendar) 
-    #data_cube.coord('time').convert_units(new_unit)
-    
+    # Sync the data time axis with the coefficient time axis        
     time_values = data_cube.coord('time').points + data_cube.attributes['branch_time']
 
     # Remove the drift
-#    polynomial = numpy.poly1d([a,b,c,d])
-#    drift_signal = polynomial(time_coord)
-
-#    coefficients = [a_cube.data, b_cube.data, c_cube.data, d_cube.data]
-#    drift_signal = numpy.polynomial.polynomial.polyval(time_values, coefficients, tensor=True)
-#    drift_signal = numpy.rollaxis(drift_signal, -1)  # move time axis from end to start
-
     global a
     a = a_cube.data
     global b
@@ -98,11 +85,12 @@ def main(inargs):
 
     drift_signal = numpy.apply_over_axes(apply_polynomial, data_cube.data, 0)
     
-    new_cube = data_cube - drift_signal
+    if inargs.anomaly:
+        new_cube = data_cube - drift_signal
+    else:
+        new_cube = data_cube - drift_signal + a[numpy.newaxis, ...]
 
     # Write the output file
-
-#    iris.std_names.STD_NAMES['ocean_heat_content_in'] = {'canonical_units': units}
     new_cube.standard_name = data_cube.standard_name
     new_cube.long_name = data_cube.long_name
     new_cube.var_name = data_cube.var_name
@@ -137,6 +125,9 @@ notes:
     parser.add_argument("var", type=str, help="Input data variable name (i.e. the standard_name)")
     parser.add_argument("coefficient_file", type=str, help="Input coefficient file")
     parser.add_argument("outfile", type=str, help="Output file name")
+
+    parser.add_argument("--anomaly", action="store_true", default=False,
+                        help="output the anomaly rather than restored full values [default: False]")
     
     args = parser.parse_args()            
 
