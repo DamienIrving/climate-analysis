@@ -33,16 +33,27 @@ except ImportError:
 
 # Define functions
 
-def apply_polynomial(x, axis):
+def apply_polynomial(x_data, a_data, b_data, c_data, d_data, anomaly=False):
     """Evaluate cubic polynomial.
 
-    The axis argument is not used but is required for the function to be 
-      used with numpy.apply_over_axes 
+    Anomaly = True: provide entire polynomial
+    Anomaly = False: provide only the temporal deviations from the initial value (a_data)
 
     """
 
-    result = a + b * x + c * x**2 + d * x**3  
-    
+    x_data = x_data[..., numpy.newaxis, numpy.newaxis, numpy.newaxis]
+    a_data = numpy.repeat(a_data[numpy.newaxis, ...], x_data.shape[0], axis=0)
+    b_data = numpy.repeat(b_data[numpy.newaxis, ...], x_data.shape[0], axis=0)
+    c_data = numpy.repeat(c_data[numpy.newaxis, ...], x_data.shape[0], axis=0)
+    d_data = numpy.repeat(d_data[numpy.newaxis, ...], x_data.shape[0], axis=0)
+
+    assert x_data.ndim == a_data.ndim
+
+    if anomaly:
+        result = a_data + b_data * x_data + c_data * x_data**2 + d_data * x_data**3  
+    else:
+        result = b_data * x_data + c_data * x_data**2 + d_data * x_data**3 
+
     return result 
 
 
@@ -74,21 +85,8 @@ def main(inargs):
     time_values = data_cube.coord('time').points + data_cube.attributes['branch_time']
 
     # Remove the drift
-    global a
-    a = a_cube.data
-    global b
-    b = b_cube.data
-    global c
-    c = c_cube.data
-    global d
-    d = d_cube.data
-
-    drift_signal = numpy.apply_over_axes(apply_polynomial, data_cube.data, 0)
-    
-    if inargs.anomaly:
-        new_cube = data_cube - drift_signal
-    else:
-        new_cube = data_cube - drift_signal + a[numpy.newaxis, ...]
+    drift_signal = apply_polynomial(time_values, a_cube.data, b_cube.data, c_cube.data, d_cube.data, anomaly=inargs.anomaly)
+    new_cube = data_cube - drift_signal
 
     # Write the output file
     new_cube.standard_name = data_cube.standard_name
