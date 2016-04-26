@@ -11,6 +11,7 @@ import sys, os, pdb
 import argparse, copy
 import numpy
 import iris
+from iris.experimental.equalise_cubes import equalise_attributes
 
 
 # Import my modules
@@ -35,17 +36,15 @@ except ImportError:
 
 history = []
 
-def edit_attributes(cube, field, filename):
-    """Remove the attributes that typically differ between files.
+def save_history(cube, field, filename):
+    """Save the history attribute when reading the data.
 
-    (i.e. these cause iris to throw a ConstraintMismatchError when you try and merge
-    cubes arising from different files)  
+    (This is required because the history attribute differs between input files 
+      and is therefore deleted upon equilising attributes)  
 
     """ 
-    cube.attributes.pop('creation_date', None)
-    cube.attributes.pop('tracking_id', None)
+    #cube.attributes.pop('creation_date', None)
     history.append(cube.attributes['history'])
-    cube.attributes.pop('history', None)
 
 
 def polyfit(data, time_axis):
@@ -61,7 +60,8 @@ def main(inargs):
     """Run the program."""
 
     # Read the data
-    cube = iris.load(inargs.infiles, inargs.var, callback=edit_attributes)
+    cube = iris.load(inargs.infiles, inargs.var, callback=save_history)
+    equalise_attributes(cube)
     cube = cube.concatenate_cube()
 
     coord_names = [coord.name() for coord in cube.coords(dim_coords=True)]
@@ -89,6 +89,8 @@ def main(inargs):
     cube.attributes['polynomial'] = 'a + bx + cx^2 + dx^3'
     cube.attributes['time_unit'] = str(cube.coord('time').units)
     cube.attributes['time_calendar'] = str(cube.coord('time').units.calendar)
+    cube.attributes['time_start'] = time_axis[0]
+    cube.attributes['time_end'] = time_axis[-1]
     cube.attributes['history'] = gio.write_metadata(file_info={inargs.infiles[0]: history[0]})  
     #FIXME: Is there a better way to deal with lots of files?
 
