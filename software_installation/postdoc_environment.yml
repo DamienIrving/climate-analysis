@@ -13,7 +13,7 @@ dependencies:
     - xarray
     - dask
     - bottleneck
-    - netCDF4
+    - netCDF4=1.2.4
     - statsmodels    
     - pip:
       - gitpython
