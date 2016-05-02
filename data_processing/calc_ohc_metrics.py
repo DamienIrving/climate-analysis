@@ -96,23 +96,21 @@ def region_mask(data_mask, latitudes, south_bound, north_bound):
     vin_flag = numpy.vectorize(in_flag)
     in_region = vin_flag(latitudes, south_bound, north_bound)
 
-    if len(latitudes.shape) == 1:
-        in_region = in_region[numpy.newaxis, numpy.newaxis, numpy.newaxis, ...]
-    elif len(latitudes.shape) == 2:
-        in_region = in_region[numpy.newaxis, numpy.newaxis, ...]
-    else:
-        raise ValueError('Latitude dimension must be 1D or 2D')
+    while in_region.ndim < data_mask.ndim:
+        in_region = in_region[numpy.newaxis, ...]
 
     mask = data_mask + in_region
 
     return mask    
 
 
-def heat_content(TdV_data, mask, density, cp, scale_factor):
+def heat_content(TdV_cube, mask, density, cp, scale_factor):
     """Calculate the heat content for each timestep."""
 
-    TdV_data.mask = mask
-    TdV_sum = TdV_data.sum(axis=(1,2,3))
+    TdV_cube.data.mask = mask
+    coord_names = [coord.name() for coord in TdV_cube.coords()]
+    coord_names.remove('time')
+    TdV_sum = TdV_cube.collapsed(coord_names, iris.analysis.SUM)
 
     result = (TdV_sum * density * cp) / eval('1e+%i' %(scale_factor))
 
@@ -131,7 +129,8 @@ def main(inargs):
 
     coord_names = [coord.name() for coord in temperature_cube.coords()]
     assert coord_names[0] == 'time', "First axis must be time"
-    assert len(temperature_cube.data.shape) == 4, "Script expects 4D input data"
+    if 'depth' in coord_names:
+        assert coord_names[1] == 'depth', "Depth must be the second axis"    
 
     # Convert timescale
     if inargs.timescale == 'year':
@@ -145,7 +144,7 @@ def main(inargs):
 
     # Calculate the heat content
     temperature_anomaly = temperature_cube - climatology_cube
-    TdV = temperature_anomaly.data * volume_cube.data[numpy.newaxis, ...]
+    TdV = temperature_anomaly * volume_cube
 
     regions = {'southern_extratropics': [-90, -20],
                'tropics': [-20, 20],
@@ -155,7 +154,7 @@ def main(inargs):
                
     ohc_dict = {}
     for region, bounds in regions.iteritems():
-        mask = region_mask(TdV.mask, lat_coord.points, bounds[0], bounds[-1])
+        mask = region_mask(TdV.data.mask, lat_coord.points, bounds[0], bounds[-1])
         ohc_dict[region] = heat_content(TdV.copy(), mask, inargs.density, inargs.specific_heat, inargs.scaling)
 
     # Get all the metadata
@@ -175,7 +174,7 @@ def main(inargs):
         long_name = 'ocean heat content over %s'  %(region.replace('_', ' '))
         var_name = 'ohc_'+region
         iris.std_names.STD_NAMES[standard_name] = {'canonical_units': units}
-        ohc_cube = iris.cube.Cube(ohc_dict[region],
+        ohc_cube = iris.cube.Cube(ohc_dict[region].data,
                                   standard_name=standard_name,
                                   long_name=long_name,
                                   var_name=var_name,
