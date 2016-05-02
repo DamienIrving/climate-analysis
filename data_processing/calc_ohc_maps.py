@@ -11,7 +11,6 @@ import sys, os, pdb
 import argparse
 import numpy
 import iris
-import xray
 
 # Import my modules
 
@@ -30,48 +29,27 @@ try:
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
-
 # Define functions
 
-def simple_integration(vert_vector, level_steps):
-    """Perform vertical integration for a single lat/lon/time point."""
-    
-    areas = vert_vector * level_steps
-    
-    return areas.sum()
+def get_weights(coord_list, level_bounds, data_shape):
+    """Get weights for vertical sum (i.e. integration)"""
 
+    depth_index = coord_list.index('depth')
+    level_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], depth_index, level_bounds)
 
-def domain_text(level_axis, user_top, user_bottom):
-    """Text describing the vertical bounds over which the integration was performed."""
+    dim = 0
+    while dim < depth_index:
+        level_diffs = level_diffs[numpy.newaxis, ...]
+        level_diffs = numpy.repeat(level_diffs, data_shape[dim], axis=0)
+        dim = dim + 1
     
-    if user_top and user_bottom:
-        level_text = '%f down to %f' %(user_top, user_bottom)
-    elif user_bottom:
-        level_text = 'input data surface (%f) down to %f' %(level_axis[0], user_bottom)
-    elif user_top:
-        level_text = '%f down to input data bottom (%f)' %(user_top, level_axis[-1])
-    else:
-        level_text = 'full depth of input data (%f down to %f)' %(level_axis[0], level_axis[-1])
-    
-    return level_text
-        
+    dim = depth_index + 1
+    while dim < len(data_shape):    
+        level_diffs = level_diffs[..., numpy.newaxis]
+        level_diffs = numpy.repeat(level_diffs, data_shape[dim], axis=-1)
+        dim = dim + 1
 
-def vertical_constraint(min_depth, max_depth):
-    """Define vertical constraint for cube data loading."""
-    
-    if min_depth and max_depth:
-        level_subset = lambda cell: min_depth <= cell <= max_depth
-        level_constraint = iris.Constraint(depth=level_subset)
-    elif max_depth:
-        level_subset = lambda cell: cell <= max_depth
-        level_constraint = iris.Constraint(depth=level_subset)
-    elif min_depth:
-        level_subset = lambda cell: cell >= min_depth    
-        level_constraint = iris.Constraint(depth=level_subset)
-    else:
-        level_constraint = iris.Constraint()
-    
-    return level_constraint
+    return level_diffs
 
 
 def main(inargs):
@@ -79,51 +57,40 @@ def main(inargs):
     
     # Read the data
     
-    level_subset = vertical_constraint(inargs.min_depth, inargs.max_depth)
+    level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
     with iris.FUTURE.context(cell_datetime_objects=True):
-        cube = iris.load_cube(inargs.infile, inargs.long_var & level_subset)
+        cube = iris.load_cube(inargs.infile, inargs.var & level_subset)
 
     coord_names = [coord.name() for coord in cube.coords()]
-    assert coord_names == ['time', 'depth', 'latitude', 'longitude'], \
-    "Script expects the CMIP standard_names for dimensions in the order time, depth, latitude, longitude"
+    assert 'depth' in coord_names
 
-    time_coord = cube.coord('time')
-    lat_coord = cube.coord('latitude')
-    lon_coord = cube.coord('longitude')
-    lev_coord = cube.coord('depth')
+    # Create weights
+    lev_bounds = cube.coord('depth').bounds   #if no bounds: cube.coord('latitude').guess_bounds()
+    lev_diffs = get_weights(coord_names, lev_bounds, cube.shape)
 
-    lev_bounds = cube.coord('depth').bounds
-    #if no bounds: cube.coord('latitude').guess_bounds()
-    lev_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, lev_bounds)
-
-    # Integrate vertically      
-    integral = numpy.ma.apply_along_axis(simple_integration, 1, cube.data, lev_diffs)
+    # Calculate heat content     
+    integral = cube.collapsed('depth', iris.analysis.SUM, weights=lev_diffs)
     ohc_per_m2 = (integral * inargs.density * inargs.specific_heat) / (10**inargs.scaling)
-      
+
+    # Add the metadata
+    standard_name = 'ocean_heat_content'
+    units = '10^%d J m-2' %(inargs.scaling)
+    iris.std_names.STD_NAMES[standard_name] = {'canonical_units': units}
+
+    ohc_per_m2.standard_name = standard_name
+    ohc_per_m2.long_name = 'ocean heat content'
+    ohc_per_m2.var_name = 'ohc'
+    ohc_per_m2.units = units
+    ohc_per_m2.attributes = cube.attributes
+
+    depth_text = 'OHC integrated over %s' %(gio.vertical_bounds_text(cube.coord('depth').points, inargs.min_depth, inargs.max_depth))
+    ohc_per_m2.attributes['depth_bounds'] = depth_text
+
+    infile_history = {inargs.infile: cube.attributes['history']}
+    ohc_per_m2.attributes['history'] = gio.write_metadata(file_info=infile_history)
+
     # Write the output file
-    out_cube = iris.cube.Cube(integral,
-                              standard_name='ocean_heat_content',
-                              long_name='ocean heat content',
-                              var_name='ohc',
-                              units='J',
-                              attributes=cube.attributes,
-                              dim_coords_and_dims=[(coords[0], 0), (coords[2], 1), (coords[3], 2)],
-                              aux_coords_and_dims=[(aux_coords[0], [1, 2]), (aux_coords[1], [1, 2])],
-                         )
-
-
-
-
-
-#    notes_text = 'OHC integrated over %s' %(domain_text(lev_coord.points, 
-#                                                        inargs.min_depth,
-#                                                        inargs.max_depth))
-#    dset_out['ohc'].attrs =   {'standard_name': 'ocean_heat_content',
-#                               'long_name': 'ocean_heat_content',
-#                               'units': '10^%d J m-2' %(inargs.scaling),
-#                               'missing_value': ohc_per_m2.fill_value,
-#                               'notes': notes_text} 
-
+    iris.save(ohc_per_m2, inargs.outfile)
 
 
 if __name__ == '__main__':
@@ -146,7 +113,7 @@ notes:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("infile", type=str, help="Input file name")
-    parser.add_argument("long_var", type=str, help="Input file variable (the standard or long name)")
+    parser.add_argument("var", type=str, help="Input file variable (the standard_name)")
     parser.add_argument("outfile", type=str, help="Output file name")
     
     parser.add_argument("--min_depth", type=float, default=None,
@@ -154,9 +121,6 @@ notes:
     parser.add_argument("--max_depth", type=float, default=None,
                         help="Only include data above this vertical level")
 
-    parser.add_argument("--lat_bounds", type=float, nargs=2, metavar=('SOUTH_LAT', 'NORTH_LAT'), default=(-90, 0),
-                        help="Latitude bounds of region of interest")
-    
     parser.add_argument("--density", type=float, default=1023,
                         help="Density of seawater (in kg.m-3). Default of 1023 kg.m-3 from Hobbs2016.")
     parser.add_argument("--specific_heat", type=float, default=4000,

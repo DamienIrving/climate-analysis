@@ -2,19 +2,21 @@
 Collection of commonly used functions for general file input and output.
 
 Functions:
-  check_xrayDataset   -- Check xray.Dataset for data format compliance
-  get_subset_kwargs   -- Get keyword arguments for xray subsetting
-  get_time_constraint -- Get the time constraint used for reading an iris cube 
-  get_timescale       -- Get the timescale
-  get_timestamp       -- Return a time stamp that includes the command line entry
-  read_dates          -- Read in a list of dates
-  set_dim_atts        -- Set dimension attributes
-  set_global_atts     -- Update the global attributes of an xray.DataArray
-  set_outfile_date    -- Take an outfile name and replace existing date with new one
-  standard_datetime   -- Convert any arbitrary date/time to standard format: YYYY-MM-DD
-  update_history_att  -- Update the global history attribute of an xray.DataArray
-  write_dates         -- Write a list of dates
-  write_metadata      -- Write a metadata output file
+  check_xrayDataset        -- Check xray.Dataset for data format compliance
+  get_subset_kwargs        -- Get keyword arguments for xray subsetting
+  get_time_constraint      -- Get the time constraint used for reading an iris cube 
+  get_timescale            -- Get the timescale
+  get_timestamp            -- Return a time stamp that includes the command line entry
+  iris_vertical_constraint -- Define vertical constraint for iris cube loading.
+  read_dates               -- Read in a list of dates
+  set_dim_atts             -- Set dimension attributes
+  set_global_atts          -- Update the global attributes of an xray.DataArray
+  set_outfile_date         -- Take an outfile name and replace existing date with new one
+  standard_datetime        -- Convert any arbitrary date/time to standard format: YYYY-MM-DD
+  update_history_att       -- Update the global history attribute of an xray.DataArray
+  vertical_bounds_text     -- Geneate text describing the vertical bounds of a data selection
+  write_dates              -- Write a list of dates
+  write_metadata           -- Write a metadata output file
 
 """
 
@@ -44,7 +46,6 @@ try:
 except ImportError:
     MODULE_HASH = 'unknown'
 
-
 modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
 try:
@@ -55,9 +56,7 @@ except ImportError:
 
 # Define functions
 
-
-# [south_lat, north_lat, west_lon, east_lon]
-
+#[south_lat, north_lat, west_lon, east_lon]
 regions = {'asl': [-75, -60, 180, 310],
            'aus': [-45, -10, 110, 160],
            'ausnz': [-50, 0, 100, 185],
@@ -150,6 +149,21 @@ def check_xrayDataset(dset, var_list):
         'Longitude axis must be 0 to 360E'
 
 
+def vertical_bounds_text(level_axis, user_top, user_bottom):
+    """Generate text describing the vertical bounds of a data selection."""
+    
+    if user_top and user_bottom:
+        level_text = '%f down to %f' %(user_top, user_bottom)
+    elif user_bottom:
+        level_text = 'input data surface (%f) down to %f' %(level_axis[0], user_bottom)
+    elif user_top:
+        level_text = '%f down to input data bottom (%f)' %(user_top, level_axis[-1])
+    else:
+        level_text = 'full depth of input data (%f down to %f)' %(level_axis[0], level_axis[-1])
+    
+    return level_text
+
+
 def get_subset_kwargs(namespace):
     """Get keyword arguments for xray subsetting.
     
@@ -238,6 +252,24 @@ def get_timestamp():
                                                   MODULE_HASH[0:7])
 
     return time_stamp
+
+
+def iris_vertical_constraint(min_depth, max_depth):
+    """Define vertical constraint for iris cube loading."""
+    
+    if min_depth and max_depth:
+        level_subset = lambda cell: min_depth <= cell <= max_depth
+        level_constraint = iris.Constraint(depth=level_subset)
+    elif max_depth:
+        level_subset = lambda cell: cell <= max_depth
+        level_constraint = iris.Constraint(depth=level_subset)
+    elif min_depth:
+        level_subset = lambda cell: cell >= min_depth    
+        level_constraint = iris.Constraint(depth=level_subset)
+    else:
+        level_constraint = iris.Constraint()
+    
+    return level_constraint
 
 
 def read_dates(infile):

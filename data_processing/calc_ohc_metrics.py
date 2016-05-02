@@ -33,39 +33,6 @@ except ImportError:
 
 # Define functions
 
-def domain_text(level_axis, user_top, user_bottom):
-    """Text describing the vertical bounds over which the integration was performed."""
-    
-    if user_top and user_bottom:
-        level_text = '%f down to %f' %(user_top, user_bottom)
-    elif user_bottom:
-        level_text = 'input data surface (%f) down to %f' %(level_axis[0], user_bottom)
-    elif user_top:
-        level_text = '%f down to input data bottom (%f)' %(user_top, level_axis[-1])
-    else:
-        level_text = 'full depth of input data (%f down to %f)' %(level_axis[0], level_axis[-1])
-    
-    return level_text
-        
-
-def vertical_constraint(min_depth, max_depth):
-    """Define vertical constraint for cube data loading."""
-    
-    if min_depth and max_depth:
-        level_subset = lambda cell: min_depth <= cell <= max_depth
-        level_constraint = iris.Constraint(depth=level_subset)
-    elif max_depth:
-        level_subset = lambda cell: cell <= max_depth
-        level_constraint = iris.Constraint(depth=level_subset)
-    elif min_depth:
-        level_subset = lambda cell: cell >= min_depth    
-        level_constraint = iris.Constraint(depth=level_subset)
-    else:
-        level_constraint = iris.Constraint()
-    
-    return level_constraint
-
-
 def in_flag(lat_value, south_bound, north_bound):
     """Determine if a point is in the region of interest.
    
@@ -121,7 +88,7 @@ def main(inargs):
     """Run the program."""
     
     # Read the data
-    level_subset = vertical_constraint(inargs.min_depth, inargs.max_depth)
+    level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
     with iris.FUTURE.context(cell_datetime_objects=True):
         temperature_cube = iris.load_cube(inargs.temperature_file, inargs.temperature_var & level_subset)
         climatology_cube = iris.load_cube(inargs.climatology_file, inargs.temperature_var & level_subset)
@@ -160,7 +127,7 @@ def main(inargs):
     # Get all the metadata
     units = '10^%d J m-2' %(inargs.scaling)
 
-    depth_text = 'OHC integrated over %s' %(domain_text(lev_coord.points, inargs.min_depth, inargs.max_depth))
+    depth_text = 'OHC integrated over %s' %(gio.vertical_bounds_text(lev_coord.points, inargs.min_depth, inargs.max_depth))
     temperature_cube.attributes['depth_bounds'] = depth_text
 
     infile_history = {inargs.temperature_file: temperature_cube.attributes['history'],
