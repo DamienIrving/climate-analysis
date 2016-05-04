@@ -36,9 +36,8 @@ def get_weights(coord_list, level_bounds, data_shape):
 
     depth_index = coord_list.index('depth')
     level_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], depth_index, level_bounds)
-    pdb.set_trace()
 
-   #guess_bounds can produce negative bound at surface
+    #guess_bounds can produce negative bound at surface
     if level_bounds[0][0] < 0.0:
         level_diffs[0] = level_diffs[0] + level_bounds[0][0]
 
