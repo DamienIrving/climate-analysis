@@ -11,6 +11,7 @@ Description:  Take the Scripps Institution of Oceanography gridded argo temperat
 import sys, os, pdb
 import argparse
 import iris
+import cf_units
 
 
 # Import my modules
@@ -58,6 +59,10 @@ def main(inargs):
 
     # Edit time attributes
     argo_time = anomaly_cube.coord('TIME')
+
+    new_unit = cf_units.Unit('days since 2004-01-01 00:00:00', calendar='gregorian')  
+    argo_time.convert_units(new_unit)
+
     argo_time.var_name = 'time'
     argo_time.long_name = 'time'
 
