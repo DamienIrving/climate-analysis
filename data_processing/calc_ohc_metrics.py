@@ -91,7 +91,6 @@ def main(inargs):
     level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
     with iris.FUTURE.context(cell_datetime_objects=True):
         temperature_cube = iris.load_cube(inargs.temperature_file, inargs.temperature_var & level_subset)
-        climatology_cube = iris.load_cube(inargs.climatology_file, inargs.temperature_var & level_subset)
         volume_cube = iris.load_cube(inargs.volume_file, inargs.volume_var & level_subset)
 
     coord_names = [coord.name() for coord in temperature_cube.coords()]
@@ -99,19 +98,18 @@ def main(inargs):
     if 'depth' in coord_names:
         assert coord_names[1] == 'depth', "Depth must be the second axis"    
 
-    # Convert timescale
-    if inargs.timescale == 'year':
-        iris.coord_categorisation.add_year(temperature_cube, 'time', name='year')
-        temperature_cube = temperature_cube.aggregated_by(['year'], iris.analysis.MEAN)
-        temperature_cube.remove_coord('year')    
-    
     time_coord = temperature_cube.coord('time') 
     lev_coord = temperature_cube.coord('depth')
     lat_coord = temperature_cube.coord('latitude')
 
     # Calculate the heat content
-    temperature_anomaly = temperature_cube - climatology_cube
-    TdV = temperature_anomaly * volume_cube
+    if inargs.climatology_file:
+        with iris.FUTURE.context(cell_datetime_objects=True):
+            climatology_cube = iris.load_cube(inargs.climatology_file, inargs.temperature_var & level_subset)
+        temperature_anomaly = temperature_cube - climatology_cube
+        TdV = temperature_anomaly * volume_cube
+    else:
+        TdV = temperature_cube * volume_cube
 
     regions = {'southern_extratropics': [-90, -20],
                'tropics': [-20, 20],
@@ -178,13 +176,12 @@ notes:
 
     parser.add_argument("temperature_file", type=str, help="Input temperature data file")
     parser.add_argument("temperature_var", type=str, help="Input temperature variable name (i.e. the standard_name)")
-    parser.add_argument("climatology_file", type=str, help="Input temperature climatology file")
     parser.add_argument("volume_file", type=str, help="Input volume data file")
     parser.add_argument("volume_var", type=str, help="Input volume variable name (i.e. the standard_name)")
     parser.add_argument("outfile", type=str, help="Output file name")
-    
-    parser.add_argument("--timescale", type=str, default='month', choices=('month', 'year'),
-                        help="Convert input data to this timescale")
+
+    parser.add_argument("--climatology_file", type=str, default=None, 
+                        help="Input temperature climatology file (required if input data not already anomaly)")
 
     parser.add_argument("--min_depth", type=float, default=None,
                         help="Only include data below this vertical level")

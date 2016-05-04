@@ -36,6 +36,11 @@ def get_weights(coord_list, level_bounds, data_shape):
 
     depth_index = coord_list.index('depth')
     level_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], depth_index, level_bounds)
+    pdb.set_trace()
+
+   #guess_bounds can produce negative bound at surface
+    if level_bounds[0][0] < 0.0:
+        level_diffs[0] = level_diffs[0] + level_bounds[0][0]
 
     dim = 0
     while dim < depth_index:
@@ -64,8 +69,17 @@ def main(inargs):
     coord_names = [coord.name() for coord in cube.coords()]
     assert 'depth' in coord_names
 
+    # Calculate anomaly
+    if inargs.climatology_file:
+        with iris.FUTURE.context(cell_datetime_objects=True):
+            climatology_cube = iris.load_cube(inargs.climatology_file, inargs.var & level_subset)
+        cube = cube - climatology_cube
+
     # Create weights
-    lev_bounds = cube.coord('depth').bounds   #if no bounds: cube.coord('latitude').guess_bounds()
+    if cube.coord('depth').bounds == None:
+        cube.coord('depth').guess_bounds()
+
+    lev_bounds = cube.coord('depth').bounds
     lev_diffs = get_weights(coord_names, lev_bounds, cube.shape)
 
     # Calculate heat content     
@@ -112,9 +126,12 @@ notes:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infile", type=str, help="Input file name")
-    parser.add_argument("var", type=str, help="Input file variable (the standard_name)")
+    parser.add_argument("infile", type=str, help="Input temperature data file")
+    parser.add_argument("var", type=str, help="Input temperature variable name (the standard_name)")
     parser.add_argument("outfile", type=str, help="Output file name")
+
+    parser.add_argument("--climatology_file", type=str, default=None, 
+                        help="Input temperature climatology file (required if input data not already anomaly)")
     
     parser.add_argument("--min_depth", type=float, default=None,
                         help="Only include data below this vertical level")
