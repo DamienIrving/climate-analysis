@@ -12,6 +12,7 @@ import sys, os, pdb
 import argparse
 import iris
 import cf_units
+import datetime
 
 
 # Import my modules
@@ -73,7 +74,10 @@ def main(inargs):
     argo_depth.standard_name = 'depth'
 
     # Write output file
-    anomaly_cube.attributes['history'] = gio.write_metadata()
+    timestamp = datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y")
+    old_history = timestamp + ': Scripps Institution of Oceanography gridded argo temperature' + \
+                              ' data downloaded from http://www.argo.ucsd.edu/Gridded_fields.html'
+    anomaly_cube.attributes['history'] = gio.write_metadata(file_info={inargs.infile: old_history})
     iris.save(anomaly_cube, inargs.outfile)
 
 
