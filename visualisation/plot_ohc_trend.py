@@ -160,6 +160,7 @@ def main(inargs):
     coord_names = [coord.name() for coord in cube.dim_coords]
     assert coord_names == ['time', 'latitude', 'longitude']
 
+    infile_history = cube.attributes['history']
     time_axis = cube.coord('time')
     lat_axis = cube.coord('latitude')
     lon_axis = cube.coord('longitude')
@@ -183,6 +184,7 @@ def main(inargs):
     plot_zonal_heat_gain(zhg, lat_axis.points, gs)
 
     plt.savefig(inargs.outfile, bbox_inches='tight')
+    gio.write_metadata(inargs.outfile, file_info={inargs.outfile:infile_history})
 
 
 if __name__ == '__main__':
