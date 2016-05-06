@@ -11,6 +11,7 @@ import sys, os, pdb
 import argparse
 import numpy
 import iris
+from iris.experimental.regrid import regrid_weighted_curvilinear_to_rectilinear
 
 # Import my modules
 
@@ -31,6 +32,57 @@ except ImportError:
 
 
 # Define functions
+
+def make_grid(lat_values, lon_values):
+    """Make a dummy cube with desired grid."""
+       
+    latitude = iris.coords.DimCoord(lat_values,
+                                    standard_name='latitude',
+                                    units='degrees_north',
+                                    coord_system=None)
+    longitude = iris.coords.DimCoord(lon_values,                    
+                                     standard_name='longitude',
+                                     units='degrees_east',
+                                     coord_system=None)
+
+    dummy_data = numpy.zeros((len(lat_values), len(lon_values)))
+    new_cube = iris.cube.Cube(dummy_data, dim_coords_and_dims=[(latitude, 0), (longitude, 1)])
+
+    new_cube.coord('longitude').guess_bounds()
+    new_cube.coord('latitude').guess_bounds()
+
+    return new_cube
+
+
+def curvilinear_to_rectilinear(cube):
+    """Regrid curvilinear data to a rectilinear grid."""
+
+    aux_coord_names = [coord.name() for coord in cube.aux_coords]
+    if aux_coord_names:
+
+        # Create target grid
+        lats = numpy.arange(-90, 91, 1)
+        lons = numpy.arange(0, 360, 1)
+        target_grid_cube = make_grid(lats, lons)
+
+        # Interate over slices (experimental regridder only works on 2D slices)
+        cube_list = []
+        for i, cube_slice in enumerate(cube.slices(aux_coord_names)):
+            weights = numpy.ones(cube_slice.shape)
+            regridded_cube = regrid_weighted_curvilinear_to_rectilinear(cube_slice, weights, target_grid_cube)
+            cube_list.append(regridded_cube)
+
+        new_cube = iris.cube.CubeList(cube_list)
+        new_cube = new_cube.merge_cube()
+
+    else:
+
+        new_cube = cube
+    
+    coord_names = [coord.name() for coord in new_cube.dim_coords]
+
+    return new_cube, coord_names
+
 
 def add_metadata(in_cube, out_cube, inargs):
     """Add metadata to the output cube."""
@@ -62,16 +114,17 @@ def get_anomaly_data(inargs):
     with iris.FUTURE.context(cell_datetime_objects=True):
         cube = iris.load_cube(inargs.infile, inargs.var & level_subset)
 
-    coord_names = [coord.name() for coord in cube.dim_coords]
-    assert 'depth' in coord_names
-
+    # Check dimensions
+    dim_coord_names = [coord.name() for coord in cube.dim_coords]
+    assert 'depth' in dim_coord_names
+   
     # Calculate anomaly
     if inargs.climatology_file:
         with iris.FUTURE.context(cell_datetime_objects=True):
             climatology_cube = iris.load_cube(inargs.climatology_file, inargs.var & level_subset)
         cube = cube - climatology_cube
 
-    return cube, coord_names
+    return cube
 
 
 def get_weights(depth_axis, coord_list, data_shape):
@@ -106,7 +159,8 @@ def get_weights(depth_axis, coord_list, data_shape):
 def main(inargs):
     """Run the program."""
     
-    cube, coord_names = get_anomaly_data(inargs)
+    cube = get_anomaly_data(inargs)
+    cube, coord_names = curvilinear_to_rectilinear(cube)
 
     # Calculate heat content
     weights = get_weights(cube.coord('depth'), coord_names, cube.shape)    
