@@ -29,10 +29,57 @@ try:
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
+
 # Define functions
 
-def get_weights(coord_list, level_bounds, data_shape):
+def add_metadata(in_cube, out_cube, inargs):
+    """Add metadata to the output cube."""
+
+    standard_name = 'ocean_heat_content'
+    units = '10^%d J m-2' %(inargs.scaling)
+    iris.std_names.STD_NAMES[standard_name] = {'canonical_units': units}
+
+    out_cube.standard_name = standard_name
+    out_cube.long_name = 'ocean heat content'
+    out_cube.var_name = 'ohc'
+    out_cube.units = units
+    out_cube.attributes = in_cube.attributes
+
+    depth_text = 'OHC integrated over %s' %(gio.vertical_bounds_text(in_cube.coord('depth').points, inargs.min_depth, inargs.max_depth))
+    out_cube.attributes['depth_bounds'] = depth_text
+
+    infile_history = {inargs.infile: in_cube.attributes['history']}
+    out_cube.attributes['history'] = gio.write_metadata(file_info=infile_history)
+
+    return out_cube
+
+
+def get_anomaly_data(inargs):
+    """Read the input data and calculate anomaly if necessary."""
+
+    # Read the data
+    level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
+    with iris.FUTURE.context(cell_datetime_objects=True):
+        cube = iris.load_cube(inargs.infile, inargs.var & level_subset)
+
+    coord_names = [coord.name() for coord in cube.dim_coords]
+    assert 'depth' in coord_names
+
+    # Calculate anomaly
+    if inargs.climatology_file:
+        with iris.FUTURE.context(cell_datetime_objects=True):
+            climatology_cube = iris.load_cube(inargs.climatology_file, inargs.var & level_subset)
+        cube = cube - climatology_cube
+
+    return cube, coord_names
+
+
+def get_weights(depth_axis, coord_list, data_shape):
     """Get weights for vertical sum (i.e. integration)"""
+
+    if not depth_axis.has_bounds():
+        depth_axis.guess_bounds()
+    level_bounds = depth_axis.bounds
 
     depth_index = coord_list.index('depth')
     level_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], depth_index, level_bounds)
@@ -59,50 +106,15 @@ def get_weights(coord_list, level_bounds, data_shape):
 def main(inargs):
     """Run the program."""
     
-    # Read the data
-    
-    level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
-    with iris.FUTURE.context(cell_datetime_objects=True):
-        cube = iris.load_cube(inargs.infile, inargs.var & level_subset)
+    cube, coord_names = get_anomaly_data(inargs)
 
-    coord_names = [coord.name() for coord in cube.coords()]
-    assert 'depth' in coord_names
-
-    # Calculate anomaly
-    if inargs.climatology_file:
-        with iris.FUTURE.context(cell_datetime_objects=True):
-            climatology_cube = iris.load_cube(inargs.climatology_file, inargs.var & level_subset)
-        cube = cube - climatology_cube
-
-    # Create weights
-    if cube.coord('depth').bounds == None:
-        cube.coord('depth').guess_bounds()
-
-    lev_bounds = cube.coord('depth').bounds
-    lev_diffs = get_weights(coord_names, lev_bounds, cube.shape)
-
-    # Calculate heat content     
-    integral = cube.collapsed('depth', iris.analysis.SUM, weights=lev_diffs)
+    # Calculate heat content
+    weights = get_weights(cube.coord('depth'), coord_names, cube.shape)    
+    integral = cube.collapsed('depth', iris.analysis.SUM, weights=weights)
     ohc_per_m2 = (integral * inargs.density * inargs.specific_heat) / (10**inargs.scaling)
 
-    # Add the metadata
-    standard_name = 'ocean_heat_content'
-    units = '10^%d J m-2' %(inargs.scaling)
-    iris.std_names.STD_NAMES[standard_name] = {'canonical_units': units}
-
-    ohc_per_m2.standard_name = standard_name
-    ohc_per_m2.long_name = 'ocean heat content'
-    ohc_per_m2.var_name = 'ohc'
-    ohc_per_m2.units = units
-    ohc_per_m2.attributes = cube.attributes
-
-    depth_text = 'OHC integrated over %s' %(gio.vertical_bounds_text(cube.coord('depth').points, inargs.min_depth, inargs.max_depth))
-    ohc_per_m2.attributes['depth_bounds'] = depth_text
-
-    infile_history = {inargs.infile: cube.attributes['history']}
-    ohc_per_m2.attributes['history'] = gio.write_metadata(file_info=infile_history)
-
     # Write the output file
+    ohc_per_m2 = add_metadata(cube, ohc_per_m2, inargs)
     iris.save(ohc_per_m2, inargs.outfile)
 
 
