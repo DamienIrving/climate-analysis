@@ -55,7 +55,7 @@ def make_grid(lat_values, lon_values):
 
 
 def curvilinear_to_rectilinear(cube):
-    """Regrid curvilinear data to a rectilinear grid."""
+    """Regrid curvilinear data to a rectilinear grid if necessary."""
 
     coord_names = [coord.name() for coord in cube.dim_coords]
     aux_coord_names = [coord.name() for coord in cube.aux_coords]
@@ -129,31 +129,72 @@ def get_anomaly_data(inargs):
     return cube
 
 
-def get_weights(depth_axis, coord_list, data_shape):
-    """Get weights for vertical sum (i.e. integration)"""
+def calc_vertical_weights(depth_axis, data_shape):
+    """Calculate vertical weights. 
 
+    Defined as the distance (m) between levels.
+
+    """
+
+    # Calculate weights
     if not depth_axis.has_bounds():
         depth_axis.guess_bounds()
     level_bounds = depth_axis.bounds
 
-    depth_index = coord_list.index('depth')
-    level_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], depth_index, level_bounds)
+    level_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, level_bounds)
 
     #guess_bounds can produce negative bound at surface
     if level_bounds[0][0] < 0.0:
         level_diffs[0] = level_diffs[0] + level_bounds[0][0]
 
+    # Broadcast to size of data
+    depth_index = coord_list.index('depth')
+    level_diffs = broadcast_weights(level_diffs, depth_index, data_shape)
+
+    return level_diffs
+
+
+def broadcast_weights(weights, axis_index, data_shape):
+    """Broadcast the one dimesional weights array to same shape as data."""
+
     dim = 0
-    while dim < depth_index:
-        level_diffs = level_diffs[numpy.newaxis, ...]
-        level_diffs = numpy.repeat(level_diffs, data_shape[dim], axis=0)
+    while dim < axis_index:
+        weights = weights[numpy.newaxis, ...]
+        weights = numpy.repeat(weights, data_shape[dim], axis=0)
         dim = dim + 1
     
-    dim = depth_index + 1
+    dim = axis_index + 1
     while dim < len(data_shape):    
-        level_diffs = level_diffs[..., numpy.newaxis]
-        level_diffs = numpy.repeat(level_diffs, data_shape[dim], axis=-1)
+        weights = weights[..., numpy.newaxis]
+        weights = numpy.repeat(weights, data_shape[dim], axis=-1)
         dim = dim + 1
+
+    return weights
+
+
+def calc_zonal_weights(cube, ):
+    """Calculate zonal weights.
+
+
+    """
+
+    coslat = cosine_latitude_weights(cube)
+
+    radius = iris.analysis.cartography.DEFAULT_SPHERICAL_EARTH_RADIUS
+    lon_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, lon_axis.bounds)
+    lon_extents = (math.pi / 180.) * radius * weights[0,:,:] * lon_diffs
+
+
+
+
+    return lon_extents
+
+
+def calc_ohc_2D():
+    """ """
+
+    integral = cube.collapsed('depth', iris.analysis.SUM, weights=weights)
+    ohc_per_m2 = (integral * inargs.density * inargs.specific_heat) / (10**inargs.scaling)
 
     return level_diffs
 
@@ -164,8 +205,15 @@ def main(inargs):
     cube = get_anomaly_data(inargs)
     cube, coord_names = curvilinear_to_rectilinear(cube)
 
+    assert coord_names == ['time', 'depth', 'latitude', 'longitude']
+
     # Calculate heat content
-    weights = get_weights(cube.coord('depth'), coord_names, cube.shape)    
+    vertical_weights = calc_vertical_weights(cube.coord('depth'), coord_names, cube.shape)
+    zonal_weights = calc_zonal_weights(cube, coord_names)
+
+    ohc_per_m2 = calc_ohc_2D(cube, coord_names, vertical_weights)
+    ohc_per_m = calc_ohc_1D(cube, coord_names, vertical_weights * zonal_weights)
+   
     integral = cube.collapsed('depth', iris.analysis.SUM, weights=weights)
     ohc_per_m2 = (integral * inargs.density * inargs.specific_heat) / (10**inargs.scaling)
 
