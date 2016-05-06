@@ -57,8 +57,12 @@ def make_grid(lat_values, lon_values):
 def curvilinear_to_rectilinear(cube):
     """Regrid curvilinear data to a rectilinear grid."""
 
+    coord_names = [coord.name() for coord in cube.dim_coords]
     aux_coord_names = [coord.name() for coord in cube.aux_coords]
+
     if aux_coord_names:
+
+        assert aux_coord_names == ['latitude', 'longitude']
 
         # Create target grid
         lats = numpy.arange(-90, 91, 1)
@@ -67,20 +71,22 @@ def curvilinear_to_rectilinear(cube):
 
         # Interate over slices (experimental regridder only works on 2D slices)
         cube_list = []
-        for i, cube_slice in enumerate(cube.slices(aux_coord_names)):
+        slice_dims = coord_names
+        slice_dims.remove('time')
+        slice_dims.remove('depth')
+        for i, cube_slice in enumerate(cube.slices(slice_dims)):
             weights = numpy.ones(cube_slice.shape)
             regridded_cube = regrid_weighted_curvilinear_to_rectilinear(cube_slice, weights, target_grid_cube)
             cube_list.append(regridded_cube)
 
         new_cube = iris.cube.CubeList(cube_list)
         new_cube = new_cube.merge_cube()
+        coord_names = [coord.name() for coord in new_cube.dim_coords]
 
     else:
 
         new_cube = cube
     
-    coord_names = [coord.name() for coord in new_cube.dim_coords]
-
     return new_cube, coord_names
 
 
@@ -114,10 +120,6 @@ def get_anomaly_data(inargs):
     with iris.FUTURE.context(cell_datetime_objects=True):
         cube = iris.load_cube(inargs.infile, inargs.var & level_subset)
 
-    # Check dimensions
-    dim_coord_names = [coord.name() for coord in cube.dim_coords]
-    assert 'depth' in dim_coord_names
-   
     # Calculate anomaly
     if inargs.climatology_file:
         with iris.FUTURE.context(cell_datetime_objects=True):
