@@ -8,7 +8,7 @@ Description:  Calculate heat content
 # Import general Python modules
 
 import sys, os, pdb
-import argparse
+import argparse, math
 import numpy
 import iris
 from iris.experimental.regrid import regrid_weighted_curvilinear_to_rectilinear
@@ -45,17 +45,17 @@ def add_metadata(orig_cube, new_cube, dims, inargs):
     units = '10^%d J m-2' %(inargs.scaling)
     iris.std_names.STD_NAMES[standard_name] = {'canonical_units': units}
 
-    out_cube.standard_name = standard_name
-    out_cube.long_name = 'ocean heat content %s'  %(dims)
-    out_cube.var_name = 'ohc_%s'  %(dims)
-    out_cube.units = units
-    out_cube.attributes = orig_cube.attributes
+    new_cube.standard_name = standard_name
+    new_cube.long_name = 'ocean heat content %s'  %(dims)
+    new_cube.var_name = 'ohc_%s'  %(dims)
+    new_cube.units = units
+    new_cube.attributes = orig_cube.attributes
 
-    depth_text = 'OHC integrated over %s' %(gio.vertical_bounds_text(in_cube.coord('depth').points, inargs.min_depth, inargs.max_depth))
+    depth_text = 'OHC integrated over %s' %(gio.vertical_bounds_text(orig_cube.coord('depth').points, inargs.min_depth, inargs.max_depth))
     new_cube.attributes['depth_bounds'] = depth_text
 
     infile_history = {inargs.infile: orig_cube.attributes['history']}
-    new_cube.attributes['history'] = gio.write_metadata(file_info=infile_history)
+    new_cube.attributes['history'] = gio.write_metadata(file_info=infile_history)    
 
     return new_cube
 
@@ -63,11 +63,11 @@ def add_metadata(orig_cube, new_cube, dims, inargs):
 def broadcast_weights(weights, axis_index, data_shape):
     """Broadcast the one dimesional weights array to same shape as data."""
 
-    dim = 0
-    while dim < axis_index:
+    dim = axis_index - 1
+    while dim >= 0:
         weights = weights[numpy.newaxis, ...]
         weights = numpy.repeat(weights, data_shape[dim], axis=0)
-        dim = dim + 1
+        dim = dim - 1
     
     dim = axis_index + 1
     while dim < len(data_shape):    
@@ -84,6 +84,9 @@ def calc_ohc_2D(cube, weights, inargs):
     integral = cube.collapsed(['depth', 'longitude'], iris.analysis.SUM, weights=weights)
     ohc_per_m = (integral * inargs.density * inargs.specific_heat) / (10**inargs.scaling)
 
+    ohc_per_m.remove_coord('depth')
+    ohc_per_m.remove_coord('longitude')
+
     return ohc_per_m
 
 
@@ -92,6 +95,8 @@ def calc_ohc_3D(cube, weights, inargs):
 
     integral = cube.collapsed('depth', iris.analysis.SUM, weights=weights)
     ohc_per_m2 = (integral * inargs.density * inargs.specific_heat) / (10**inargs.scaling)
+
+    ohc_per_m2.remove_coord('depth')
 
     return ohc_per_m2
 
@@ -134,13 +139,16 @@ def calc_zonal_weights(cube, coord_list):
     """
 
     lon_axis = cube.coord('longitude')
-    lon_index = coord_list.index('depth')
+    lon_index = coord_list.index('longitude')
+
+    if not lon_axis.has_bounds():
+        lon_axis.guess_bounds()
 
     coslat = cosine_latitude_weights(cube)
     radius = iris.analysis.cartography.DEFAULT_SPHERICAL_EARTH_RADIUS
+
     lon_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, lon_axis.bounds)
     lon_diffs = broadcast_weights(lon_diffs, lon_index, cube.shape)
-
     lon_extents = (math.pi / 180.) * radius * coslat * lon_diffs
 
     return lon_extents
@@ -239,7 +247,7 @@ def main(inargs):
     ohc_per_m2 = add_metadata(cube, ohc_per_m2, '3D', inargs)
     ohc_per_m = add_metadata(cube, ohc_per_m, '2D', inargs)
 
-    cube_list = iris.cube.CubeList(ohc_per_m2, ohc_per_m)
+    cube_list = iris.cube.CubeList([ohc_per_m2, ohc_per_m])
     out_cube = cube_list.concatenate()
     iris.save(out_cube, inargs.outfile)
 
