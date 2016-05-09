@@ -40,6 +40,22 @@ except ImportError:
 
 # Define functions
 
+def calc_trend(cube):
+    """ """
+
+    coord_names = [coord.name() for coord in cube.dim_coords]
+    assert coord_names[0] == 'time'
+
+    time_axis = cube.coord('time')
+
+    cube = undo_unit_scaling(cube)
+    time_axis = convert_to_seconds(time_axis)
+    trend = numpy.ma.apply_along_axis(linear_trend, 0, cube.data, time_axis.points)
+    trend = numpy.ma.masked_values(trend, cube.data.fill_value)
+
+    return trend
+
+
 def linear_trend(data, time_axis):
     """Calculate the linear trend.
 
@@ -85,30 +101,7 @@ def convert_to_seconds(time_axis):
     return time_axis
 
 
-def zonal_heat_gain(trends, weights, lon_axis):
-    """Calculate the zonal heat gain.
-
-    In moving from W/m2 to W/m need to account for the fact 
-      that the length of a degree of longitude is a function of 
-      latitude. The formula for the length of one degree of 
-      longitude is (pi/180) a cos(lat), where a is the radius of 
-      the earth.
-
-    """
-
-    radius = iris.analysis.cartography.DEFAULT_SPHERICAL_EARTH_RADIUS
-    
-    lon_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, lon_axis.bounds)
-    lon_diffs = lon_diffs[numpy.newaxis, :]
-    lon_extents = (math.pi / 180.) * radius * weights[0,:,:] * lon_diffs
-
-    weighted_trends = trends * lon_extents
-    zonal_heat_gain = weighted_trends.sum(axis=1) / 10**7
-
-    return zonal_heat_gain
-
-
-def plot_trends(trends, lons, lats, gs):
+def plot_3D_trend(trends, lons, lats, gs):
     """Plot the trends."""
 
     ax = plt.subplot(gs[0], projection=ccrs.PlateCarree(central_longitude=180.0))
@@ -133,12 +126,12 @@ def plot_trends(trends, lons, lats, gs):
     cbar.set_label('$Wm^{-2}$')
 
 
-def plot_zonal_heat_gain(zhg, lats, gs):
+def plot_2D_trend(trends, lats, gs):
     """Plot the zonally integrated trends (i.e. zonal heat gain)"""
 
     ax = plt.subplot(gs[1])
     plt.sca(ax)
-    ax.plot(zhg, lats)
+    ax.plot(trends / 10**7, lats)
     ax.set_xlabel('Heat gain ($10^7$ $W m^{-1}$)', fontsize='small')
     ax.set_ylabel('Latitude', fontsize='small')
     ax.axvline(0, color='0.7', linestyle='solid')
@@ -155,35 +148,25 @@ def main(inargs):
         time_constraint = iris.Constraint()
 
     with iris.FUTURE.context(cell_datetime_objects=True):
-        cube = iris.load_cube(inargs.infile, 'ocean heat content' & time_constraint)  
+        ohc_3D_cube = iris.load_cube(inargs.infile, 'ocean heat content 3D' & time_constraint)  
+        ohc_2D_cube = iris.load_cube(inargs.infile, 'ocean heat content 2D' & time_constraint)
 
-    coord_names = [coord.name() for coord in cube.dim_coords]
-    assert coord_names == ['time', 'latitude', 'longitude']
-
-    infile_history = cube.attributes['history']
-    time_axis = cube.coord('time')
-    lat_axis = cube.coord('latitude')
-    lon_axis = cube.coord('longitude')
-    if lon_axis.bounds == None:
-        lon_axis.guess_bounds()
+    lons = ohc_3D_cube.coord('longitude').points
+    lats = ohc_3D_cube.coord('latitude').points
 
     # Calculate trend
-    cube = undo_unit_scaling(cube)
-    time_axis = convert_to_seconds(time_axis)
-    trend = numpy.ma.apply_along_axis(linear_trend, 0, cube.data, time_axis.points)
-    trend = numpy.ma.masked_values(trend, cube.data.fill_value)
-
-    # Calculate zonal mean heat gain
-    weights = cosine_latitude_weights(cube)
-    zhg = zonal_heat_gain(trend, weights, lon_axis)
+    ohc_3D_trend = calc_trend(ohc_3D_cube)
+    ohc_2D_trend = calc_trend(ohc_2D_cube)
 
     # Plot
     fig = plt.figure(figsize=[15, 3])
     gs = gridspec.GridSpec(1, 2, width_ratios=[4, 1]) 
-    plot_trends(trend, lon_axis.points, lat_axis.points, gs)
-    plot_zonal_heat_gain(zhg, lat_axis.points, gs)
+    plot_3D_trend(ohc_3D_trend, lons, lats, gs)
+    plot_2D_trend(ohc_2D_trend, lats, gs)
 
+    # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
+    infile_history = ohc_3D_cube.attributes['history']
     gio.write_metadata(inargs.outfile, file_info={inargs.outfile:infile_history})
 
 
