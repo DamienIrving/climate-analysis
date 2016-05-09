@@ -13,6 +13,7 @@ import numpy
 import iris
 from iris.experimental.regrid import regrid_weighted_curvilinear_to_rectilinear
 from iris.analysis.cartography import cosine_latitude_weights
+import gsw
 
 # Import my modules
 
@@ -101,18 +102,13 @@ def calc_ohc_3D(cube, weights, inargs):
     return ohc_per_m2
 
 
-def calc_vertical_weights(depth_axis, coord_list, data_shape):
-    """Calculate vertical weights. 
-
-    Defined as the distance (m) between levels.
-
-    """
+def calc_vertical_weights_1D(depth_axis, coord_list, data_shape):
+    """Calculate vertical weights for a 1D depth axis with units = m"""
 
     # Calculate weights
     if not depth_axis.has_bounds():
         depth_axis.guess_bounds()
     level_bounds = depth_axis.bounds
-
     level_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, level_bounds)
 
     #guess_bounds can produce negative bound at surface
@@ -124,6 +120,28 @@ def calc_vertical_weights(depth_axis, coord_list, data_shape):
     level_diffs = broadcast_weights(level_diffs, depth_index, data_shape)
 
     return level_diffs
+
+
+def calc_vertical_weights_2D(pressure_vals, latitude_vals, data_shape):
+    """Calculate vertical weights for a 2D depth axis (i.e. pressure, latitude)"""
+
+    ntime, nlev, nlat, nlon = data_shape
+
+    depth_diffs = numpy.zeros([nlev, nlat])
+    for lat_index in range(0, nlat):
+        height_vals = gsw.z_from_p(pressure_vals, latitude_vals[lat_index])
+        depth_vals = gsw.depth_from_z(height_vals)
+        depth_bounds = guess_bounds(depth_vals)
+        depth_diffs[:, lat_index] = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, depth_bounds)
+
+    # Braodcast
+    depth_diffs = depth_diffs[numpy.newaxis, ...]
+    depth_diffs = numpy.repeat(depth_diffs, ntime, axis=0)
+
+    depth_diffs = depth_diffs[..., numpy.newaxis]
+    depth_diffs = numpy.repeat(depth_diffs, nlon, axis=-1)
+
+    return depth_diffs
 
 
 def calc_zonal_weights(cube, coord_list):
@@ -207,6 +225,27 @@ def get_anomaly_data(inargs):
     return cube
 
 
+def guess_bounds(points, bound_position=0.5):
+    """The guess_bounds method taken copied from iris.
+    
+    This implementation is specifically for the depth axis 
+
+    """
+
+    diffs = numpy.diff(points)
+    diffs = numpy.insert(diffs, 0, diffs[0])
+    diffs = numpy.append(diffs, diffs[-1])
+
+    min_bounds = points - diffs[:-1] * bound_position
+    max_bounds = points + diffs[1:] * (1 - bound_position)
+
+    bounds = numpy.array([min_bounds, max_bounds]).transpose()
+    if bounds[0, 0] < 0.0:
+        bounds[0, 0] = 0
+
+    return bounds
+
+
 def make_grid(lat_values, lon_values):
     """Make a dummy cube with desired grid."""
        
@@ -235,9 +274,16 @@ def main(inargs):
     cube, coord_names = curvilinear_to_rectilinear(cube)
 
     assert coord_names == ['time', 'depth', 'latitude', 'longitude']
+    
+    depth_axis = cube.coord('depth')
+    assert depth_axis.units in ['m', 'dbar'], "Unrecognised depth axis units"
 
     # Calculate heat content
-    vertical_weights = calc_vertical_weights(cube.coord('depth'), coord_names, cube.shape)
+    if depth_axis.units == 'm':
+        vertical_weights = calc_vertical_weights_1D(depth_axis, coord_list, cube.shape)
+    elif depth_axis.units == 'dbar':
+        vertical_weights = calc_vertical_weights_2D(depth_axis.points, cube.coord('latitude').points, cube.shape)
+
     zonal_weights = calc_zonal_weights(cube, coord_names)
 
     ohc_per_m2 = calc_ohc_3D(cube, vertical_weights, inargs)
