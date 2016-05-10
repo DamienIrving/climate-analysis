@@ -185,7 +185,6 @@ author:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("infile", type=str, help="Input ocean heat content file")
-    parser.add_argument("var", type=str, help="Input variable standard_name")
     parser.add_argument("outfile", type=str, help="Output file name")
     
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
