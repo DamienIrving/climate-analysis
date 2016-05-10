@@ -118,16 +118,18 @@ def read_data(inargs):
         temperature_cube = iris.load_cube(inargs.temperature_file, inargs.temperature_var & level_subset)
         volume_cube = iris.load_cube(inargs.volume_file, inargs.volume_var & level_subset)
 
+    temperature_atts = temperature_cube.attributes
+
     # Calculate anomaly
     if inargs.climatology_file:
         with iris.FUTURE.context(cell_datetime_objects=True):
-            climatology_cube = iris.load_cube(inargs.climatology_file, inargs.var & level_subset)
+            climatology_cube = iris.load_cube(inargs.climatology_file, inargs.temperature_var & level_subset)
         temperature_cube = temperature_cube - climatology_cube
 
-    return temperature_cube, volume_cube
+    return temperature_cube, volume_cube, temperature_atts
 
 
-def calc_metrics(temperature_cube, volume_cube):
+def calc_metrics(inargs, temperature_cube, volume_cube):
     """Calculate the ocean heat content metrics"""
 
     TdV = temperature_cube * volume_cube
@@ -140,30 +142,30 @@ def calc_metrics(temperature_cube, volume_cube):
     return ohc_dict
 
 
-def get_attributes(inargs, temperature_cube, volume_cube):
+def get_attributes(inargs, temperature_atts, volume_cube):
     """Get the attributes for the output cubes."""
     
-    lev_coord = temperature_cube.coord('depth')
+    lev_coord = volume_cube.coord('depth')
     bounds_info = gio.vertical_bounds_text(lev_coord.points, inargs.min_depth, inargs.max_depth)
     depth_text = 'OHC integrated over %s' %(bounds_info)
-    temperature_cube.attributes['depth_bounds'] = depth_text
+    temperature_atts['depth_bounds'] = depth_text
 
-    infile_history = {inargs.temperature_file: temperature_cube.attributes['history'],
+    infile_history = {inargs.temperature_file: temperature_atts['history'],
                       inargs.volume_file: volume_cube.attributes['history']}
-    temperature_cube.attributes['history'] = gio.write_metadata(file_info=infile_history)
+    temperature_atts['history'] = gio.write_metadata(file_info=infile_history)
 
-    return temperature_cube.attributes
+    return temperature_atts
 
 
 def main(inargs):
     """Run the program."""
     
-    temperature_cube, volume_cube = read_data(inargs)
-    ohc_dict = calc_metrics(temperature_cube, volume_cube)
+    temperature_cube, volume_cube, temperature_atts = read_data(inargs)
+    ohc_dict = calc_metrics(inargs, temperature_cube, volume_cube)
     
     # Get all the metadata
     units = '10^%d J m-2' %(inargs.scaling)
-    atts = get_attributes(inargs, temperature_cube)
+    atts = get_attributes(inargs, temperature_atts, volume_cube)
     
     # Write the output file
     out_cubes = []
@@ -178,7 +180,7 @@ def main(inargs):
                                   var_name=var_name,
                                   units=units,
                                   attributes=atts,
-                                  dim_coords_and_dims=[(cube.coord('time'), 0)],
+                                  dim_coords_and_dims=[(temperature_cube.coord('time'), 0)],
                                   )
         out_cubes.append(ohc_cube)        
 
