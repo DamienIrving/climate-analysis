@@ -36,7 +36,7 @@ except ImportError:
 
 # Define functions
 
-def add_metadata(orig_cube, new_cube, dims, inargs):
+def add_metadata(orig_atts, depth_axis, new_cube, dims, inargs):
     """Add metadata to the output cube.
     
     dims = '3D' or '2D'
@@ -51,12 +51,12 @@ def add_metadata(orig_cube, new_cube, dims, inargs):
     new_cube.long_name = 'ocean heat content %s'  %(dims)
     new_cube.var_name = 'ohc_%s'  %(dims)
     new_cube.units = units
-    new_cube.attributes = orig_cube.attributes
+    new_cube.attributes = orig_atts
 
-    depth_text = 'OHC integrated over %s' %(gio.vertical_bounds_text(orig_cube.coord('depth').points, inargs.min_depth, inargs.max_depth))
+    depth_text = 'OHC integrated over %s' %(gio.vertical_bounds_text(depth_axis, inargs.min_depth, inargs.max_depth))
     new_cube.attributes['depth_bounds'] = depth_text
 
-    infile_history = {inargs.infile: orig_cube.attributes['history']}
+    infile_history = {inargs.infile: orig_atts['history']}
     new_cube.attributes['history'] = gio.write_metadata(file_info=infile_history)    
 
     return new_cube
@@ -198,6 +198,7 @@ def get_anomaly_data(inargs):
     level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
     with iris.FUTURE.context(cell_datetime_objects=True):
         cube = iris.load_cube(inargs.infile, inargs.var & level_subset)
+    atts = cube.attributes
 
     # Calculate anomaly
     if inargs.climatology_file:
@@ -205,7 +206,7 @@ def get_anomaly_data(inargs):
             climatology_cube = iris.load_cube(inargs.climatology_file, inargs.var & level_subset)
         cube = cube - climatology_cube
 
-    return cube
+    return cube, atts
 
 
 def guess_bounds(points, bound_position=0.5):
@@ -253,7 +254,7 @@ def make_grid(lat_values, lon_values):
 def main(inargs):
     """Run the program."""
     
-    cube = get_anomaly_data(inargs)
+    cube, atts = get_anomaly_data(inargs)
     cube, coord_names = curvilinear_to_rectilinear(cube)
 
     assert coord_names == ['time', 'depth', 'latitude', 'longitude']
@@ -273,8 +274,8 @@ def main(inargs):
     ohc_per_m = calc_ohc_2D(cube, vertical_weights * zonal_weights, inargs)
    
     # Write the output file
-    ohc_per_m2 = add_metadata(cube, ohc_per_m2, '3D', inargs)
-    ohc_per_m = add_metadata(cube, ohc_per_m, '2D', inargs)
+    ohc_per_m2 = add_metadata(atts, depth_axis.points, ohc_per_m2, '3D', inargs)
+    ohc_per_m = add_metadata(atts, depth_axis.points, ohc_per_m, '2D', inargs)
 
     cube_list = iris.cube.CubeList([ohc_per_m2, ohc_per_m])
     out_cube = cube_list.concatenate()
