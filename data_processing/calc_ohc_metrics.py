@@ -57,7 +57,7 @@ def calc_metrics(inargs, temperature_cube, volume_cube):
     return ohc_dict
 
 
-def create_metric_cube(ohc_dict, units, time_coord):
+def create_metric_cube(ohc_dict, units, atts, time_coord):
     """Create an ohc metric cube corresponding to a single input file."""
 
     metric_cubes = []
@@ -66,12 +66,12 @@ def create_metric_cube(ohc_dict, units, time_coord):
         long_name = 'ocean heat content over %s'  %(region.replace('_', ' '))
         var_name = 'ohc_'+region
         iris.std_names.STD_NAMES[standard_name] = {'canonical_units': units}
-        #FIXME: Might need to put the atts back in at this stage...
         ohc_cube = iris.cube.Cube(ohc_dict[region].data,
                                   standard_name=standard_name,
                                   long_name=long_name,
                                   var_name=var_name,
                                   units=units,
+                                  attributes=atts,
                                   dim_coords_and_dims=[(time_coord, 0)],
                                   )
         metric_cubes.append(ohc_cube)        
@@ -171,13 +171,15 @@ def save_history(cube, field, filename):
     history.append(cube.attributes['history'])
 
 
-def set_attributes(out_cube, inargs, temperature_cube, volume_cube, climatology_cube):
+def set_attributes(inargs, temperature_cube, volume_cube, climatology_cube):
     """Set the attributes for the output cube."""
     
+    atts = temperature_cube.attributes
+
     lev_coord = temperature_cube.coord('depth')
     bounds_info = gio.vertical_bounds_text(lev_coord.points, inargs.min_depth, inargs.max_depth)
     depth_text = 'OHC integrated over %s' %(bounds_info)
-    out_cube.attributes['depth_bounds'] = depth_text
+    atts['depth_bounds'] = depth_text
 
     infile_history = {}
     infile_history[inargs.temperature_files[0]] = history[0]
@@ -186,9 +188,9 @@ def set_attributes(out_cube, inargs, temperature_cube, volume_cube, climatology_
     if climatology_cube:                  
         infile_history[inargs.climatology_file] = climatology_cube.attributes['history']
 
-    out_cube.attributes['history'] = gio.write_metadata(file_info=infile_history)
+    atts['history'] = gio.write_metadata(file_info=infile_history)
 
-    return out_cube
+    return atts
 
 
 def main(inargs):
@@ -198,7 +200,9 @@ def main(inargs):
     volume_cube, climatology_cube = read_optional_data(inargs, level_subset)
     temperature_cubes = iris.load(inargs.temperature_files, inargs.temperature_var, callback=save_history)
     equalise_attributes(temperature_cubes)
+
     units = '10^%d J m-2' %(inargs.scaling)
+    atts = set_attributes(inargs, temperature_cubes[0], volume_cube, climatology_cube)
 
     out_cubes = []
     for temperature_cube in temperature_cubes:
@@ -208,16 +212,21 @@ def main(inargs):
 
         #TODO: Account for volume_cube = None
         ohc_dict = calc_metrics(inargs, temperature_cube, volume_cube)   
-        metric_cube = create_metric_cube(ohc_dict, units, temperature_cube.coord('time'))
+        metric_cube = create_metric_cube(ohc_dict, units, atts, temperature_cube.coord('time'))
 
         out_cubes.append(metric_cube)
-    
-    pdb.set_trace()
 
-    cube_list = iris.cube.CubeList(out_cubes)
-    out_cube = cube_list.concatenate_cube()
-    out_cube = set_attributes(out_cube, inargs, temperature_cube, volume_cube, climatology_cube)
-    iris.save(out_cubes, inargs.outfile)
+    cube_list = []
+    for region_index in range(0, len(regions.keys())):
+        temp_list = []
+        for infile_index in range(0, len(inargs.temperature_files)):
+            temp_list.append(out_cubes[infile_index][region_index])
+        
+        temp_list = iris.cube.CubeList(temp_list)     
+        cube_list.append(temp_list.concatenate_cube())
+    
+    cube_list = iris.cube.CubeList(cube_list)
+    iris.save(cube_list, inargs.outfile)
 
 
 if __name__ == '__main__':
