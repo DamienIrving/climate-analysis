@@ -29,6 +29,7 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -59,24 +60,6 @@ def add_metadata(orig_cube, new_cube, dims, inargs):
     new_cube.attributes['history'] = gio.write_metadata(file_info=infile_history)    
 
     return new_cube
-
-
-def broadcast_weights(weights, axis_index, data_shape):
-    """Broadcast the one dimesional weights array to same shape as data."""
-
-    dim = axis_index - 1
-    while dim >= 0:
-        weights = weights[numpy.newaxis, ...]
-        weights = numpy.repeat(weights, data_shape[dim], axis=0)
-        dim = dim - 1
-    
-    dim = axis_index + 1
-    while dim < len(data_shape):    
-        weights = weights[..., numpy.newaxis]
-        weights = numpy.repeat(weights, data_shape[dim], axis=-1)
-        dim = dim + 1
-
-    return weights
 
 
 def calc_ohc_2D(cube, weights, inargs):
@@ -117,7 +100,7 @@ def calc_vertical_weights_1D(depth_axis, coord_list, data_shape):
 
     # Broadcast to size of data
     depth_index = coord_list.index('depth')
-    level_diffs = broadcast_weights(level_diffs, depth_index, data_shape)
+    level_diffs = uconv.broadcast_array(level_diffs, depth_index, data_shape)
 
     return level_diffs
 
@@ -166,7 +149,7 @@ def calc_zonal_weights(cube, coord_list):
     radius = iris.analysis.cartography.DEFAULT_SPHERICAL_EARTH_RADIUS
 
     lon_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, lon_axis.bounds)
-    lon_diffs = broadcast_weights(lon_diffs, lon_index, cube.shape)
+    lon_diffs = uconv.broadcast_array(lon_diffs, lon_index, cube.shape)
     lon_extents = (math.pi / 180.) * radius * coslat * lon_diffs
 
     return lon_extents

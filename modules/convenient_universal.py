@@ -3,7 +3,8 @@
 Functions:
   adjust_lon_range   -- Express longitude values in desired 360 degree interval
   apply_lon_filter   -- Set values outside of specified longitude range to zero
-  calc_significance  -- 
+  broadcast_array    -- Broadcast a one dimensional array to a target shape
+  calc_significance  -- Perform significance test
   coordinate_paris   -- Generate lat/lon pairs
   dict_filter        -- Filter dictionary according to specified keys
   find_nearest       -- Find the closest array item to value
@@ -76,6 +77,33 @@ def apply_lon_filter(data, lon_bounds):
     new_data = numpy.where(lon_axis_tiled < lon_min, 0.0, data)
     
     return numpy.where(lon_axis_tiled > lon_max, 0.0, new_data)
+
+
+def broadcast_array(array, axis_index, shape):
+    """Broadcast a one dimensional array to a target shape.
+    
+    Args:
+      array (numpy.ndarray): One dimensional array
+      axis_index (int): Postion in the target shape that the array
+        corresponds to (e.g. if array corresponds to lat in (time, depth
+        lat, lon) array then index = 2
+      shape (tuple): shape to broadcast to
+    
+    """
+
+    dim = axis_index - 1
+    while dim >= 0:
+        array = array[numpy.newaxis, ...]
+        array = numpy.repeat(array, shape[dim], axis=0)
+        dim = dim - 1
+    
+    dim = axis_index + 1
+    while dim < len(shape):    
+        array = array[..., numpy.newaxis]
+        array = numpy.repeat(array, shape[dim], axis=-1)
+        dim = dim + 1
+
+    return array
 
 
 def calc_significance(data_subset, data_all, standard_name):

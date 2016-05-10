@@ -28,10 +28,19 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 # Define functions
+
+regions = {'southern_extratropics': [-90, -20],
+          'tropics': [-20, 20],
+          'northern_extratropics': [20, 90],
+          'outside_southern_extratropics': [-20, 90],
+          'globe': [-90, 90],
+          'globe60': [-60, 60]
+          }
 
 def in_flag(lat_value, south_bound, north_bound):
     """Determine if a point is in the region of interest.
@@ -47,7 +56,7 @@ def in_flag(lat_value, south_bound, north_bound):
         return True 
         
 
-def region_mask(data_mask, latitudes, south_bound, north_bound):
+def region_mask(cube, south_bound, north_bound):
     """Create mask for excluding points not in region of interest.
 
     False corresponds to points that are not masked.
@@ -60,11 +69,23 @@ def region_mask(data_mask, latitudes, south_bound, north_bound):
 
     """
 
+    data_mask = cube.data.mask
+    dim_coord_names = [coord.name() for coord in cube.dim_coords]
+    aux_coord_names = [coord.name() for coord in cube.aux_coords]
+    
+    lat_coord = cube.coord('latitude')
+    
     vin_flag = numpy.vectorize(in_flag)
-    in_region = vin_flag(latitudes, south_bound, north_bound)
+    in_region = vin_flag(lat_coord.points, south_bound, north_bound)
 
-    while in_region.ndim < data_mask.ndim:
-        in_region = in_region[numpy.newaxis, ...]
+    if 'latitude' in dim_coord_names:
+        lat_index = dim_coord_names.index('latitude')
+        in_region = uconv.broadcast_array(in_region, lat_index, cube.shape)
+    elif 'latitude' in aux_coord_names:
+        assert 'time' in dim_coord_names[0:2], "Last two axes must be spatial coordinates"
+        assert 'depth' in dim_coord_names[0:2], "Last two axes must be spatial coordinates"
+        while in_region.ndim < data_mask.ndim:
+            in_region = in_region[numpy.newaxis, ...]
 
     mask = data_mask + in_region
 
@@ -84,54 +105,66 @@ def heat_content(TdV_cube, mask, density, cp, scale_factor):
     return result
 
 
-def main(inargs):
-    """Run the program."""
+def read_data(inargs):
+    """Read the input data.
     
+    Will calculate the temperature anomaly if necessary.
+    
+    """
+
     # Read the data
     level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
     with iris.FUTURE.context(cell_datetime_objects=True):
         temperature_cube = iris.load_cube(inargs.temperature_file, inargs.temperature_var & level_subset)
         volume_cube = iris.load_cube(inargs.volume_file, inargs.volume_var & level_subset)
 
-    coord_names = [coord.name() for coord in temperature_cube.coords()]
-    assert coord_names[0] == 'time', "First axis must be time"
-    if 'depth' in coord_names:
-        assert coord_names[1] == 'depth', "Depth must be the second axis"    
-
-    time_coord = temperature_cube.coord('time') 
-    lev_coord = temperature_cube.coord('depth')
-    lat_coord = temperature_cube.coord('latitude')
-
-    # Calculate the heat content
+    # Calculate anomaly
     if inargs.climatology_file:
         with iris.FUTURE.context(cell_datetime_objects=True):
-            climatology_cube = iris.load_cube(inargs.climatology_file, inargs.temperature_var & level_subset)
-        temperature_anomaly = temperature_cube - climatology_cube
-        TdV = temperature_anomaly * volume_cube
-    else:
-        TdV = temperature_cube * volume_cube
+            climatology_cube = iris.load_cube(inargs.climatology_file, inargs.var & level_subset)
+        temperature_cube = temperature_cube - climatology_cube
 
-    regions = {'southern_extratropics': [-90, -20],
-               'tropics': [-20, 20],
-               'northern_extratropics': [20, 90],
-               'outside_southern_extratropics': [-20, 90]
-              }
+    return temperature_cube, volume_cube
+
+
+def calc_metrics(temperature_cube, volume_cube):
+    """Calculate the ocean heat content metrics"""
+
+    TdV = temperature_cube * volume_cube
                
     ohc_dict = {}
     for region, bounds in regions.iteritems():
-        mask = region_mask(TdV.data.mask, lat_coord.points, bounds[0], bounds[-1])
+        mask = region_mask(TdV, bounds[0], bounds[-1])
         ohc_dict[region] = heat_content(TdV.copy(), mask, inargs.density, inargs.specific_heat, inargs.scaling)
 
-    # Get all the metadata
-    units = '10^%d J m-2' %(inargs.scaling)
+    return ohc_dict
 
-    depth_text = 'OHC integrated over %s' %(gio.vertical_bounds_text(lev_coord.points, inargs.min_depth, inargs.max_depth))
+
+def get_attributes(inargs, temperature_cube, volume_cube):
+    """Get the attributes for the output cubes."""
+    
+    lev_coord = temperature_cube.coord('depth')
+    bounds_info = gio.vertical_bounds_text(lev_coord.points, inargs.min_depth, inargs.max_depth)
+    depth_text = 'OHC integrated over %s' %(bounds_info)
     temperature_cube.attributes['depth_bounds'] = depth_text
 
     infile_history = {inargs.temperature_file: temperature_cube.attributes['history'],
                       inargs.volume_file: volume_cube.attributes['history']}
     temperature_cube.attributes['history'] = gio.write_metadata(file_info=infile_history)
 
+    return temperature_cube.attributes
+
+
+def main(inargs):
+    """Run the program."""
+    
+    temperature_cube, volume_cube = read_data(inargs)
+    ohc_dict = calc_metrics(temperature_cube, volume_cube)
+    
+    # Get all the metadata
+    units = '10^%d J m-2' %(inargs.scaling)
+    atts = get_attributes(inargs, temperature_cube)
+    
     # Write the output file
     out_cubes = []
     for region in regions.keys():
@@ -144,8 +177,8 @@ def main(inargs):
                                   long_name=long_name,
                                   var_name=var_name,
                                   units=units,
-                                  attributes=temperature_cube.attributes,
-                                  dim_coords_and_dims=[(time_coord, 0)],
+                                  attributes=atts,
+                                  dim_coords_and_dims=[(cube.coord('time'), 0)],
                                   )
         out_cubes.append(ohc_cube)        
 
