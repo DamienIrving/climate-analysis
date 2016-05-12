@@ -12,6 +12,7 @@ import argparse, math
 import numpy
 import iris
 from iris.experimental.regrid import regrid_weighted_curvilinear_to_rectilinear
+from iris.experimental.equalise_cubes import equalise_attributes
 from iris.analysis.cartography import cosine_latitude_weights
 import gsw
 
@@ -36,6 +37,8 @@ except ImportError:
 
 # Define functions
 
+history = []
+
 def add_metadata(orig_atts, depth_axis, new_cube, dims, inargs):
     """Add metadata to the output cube.
     
@@ -56,7 +59,7 @@ def add_metadata(orig_atts, depth_axis, new_cube, dims, inargs):
     depth_text = 'OHC integrated over %s' %(gio.vertical_bounds_text(depth_axis, inargs.min_depth, inargs.max_depth))
     new_cube.attributes['depth_bounds'] = depth_text
 
-    infile_history = {inargs.infile: orig_atts['history']}
+    infile_history = {inargs.temperature_files[0]: orig_atts['history']}
     new_cube.attributes['history'] = gio.write_metadata(file_info=infile_history)    
 
     return new_cube
@@ -191,24 +194,6 @@ def curvilinear_to_rectilinear(cube):
     return new_cube, coord_names
 
 
-def get_anomaly_data(inargs):
-    """Read the input data and calculate anomaly if necessary."""
-
-    # Read the data
-    level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
-    with iris.FUTURE.context(cell_datetime_objects=True):
-        cube = iris.load_cube(inargs.infile, inargs.var & level_subset)
-    atts = cube.attributes
-
-    # Calculate anomaly
-    if inargs.climatology_file:
-        with iris.FUTURE.context(cell_datetime_objects=True):
-            climatology_cube = iris.load_cube(inargs.climatology_file, inargs.var & level_subset)
-        cube = cube - climatology_cube
-
-    return cube, atts
-
-
 def guess_bounds(points, bound_position=0.5):
     """The guess_bounds method taken copied from iris.
     
@@ -251,35 +236,97 @@ def make_grid(lat_values, lon_values):
     return new_cube
 
 
+def read_climatology(climatology_file, variable, level_subset):
+    """Read the optional input data (volume and climatology)."""
+
+    if climatology_file:
+        with iris.FUTURE.context(cell_datetime_objects=True):
+            climatology_cube = iris.load_cube(climatology_file, variable & level_subset)
+    else:
+        climatology_cube = None
+
+    return climatology_cube
+
+
+def save_history(cube, field, filename):
+    """Save the history attribute when reading the data.
+    (This is required because the history attribute differs between input files 
+      and is therefore deleted upon equilising attributes)  
+    """ 
+
+    history.append(cube.attributes['history'])
+
+
+def set_attributes(inargs, temperature_cube, climatology_cube):
+    """Set the attributes for the output cube."""
+    
+    atts = temperature_cube.attributes
+
+    lev_coord = temperature_cube.coord('depth')
+    bounds_info = gio.vertical_bounds_text(lev_coord.points, inargs.min_depth, inargs.max_depth)
+    depth_text = 'OHC integrated over %s' %(bounds_info)
+    atts['depth_bounds'] = depth_text
+
+    infile_history = {}
+    infile_history[inargs.temperature_files[0]] = history[0]
+    if climatology_cube:                  
+        infile_history[inargs.climatology_file] = climatology_cube.attributes['history']
+
+    atts['history'] = gio.write_metadata(file_info=infile_history)
+
+    return atts
+
+
 def main(inargs):
     """Run the program."""
+
+    level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
+    climatology_cube = read_climatology(inargs.climatology_file, inargs.temperature_var, level_subset)
+    temperature_cubes = iris.load(inargs.temperature_files, inargs.temperature_var, callback=save_history)
+    equalise_attributes(temperature_cubes)
+    atts = set_attributes(inargs, temperature_cubes[0], climatology_cube)
+
+    out_cubes = []
+    for temperature_cube in temperature_cubes:
+
+        if climatology_cube:
+            temperature_cube = temperature_cube - climatology_cube
+        temperature_cube, coord_names = curvilinear_to_rectilinear(temperature_cube)
+
+        assert coord_names == ['time', 'depth', 'latitude', 'longitude']
     
-    cube, atts = get_anomaly_data(inargs)
-    cube, coord_names = curvilinear_to_rectilinear(cube)
+        depth_axis = temperature_cube.coord('depth')
+        assert depth_axis.units in ['m', 'dbar'], "Unrecognised depth axis units"
 
-    assert coord_names == ['time', 'depth', 'latitude', 'longitude']
-    
-    depth_axis = cube.coord('depth')
-    assert depth_axis.units in ['m', 'dbar'], "Unrecognised depth axis units"
+        # Calculate heat content
+        if depth_axis.units == 'm':
+            vertical_weights = calc_vertical_weights_1D(depth_axis, coord_list, temperature_cube.shape)
+        elif depth_axis.units == 'dbar':
+            vertical_weights = calc_vertical_weights_2D(depth_axis.points, temperature_cube.coord('latitude').points, temperature_cube.shape)
 
-    # Calculate heat content
-    if depth_axis.units == 'm':
-        vertical_weights = calc_vertical_weights_1D(depth_axis, coord_list, cube.shape)
-    elif depth_axis.units == 'dbar':
-        vertical_weights = calc_vertical_weights_2D(depth_axis.points, cube.coord('latitude').points, cube.shape)
+        zonal_weights = calc_zonal_weights(temperature_cube, coord_names)
 
-    zonal_weights = calc_zonal_weights(cube, coord_names)
-
-    ohc_per_m2 = calc_ohc_3D(cube, vertical_weights, inargs)
-    ohc_per_m = calc_ohc_2D(cube, vertical_weights * zonal_weights, inargs)
+        ohc_per_m2 = calc_ohc_3D(temperature_cube, vertical_weights, inargs)
+        ohc_per_m = calc_ohc_2D(temperature_cube, vertical_weights * zonal_weights, inargs)
    
-    # Write the output file
-    ohc_per_m2 = add_metadata(atts, depth_axis.points, ohc_per_m2, '3D', inargs)
-    ohc_per_m = add_metadata(atts, depth_axis.points, ohc_per_m, '2D', inargs)
+        # Create the cube
+        ohc_per_m2 = add_metadata(atts, depth_axis.points, ohc_per_m2, '3D', inargs)
+        ohc_per_m = add_metadata(atts, depth_axis.points, ohc_per_m, '2D', inargs)
 
-    cube_list = iris.cube.CubeList([ohc_per_m2, ohc_per_m])
-    out_cube = cube_list.concatenate()
-    iris.save(out_cube, inargs.outfile)
+        ohc_list = iris.cube.CubeList([ohc_per_m2, ohc_per_m])
+        out_cubes.append(ohc_list.concatenate())
+
+    cube_list = []
+    for var_index in (0, 1):
+        temp_list = []
+        for infile_index in range(0, len(inargs.temperature_files)):
+            temp_list.append(out_cubes[infile_index][var_index])
+        
+        temp_list = iris.cube.CubeList(temp_list)     
+        cube_list.append(temp_list.concatenate_cube())
+    
+    cube_list = iris.cube.CubeList(cube_list)
+    iris.save(cube_list, inargs.outfile)
 
 
 if __name__ == '__main__':
@@ -301,8 +348,8 @@ notes:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infile", type=str, help="Input temperature data file")
-    parser.add_argument("var", type=str, help="Input temperature variable name (the standard_name)")
+    parser.add_argument("temperature_files", type=str, nargs='*', help="Input temperature data files")
+    parser.add_argument("temperature_var", type=str, help="Input temperature variable name (the standard_name)")
     parser.add_argument("outfile", type=str, help="Output file name")
 
     parser.add_argument("--climatology_file", type=str, default=None, 
@@ -321,9 +368,5 @@ notes:
     parser.add_argument("--scaling", type=int, default=12,
                         help="Factor by which to scale heat content (default value of 9 gives units of 10^9 J m-2)")
     
-    args = parser.parse_args()            
-
-    print 'Input file: ', args.infile
-    print 'Output file: ', args.outfile  
-
+    args = parser.parse_args()             
     main(args)
