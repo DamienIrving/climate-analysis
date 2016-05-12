@@ -3,10 +3,13 @@
 # Description: Basic workflow that underpins all other ocean heat content 
 #
 # To execute:
-#	make -n -B -f ohc_base.mk  (-n is a dry run) (-B is a force make)
+#      1. copy name of target file from ohc_base.mk 
+#      2. paste it into ohc_config.mk as the target variable  
+#      2. $ make -n -B -f ohc_base.mk  (-n is a dry run) (-B is a force make)
 
 
 # Define marcos
+
 include ohc_config.mk
 
 all : ${TARGET}
