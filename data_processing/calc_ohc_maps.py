@@ -54,13 +54,7 @@ def add_metadata(orig_atts, depth_axis, new_cube, dims, inargs):
     new_cube.long_name = 'ocean heat content %s'  %(dims)
     new_cube.var_name = 'ohc_%s'  %(dims)
     new_cube.units = units
-    new_cube.attributes = orig_atts
-
-    depth_text = 'OHC integrated over %s' %(gio.vertical_bounds_text(depth_axis, inargs.min_depth, inargs.max_depth))
-    new_cube.attributes['depth_bounds'] = depth_text
-
-    infile_history = {inargs.temperature_files[0]: orig_atts['history']}
-    new_cube.attributes['history'] = gio.write_metadata(file_info=infile_history)    
+    new_cube.attributes = orig_atts  
 
     return new_cube
 
@@ -300,7 +294,7 @@ def main(inargs):
 
         # Calculate heat content
         if depth_axis.units == 'm':
-            vertical_weights = calc_vertical_weights_1D(depth_axis, coord_list, temperature_cube.shape)
+            vertical_weights = calc_vertical_weights_1D(depth_axis, coord_names, temperature_cube.shape)
         elif depth_axis.units == 'dbar':
             vertical_weights = calc_vertical_weights_2D(depth_axis.points, temperature_cube.coord('latitude').points, temperature_cube.shape)
 
@@ -322,7 +316,8 @@ def main(inargs):
         for infile_index in range(0, len(inargs.temperature_files)):
             temp_list.append(out_cubes[infile_index][var_index])
         
-        temp_list = iris.cube.CubeList(temp_list)     
+        temp_list = iris.cube.CubeList(temp_list) 
+        pdb.set_trace()    
         cube_list.append(temp_list.concatenate_cube())
     
     cube_list = iris.cube.CubeList(cube_list)
