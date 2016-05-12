@@ -316,8 +316,7 @@ def main(inargs):
         for infile_index in range(0, len(inargs.temperature_files)):
             temp_list.append(out_cubes[infile_index][var_index])
         
-        temp_list = iris.cube.CubeList(temp_list) 
-        pdb.set_trace()    
+        temp_list = iris.cube.CubeList(temp_list)     
         cube_list.append(temp_list.concatenate_cube())
     
     cube_list = iris.cube.CubeList(cube_list)
