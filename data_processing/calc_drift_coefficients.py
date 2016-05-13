@@ -56,20 +56,9 @@ def polyfit(data, time_axis):
         return numpy.polynomial.polynomial.polyfit(time_axis, data, 3)
 
 
-def main(inargs):
-    """Run the program."""
+def calc_coefficients(cube, coord_names, time_axis):
+    """Calculate the polynomial coefficients."""
 
-    # Read the data
-    cube = iris.load(inargs.infiles, inargs.var, callback=save_history)
-    equalise_attributes(cube)
-    cube = cube.concatenate_cube()
-
-    coord_names = [coord.name() for coord in cube.coords(dim_coords=True)]
-    assert coord_names[0] == 'time', "First axis must be time"
-
-    time_axis = cube.coord('time').points
-
-    # Calculate coefficients for cubic polynomial
     if 'depth' in coord_names:
         assert coord_names[1] == 'depth', 'coordinate order must be time, depth, ...'
         slice_dims = copy.copy(coord_names)
@@ -85,43 +74,75 @@ def main(inargs):
         fill_value = cube.data.fill_value 
     coefficients = numpy.ma.masked_values(coefficients, fill_value)
 
-    # Get all the metadata
-    cube.attributes['polynomial'] = 'a + bx + cx^2 + dx^3'
-    cube.attributes['time_unit'] = str(cube.coord('time').units)
-    cube.attributes['time_calendar'] = str(cube.coord('time').units.calendar)
-    cube.attributes['time_start'] = time_axis[0]
-    cube.attributes['time_end'] = time_axis[-1]
-    cube.attributes['history'] = gio.write_metadata(file_info={inargs.infiles[0]: history[0]})  
-    #FIXME: Is there a better way to deal with lots of files?
+    return coefficients
 
-    # Write the output file
-    dim_coords = []
-    for i, coord_name in enumerate(coord_names[1:]):
-        dim_coords.append((cube.coord(coord_name), i))
 
-    if cube.aux_coords:
-        assert len(cube.aux_coords) == 2, "Script can only deal with two auxillary coordinates"
-        dims = range(0, len(coefficients.shape) - 1)
-        aux_coords = [(cube.aux_coords[0], [dims[-2], dims[-1]]), (cube.aux_coords[1], [dims[-2], dims[-1]])]
-    else:
-        aux_coords = None
-        
+def set_global_atts(inargs, cube):
+    """Set global attributes."""
+
+    atts = cube.attributes
+    atts['polynomial'] = 'a + bx + cx^2 + dx^3'
+    atts['history'] = gio.write_metadata(file_info={inargs.infiles[0]: history[0]}) 
+
+    return atts
+
+
+def main(inargs):
+    """Run the program."""
+
+    # Read the data
+
+    cubes = iris.load(inargs.infiles, callback=save_history)
+    global_atts = set_global_atts(inargs, cubes[0])
+
+    nvars = len(cubes) / len(inargs.infiles)
     out_cubes = []
-    for i, coeff in enumerate(['a', 'b', 'c', 'd']):
-        standard_name = 'coefficient_%s' %(coeff)
-        iris.std_names.STD_NAMES[standard_name] = {'canonical_units': ' '}
-        out_cubes.append(iris.cube.Cube(coefficients[i, ...],
-                                        standard_name=standard_name,
-                                        long_name='coefficient %s' %(coeff),
-                                        var_name=coeff,
-                                        units=' ',
-                                        attributes=cube.attributes,
-                                        dim_coords_and_dims=dim_coords,
-                                        aux_coords_and_dims=aux_coords))
+    for var_index in range(0, nvars):
+        cube = cubes[var_index::nvars]
+        equalise_attributes(cube)
+        cube = cube.concatenate_cube()
+
+        coord_names = [coord.name() for coord in cube.coords(dim_coords=True)]
+        assert coord_names[0] == 'time', "First axis must be time"
+        time_axis = cube.coord('time').points
+        
+        coefficients = calc_coefficients(cube, coord_names, time_axis)
+
+        # Write the output file
+
+        iris.std_names.STD_NAMES['drift_coefficient'] = {'canonical_units': 1}
+        coefficient_coord = iris.coords.DimCoord(numpy.array([1, 2, 3, 4]), 
+                                              standard_name='drift_coefficient', long_name='drift coefficient', 
+                                              var_name='coefficient', attributes=None)
+
+        dim_coords = [(coefficient_coord, 0)]
+        for i, coord_name in enumerate(coord_names[1:]):
+            dim_coords.append((cube.coord(coord_name), i + 1))
+
+        if cube.aux_coords:
+            assert len(cube.aux_coords) == 2, "Script can only deal with two auxillary coordinates"
+            dims = range(0, len(coefficients.shape) - 1)
+            aux_coords = [(cube.aux_coords[0], [dims[-2], dims[-1]]), (cube.aux_coords[1], [dims[-2], dims[-1]])]
+        else:
+            aux_coords = None
+        
+        iris.std_names.STD_NAMES[cube.standard_name] = {'canonical_units': ' '}
+        new_cube = iris.cube.Cube(coefficients,
+                                  standard_name=cube.standard_name,
+                                  long_name=cube.long_name,
+                                  var_name=cube.var_name,
+                                  units=' ',
+                                  attributes=global_atts,
+                                  dim_coords_and_dims=dim_coords,
+                                  aux_coords_and_dims=aux_coords)
+        new_cube.attributes['time_unit'] = str(cube.coord('time').units)
+        new_cube.attributes['time_calendar'] = str(cube.coord('time').units.calendar)
+        new_cube.attributes['time_start'] = time_axis[0]
+        new_cube.attributes['time_end'] = time_axis[-1]
+        out_cubes.append(new_cube)
 
     cube_list = iris.cube.CubeList(out_cubes)
     out_cube = cube_list.concatenate()
-
     iris.save(out_cube, inargs.outfile)
 
 
@@ -133,7 +154,8 @@ example:
 author:
     Damien Irving, irving.damien@gmail.com
 notes:
-    If there's a vertical coordinate is must have the standard_name "depth"    
+    If there's a vertical coordinate is must have the standard_name "depth"
+    The input files may contain multiple variables    
 
 """
 
@@ -144,9 +166,7 @@ notes:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("infiles", type=str, nargs='*', help="Input file names")
-    parser.add_argument("var", type=str, help="Input file variable (standard_name)")
     parser.add_argument("outfile", type=str, help="Output file name")
-
 
     args = parser.parse_args()
     main(args)
