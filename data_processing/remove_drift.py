@@ -33,7 +33,7 @@ except ImportError:
 
 # Define functions
 
-def apply_polynomial(x_data, a_data, b_data, c_data, d_data, anomaly=False):
+def apply_polynomial(x_data, coefficient_data, anomaly=False):
     """Evaluate cubic polynomial.
 
     Anomaly = True: provide entire polynomial
@@ -42,6 +42,11 @@ def apply_polynomial(x_data, a_data, b_data, c_data, d_data, anomaly=False):
     """
 
     x_data = x_data[..., numpy.newaxis, numpy.newaxis, numpy.newaxis]
+    a_data = coefficient_data[0, ...]
+    b_data = coefficient_data[1, ...]
+    c_data = coefficient_data[2, ...]
+    d_data = coefficient_data[3, ...]
+
     a_data = numpy.repeat(a_data[numpy.newaxis, ...], x_data.shape[0], axis=0)
     b_data = numpy.repeat(b_data[numpy.newaxis, ...], x_data.shape[0], axis=0)
     c_data = numpy.repeat(c_data[numpy.newaxis, ...], x_data.shape[0], axis=0)
@@ -67,26 +72,37 @@ def check_attributes(data_attrs, control_attrs):
                                 control_attrs['realization'])
     assert data_attrs['parent_experiment_rip'] in [control_rip, 'N/A']
 
+
+def dedrift(data, coefficients, anomaly=False):
+    """De-drift the input data.
+
+    Args:
+      data (iris.cube): Data to be de-drifted
+      coefficients (iris): Cubic polynomial coefficients describing the control run drift
+        (these are generated using calc_drift_coefficients.py)
+      anomaly (bool, optional): Output the anomaly rather than restored full values
+
+    """
+
+    check_attributes(data.attributes, coefficients.attributes)
+
+    # Sync the data time axis with the coefficient time axis        
+    time_values = data.coord('time').points + data.attributes['branch_time']
+
+    # Remove the drift
+    drift_signal = apply_polynomial(time_values, coefficients.data, anomaly=anomaly)
+    new_cube = data - drift_signal
+
+    return new_cube
+
     
 def main(inargs):
     """Run the program."""
     
-    # Read the data
     data_cube = iris.load(inargs.data_file, inargs.var)
-    with iris.FUTURE.context(cell_datetime_objects=True):
-        data_cube = iris.load_cube(inargs.data_file, inargs.var)
-        a_cube = iris.load_cube(inargs.coefficient_file, 'coefficient a')
-        b_cube = iris.load_cube(inargs.coefficient_file, 'coefficient b')
-        c_cube = iris.load_cube(inargs.coefficient_file, 'coefficient c')
-        d_cube = iris.load_cube(inargs.coefficient_file, 'coefficient d')
-    check_attributes(data_cube.attributes, a_cube.attributes)
+    coefficient_cube = iris.load_cube(inargs.coefficient_file, inargs.var)
 
-    # Sync the data time axis with the coefficient time axis        
-    time_values = data_cube.coord('time').points + data_cube.attributes['branch_time']
-
-    # Remove the drift
-    drift_signal = apply_polynomial(time_values, a_cube.data, b_cube.data, c_cube.data, d_cube.data, anomaly=inargs.anomaly)
-    new_cube = data_cube - drift_signal
+    new_cube = dedrift(data_cube, coefficient_cube, anomaly=inargs.anomaly)
 
     # Write the output file
     new_cube.standard_name = data_cube.standard_name
@@ -95,7 +111,7 @@ def main(inargs):
     new_cube.attributes = data_cube.attributes
 
     metadata_dict = {inargs.data_file: data_cube.attributes['history'], 
-                     inargs.coefficient_file: a_cube.attributes['history']}
+                     inargs.coefficient_file: coefficient_cube.attributes['history']}
     new_cube.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
 
     iris.save(new_cube, inargs.outfile)
