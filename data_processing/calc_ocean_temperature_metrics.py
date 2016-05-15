@@ -1,7 +1,7 @@
 """
-Filename:     calc_ohc_metrics.py
+Filename:     calc_ocean_temperature_metrics.py
 Author:       Damien Irving, irving.damien@gmail.com
-Description:  Calculate the total heat content for various global regions
+Description:  Calculate integrated temperature metric for various global regions
 
 """
 
@@ -51,24 +51,35 @@ def calc_metrics(inargs, temperature_cube, volume_cube):
 
     TdV = temperature_cube * volume_cube
                
-    ohc_dict = {}
+    metric_dict = {}
     for region, bounds in regions.iteritems():
         mask = region_mask(TdV, bounds[0], bounds[-1])
-        ohc_dict[region] = heat_content(TdV.copy(), mask, inargs.density, inargs.specific_heat, inargs.scaling)
+        TdV_sum = integrate_temperature(TdV.copy(), mask)
+        if inargs.metric == 'inttemp':
+            metric_dict[region] = TdV_sum / eval('1e+%i' %(inargs.scaling))
+        elif inargs.metric == 'ohc':
+            metric_dict[region] = (TdV_sum * inargs.density * inargs.specific_heat) / eval('1e+%i' %(inargs.scaling))
 
-    return ohc_dict
+    return metric_dict
 
 
-def create_metric_cube(ohc_dict, units, atts, time_coord):
+def create_metric_cube(metric_name, metric_dict, units, atts, time_coord):
     """Create an ohc metric cube corresponding to a single input file."""
+
+    if metric_name == 'inttemp':
+        standard_base = 'integrated_temperature'
+        long_base = 'integrated temperature'
+    elif metric_name == 'ohc':
+        standard_base = 'ocean_heat_content'
+        long_base = 'ocean heat content'
 
     metric_cubes = []
     for region in regions.keys():
-        standard_name = 'ocean_heat_content_'+region
-        long_name = 'ocean heat content over %s'  %(region.replace('_', ' '))
-        var_name = 'ohc_'+region
+        standard_name = standard_base+'_'+region
+        long_name = '%s %s'  %(long_base, region.replace('_', ' '))
+        var_name = metric_name+'_'+region
         iris.std_names.STD_NAMES[standard_name] = {'canonical_units': units}
-        ohc_cube = iris.cube.Cube(ohc_dict[region].data,
+        ohc_cube = iris.cube.Cube(metric_dict[region].data,
                                   standard_name=standard_name,
                                   long_name=long_name,
                                   var_name=var_name,
@@ -84,7 +95,7 @@ def create_metric_cube(ohc_dict, units, atts, time_coord):
     return metric_cube
 
 
-def heat_content(TdV_cube, mask, density, cp, scale_factor):
+def integrate_temperature(TdV_cube, mask):
     """Calculate the heat content for each timestep."""
 
     TdV_cube.data.mask = mask
@@ -92,9 +103,7 @@ def heat_content(TdV_cube, mask, density, cp, scale_factor):
     coord_names.remove('time')
     TdV_sum = TdV_cube.collapsed(coord_names, iris.analysis.SUM)
 
-    result = (TdV_sum * density * cp) / eval('1e+%i' %(scale_factor))
-
-    return result
+    return TdV_sum
 
 
 def in_flag(lat_value, south_bound, north_bound):
@@ -186,7 +195,7 @@ def set_attributes(inargs, temperature_cube, volume_cube, climatology_cube, coef
 
     lev_coord = temperature_cube.coord('depth')
     bounds_info = gio.vertical_bounds_text(lev_coord.points, inargs.min_depth, inargs.max_depth)
-    depth_text = 'OHC integrated over %s' %(bounds_info)
+    depth_text = '%s integrated over %s' %(inargs.metric, bounds_info)
     atts['depth_bounds'] = depth_text
 
     infile_history = {}
@@ -211,7 +220,11 @@ def main(inargs):
     temperature_cubes = iris.load(inargs.temperature_files, inargs.temperature_var, callback=save_history)
     equalise_attributes(temperature_cubes)
 
-    units = '10^%d J m-2' %(inargs.scaling)
+    if inargs.metric == 'ohc':
+        units = '10^%d J' %(inargs.scaling)
+    elif inargs.metric == 'inttemp':
+        units = '10^%d K m3' %(inargs.scaling)
+
     atts = set_attributes(inargs, temperature_cubes[0], volume_cube, climatology_cube, coefficients_cube)
 
     out_cubes = []
@@ -221,8 +234,8 @@ def main(inargs):
             temperature_cube = temperature_cube - climatology_cube
 
         #TODO: Account for volume_cube = None
-        ohc_dict = calc_metrics(inargs, temperature_cube, volume_cube)   
-        metric_cube = create_metric_cube(ohc_dict, units, atts, temperature_cube.coord('time'))
+        metric_dict = calc_metrics(inargs, temperature_cube, volume_cube)   
+        metric_cube = create_metric_cube(inargs.metric, metric_dict, units, atts, temperature_cube.coord('time'))
 
         if inargs.dedrift:
             metric_cube = remove_drift.dedrift(metric_cube, coefficients_cube)
@@ -255,7 +268,7 @@ notes:
 
 """
 
-    description='Calculate the total ocean heat content for a region of interest'
+    description='Calculate integrated temperature metrics for a region of interest'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
@@ -265,10 +278,13 @@ notes:
     parser.add_argument("temperature_var", type=str, help="Input temperature variable name (i.e. the standard_name)")
     parser.add_argument("outfile", type=str, help="Output file name")
 
+    parser.add_argument("--metric", type=str, choices=('inttemp', 'ohc'), default='inttemp', 
+                        help="Metric to calculate - integrated temperature or ocean heat content")
+
     parser.add_argument("--volume_file", type=str, default=None, 
                         help="Input volume data file")
     parser.add_argument("--climatology_file", type=str, default=None, 
-                        help="Input temperature climatology file (required if input data not already anomaly)")
+                        help="Input temperature climatology file (for calculating the anomaly)")
     parser.add_argument("--dedrift", type=str, default=None, 
                         help="De-drfit the final data using the supplied coefficients file")
 
@@ -282,8 +298,8 @@ notes:
     parser.add_argument("--specific_heat", type=float, default=4000,
                         help="Specific heat of seawater (in J / kg.K). Default of 4000 J/kg.K from Hobbs2016")
     
-    parser.add_argument("--scaling", type=int, default=22,
-                        help="Factor by which to scale heat content (default value of 22 gives units of 10^22 J m-2)")
+    parser.add_argument("--scaling", type=int, default=19,
+                        help="Factor by which to scale metrics (default value of 19 gives units of 10^19 J or K m3)")
     
     args = parser.parse_args()            
 
