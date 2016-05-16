@@ -50,7 +50,9 @@ def save_history(cube, field, filename):
 def polyfit(data, time_axis):
     """Fit polynomial to data."""    
 
-    if data.mask[0]:
+    if type(data) == numpy.ndarray:
+        return numpy.polynomial.polynomial.polyfit(time_axis, data, 3)
+    elif data.mask[0]:
         return numpy.array([data.fill_value]*4) 
     else:    
         return numpy.polynomial.polynomial.polyfit(time_axis, data, 3)
@@ -69,11 +71,14 @@ def calc_coefficients(cube, coord_names, time_axis):
         for i, x_slice in enumerate(cube.slices(slice_dims)):
             coefficients[:,i,::] = numpy.ma.apply_along_axis(polyfit, 0, x_slice.data, time_axis)
         fill_value = x_slice.data.fill_value 
+        coefficients = numpy.ma.masked_values(coefficients, fill_value)
+    elif cube.ndim == 1:
+        coefficients = polyfit(cube.data, time_axis)
     else:    
         coefficients = numpy.ma.apply_along_axis(polyfit, 0, cube.data, time_axis)
         fill_value = cube.data.fill_value 
-    coefficients = numpy.ma.masked_values(coefficients, fill_value)
-
+        coefficients = numpy.ma.masked_values(coefficients, fill_value)
+    
     return coefficients
 
 
@@ -105,7 +110,7 @@ def main(inargs):
         coord_names = [coord.name() for coord in cube.coords(dim_coords=True)]
         assert coord_names[0] == 'time', "First axis must be time"
         time_axis = cube.coord('time').points
-        
+       
         coefficients = calc_coefficients(cube, coord_names, time_axis)
 
         # Write the output file
