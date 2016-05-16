@@ -31,6 +31,7 @@ try:
     import general_io as gio
     import convenient_universal as uconv
     import remove_drift
+    import spatial_weights
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -45,6 +46,7 @@ regions = {'southern_extratropics': [-90, -20],
           'globe': [-90, 90],
           'globe60': [-60, 60]
           }
+
 
 def calc_metrics(inargs, temperature_cube, volume_cube):
     """Calculate the ocean heat content metrics"""
@@ -93,6 +95,29 @@ def create_metric_cube(metric_name, metric_dict, units, atts, time_coord):
     metric_cube = cube_list.concatenate()
 
     return metric_cube
+
+
+def create_volume_cube(cube):
+    """Create a volume cube."""
+
+    dim_coord_names = [coord.name() for coord in cube.dim_coords]
+    assert 'latitude' in dim_coord_names
+    assert 'longitude' in dim_coord_names
+    assert 'depth' in dim_coord_names
+
+    lat_extents = spatial_weights.calc_meridional_weights(cube.coord('latitude'), dim_coord_names, cube.shape)
+    lon_extents = spatial_weights.calc_zonal_weights(cube, dim_coord_names)
+
+    depth_coord = cube.coord('depth')
+    assert depth_coord.units in ['m', 'dbar'], "Unrecognised depth axis units"
+    if depth_coord.units == 'm':
+        vert_extents = spatial_weights.calc_vertical_weights_1D(depth_coord, dim_coord_names, cube.shape)
+    elif depth_axis.units == 'dbar':
+        vert_extents = spatial_weights.calc_vertical_weights_2D(depth_coord, cube.coord('latitude'), cube.shape)
+
+    volume_cube = lat_extents * lon_extents * vert_extents
+
+    return volume_cube
 
 
 def integrate_temperature(TdV_cube, mask):
@@ -233,7 +258,9 @@ def main(inargs):
         if climatology_cube:
             temperature_cube = temperature_cube - climatology_cube
 
-        #TODO: Account for volume_cube = None
+        if not volume_cube:
+            volume_cube = create_volume_cube(temperature_cube)
+
         metric_dict = calc_metrics(inargs, temperature_cube, volume_cube)   
         metric_cube = create_metric_cube(inargs.metric, metric_dict, units, atts, temperature_cube.coord('time'))
 

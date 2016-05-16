@@ -33,6 +33,7 @@ try:
     import general_io as gio
     import convenient_universal as uconv
     import remove_drift
+    import spatial_weights
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -84,76 +85,6 @@ def calc_ohc_3D(cube, weights, inargs):
     return ohc_per_m2
 
 
-def calc_vertical_weights_1D(depth_axis, coord_list, data_shape):
-    """Calculate vertical weights for a 1D depth axis with units = m"""
-
-    # Calculate weights
-    if not depth_axis.has_bounds():
-        depth_axis.guess_bounds()
-    level_bounds = depth_axis.bounds
-    level_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, level_bounds)
-
-    #guess_bounds can produce negative bound at surface
-    if level_bounds[0][0] < 0.0:
-        level_diffs[0] = level_diffs[0] + level_bounds[0][0]
-
-    # Broadcast to size of data
-    depth_index = coord_list.index('depth')
-    level_diffs = uconv.broadcast_array(level_diffs, depth_index, data_shape)
-
-    return level_diffs
-
-
-def calc_vertical_weights_2D(pressure_vals, latitude_vals, data_shape):
-    """Calculate vertical weights for a 2D depth axis (i.e. pressure, latitude)"""
-
-    ntime, nlev, nlat, nlon = data_shape
-
-    depth_diffs = numpy.zeros([nlev, nlat])
-    for lat_index in range(0, nlat):
-        height_vals = gsw.z_from_p(pressure_vals, latitude_vals[lat_index])
-        depth_vals = gsw.depth_from_z(height_vals)
-        depth_bounds = guess_bounds(depth_vals)
-        depth_diffs[:, lat_index] = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, depth_bounds)
-
-    # Braodcast
-    depth_diffs = depth_diffs[numpy.newaxis, ...]
-    depth_diffs = numpy.repeat(depth_diffs, ntime, axis=0)
-
-    depth_diffs = depth_diffs[..., numpy.newaxis]
-    depth_diffs = numpy.repeat(depth_diffs, nlon, axis=-1)
-
-    return depth_diffs
-
-
-def calc_zonal_weights(cube, coord_list):
-    """Calculate zonal weights.
-
-    Defined as the zonal distance (m) spanned by each grid box. 
-
-    The length of a degree of longitude is a function of 
-      latitude. The formula for the length of one degree of 
-      longitude is (pi/180) a cos(lat), where a is the radius of 
-      the earth.
-
-    """
-
-    lon_axis = cube.coord('longitude')
-    lon_index = coord_list.index('longitude')
-
-    if not lon_axis.has_bounds():
-        lon_axis.guess_bounds()
-
-    coslat = cosine_latitude_weights(cube)
-    radius = iris.analysis.cartography.DEFAULT_SPHERICAL_EARTH_RADIUS
-
-    lon_diffs = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, lon_axis.bounds)
-    lon_diffs = uconv.broadcast_array(lon_diffs, lon_index, cube.shape)
-    lon_extents = (math.pi / 180.) * radius * coslat * lon_diffs
-
-    return lon_extents
-
-
 def curvilinear_to_rectilinear(cube):
     """Regrid curvilinear data to a rectilinear grid if necessary."""
 
@@ -188,27 +119,6 @@ def curvilinear_to_rectilinear(cube):
         new_cube = cube
     
     return new_cube, coord_names
-
-
-def guess_bounds(points, bound_position=0.5):
-    """The guess_bounds method taken copied from iris.
-    
-    This implementation is specifically for the depth axis 
-
-    """
-
-    diffs = numpy.diff(points)
-    diffs = numpy.insert(diffs, 0, diffs[0])
-    diffs = numpy.append(diffs, diffs[-1])
-
-    min_bounds = points - diffs[:-1] * bound_position
-    max_bounds = points + diffs[1:] * (1 - bound_position)
-
-    bounds = numpy.array([min_bounds, max_bounds]).transpose()
-    if bounds[0, 0] < 0.0:
-        bounds[0, 0] = 0
-
-    return bounds
 
 
 def make_grid(lat_values, lon_values):
@@ -310,11 +220,11 @@ def main(inargs):
 
         # Calculate heat content
         if depth_axis.units == 'm':
-            vertical_weights = calc_vertical_weights_1D(depth_axis, coord_names, temperature_cube.shape)
+            vertical_weights = spatial_weights.calc_vertical_weights_1D(depth_axis, coord_names, temperature_cube.shape)
         elif depth_axis.units == 'dbar':
-            vertical_weights = calc_vertical_weights_2D(depth_axis.points, temperature_cube.coord('latitude').points, temperature_cube.shape)
+            vertical_weights = spatial_weights.calc_vertical_weights_2D(depth_axis, temperature_cube.coord('latitude'), temperature_cube.shape)
 
-        zonal_weights = calc_zonal_weights(temperature_cube, coord_names)
+        zonal_weights = spatial_weights.calc_zonal_weights(temperature_cube, coord_names)
 
         ohc_per_m2 = calc_ohc_3D(temperature_cube, vertical_weights, inargs)
         ohc_per_m = calc_ohc_2D(temperature_cube, vertical_weights * zonal_weights, inargs)
