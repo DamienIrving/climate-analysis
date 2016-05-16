@@ -9,21 +9,27 @@
 CONTROL_TEMPERATURE_FILES=$(wildcard ${UA6_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/thetao/${CONTROL_RUN}/thetao_Omon_${MODEL}_piControl_${CONTROL_RUN}_*.nc)
 CONTROL_VOLUME_FILE=$(wildcard ${UA6_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/fx/ocean/volcello/r0i0p0/volcello_fx_${MODEL}_piControl_r0i0p0.nc)
 
-CONTROL_CLIMATOLOGY_FILE=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/thetao/${CONTROL_RUN}/thetao_Omon_${MODEL}_piControl_${CONTROL_RUN}_annual-climatology.nc
+CONTROL_CLIMATOLOGY_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/thetao/${CONTROL_RUN}
+CONTROL_CLIMATOLOGY_FILE=${CONTROL_CLIMATOLOGY_DIR}/thetao_Omon_${MODEL}_piControl_${CONTROL_RUN}_annual-climatology.nc
 
-CONTROL_TEMPERATURE_METRICS_FILE=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/inttemp/${CONTROL_RUN}/inttemp_Omon_${MODEL}_piControl_${CONTROL_RUN}_all.nc
-CONTROL_OHC_MAPS_FILE=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/ohc/${CONTROL_RUN}/ohc_Omon_${MODEL}_piControl_${CONTROL_RUN}_all.nc
+CONTROL_TEMPERATURE_METRICS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/inttemp/${CONTROL_RUN}
+CONTROL_TEMPERATURE_METRICS_FILE=${CONTROL_TEMPERATURE_METRICS_DIR}/inttemp_Omon_${MODEL}_piControl_${CONTROL_RUN}_all.nc
+CONTROL_TEMPERATURE_METRICS_COEFFICIENTS=${CONTROL_TEMPERATURE_METRICS_DIR}/inttemp-coefficients_Omon_${MODEL}_piControl_${CONTROL_RUN}_all.nc
 
-CONTROL_TEMPERATURE_METRICS_COEFFICIENTS=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/inttemp-coefficients/${CONTROL_RUN}/inttemp-coefficients_Omon_${MODEL}_piControl_${CONTROL_RUN}_all.nc
-CONTROL_OHC_MAPS_COEFFICIENTS=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/ohc-maps-coefficients/${CONTROL_RUN}/ohc-maps-coefficients_Omon_${MODEL}_piControl_${CONTROL_RUN}_all.nc
+CONTROL_OHC_MAPS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/ohc/${CONTROL_RUN}
+CONTROL_OHC_MAPS_FILE=${CONTROL_OHC_MAPS_DIR}/ohc_Omon_${MODEL}_piControl_${CONTROL_RUN}_all.nc
+CONTROL_OHC_MAPS_COEFFICIENTS=${CONTROL_OHC_MAPS_DIR}/ohc-maps-coefficients_Omon_${MODEL}_piControl_${CONTROL_RUN}_all.nc
 
 
-${CONTROL_CLIMATOLOGY_FILE} : 
+${CONTROL_CLIMATOLOGY_FILE} :
+	mkdir -p ${CONTROL_CLIMATOLOGY_DIR}
 	python ${DATA_SCRIPT_DIR}/calc_climatology.py ${CONTROL_TEMPERATURE_FILES} $@
 
 
 # OHC metrics
+
 ${CONTROL_TEMPERATURE_METRICS_FILE} :
+	mkdir -p ${CONTROL_TEMPERATURE_METRICS_DIR}
 	python ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${CONTROL_TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${CONTROL_VOLUME_FILE}
 
 ${CONTROL_TEMPERATURE_METRICS_COEFFICIENTS} : ${CONTROL_TEMPERATURE_METRICS_FILE}
@@ -33,6 +39,7 @@ ${CONTROL_TEMPERATURE_METRICS_COEFFICIENTS} : ${CONTROL_TEMPERATURE_METRICS_FILE
 # OHC maps
 
 ${CONTROL_OHC_MAPS_FILE} : ${CONTROL_CLIMATOLOGY_FILE}
+	mkdir -p ${CONTROL_OHC_MAPS_DIR} 
 	python ${DATA_SCRIPT_DIR}/calc_ohc_maps.py ${CONTROL_TEMPERATURE_FILES} sea_water_potential_temperature $@ --climatology_file $<
 
 ${CONTROL_OHC_MAPS_COEFFICIENTS} : ${CONTROL_OHC_MAPS_FILE}
