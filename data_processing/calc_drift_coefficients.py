@@ -117,8 +117,8 @@ def main(inargs):
 
         iris.std_names.STD_NAMES['drift_coefficient'] = {'canonical_units': 1}
         coefficient_coord = iris.coords.DimCoord(numpy.array([1, 2, 3, 4]), 
-                                              standard_name='drift_coefficient', long_name='drift coefficient', 
-                                              var_name='coefficient', attributes=None)
+                                                 standard_name='drift_coefficient', long_name='drift coefficient', 
+                                                 var_name='coefficient', attributes=None)
 
         dim_coords = [(coefficient_coord, 0)]
         for i, coord_name in enumerate(coord_names[1:]):
@@ -130,10 +130,10 @@ def main(inargs):
             aux_coords = [(cube.aux_coords[0], [dims[-2], dims[-1]]), (cube.aux_coords[1], [dims[-2], dims[-1]])]
         else:
             aux_coords = None
-        
-        iris.std_names.STD_NAMES[cube.standard_name] = {'canonical_units': ' '}
+
+        iris.std_names.STD_NAMES[cube.var_name] = {'canonical_units': ' '}
         new_cube = iris.cube.Cube(coefficients,
-                                  standard_name=cube.standard_name,
+                                  standard_name=cube.var_name,
                                   long_name=cube.long_name,
                                   var_name=cube.var_name,
                                   units=' ',
