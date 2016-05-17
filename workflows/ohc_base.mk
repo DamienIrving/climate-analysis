@@ -22,8 +22,8 @@ VOLUME_FILE=$(wildcard ${UA6_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/f
 CLIMATOLOGY_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao/${RUN}
 CLIMATOLOGY_FILE=${CLIMATOLOGY_DIR}/thetao_Omon_${MODEL}_${EXPERIMENT}_${RUN}_annual-climatology.nc
 
-TEMPERATURE_METRICS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/inttemp/${RUN}
-TEMPERATURE_METRICS_FILE=${TEMPERATURE_METRICS_DIR}/inttemp_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+TEMPERATURE_METRICS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/ohc-metrics/${RUN}
+TEMPERATURE_METRICS_FILE=${TEMPERATURE_METRICS_DIR}/ohc-metrics_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 OHC_MAPS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/ohc-maps/${RUN}
 OHC_MAPS_FILE=${OHC_MAPS_DIR}/ohc-maps_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
@@ -38,9 +38,9 @@ ${CLIMATOLOGY_FILE} :
 
 # OHC metrics
 
-${TEMPERATURE_METRICS_FILE} : ${CONTROL_TEMPERATURE_METRICS_COEFFICIENTS}
+${TEMPERATURE_METRICS_FILE} : ${CLIMATOLOGY_FILE} ${CONTROL_TEMPERATURE_METRICS_COEFFICIENTS}
 	mkdir -p ${TEMPERATURE_METRICS_DIR}
-	python ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${VOLUME_FILE} --dedrift $<
+	python ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${VOLUME_FILE} --climatology_file $< --dedrift $(word 2,$^)
 
 #plot...
 
