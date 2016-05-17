@@ -304,7 +304,7 @@ notes:
     parser.add_argument("temperature_var", type=str, help="Input temperature variable name (i.e. the standard_name)")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    parser.add_argument("--metric", type=str, choices=('inttemp', 'ohc'), default='inttemp', 
+    parser.add_argument("--metric", type=str, choices=('inttemp', 'ohc'), default='ohc', 
                         help="Metric to calculate - integrated temperature or ocean heat content")
 
     parser.add_argument("--volume_file", type=str, default=None, 
