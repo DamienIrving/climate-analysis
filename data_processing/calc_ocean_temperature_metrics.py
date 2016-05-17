@@ -65,7 +65,7 @@ def calc_metrics(inargs, temperature_cube, volume_cube):
     return metric_dict
 
 
-def create_metric_cube(metric_name, metric_dict, units, atts, time_coord):
+def create_metric_cubelist(metric_name, metric_dict, units, atts, time_coord):
     """Create an ohc metric cube corresponding to a single input file."""
 
     if metric_name == 'inttemp':
@@ -75,7 +75,7 @@ def create_metric_cube(metric_name, metric_dict, units, atts, time_coord):
         standard_base = 'ocean_heat_content'
         long_base = 'ocean heat content'
 
-    metric_cubes = []
+    metric_cubelist = []
     for region in regions.keys():
         standard_name = standard_base+'_'+region
         long_name = '%s %s'  %(long_base, region.replace('_', ' '))
@@ -89,12 +89,12 @@ def create_metric_cube(metric_name, metric_dict, units, atts, time_coord):
                                   attributes=atts,
                                   dim_coords_and_dims=[(time_coord, 0)],
                                   )
-        metric_cubes.append(ohc_cube)        
+        metric_cubelist.append(ohc_cube)        
 
-    cube_list = iris.cube.CubeList(metric_cubes)
-    metric_cube = cube_list.concatenate()
+    metric_cubelist = iris.cube.CubeList(metric_cubelist)
+    metric_cubelist = metric_cubelist.concatenate()
 
-    return metric_cube
+    return metric_cubelist
 
 
 def create_volume_cube(cube):
@@ -160,12 +160,12 @@ def read_optional_data(inargs, level_subset):
             climatology_cube = None
 
     if inargs.dedrift:
-        coefficients_cube = iris.load_cube(inargs.dedrift, inargs.temperature_var)
+        coefficients_cubelist = iris.load(inargs.dedrift)
     else:
-        coefficients_cube = None
+        coefficients_cubelist = None
 
 
-    return volume_cube, climatology_cube, coefficients_cube
+    return volume_cube, climatology_cube, coefficients_cubelist
 
 
 def region_mask(cube, south_bound, north_bound):
@@ -174,10 +174,9 @@ def region_mask(cube, south_bound, north_bound):
     False corresponds to points that are not masked.
 
     Args:
-      data_mask: The mask corresponding to the original data
-      latitudes: Latitude axis
-      south_bound: Southern boundary of region of interest
-      north_bound: Northern boundary of region of interest 
+      cube (iris.cube.Cube): Data cube
+      south_bound (float): Southern boundary of region of interest
+      north_bound (float): Northern boundary of region of interest 
 
     """
 
@@ -213,7 +212,7 @@ def save_history(cube, field, filename):
     history.append(cube.attributes['history'])
 
 
-def set_attributes(inargs, temperature_cube, volume_cube, climatology_cube, coefficients_cube):
+def set_attributes(inargs, temperature_cube, volume_cube, climatology_cube, coefficients_cubelist):
     """Set the attributes for the output cube."""
     
     atts = temperature_cube.attributes
@@ -229,8 +228,8 @@ def set_attributes(inargs, temperature_cube, volume_cube, climatology_cube, coef
         infile_history[inargs.volume_file] = volume_cube.attributes['history']
     if climatology_cube:                  
         infile_history[inargs.climatology_file] = climatology_cube.attributes['history']
-    if coefficients_cube:                  
-        infile_history[inargs.dedrift] = coefficients_cube.attributes['history']
+    if coefficients_cubelist:                  
+        infile_history[inargs.dedrift] = coefficients_cubelist[0].attributes['history']
 
     atts['history'] = gio.write_metadata(file_info=infile_history)
 
@@ -241,19 +240,19 @@ def main(inargs):
     """Run the program."""
     
     level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
-    volume_cube, climatology_cube, coefficients_cube = read_optional_data(inargs, level_subset)
-    temperature_cubes = iris.load(inargs.temperature_files, inargs.temperature_var, callback=save_history)
-    equalise_attributes(temperature_cubes)
+    volume_cube, climatology_cube, coefficient_cubelist = read_optional_data(inargs, level_subset)
+    temperature_cubelist = iris.load(inargs.temperature_files, inargs.temperature_var, callback=save_history)
+    equalise_attributes(temperature_cubelist)
 
     if inargs.metric == 'ohc':
         units = '10^%d J' %(inargs.scaling)
     elif inargs.metric == 'inttemp':
         units = '10^%d K m3' %(inargs.scaling)
 
-    atts = set_attributes(inargs, temperature_cubes[0], volume_cube, climatology_cube, coefficients_cube)
+    atts = set_attributes(inargs, temperature_cubelist[0], volume_cube, climatology_cube, coefficient_cubelist)
 
     out_cubes = []
-    for temperature_cube in temperature_cubes:
+    for temperature_cube in temperature_cubelist:
 
         if climatology_cube:
             temperature_cube = temperature_cube - climatology_cube
@@ -262,12 +261,12 @@ def main(inargs):
             volume_cube = create_volume_cube(temperature_cube)
 
         metric_dict = calc_metrics(inargs, temperature_cube, volume_cube)   
-        metric_cube = create_metric_cube(inargs.metric, metric_dict, units, atts, temperature_cube.coord('time'))
+        metric_cubelist = create_metric_cubelist(inargs.metric, metric_dict, units, atts, temperature_cube.coord('time'))
 
         if inargs.dedrift:
-            metric_cube = remove_drift.dedrift(metric_cube, coefficients_cube)
+            metric_cubelist = remove_drift.dedrift(metric_cubelist, coefficient_cubelist)
             
-        out_cubes.append(metric_cube)
+        out_cubes.append(metric_cubelist)
 
     cube_list = []
     for region_index in range(0, len(regions.keys())):

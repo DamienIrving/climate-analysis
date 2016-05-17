@@ -143,7 +143,7 @@ def calc_zonal_weights(cube, coord_names):
       the earth.
 
     Args:
-      cube (iris.cube): Data cube
+      cube (iris.cube.Cube): Data cube
       coord_names (list): Names of each data coordinate
 
     Returns:
