@@ -126,7 +126,7 @@ def main(inargs):
 
         if cube.aux_coords:
             assert len(cube.aux_coords) == 2, "Script can only deal with two auxillary coordinates"
-            dims = range(0, len(coefficients.shape) - 1)
+            dims = range(0, coefficients.ndim)
             aux_coords = [(cube.aux_coords[0], [dims[-2], dims[-1]]), (cube.aux_coords[1], [dims[-2], dims[-1]])]
         else:
             aux_coords = None
