@@ -324,8 +324,8 @@ notes:
     parser.add_argument("--specific_heat", type=float, default=4000,
                         help="Specific heat of seawater (in J / kg.K). Default of 4000 J/kg.K from Hobbs2016")
     
-    parser.add_argument("--scaling", type=int, default=19,
-                        help="Factor by which to scale metrics (default value of 19 gives units of 10^19 J or K m3)")
+    parser.add_argument("--scaling", type=int, default=22,
+                        help="Factor by which to scale metrics (default value of 19 gives units of 10^22 J or K m3)")
     
     args = parser.parse_args()            
 
