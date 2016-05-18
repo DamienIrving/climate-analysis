@@ -52,7 +52,7 @@ def apply_polynomial(x_data, coefficient_data, anomaly=False):
         coefficient_dict['c'] = coefficient_data[2]    
         coefficient_dict['d'] = coefficient_data[3]  
     else:
-        while x_data.ndim <= coefficient_data.ndim:
+        while x_data.ndim < coefficient_data.ndim:
             x_data = x_data[..., numpy.newaxis]
         for index, coefficient in enumerate(['a', 'b', 'c', 'd']):
             coef = coefficient_data[index, ...]
@@ -79,7 +79,7 @@ def check_attributes(data_attrs, control_attrs):
     assert data_attrs['parent_experiment_rip'] in [control_rip, 'N/A']
 
 
-def dedrift(data_cubelist, coefficient_cube_list, anomaly=False):
+def dedrift(data_cubelist, coefficient_cubelist, anomaly=False):
     """De-drift the input data.
 
     Args:
@@ -92,12 +92,11 @@ def dedrift(data_cubelist, coefficient_cube_list, anomaly=False):
 
     new_cubelist = []
     for data_cube in data_cubelist:
-        coefficient_cube = coefficient_cube_list.extract(data_cube.long_name)[0]
+        coefficient_cube = coefficient_cubelist.extract(data_cube.long_name)[0]
         check_attributes(data_cube.attributes, coefficient_cube.attributes)
 
         # Sync the data time axis with the coefficient time axis        
         time_values = data_cube.coord('time').points + data_cube.attributes['branch_time']
-
         # Remove the drift
         drift_signal = apply_polynomial(time_values, coefficient_cube.data, anomaly=anomaly)
         new_cube = data_cube - drift_signal
@@ -114,19 +113,15 @@ def main(inargs):
     """Run the program."""
     
     data_cubelist = iris.load(inargs.data_file)
-    coefficient_cubelist = iris.load_cube(inargs.coefficient_file)
+    coefficient_cubelist = iris.load(inargs.coefficient_file)
 
     new_cubelist = dedrift(data_cubelist, coefficient_cubelist, anomaly=inargs.anomaly)
 
     # Write the output file
-#    new_cube.standard_name = data_cube.standard_name
-#    new_cube.long_name = data_cube.long_name
-#    new_cube.var_name = data_cube.var_name
-#    new_cube.attributes = data_cube.attributes
-
-#    metadata_dict = {inargs.data_file: data_cube.attributes['history'], 
-#                     inargs.coefficient_file: coefficient_cube.attributes['history']}
-#    new_cube.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
+    metadata_dict = {inargs.data_file: data_cubelist[0].attributes['history'], 
+                     inargs.coefficient_file: coefficient_cubelist[0].attributes['history']}
+    for cube in new_cubelist:
+        cube.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
 
     iris.save(new_cubelist, inargs.outfile)
 
