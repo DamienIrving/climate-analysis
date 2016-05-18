@@ -33,7 +33,7 @@ OHC_MAPS_PLOT=${OHC_MAPS_DIR}/ohc-maps_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${STAR
 
 ${CLIMATOLOGY_FILE} :
 	mkdir -p ${CLIMATOLOGY_DIR} 
-	python ${DATA_SCRIPT_DIR}/calc_climatology.py ${TEMPERATURE_FILES} $@
+	python ${DATA_SCRIPT_DIR}/calc_climatology.py ${TEMPERATURE_FILES} sea_water_potential_temperature $@
 
 
 # OHC metrics

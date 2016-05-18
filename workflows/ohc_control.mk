@@ -23,7 +23,7 @@ CONTROL_OHC_MAPS_COEFFICIENTS=${CONTROL_OHC_MAPS_DIR}/ohc-maps-coefficients_Omon
 
 ${CONTROL_CLIMATOLOGY_FILE} :
 	mkdir -p ${CONTROL_CLIMATOLOGY_DIR}
-	python ${DATA_SCRIPT_DIR}/calc_climatology.py ${CONTROL_TEMPERATURE_FILES} $@
+	python ${DATA_SCRIPT_DIR}/calc_climatology.py ${CONTROL_TEMPERATURE_FILES} sea_water_potential_temperature $@
 
 
 # OHC metrics
