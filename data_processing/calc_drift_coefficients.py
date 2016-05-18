@@ -85,7 +85,7 @@ def calc_coefficients(cube, coord_names, time_axis):
 def set_global_atts(inargs, cube):
     """Set global attributes."""
 
-    atts = cube.attributes
+    atts = copy.copy(cube.attributes)
     atts['polynomial'] = 'a + bx + cx^2 + dx^3'
     atts['history'] = gio.write_metadata(file_info={inargs.infiles[0]: history[0]}) 
 
@@ -106,7 +106,7 @@ def main(inargs):
         cube = cubes[var_index::nvars]
         equalise_attributes(cube)
         cube = cube.concatenate_cube()
-
+       
         coord_names = [coord.name() for coord in cube.coords(dim_coords=True)]
         assert coord_names[0] == 'time', "First axis must be time"
         time_axis = cube.coord('time').points
