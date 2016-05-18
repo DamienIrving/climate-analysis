@@ -1,6 +1,7 @@
 name: default
 channels:
     - ioos
+    - scitools
 dependencies:
     - python=2.7
     - eofs
