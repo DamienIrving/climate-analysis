@@ -115,7 +115,37 @@ def main(inargs):
     data_cubelist = iris.load(inargs.data_file)
     coefficient_cubelist = iris.load(inargs.coefficient_file)
 
-    new_cubelist = dedrift(data_cubelist, coefficient_cubelist, anomaly=inargs.anomaly)
+    branch_time_value = data_cubelist[0].attributes['branch_time'] #FIXME: Add half a time step
+    branch_time_unit = data_cubelist[0].attributes['time_unit']
+    branch_time_calendar = data_cubelist[0].attributes['time_calendar']
+    data_time_coord = data_cubelist[0].coord('time')
+    
+    new_unit = cf_units.Unit(branch_time_unit, calendar=branch_time_calendar)  
+    data_time_coord.convert_units(new_unit)
+
+    first_experiment_time = data_time_coord.points[0]
+    time_diff = first_experiment_time - branch_time_value 
+
+    if inargs.outfile:
+        new_cubelist = []
+        for data_cube in data_cubelist:
+            coefficient_cube = coefficient_cubelist.extract(data_cube.long_name)[0]
+            check_attributes(data_cube.attributes, coefficient_cube.attributes)
+
+            # Sync the data time axis with the coefficient time axis        
+            time_values = data_cube.coord('time').points - time_diff
+            # Remove the drift
+            drift_signal = apply_polynomial(time_values, coefficient_cube.data)
+            new_cube = data_cube - drift_signal
+            new_cube.metadata = data_cube.metadata
+
+            new_cubelist.append(new_cube)
+
+        new_cubelist = iris.cube.CubeList(new_cubelist)
+
+    else:
+        # create all the new files separately. split on / and add /de-drifted/
+ 
 
     # Write the output file
     metadata_dict = {inargs.data_file: data_cubelist[0].attributes['history'], 
@@ -144,10 +174,10 @@ notes:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("data_file", type=str, help="Input data file")
+    parser.add_argument("data_files", type=str, nargs='*', help="Input data files, in chronological order (needs to include whole experiment to get time axis correct)")
     parser.add_argument("coefficient_file", type=str, help="Input coefficient file")
-    parser.add_argument("outfile", type=str, help="Output file name")
 
+    parser.add_argument("--outfile", type=str, help="Single output file. If none, each infile name is edited for outfile name. [default=None]")
     parser.add_argument("--anomaly", action="store_true", default=False,
                         help="output the anomaly rather than restored full values [default: False]")
     
