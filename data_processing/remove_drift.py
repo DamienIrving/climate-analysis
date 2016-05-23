@@ -34,15 +34,12 @@ except ImportError:
 
 # Define functions
 
-def apply_polynomial(x_data, coefficient_data, anomaly=False):
+def apply_polynomial(x_data, coefficient_data):
     """Evaluate cubic polynomial.
 
     Args:
       x_data (numpy.ndarray): One dimensional x-axis data
       coefficient_data (numpy.ndarray): Multi-dimensional coefficient array (e.g. lat, lon, depth)
-      anomaly (bool): 
-        True: provide entire polynomial
-        False: provide only the temporal deviations from the initial value (a_data)
 
     """
     
@@ -61,11 +58,8 @@ def apply_polynomial(x_data, coefficient_data, anomaly=False):
             assert x_data.ndim == coef.ndim
             coefficient_dict[coefficient] = coef
 
-    if anomaly:
-        result = coefficient_dict['a'] + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3  
-    else:
-        result = coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3 
-
+    result = coefficient_dict['a'] + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3  
+    
     return result 
 
 
@@ -80,44 +74,14 @@ def check_attributes(data_attrs, control_attrs):
     assert data_attrs['parent_experiment_rip'] in [control_rip, 'N/A']
 
 
-def dedrift(data_cubelist, coefficient_cubelist, anomaly=False):
-    """De-drift the input data.
-
-    Args:
-      data (iris.cube.CubeList): List of data cubes to be de-drifted
-      coefficients (iris.cube.CubeList): Cubic polynomial coefficients describing the control run drift
-        (these are generated using calc_drift_coefficients.py)
-      anomaly (bool, optional): Output the anomaly rather than restored full values
-
-    """
-
-    new_cubelist = []
-    for data_cube in data_cubelist:
-        coefficient_cube = coefficient_cubelist.extract(data_cube.long_name)[0]
-        check_attributes(data_cube.attributes, coefficient_cube.attributes)
-
-        # Sync the data time axis with the coefficient time axis        
-        time_values = data_cube.coord('time').points + data_cube.attributes['branch_time']
-        # Remove the drift
-        drift_signal = apply_polynomial(time_values, coefficient_cube.data, anomaly=anomaly)
-        new_cube = data_cube - drift_signal
-        new_cube.metadata = data_cube.metadata
-
-        new_cubelist.append(new_cube)
-
-    new_cubelist = iris.cube.CubeList(new_cubelist)
-
-    return new_cubelist
-
-
 def time_adjustment(first_data_cube, coefficient_cube):
     """Determine the adjustment that needs to be made to time axis."""
 
-    branch_time_value = first_data_cube.attributes['branch_time'] #FIXME: Add half a time step
+    branch_time_value = first_data_cube.attributes['branch_time'] #FIXME: Add half a time step?
     branch_time_unit = coefficient_cube.attributes['time_unit']
     branch_time_calendar = coefficient_cube.attributes['time_calendar']
     data_time_coord = first_data_cube.coord('time')
-    
+
     new_unit = cf_units.Unit(branch_time_unit, calendar=branch_time_calendar)  
     data_time_coord.convert_units(new_unit)
 
@@ -195,7 +159,7 @@ notes:
 
     parser.add_argument("data_files", type=str, nargs='*', help="Input data files, in chronological order (needs to include whole experiment to get time axis correct)")
     parser.add_argument("coefficient_file", type=str, help="Input coefficient file")
-    parser.add_argument("outfile", type=str, help="Give a path instead if you want a file for each input file")
+    parser.add_argument("outfile", type=str, help="Give a path instead of a file name if you want an output file corresponding to each input file")
     
     args = parser.parse_args()            
 
