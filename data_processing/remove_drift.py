@@ -12,6 +12,7 @@ import argparse
 import numpy
 import iris
 import cf_units
+from iris.experimental.equalise_cubes import equalise_attributes
 
 # Import my modules
 
@@ -108,17 +109,14 @@ def dedrift(data_cubelist, coefficient_cubelist, anomaly=False):
 
     return new_cubelist
 
-    
-def main(inargs):
-    """Run the program."""
-    
-    data_cubelist = iris.load(inargs.data_file)
-    coefficient_cubelist = iris.load(inargs.coefficient_file)
 
-    branch_time_value = data_cubelist[0].attributes['branch_time'] #FIXME: Add half a time step
-    branch_time_unit = data_cubelist[0].attributes['time_unit']
-    branch_time_calendar = data_cubelist[0].attributes['time_calendar']
-    data_time_coord = data_cubelist[0].coord('time')
+def time_adjustment(first_data_cube, coefficient_cube):
+    """Determine the adjustment that needs to be made to time axis."""
+
+    branch_time_value = first_data_cube.attributes['branch_time'] #FIXME: Add half a time step
+    branch_time_unit = coefficient_cube.attributes['time_unit']
+    branch_time_calendar = coefficient_cube.attributes['time_calendar']
+    data_time_coord = first_data_cube.coord('time')
     
     new_unit = cf_units.Unit(branch_time_unit, calendar=branch_time_calendar)  
     data_time_coord.convert_units(new_unit)
@@ -126,34 +124,55 @@ def main(inargs):
     first_experiment_time = data_time_coord.points[0]
     time_diff = first_experiment_time - branch_time_value 
 
-    if inargs.outfile:
-        new_cubelist = []
-        for data_cube in data_cubelist:
-            coefficient_cube = coefficient_cubelist.extract(data_cube.long_name)[0]
-            check_attributes(data_cube.attributes, coefficient_cube.attributes)
+    return time_diff, first_experiment_time, new_unit
 
-            # Sync the data time axis with the coefficient time axis        
-            time_values = data_cube.coord('time').points - time_diff
-            # Remove the drift
-            drift_signal = apply_polynomial(time_values, coefficient_cube.data)
-            new_cube = data_cube - drift_signal
-            new_cube.metadata = data_cube.metadata
+    
+def main(inargs):
+    """Run the program."""
+    
+    data_cubelist = iris.load(inargs.data_files)
+    coefficient_cube = iris.load_cube(inargs.coefficient_file)
 
+    time_diff, first_experiment_time, new_time_unit = time_adjustment(data_cubelist[0], coefficient_cube)
+
+    new_cubelist = []
+    for filenum, data_cube in enumerate(data_cubelist):
+            
+        check_attributes(data_cube.attributes, coefficient_cube.attributes)
+
+        # Sync the data time axis with the coefficient time axis        
+        time_coord = data_cube.coord('time')
+        time_coord.convert_units(new_time_unit)
+        assert time_coord.points[0] >= first_experiment_time
+        time_values = time_coord.points - time_diff
+
+        # Remove the drift
+        drift_signal = apply_polynomial(time_values, coefficient_cube.data)
+        new_cube = data_cube - drift_signal
+        new_cube.metadata = data_cube.metadata
+
+        if inargs.outfile[-3:] == '.nc':
             new_cubelist.append(new_cube)
+        elif inargs.outfile[-1] == '/':        
+            infile = inargs.data_files[filenum].split('/')[-1]
+            outfile = inargs.outfile + infile
+            metadata_dict = {infile: data_cube.attributes['history'], 
+                             inargs.coefficient_file: coefficient_cube.attributes['history']}
+            new_cube.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
 
+            iris.save(new_cube, outfile)
+            print 'output:', outfile
+        
+    if inargs.outfile[-3:] == '.nc':
         new_cubelist = iris.cube.CubeList(new_cubelist)
+        equalise_attributes(new_cubelist)
+        new_cubelist = new_cubelist.concatenate_cube()
 
-    else:
-        # create all the new files separately. split on / and add /de-drifted/
- 
+        metadata_dict = {inargs.data_files[0]: data_cubelist[0].attributes['history'], 
+                        inargs.coefficient_file: coefficient_cube.attributes['history']}
+        new_cubelist.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
 
-    # Write the output file
-    metadata_dict = {inargs.data_file: data_cubelist[0].attributes['history'], 
-                     inargs.coefficient_file: coefficient_cubelist[0].attributes['history']}
-    for cube in new_cubelist:
-        cube.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
-
-    iris.save(new_cubelist, inargs.outfile)
+        iris.save(new_cubelist, inargs.outfile)
 
 
 if __name__ == '__main__':
@@ -176,10 +195,7 @@ notes:
 
     parser.add_argument("data_files", type=str, nargs='*', help="Input data files, in chronological order (needs to include whole experiment to get time axis correct)")
     parser.add_argument("coefficient_file", type=str, help="Input coefficient file")
-
-    parser.add_argument("--outfile", type=str, help="Single output file. If none, each infile name is edited for outfile name. [default=None]")
-    parser.add_argument("--anomaly", action="store_true", default=False,
-                        help="output the anomaly rather than restored full values [default: False]")
+    parser.add_argument("outfile", type=str, help="Give a path instead if you want a file for each input file")
     
     args = parser.parse_args()            
 
