@@ -20,13 +20,17 @@ CONTROL_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/thetao/
 DRIFT_COEFFICIENTS=${CONTROL_DIR}/thetao-coefficients_Omon_${MODEL}_piControl_${CONTROL_RUN}_all.nc
 
 TEMPERATURE_FILES=$(wildcard ${UA6_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao/${RUN}/thetao_Omon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
-VOLUME_FILE=${UA6_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/volcello/r0i0p0/volcello_fx_${MODEL}_${EXPERIMENT}_r0i0p0.nc
 
 DEDRIFTED_TEMPERATURE_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao/${RUN}/dedrifted
+DEDRIFTED_TEMPERATURE_FILES = $(patsubst ${UA6_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao/${RUN}/thetao_%.nc, ${DEDRIFTED_TEMPERATURE_DIR}/thetao_%.nc, ${TEMPERATURE_FILES})
+
+VOLUME_FILE=${UA6_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/volcello/r0i0p0/volcello_fx_${MODEL}_${EXPERIMENT}_r0i0p0.nc
+
 CLIMATOLOGY_FILE=${DEDRIFTED_TEMPERATURE_DIR}/thetao-annual-clim_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 TEMPERATURE_METRICS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/ohc-metrics/${RUN}
 TEMPERATURE_METRICS_FILE=${TEMPERATURE_METRICS_DIR}/ohc-metrics_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+TEMPERATURE_METRICS_PLOT=${TEMPERATURE_METRICS_DIR}/ohc-metrics_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.${FIG_TYPE}
 
 OHC_MAPS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/ohc-maps/${RUN}
 OHC_MAPS_FILE=${OHC_MAPS_DIR}/ohc-maps_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
@@ -41,10 +45,7 @@ ${DRIFT_COEFFICIENTS} :
 
 ${DEDRIFTED_TEMPERATURE_DIR} : ${DRIFT_COEFFICIENTS}
 	mkdir -p $@
-	python ${DATA_SCRIPT_DIR}/remove_drift.py ${TEMPERATURE_FILES} $< $@
- 
-DEDRIFTED_TEMPERATURE_FILES=$(wildcard ${DEDRIFTED_TEMPERATURE_DIR}/thetao_Omon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
-
+	python ${DATA_SCRIPT_DIR}/remove_drift.py ${TEMPERATURE_FILES} $< $@/
 
 # Core data
 
@@ -58,7 +59,8 @@ ${TEMPERATURE_METRICS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${TEMPERATURE_METRICS_DIR}
 	python ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${VOLUME_FILE} --climatology_file $<
 
-#plot...
+${TEMPERATURE_METRICS_PLOT} : ${TEMPERATURE_METRICS_FILE}
+	python ${VIS_SCRIPT_DIR}/plot_ocean_temperature_metrics.py $< $@
 
 # OHC maps
 
