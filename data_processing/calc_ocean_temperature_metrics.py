@@ -25,12 +25,9 @@ for directory in cwd.split('/')[1:]:
 
 modules_dir = os.path.join(repo_dir, 'modules')
 sys.path.append(modules_dir)
-script_dir = os.path.join(repo_dir, 'data_processing')
-sys.path.append(script_dir)
 try:
     import general_io as gio
     import convenient_universal as uconv
-    import remove_drift
     import spatial_weights
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
@@ -159,13 +156,8 @@ def read_optional_data(inargs, level_subset):
         else:
             climatology_cube = None
 
-    if inargs.dedrift:
-        coefficients_cubelist = iris.load(inargs.dedrift)
-    else:
-        coefficients_cubelist = None
 
-
-    return volume_cube, climatology_cube, coefficients_cubelist
+    return volume_cube, climatology_cube
 
 
 def region_mask(cube, south_bound, north_bound):
@@ -212,7 +204,7 @@ def save_history(cube, field, filename):
     history.append(cube.attributes['history'])
 
 
-def set_attributes(inargs, temperature_cube, volume_cube, climatology_cube, coefficients_cubelist):
+def set_attributes(inargs, temperature_cube, volume_cube, climatology_cube):
     """Set the attributes for the output cube."""
     
     atts = temperature_cube.attributes
@@ -228,8 +220,6 @@ def set_attributes(inargs, temperature_cube, volume_cube, climatology_cube, coef
         infile_history[inargs.volume_file] = volume_cube.attributes['history']
     if climatology_cube:                  
         infile_history[inargs.climatology_file] = climatology_cube.attributes['history']
-    if coefficients_cubelist:                  
-        infile_history[inargs.dedrift] = coefficients_cubelist[0].attributes['history']
 
     atts['history'] = gio.write_metadata(file_info=infile_history)
 
@@ -240,7 +230,7 @@ def main(inargs):
     """Run the program."""
     
     level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
-    volume_cube, climatology_cube, coefficient_cubelist = read_optional_data(inargs, level_subset)
+    volume_cube, climatology_cube = read_optional_data(inargs, level_subset)
     temperature_cubelist = iris.load(inargs.temperature_files, inargs.temperature_var, callback=save_history)
     equalise_attributes(temperature_cubelist)
 
@@ -249,7 +239,7 @@ def main(inargs):
     elif inargs.metric == 'inttemp':
         units = '10^%d K m3' %(inargs.scaling)
 
-    atts = set_attributes(inargs, temperature_cubelist[0], volume_cube, climatology_cube, coefficient_cubelist)
+    atts = set_attributes(inargs, temperature_cubelist[0], volume_cube, climatology_cube)
 
     out_cubes = []
     for temperature_cube in temperature_cubelist:
@@ -262,9 +252,6 @@ def main(inargs):
 
         metric_dict = calc_metrics(inargs, temperature_cube, volume_cube)   
         metric_cubelist = create_metric_cubelist(inargs.metric, metric_dict, units, atts, temperature_cube.coord('time'))
-
-        if inargs.dedrift:
-            metric_cubelist = remove_drift.dedrift(metric_cubelist, coefficient_cubelist)
             
         out_cubes.append(metric_cubelist)
 
@@ -311,8 +298,6 @@ notes:
                         help="Input volume data file")
     parser.add_argument("--climatology_file", type=str, default=None, 
                         help="Input temperature climatology file (for calculating the anomaly)")
-    parser.add_argument("--dedrift", type=str, default=None, 
-                        help="De-drfit the final data using the supplied coefficients file")
 
     parser.add_argument("--min_depth", type=float, default=None,
                         help="Only include data below this vertical level")
