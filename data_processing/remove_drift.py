@@ -94,19 +94,22 @@ def time_adjustment(first_data_cube, coefficient_cube):
 def main(inargs):
     """Run the program."""
     
-    data_cubelist = iris.load(inargs.data_files)
+    first_data_cube = iris.load_cube(inargs.data_files[0])
     coefficient_cube = iris.load_cube(inargs.coefficient_file)
 
-    time_diff, first_experiment_time, new_time_unit = time_adjustment(data_cubelist[0], coefficient_cube)
+    time_diff, first_experiment_time, new_time_unit = time_adjustment(first_data_cube, coefficient_cube)
+    del first_data_cube
 
     new_cubelist = []
-    for filenum, data_cube in enumerate(data_cubelist):
-            
+    for filename in inargs.data_files:
+        
+        data_cube = iris.load_cube(filename)
         check_attributes(data_cube.attributes, coefficient_cube.attributes)
 
         # Sync the data time axis with the coefficient time axis        
         time_coord = data_cube.coord('time')
         time_coord.convert_units(new_time_unit)
+        
         assert time_coord.points[0] >= first_experiment_time
         time_values = time_coord.points - time_diff
 
@@ -118,7 +121,7 @@ def main(inargs):
         if inargs.outfile[-3:] == '.nc':
             new_cubelist.append(new_cube)
         elif inargs.outfile[-1] == '/':        
-            infile = inargs.data_files[filenum].split('/')[-1]
+            infile = filename.split('/')[-1]
             outfile = inargs.outfile + infile
             metadata_dict = {infile: data_cube.attributes['history'], 
                              inargs.coefficient_file: coefficient_cube.attributes['history']}
