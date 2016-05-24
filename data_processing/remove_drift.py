@@ -118,6 +118,8 @@ def main(inargs):
         new_cube = data_cube - drift_signal
         new_cube.metadata = data_cube.metadata
 
+        assert (inargs.outfile[-3:] == '.nc') or (inargs.outfile[-1] == '/')
+
         if inargs.outfile[-3:] == '.nc':
             new_cubelist.append(new_cube)
         elif inargs.outfile[-1] == '/':        
@@ -126,7 +128,7 @@ def main(inargs):
             metadata_dict = {infile: data_cube.attributes['history'], 
                              inargs.coefficient_file: coefficient_cube.attributes['history']}
             new_cube.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
-
+          
             iris.save(new_cube, outfile)
             print 'output:', outfile
         
