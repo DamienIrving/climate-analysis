@@ -17,6 +17,7 @@
 |                 | `-B` (units: GB, MB, etc) |
 |                 | `-c` (display grand total) |
 |                 | `-s` (don't display sub directory totals) |
+|                 | `ls -lah` |
 | Search for patterns in file | `grep -r 'word' *` |
 |                             | `-r` (look through all directories under the current |
 | Search for file names | `find . -name *.txt` |
