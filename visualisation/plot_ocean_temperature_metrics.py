@@ -53,8 +53,9 @@ def plot_timeseries(globe_cube, sthext_cube, notsthext_cube, model, experiment, 
     qplt.plot(notsthext_cube.coord('time'), notsthext_cube, label='not southern extratropics')
 
     plt.legend(loc='best')
-    plt.title('Ocean heat content, %s, %s, %s' %(model, experiment, run))
-    plt.ylabel('Ocean heat content (%s)' %(globe_cube.units))
+    plt.title('%s, %s' %(experiment, run))
+    plt.ylabel('Ocean heat content ($%s$)' %(globe_cube.units))
+    plt.xlabel('Year')
 
 
 def plot_trend_distribution(trend_data, gs):
@@ -63,7 +64,11 @@ def plot_trend_distribution(trend_data, gs):
     ax = plt.subplot(gs[1])
     plt.sca(ax)
 
-    seaborn.distplot(trend_data)
+    seaborn.distplot(trend_data, hist=False, color="g", kde_kws={"shade": True})
+
+    plt.title('12-year trends in hemispheric OHC difference')
+    plt.ylabel('Density')
+    plt.xlabel('Trend')
 
 
 def calc_slope(y, x):
@@ -74,28 +79,37 @@ def calc_slope(y, x):
     return slope
 
 
-def linear_trend(data, axis, window_size):
-    """Calculate the linear trend for specified running window."""
-
-    window_array = rolling_window(data, window=window_size, axis=axis)
-
-    x_axis = numpy.arange(0, window_size)    
-    trend = numpy.apply_along_axis(calc_slope, -1, window_array, x_axis)
-    
-    return trend
-    
-
-def calc_diff_trends(sthext_cube, notsthext_cube, window=12):
+def calc_diff_trends(sthext_cube, notsthext_cube, window=144):
     """Calculate trends in difference between southern extratropics and rest of globe.
 
-    A window of 12 years matches the length of the Argo record.
+    A window of 144 matches the length of the Argo record 
+      (i.e. 12 years of annually smoothed monthly data)
 
     """
 
     diff = sthext_cube - notsthext_cube
-    trends = linear_trend(diff.data, 0, window)
+    window_array = rolling_window(diff.data, window=window, axis=0)
 
-    return trends
+    #x_axis = numpy.arange(0, window)
+    remainder = window % 2
+    if remainder == 0:
+        end_adjust = (window / 2) - 1
+    else:
+        end_adjust = window / 2
+    start_adjust = window / 2
+    x_axis = diff.coord('time').points[start_adjust - 1 : -end_adjust-1]    
+    pdb.set_trace()
+    trend = numpy.apply_along_axis(calc_slope, -1, window_array, x_axis)
+
+    # convert units from J/month to J/s so can be expressed as Watts (1 J = W.s)
+    assert 'days' in str(diff.coord('time').units)
+    hours_in_day = 24
+    minutes_in_hour = 60
+    seconds_in_minute = 60
+
+    trend = trend / (hours_in_day * minutes_in_hour * seconds_in_minute)
+
+    return trend
 
 
 def get_file_details(filename):
@@ -134,6 +148,7 @@ def main(inargs):
 
     # Plot
     fig = plt.figure(figsize=[15, 3])
+    plt.title(model)
     gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1]) 
 
     plot_timeseries(data_dict[(model, experiment, run, 'globe')], 
