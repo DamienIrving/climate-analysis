@@ -45,7 +45,7 @@ def apply_polynomial(x_data, coefficient_data):
     
     coefficient_dict = {}
     if coefficient_data.ndim == 1:
-        coefficient_dict['a'] = coefficient_data[0]    
+        coefficient_dict['a'] = coefficient_data[0] 
         coefficient_dict['b'] = coefficient_data[1]
         coefficient_dict['c'] = coefficient_data[2]    
         coefficient_dict['d'] = coefficient_data[3]  
@@ -58,7 +58,8 @@ def apply_polynomial(x_data, coefficient_data):
             assert x_data.ndim == coef.ndim
             coefficient_dict[coefficient] = coef
 
-    result = coefficient_dict['a'] + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3  
+    # set a to zero so only deviations from start point are subtracted 
+    result = 0.0 + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3  
     
     return result 
 
