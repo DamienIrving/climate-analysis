@@ -42,7 +42,23 @@ except ImportError:
 
 # Define functions
 
-def plot_timeseries(globe_cube, sthext_cube, notsthext_cube, model, experiment, run, gs):
+def units_info(units):
+    """Make units LaTeX math compliant."""
+
+    index = units.find('^')
+    units = units[:index + 1] + '{' + units[index + 1:]
+
+    index = units.find('J')
+    units = units[:index - 1] + '}' + units[index - 1:]
+
+    tex_units = '$'+units+'$'
+    exponent = tex_units.split('}')[0].split('{')[1]
+
+    return tex_units, exponent
+
+
+def plot_timeseries(globe_cube, sthext_cube, notsthext_cube, 
+                    model, experiment, run, tex_units, gs):
     """Blah."""
 
     ax = plt.subplot(gs[0])
@@ -54,29 +70,27 @@ def plot_timeseries(globe_cube, sthext_cube, notsthext_cube, model, experiment, 
 
     plt.legend(loc='best')
     plt.title('%s, %s' %(experiment, run))
-    plt.ylabel('Ocean heat content ($%s$)' %(globe_cube.units))
+    plt.ylabel('Ocean heat content (%s)' %(tex_units))
     plt.xlabel('Year')
 
 
-def plot_trend_distribution(trend_data, gs):
+def plot_trend_distribution(trend_data, exponent, experiment, gs):
     """ """
 
     ax = plt.subplot(gs[1])
     plt.sca(ax)
 
-    seaborn.distplot(trend_data, hist=False, color="g", kde_kws={"shade": True})
+    assert exponent == '22', 'Data re-scaled assuming original unit of 10^22 J'
+    trend_data = trend_data * 1e8
 
+    seaborn.despine(left=True)
+    seaborn.distplot(trend_data, hist=True, color="orange", 
+                     kde_kws={"shade": True}, label=experiment)
+
+    plt.legend(loc='best')
     plt.title('12-year trends in hemispheric OHC difference')
     plt.ylabel('Density')
-    plt.xlabel('Trend')
-
-
-def calc_slope(y, x):
-    """Calculate the slope from linear regression."""
-    
-    slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
-    
-    return slope
+    plt.xlabel('Trend ($10^{14} W$)')
 
 
 def calc_diff_trends(sthext_cube, notsthext_cube, window=144):
@@ -88,18 +102,16 @@ def calc_diff_trends(sthext_cube, notsthext_cube, window=144):
     """
 
     diff = sthext_cube - notsthext_cube
-    window_array = rolling_window(diff.data, window=window, axis=0)
+    diff_windows = rolling_window(diff.data, window=window, axis=0)    
+    x_axis_windows = rolling_window(diff.coord('time').points, window=window, axis=0)
 
-    #x_axis = numpy.arange(0, window)
-    remainder = window % 2
-    if remainder == 0:
-        end_adjust = (window / 2) - 1
-    else:
-        end_adjust = window / 2
-    start_adjust = window / 2
-    x_axis = diff.coord('time').points[start_adjust - 1 : -end_adjust-1]    
-    pdb.set_trace()
-    trend = numpy.apply_along_axis(calc_slope, -1, window_array, x_axis)
+    ntimes = diff_windows.shape[0]
+    trends = numpy.zeros(ntimes)
+    for i in range(0, ntimes):
+        x = x_axis_windows[i, :]
+        y = diff_windows[i, :]
+        slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
+        trends[i] = slope
 
     # convert units from J/month to J/s so can be expressed as Watts (1 J = W.s)
     assert 'days' in str(diff.coord('time').units)
@@ -107,9 +119,9 @@ def calc_diff_trends(sthext_cube, notsthext_cube, window=144):
     minutes_in_hour = 60
     seconds_in_minute = 60
 
-    trend = trend / (hours_in_day * minutes_in_hour * seconds_in_minute)
+    trends = trends / (hours_in_day * minutes_in_hour * seconds_in_minute)
 
-    return trend
+    return trends
 
 
 def get_file_details(filename):
@@ -142,20 +154,22 @@ def main(inargs):
     # Calculate the annual mean timeseries
     for key, value in data_dict.iteritems():
         data_dict[key] = value.rolling_window('time', iris.analysis.MEAN, 12)
+    tex_units, exponent = units_info(str(value.units))
 
     # Calculate trends in 
     diff_trends = calc_diff_trends(data_dict[(model, experiment, run, 'sthext')], data_dict[(model, experiment, run, 'notsthext')])
 
     # Plot
-    fig = plt.figure(figsize=[15, 3])
-    plt.title(model)
+    fig = plt.figure(figsize=[15, 7])
+    plt.suptitle(model)
     gs = gridspec.GridSpec(1, 2, width_ratios=[1, 1]) 
 
+    
     plot_timeseries(data_dict[(model, experiment, run, 'globe')], 
                     data_dict[(model, experiment, run, 'sthext')], 
                     data_dict[(model, experiment, run, 'notsthext')],
-                    model, experiment, run, gs)
-    plot_trend_distribution(diff_trends, gs)
+                    model, experiment, run, tex_units, gs)
+    plot_trend_distribution(diff_trends, exponent, experiment, gs)
 
     # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
