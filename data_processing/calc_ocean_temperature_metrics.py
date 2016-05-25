@@ -228,10 +228,10 @@ def set_attributes(inargs, temperature_cube, volume_cube, climatology_cube):
 
 def main(inargs):
     """Run the program."""
-    
+
     level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
     volume_cube, climatology_cube = read_optional_data(inargs, level_subset)
-    temperature_cubelist = iris.load(inargs.temperature_files, inargs.temperature_var, callback=save_history)
+    temperature_cubelist = iris.load(inargs.temperature_files, inargs.temperature_var & level_subset, callback=save_history)
     equalise_attributes(temperature_cubelist)
 
     if inargs.metric == 'ohc':
