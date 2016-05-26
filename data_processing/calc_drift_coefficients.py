@@ -109,7 +109,7 @@ def main(inargs):
        
         coord_names = [coord.name() for coord in cube.coords(dim_coords=True)]
         assert coord_names[0] == 'time', "First axis must be time"
-        time_axis = cube.coord('time').points
+        time_axis = cube.coord('time').points.astype(numpy.float32)
        
         coefficients = calc_coefficients(cube, coord_names, time_axis)
 
@@ -148,7 +148,9 @@ def main(inargs):
 
     cube_list = iris.cube.CubeList(out_cubes)
     out_cube = cube_list.concatenate()
-    iris.save(out_cube, inargs.outfile)
+
+    assert cube_list.data.dtype == numpy.float32
+    iris.save(out_cube, inargs.outfile, netcdf_format='NETCDF3_CLASSIC')
 
 
 if __name__ == '__main__':

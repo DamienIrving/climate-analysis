@@ -232,6 +232,7 @@ def main(inargs):
     level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
     volume_cube, climatology_cube = read_optional_data(inargs, level_subset)
     temperature_cubelist = iris.load(inargs.temperature_files, inargs.temperature_var & level_subset, callback=save_history)
+    #history.append(temperature_cubelist[0].attributes['history'])
     equalise_attributes(temperature_cubelist)
 
     if inargs.metric == 'ohc':
@@ -265,6 +266,7 @@ def main(inargs):
         cube_list.append(temp_list.concatenate_cube())
     
     cube_list = iris.cube.CubeList(cube_list)
+    assert cube_list[0].data.dtype == numpy.float32
     iris.save(cube_list, inargs.outfile)
 
 

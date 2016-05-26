@@ -43,12 +43,13 @@ def apply_polynomial(x_data, coefficient_data):
 
     """
     
+    x_data = x_data.astype(numpy.float32)
     coefficient_dict = {}
     if coefficient_data.ndim == 1:
-        coefficient_dict['a'] = coefficient_data[0] 
+        coefficient_dict['a'] = coefficient_data[0]
         coefficient_dict['b'] = coefficient_data[1]
-        coefficient_dict['c'] = coefficient_data[2]    
-        coefficient_dict['d'] = coefficient_data[3]  
+        coefficient_dict['c'] = coefficient_data[2]
+        coefficient_dict['d'] = coefficient_data[3]
     else:
         while x_data.ndim < coefficient_data.ndim:
             x_data = x_data[..., numpy.newaxis]
@@ -59,8 +60,8 @@ def apply_polynomial(x_data, coefficient_data):
             coefficient_dict[coefficient] = coef
 
     # set a to zero so only deviations from start point are subtracted 
-    result = 0.0 + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3  
-    
+    result = 0 + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3  
+
     return result 
 
 
@@ -81,7 +82,7 @@ def time_adjustment(first_data_cube, coefficient_cube):
     branch_time_value = first_data_cube.attributes['branch_time'] #FIXME: Add half a time step?
     branch_time_unit = coefficient_cube.attributes['time_unit']
     branch_time_calendar = coefficient_cube.attributes['time_calendar']
-    data_time_coord = first_data_cube.coord('time')
+    data_time_coord = first_data_cube.coord('time').astype(numpy.float32)
 
     new_unit = cf_units.Unit(branch_time_unit, calendar=branch_time_calendar)  
     data_time_coord.convert_units(new_unit)
@@ -112,7 +113,7 @@ def main(inargs):
         time_coord.convert_units(new_time_unit)
         
         assert time_coord.points[0] >= first_experiment_time
-        time_values = time_coord.points - time_diff
+        time_values = time_coord.points.astype(numpy.float32) - time_diff
 
         # Remove the drift
         drift_signal = apply_polynomial(time_values, coefficient_cube.data)
@@ -129,8 +130,9 @@ def main(inargs):
             metadata_dict = {infile: data_cube.attributes['history'], 
                              inargs.coefficient_file: coefficient_cube.attributes['history']}
             new_cube.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
-          
-            iris.save(new_cube, outfile)
+
+            assert new_cube.data.dtype == numpy.float32
+            iris.save(new_cube, outfile, netcdf_format='NETCDF3_CLASSIC')
             print 'output:', outfile
         
     if inargs.outfile[-3:] == '.nc':
@@ -142,7 +144,8 @@ def main(inargs):
                         inargs.coefficient_file: coefficient_cube.attributes['history']}
         new_cubelist.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
 
-        iris.save(new_cubelist, inargs.outfile)
+        assert new_cubelist.data.dtype == numpy.float32
+        iris.save(new_cubelist, inargs.outfile, netcdf_format='NETCDF3_CLASSIC')
 
 
 if __name__ == '__main__':

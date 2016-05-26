@@ -229,6 +229,7 @@ def main(inargs):
         cube_list.append(temp_list.concatenate_cube())
     
     cube_list = iris.cube.CubeList(cube_list)
+    assert cibe_list[0].data.dtype == numpy.float32
     iris.save(cube_list, inargs.outfile)
 
 
