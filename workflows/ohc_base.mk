@@ -57,7 +57,7 @@ ${CLIMATOLOGY_FILE} : ${DEDRIFTED_TEMPERATURE_DIR}
 
 ${TEMPERATURE_METRICS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${TEMPERATURE_METRICS_DIR}
-	python ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${VOLUME_FILE} --climatology_file $<
+	python ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${VOLUME_FILE} --climatology_file $< --max_depth ${MAX_DEPTH}
 
 ${TEMPERATURE_METRICS_PLOT} : ${TEMPERATURE_METRICS_FILE}
 	python ${VIS_SCRIPT_DIR}/plot_ocean_temperature_metrics.py $< $@
@@ -66,7 +66,7 @@ ${TEMPERATURE_METRICS_PLOT} : ${TEMPERATURE_METRICS_FILE}
 
 ${OHC_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${OHC_MAPS_DIR}
-	python ${DATA_SCRIPT_DIR}/calc_ohc_maps.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --climatology_file $<
+	python ${DATA_SCRIPT_DIR}/calc_ohc_maps.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --climatology_file $< --max_depth ${MAX_DEPTH}
 
 ${OHC_MAPS_PLOT} : ${OHC_MAPS_FILE}
 	python ${VIS_SCRIPT_DIR}/plot_ohc_trend.py $< $@ --time ${START_DATE} ${END_DATE} 
