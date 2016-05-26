@@ -67,7 +67,7 @@ def calc_coefficients(cube, coord_names, time_axis):
         slice_dims.remove('depth')
         out_shape = list(cube.shape)
         out_shape[0] = 4
-        coefficients = numpy.zeros(out_shape)
+        coefficients = numpy.zeros(out_shape, dtype=numpy.float32)
         for i, x_slice in enumerate(cube.slices(slice_dims)):
             coefficients[:,i,::] = numpy.ma.apply_along_axis(polyfit, 0, x_slice.data, time_axis)
         fill_value = x_slice.data.fill_value 
@@ -113,6 +113,8 @@ def main(inargs):
        
         coefficients = calc_coefficients(cube, coord_names, time_axis)
 
+        pdb.set_trace()
+
         # Write the output file
 
         iris.std_names.STD_NAMES['drift_coefficient'] = {'canonical_units': 1}
@@ -149,7 +151,7 @@ def main(inargs):
     cube_list = iris.cube.CubeList(out_cubes)
     out_cube = cube_list.concatenate()
 
-    assert cube_list.data.dtype == numpy.float32
+    assert out_cube[0].data.dtype == numpy.float32
     iris.save(out_cube, inargs.outfile, netcdf_format='NETCDF3_CLASSIC')
 
 
