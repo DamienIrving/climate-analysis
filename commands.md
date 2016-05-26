@@ -26,6 +26,7 @@
 | Secure copy     | `scp {remote file} {local file destination}` |
 |                 | e.g. `scp STUDENT\\dbirving@abyss:~/directory/script.py .` |
 | Remove netCDF attribute | `ncatted -O -a missing_value,var,d,,` |
+| Check netCDF type | `ncdump -k` (see [details](http://www.unidata.ucar.edu/software/netcdf/docs/faq.html#How-can-I-tell-which-format-a-netCDF-file-uses)) |
 
 ### Python
 
