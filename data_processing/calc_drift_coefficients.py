@@ -113,8 +113,6 @@ def main(inargs):
        
         coefficients = calc_coefficients(cube, coord_names, time_axis)
 
-        pdb.set_trace()
-
         # Write the output file
 
         iris.std_names.STD_NAMES['drift_coefficient'] = {'canonical_units': 1}
