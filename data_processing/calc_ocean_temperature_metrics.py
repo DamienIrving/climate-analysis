@@ -113,6 +113,7 @@ def create_volume_cube(cube):
         vert_extents = spatial_weights.calc_vertical_weights_2D(depth_coord, cube.coord('latitude'), cube.shape)
 
     volume_cube = lat_extents * lon_extents * vert_extents
+    volume_cube = volume_cube.astype(numpy.float32)
 
     return volume_cube
 
@@ -153,9 +154,9 @@ def read_optional_data(inargs, level_subset):
 
         if inargs.climatology_file:
             climatology_cube = iris.load_cube(inargs.climatology_file, inargs.temperature_var & level_subset)
+            assert climatology_cube.data.dtype == numpy.float32
         else:
             climatology_cube = None
-
 
     return volume_cube, climatology_cube
 
