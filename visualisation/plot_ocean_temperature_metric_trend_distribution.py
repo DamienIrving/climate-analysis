@@ -52,11 +52,10 @@ def plot_trend_distribution(trend_data, exponent, model, experiment):
     trend_data = trend_data * 1e8
 
     seaborn.despine(left=True)
-    seaborn.distplot(trend_data, hist=True, color="orange", 
-                     kde_kws={"shade": True}, label=experiment)
+    seaborn.distplot(trend_data, hist=True, kde_kws={"shade": True},
+                     label=model+', '+experiment)
 
     plt.legend(loc='best')
-    plt.title('12-year trends in hemispheric OHC difference, %s'  %(model))
     plt.ylabel('Density')
     plt.xlabel('Trend ($10^{14} W$)')
 
@@ -148,6 +147,7 @@ def main(inargs):
             if data_compilation.any():
                 plot_trend_distribution(data_compilation, exponent, model, experiment)
 
+    plt.title('12-year trends in hemispheric OHC difference')
     plt.savefig(inargs.outfile, bbox_inches='tight')
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)
 
