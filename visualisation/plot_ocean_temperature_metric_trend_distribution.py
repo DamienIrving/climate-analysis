@@ -41,6 +41,10 @@ except ImportError:
 
 # Define functions
 
+models = []
+experiments = []
+mips = []
+
 def plot_trend_distribution(trend_data, exponent, model, experiment):
     """ """
 
@@ -88,40 +92,64 @@ def calc_diff_trends(sthext_cube, notsthext_cube, window=144):
     return trends
 
 
+def update_lists(model, experiment, mip):
+    """Update the lists of experiments, models and runs.
+    
+    Doing it this way instead of sets to keep input file order
+    (sorted by model then experiment)
+    
+    """
+    
+    if not model in models:
+        models.append(model)
+    
+    if not experiment in experiments:
+        experiments.append(experiment)
+    
+    if not mip in mips:
+        mips.append(mip)
+
+
 def main(inargs):
     """Run the program."""
-    
-    model, experiment, run = gio.get_cmip5_file_details(inargs.infile)
 
     # Read data
     try:
         time_constraint = gio.get_time_constraint(inargs.time)
     except AttributeError:
         time_constraint = iris.Constraint()
+    
+    diff_trends = {}   
+    metadata_dict = {}     
+    for infile in inargs.infiles:
+        model, experiment, mip = gio.get_cmip5_file_details(infile)
+        update_lists(model, experiment, mip)
 
-    data_dict = {}
-    with iris.FUTURE.context(cell_datetime_objects=True):
-        data_dict[(model, experiment, run, 'globe')] = iris.load_cube(inargs.infile, 'ocean heat content globe' & time_constraint)
-        data_dict[(model, experiment, run, 'sthext')] = iris.load_cube(inargs.infile, 'ocean heat content southern extratropics' & time_constraint)
-        data_dict[(model, experiment, run, 'notsthext')] = iris.load_cube(inargs.infile, 'ocean heat content outside southern extratropics' & time_constraint)
+        with iris.FUTURE.context(cell_datetime_objects=True):
+            cube_sthext = iris.load_cube(infile, 'ocean heat content southern extratropics' & time_constraint)
+            cube_notsthext = iris.load_cube(infile, 'ocean heat content outside southern extratropics' & time_constraint)
 
-    # Calculate the annual mean timeseries
-    for key, value in data_dict.iteritems():
-        data_dict[key] = value.rolling_window('time', iris.analysis.MEAN, 12)
-    tex_units, exponent = uconv.units_info(str(value.units))
-
-    # Calculate trends in 
-    diff_trends = calc_diff_trends(data_dict[(model, experiment, run, 'sthext')], 
-                                   data_dict[(model, experiment, run, 'notsthext')])
-
+        diff_trends[(model, experiment, mip)] = calc_diff_trends(cube_sthext, cube_notsthext)
+        metadata_dict[infile] = cube_sthext.attributes['history']
+            
     # Plot
     fig = plt.figure()  #figsize=[15, 7])
-    plot_trend_distribution(diff_trends, exponent, model, experiment)
 
-    # Write output
+    tex_units, exponent = uconv.units_info(str(cube_sthext.units))
+    for model in models:
+        for experiment in experiments:
+            data_compilation = numpy.array([])
+            for mip in mips:
+                try:
+                    data = diff_trends[(model, experiment, mip)]
+                    data_compilation = numpy.concatenate((data_compilation, data))
+                except KeyError:
+                    pass
+            if data_compilation.any():
+                plot_trend_distribution(data_compilation, exponent, model, experiment)
+
     plt.savefig(inargs.outfile, bbox_inches='tight')
-    infile_history = data_dict[(model, experiment, run, 'globe')].attributes['history']
-    gio.write_metadata(inargs.outfile, file_info={inargs.outfile:infile_history})
+    gio.write_metadata(inargs.outfile, file_info=metadata_dict)
 
 
 if __name__ == '__main__':
@@ -138,7 +166,7 @@ author:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infile", type=str, help="Input ocean heat content file")
+    parser.add_argument("infiles", type=str, nargs='*', help="Input ocean temperature metric files")
     parser.add_argument("outfile", type=str, help="Output file name")
     
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
