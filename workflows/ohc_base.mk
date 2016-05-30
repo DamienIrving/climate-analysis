@@ -60,7 +60,7 @@ ${TEMPERATURE_METRICS_FILE} : ${CLIMATOLOGY_FILE}
 	python ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${VOLUME_FILE} --climatology_file $< --max_depth ${MAX_DEPTH}
 
 ${TEMPERATURE_METRICS_PLOT} : ${TEMPERATURE_METRICS_FILE}
-	python ${VIS_SCRIPT_DIR}/plot_ocean_temperature_metrics.py $< $@
+	python ${VIS_SCRIPT_DIR}/plot_ocean_temperature_metric_timeseries.py $< $@
 
 # OHC maps
 
