@@ -128,6 +128,9 @@ def main(inargs):
             cube_sthext = iris.load_cube(infile, 'ocean heat content southern extratropics' & time_constraint)
             cube_notsthext = iris.load_cube(infile, 'ocean heat content outside southern extratropics' & time_constraint)
 
+        cube_sthext = cube_sthext.rolling_window('time', iris.analysis.MEAN, 12)
+        cube_notsthext = cube_notsthext.rolling_window('time', iris.analysis.MEAN, 12)
+
         diff_trends[(model, experiment, mip)] = calc_diff_trends(cube_sthext, cube_notsthext)
         metadata_dict[infile] = cube_sthext.attributes['history']
             
