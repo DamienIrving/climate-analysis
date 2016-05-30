@@ -3,6 +3,7 @@ Collection of commonly used functions for general file input and output.
 
 Functions:
   check_xrayDataset        -- Check xray.Dataset for data format compliance
+  get_cmip5_file_details   -- Extract details from a CMIP5 filename
   get_subset_kwargs        -- Get keyword arguments for xray subsetting
   get_time_constraint      -- Get the time constraint used for reading an iris cube 
   get_timescale            -- Get the timescale
@@ -149,19 +150,14 @@ def check_xrayDataset(dset, var_list):
         'Longitude axis must be 0 to 360E'
 
 
-def vertical_bounds_text(level_axis, user_top, user_bottom):
-    """Generate text describing the vertical bounds of a data selection."""
-    
-    if user_top and user_bottom:
-        level_text = '%f down to %f' %(user_top, user_bottom)
-    elif user_bottom:
-        level_text = 'input data surface (%f) down to %f' %(level_axis[0], user_bottom)
-    elif user_top:
-        level_text = '%f down to input data bottom (%f)' %(user_top, level_axis[-1])
-    else:
-        level_text = 'full depth of input data (%f down to %f)' %(level_axis[0], level_axis[-1])
-    
-    return level_text
+def get_cmip5_file_details(filename):
+    """Extract details from a CMIP5 filename."""
+
+    name = filename.split('/')[-1]
+    components = name.split('_')
+    model, experiment, run = components[2:5]
+
+    return model, experiment, run
 
 
 def get_subset_kwargs(namespace):
@@ -375,6 +371,21 @@ def standard_datetime(dt):
     new_dt = parser.parse(str(dt))
 
     return new_dt.strftime("%Y-%m-%d")
+
+
+def vertical_bounds_text(level_axis, user_top, user_bottom):
+    """Generate text describing the vertical bounds of a data selection."""
+    
+    if user_top and user_bottom:
+        level_text = '%f down to %f' %(user_top, user_bottom)
+    elif user_bottom:
+        level_text = 'input data surface (%f) down to %f' %(level_axis[0], user_bottom)
+    elif user_top:
+        level_text = '%f down to input data bottom (%f)' %(user_top, level_axis[-1])
+    else:
+        level_text = 'full depth of input data (%f down to %f)' %(level_axis[0], level_axis[-1])
+    
+    return level_text
 
 
 def write_dates(outfile, date_list):

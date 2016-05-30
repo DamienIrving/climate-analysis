@@ -16,6 +16,7 @@ Functions:
   match_dates        -- Take list of dates and match with the corresponding times 
                         in a detailed time axis
   single2list        -- Check if item is a list, then convert if not
+  units_info         -- Make the units taken from a file LaTeX math compliant
 
 """
 
@@ -23,7 +24,6 @@ import numpy
 from scipy import stats
 import pdb, re
 import inspect
-from statsmodels.tsa.stattools import acf
 
 
 def adjust_lon_range(lons, radians=True, start=0.0):
@@ -115,6 +115,8 @@ def calc_significance(data_subset, data_all, standard_name):
       Zieba (2010). doi:10.2478/v10178-010-0001-0
     
     """
+
+    from statsmodels.tsa.stattools import acf
 
     # Data must be three dimensional, with time first
     assert len(data_subset.shape) == 3, "Input data must be 3 dimensional"
@@ -240,12 +242,6 @@ def list_kwargs(func):
     return details.args[-nopt:]
 
 
-def split_dt(dt):
-    """Split a numpy.datetime64 value so as to just keep the date part."""
-
-    return str(dt).split('T')[0]
-
-
 def match_dates(datetimes, datetime_axis):
     """Take list of datetimes and match with the corresponding datetimes in a time axis.
  
@@ -270,6 +266,12 @@ def match_dates(datetimes, datetime_axis):
     return match_datetimes, miss_datetimes
 
 
+def split_dt(dt):
+    """Split a numpy.datetime64 value so as to just keep the date part."""
+
+    return str(dt).split('T')[0]
+
+
 def single2list(item, numpy_array=False):
     """Check if item is a list, then convert if not."""
     
@@ -287,3 +289,23 @@ def single2list(item, numpy_array=False):
         return numpy.array(output)
     else:
         return output
+
+
+def units_info(units):
+    """Make the units taken from a file LaTeX math compliant.
+    
+    This function particularly deals with powers:
+      e.g. 10^22 J
+    """
+
+    index = units.find('^')
+    units = units[:index + 1] + '{' + units[index + 1:]
+
+    index = units.find('J')
+    units = units[:index - 1] + '}' + units[index - 1:]
+
+    tex_units = '$'+units+'$'
+    exponent = tex_units.split('}')[0].split('{')[1]
+
+    return tex_units, exponent
+

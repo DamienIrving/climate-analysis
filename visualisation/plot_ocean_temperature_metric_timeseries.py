@@ -18,7 +18,6 @@ import numpy
 import iris
 import iris.quickplot as qplt
 from iris.util import rolling_window
-from iris.analysis import Aggregator
 
 
 # Import my modules
@@ -35,26 +34,12 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import convenient_universal as uconv
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 
 # Define functions
-
-def units_info(units):
-    """Make units LaTeX math compliant."""
-
-    index = units.find('^')
-    units = units[:index + 1] + '{' + units[index + 1:]
-
-    index = units.find('J')
-    units = units[:index - 1] + '}' + units[index - 1:]
-
-    tex_units = '$'+units+'$'
-    exponent = tex_units.split('}')[0].split('{')[1]
-
-    return tex_units, exponent
-
 
 def plot_timeseries(globe_cube, sthext_cube, notsthext_cube, 
                     model, experiment, run, tex_units):
@@ -70,20 +55,10 @@ def plot_timeseries(globe_cube, sthext_cube, notsthext_cube,
     plt.xlabel('Year')
 
 
-def get_cmip5_file_details(filename):
-    """Extract details from a CMIP5 filename."""
-
-    name = filename.split('/')[-1]
-    components = name.split('_')
-    model, experiment, run = components[2:5]
-
-    return model, experiment, run
-
-
 def main(inargs):
     """Run the program."""
     
-    model, experiment, run = get_cmip5_file_details(inargs.infile)
+    model, experiment, run = gio.get_cmip5_file_details(inargs.infile)
 
     # Read data
     try:
@@ -100,7 +75,7 @@ def main(inargs):
     # Calculate the annual mean timeseries
     for key, value in data_dict.iteritems():
         data_dict[key] = value.rolling_window('time', iris.analysis.MEAN, 12)
-    tex_units, exponent = units_info(str(value.units))
+    tex_units, exponent = uconv.units_info(str(value.units))
 
     # Plot
     fig = plt.figure() #figsize=[15, 7])
