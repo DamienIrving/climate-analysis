@@ -43,6 +43,8 @@ def apply_polynomial(x_data, coefficient_data):
 
     """
     
+    coefficient_data = thetao_coefficient_sanity_check(coefficient_data)
+
     x_data = x_data.astype(numpy.float32)
     coefficient_dict = {}
     if coefficient_data.ndim == 1:
@@ -93,29 +95,45 @@ def time_adjustment(first_data_cube, coefficient_cube):
     return time_diff, first_experiment_time, new_unit
 
 
-def thetao_sanity_check(cube):
-    """Sanity check thetao data and mask crazy values."""
+def thetao_coefficient_sanity_check(coefficient_array):
+    """Sanity check the thetao cubic polynomial coefficients.
+
+    Polynomial is a + bx + cx^2 + dx^3. The telling sign of a poor
+    fit is an 'a' value that does not represent a realistic thetao value.
+
+    """
     
     thetao_max = 330
     thetao_min = 250
     
-    original_mask = cube.data.mask
-    nmasked_original = numpy.sum(original_mask)
+    nmasked_original = numpy.sum(coefficient_array.mask)
+
+    a_data = coefficient_array[0, ...]
+
+    original_mask = a_data.mask
     
-    crazy_mask_min = numpy.ma.where(cube.data < thetao_min, True, False)
-    crazy_mask_max = numpy.ma.where(cube.data > thetao_max, True, False)
-    crazy_mask = numpy.ma.mask_or(crazy_mask_min, crazy_mask_max)
-    ncrazy = numpy.sum(crazy_mask)
+    crazy_mask_min = numpy.ma.where(a_data < thetao_min, True, False)
+    crazy_mask_max = numpy.ma.where(a_data > thetao_max, True, False)
+    new_mask = numpy.ma.mask_or(crazy_mask_min, crazy_mask_max)
+    ncrazy_min = numpy.sum(crazy_mask_min)
+    ncrazy_max = numpy.sum(crazy_mask_max)
+    ncrazy = ncrazy_min + ncrazy_max
+
+    new_mask = new_mask[numpy.newaxis, ...]
+    new_mask = numpy.repeat(new_mask, 4, axis=0)
+
+    nmasked_new = numpy.sum(new_mask)    
+
+    if ncrazy > 0:
+        npoints = numpy.prod(a_data.shape)
+        print "Masked %i of %i points because cubic fit was poor" %(ncrazy, npoints)  
+        #numpy.argwhere(x == np.min(x)) to see what those points are
     
-    new_mask = numpy.ma.mask_or(original_mask, crazy_mask)
-    nmasked_new = numpy.sum(new_mask)
+    coefficient_array.mask = new_mask
+  
+    assert nmasked_new == ncrazy*4 + nmasked_original
     
-    print "Masked %s crazy data points" %(numpy.sum(crazy_mask)    
-    cube.data.mask = new_mask
-    
-    assert nmasked_new == ncrazy + nmaksed_original
-    
-    return cube    
+    return coefficient_array    
 
 
 def main(inargs):
@@ -132,7 +150,7 @@ def main(inargs):
         
         data_cube = iris.load_cube(filename)
         check_attributes(data_cube.attributes, coefficient_cube.attributes)
-        data_cube = thetao_sanity_check(data_cube)
+        #data_cube = thetao_sanity_check(data_cube, filename)
 
         # Sync the data time axis with the coefficient time axis        
         time_coord = data_cube.coord('time')
