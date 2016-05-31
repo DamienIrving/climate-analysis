@@ -43,8 +43,6 @@ def apply_polynomial(x_data, coefficient_data):
 
     """
     
-    coefficient_data = thetao_coefficient_sanity_check(coefficient_data)
-
     x_data = x_data.astype(numpy.float32)
     coefficient_dict = {}
     if coefficient_data.ndim == 1:
@@ -78,24 +76,7 @@ def check_attributes(data_attrs, control_attrs):
     assert data_attrs['parent_experiment_rip'] in [control_rip, 'N/A']
 
 
-def time_adjustment(first_data_cube, coefficient_cube):
-    """Determine the adjustment that needs to be made to time axis."""
-
-    branch_time_value = first_data_cube.attributes['branch_time'] #FIXME: Add half a time step?
-    branch_time_unit = coefficient_cube.attributes['time_unit']
-    branch_time_calendar = coefficient_cube.attributes['time_calendar']
-    data_time_coord = first_data_cube.coord('time')
-
-    new_unit = cf_units.Unit(branch_time_unit, calendar=branch_time_calendar)  
-    data_time_coord.convert_units(new_unit)
-
-    first_experiment_time = data_time_coord.points[0]
-    time_diff = first_experiment_time - branch_time_value 
-
-    return time_diff, first_experiment_time, new_unit
-
-
-def thetao_coefficient_sanity_check(coefficient_array):
+def thetao_coefficient_sanity_check(coefficient_cube):
     """Sanity check the thetao cubic polynomial coefficients.
 
     Polynomial is a + bx + cx^2 + dx^3. The telling sign of a poor
@@ -106,9 +87,9 @@ def thetao_coefficient_sanity_check(coefficient_array):
     thetao_max = 330
     thetao_min = 250
     
-    nmasked_original = numpy.sum(coefficient_array.mask)
+    nmasked_original = numpy.sum(coefficient_cube.data.mask)
 
-    a_data = coefficient_array[0, ...]
+    a_data = coefficient_cube.data[0, ...]
 
     original_mask = a_data.mask
     
@@ -129,11 +110,26 @@ def thetao_coefficient_sanity_check(coefficient_array):
         print "Masked %i of %i points because cubic fit was poor" %(ncrazy, npoints)  
         #numpy.argwhere(x == np.min(x)) to see what those points are
     
-    coefficient_array.mask = new_mask
+    coefficient_cube.data.mask = new_mask
   
-    assert nmasked_new == ncrazy*4 + nmasked_original
-    
-    return coefficient_array    
+    assert nmasked_new == ncrazy * 4 + nmasked_original
+
+
+def time_adjustment(first_data_cube, coefficient_cube):
+    """Determine the adjustment that needs to be made to time axis."""
+
+    branch_time_value = first_data_cube.attributes['branch_time'] #FIXME: Add half a time step?
+    branch_time_unit = coefficient_cube.attributes['time_unit']
+    branch_time_calendar = coefficient_cube.attributes['time_calendar']
+    data_time_coord = first_data_cube.coord('time')
+
+    new_unit = cf_units.Unit(branch_time_unit, calendar=branch_time_calendar)  
+    data_time_coord.convert_units(new_unit)
+
+    first_experiment_time = data_time_coord.points[0]
+    time_diff = first_experiment_time - branch_time_value 
+
+    return time_diff, first_experiment_time, new_unit
 
 
 def main(inargs):
@@ -141,6 +137,7 @@ def main(inargs):
     
     first_data_cube = iris.load_cube(inargs.data_files[0])
     coefficient_cube = iris.load_cube(inargs.coefficient_file)
+    thetao_coefficient_sanity_check(coefficient_cube)
 
     time_diff, first_experiment_time, new_time_unit = time_adjustment(first_data_cube, coefficient_cube)
     del first_data_cube
@@ -150,7 +147,6 @@ def main(inargs):
         
         data_cube = iris.load_cube(filename)
         check_attributes(data_cube.attributes, coefficient_cube.attributes)
-        #data_cube = thetao_sanity_check(data_cube, filename)
 
         # Sync the data time axis with the coefficient time axis        
         time_coord = data_cube.coord('time')
