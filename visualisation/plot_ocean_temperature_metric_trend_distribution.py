@@ -43,7 +43,7 @@ except ImportError:
 
 models = []
 experiments = []
-mips = []
+runs = []
 
 def plot_trend_distribution(trend_data, exponent, model, experiment):
     """ """
@@ -91,7 +91,7 @@ def calc_diff_trends(sthext_cube, notsthext_cube, window=144):
     return trends
 
 
-def update_lists(model, experiment, mip):
+def update_lists(model, experiment, run):
     """Update the lists of experiments, models and runs.
     
     Doing it this way instead of sets to keep input file order
@@ -105,8 +105,8 @@ def update_lists(model, experiment, mip):
     if not experiment in experiments:
         experiments.append(experiment)
     
-    if not mip in mips:
-        mips.append(mip)
+    if not run in runs:
+        runs.append(run)
 
 
 def main(inargs):
@@ -121,17 +121,17 @@ def main(inargs):
     diff_trends = {}   
     metadata_dict = {}     
     for infile in inargs.infiles:
-        model, experiment, mip = gio.get_cmip5_file_details(infile)
-        update_lists(model, experiment, mip)
-
         with iris.FUTURE.context(cell_datetime_objects=True):
             cube_sthext = iris.load_cube(infile, 'ocean heat content southern extratropics' & time_constraint)
             cube_notsthext = iris.load_cube(infile, 'ocean heat content outside southern extratropics' & time_constraint)
 
+        model, experiment, run = gio.get_cmip5_file_details(cube_sthext)
+        update_lists(model, experiment, run)
+
         cube_sthext = cube_sthext.rolling_window('time', iris.analysis.MEAN, 12)
         cube_notsthext = cube_notsthext.rolling_window('time', iris.analysis.MEAN, 12)
 
-        diff_trends[(model, experiment, mip)] = calc_diff_trends(cube_sthext, cube_notsthext)
+        diff_trends[(model, experiment, run)] = calc_diff_trends(cube_sthext, cube_notsthext)
         metadata_dict[infile] = cube_sthext.attributes['history']
             
     # Plot
@@ -141,9 +141,9 @@ def main(inargs):
     for model in models:
         for experiment in experiments:
             data_compilation = numpy.array([])
-            for mip in mips:
+            for run in runs:
                 try:
-                    data = diff_trends[(model, experiment, mip)]
+                    data = diff_trends[(model, experiment, run)]
                     data_compilation = numpy.concatenate((data_compilation, data))
                 except KeyError:
                     pass

@@ -58,8 +58,6 @@ def plot_timeseries(globe_cube, sthext_cube, notsthext_cube,
 def main(inargs):
     """Run the program."""
     
-    model, experiment, run = gio.get_cmip5_file_details(inargs.infile)
-
     # Read data
     try:
         time_constraint = gio.get_time_constraint(inargs.time)
@@ -71,6 +69,8 @@ def main(inargs):
         data_dict['globe'] = iris.load_cube(inargs.infile, 'ocean heat content globe' & time_constraint)
         data_dict['sthext'] = iris.load_cube(inargs.infile, 'ocean heat content southern extratropics' & time_constraint)
         data_dict['notsthext'] = iris.load_cube(inargs.infile, 'ocean heat content outside southern extratropics' & time_constraint)
+
+    model, experiment, run = gio.get_cmip5_file_details(data_dict['globe'])
 
     # Calculate the annual mean timeseries
     for key, value in data_dict.iteritems():

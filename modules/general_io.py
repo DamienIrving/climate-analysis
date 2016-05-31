@@ -150,12 +150,27 @@ def check_xrayDataset(dset, var_list):
         'Longitude axis must be 0 to 360E'
 
 
-def get_cmip5_file_details(filename):
-    """Extract details from a CMIP5 filename."""
+def get_cmip5_file_details(cube):
+    """Extract model, experiment and run information from CMIP5 file attributes.
 
-    name = filename.split('/')[-1]
-    components = name.split('_')
-    model, experiment, run = components[2:5]
+    Args:
+      cube (iris.cube.Cube): Data cube containing standard CMIP5 global attributes
+
+    """
+
+    model = cube.attributes['model_id']
+    experiment = cube.attributes['experiment_id']
+
+    physics = cube.attributes['physics_version']
+    realization = cube.attributes['realization']
+    initialization = cube.attributes['initialization_method']
+
+    run = 'r'+realization+'i'+initialization+'p'+physics    
+
+    # To get same information from a file name...
+    #name = filename.split('/')[-1]
+    #components = name.split('_')
+    #model, experiment, run = components[2:5]
 
     return model, experiment, run
 
