@@ -92,7 +92,32 @@ def time_adjustment(first_data_cube, coefficient_cube):
 
     return time_diff, first_experiment_time, new_unit
 
+
+def thetao_sanity_check(cube):
+    """Sanity check thetao data and mask crazy values."""
     
+    thetao_max = 330
+    thetao_min = 250
+    
+    original_mask = cube.data.mask
+    nmasked_original = numpy.sum(original_mask)
+    
+    crazy_mask_min = numpy.ma.where(cube.data < thetao_min, True, False)
+    crazy_mask_max = numpy.ma.where(cube.data > thetao_max, True, False)
+    crazy_mask = numpy.ma.mask_or(crazy_mask_min, crazy_mask_max)
+    ncrazy = numpy.sum(crazy_mask)
+    
+    new_mask = numpy.ma.mask_or(original_mask, crazy_mask)
+    nmasked_new = numpy.sum(new_mask)
+    
+    print "Masked %s crazy data points" %(numpy.sum(crazy_mask)    
+    cube.data.mask = new_mask
+    
+    assert nmasked_new == ncrazy + nmaksed_original
+    
+    return cube    
+
+
 def main(inargs):
     """Run the program."""
     
@@ -107,6 +132,7 @@ def main(inargs):
         
         data_cube = iris.load_cube(filename)
         check_attributes(data_cube.attributes, coefficient_cube.attributes)
+        data_cube = thetao_sanity_check(data_cube)
 
         # Sync the data time axis with the coefficient time axis        
         time_coord = data_cube.coord('time')
