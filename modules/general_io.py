@@ -165,7 +165,7 @@ def get_cmip5_file_details(cube):
     realization = cube.attributes['realization']
     initialization = cube.attributes['initialization_method']
 
-    run = 'r'+realization+'i'+initialization+'p'+physics    
+    run = 'r'+str(realization)+'i'+str(initialization)+'p'+str(physics)    
 
     # To get same information from a file name...
     #name = filename.split('/')[-1]
