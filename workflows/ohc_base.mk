@@ -41,32 +41,32 @@ OHC_MAPS_PLOT=${OHC_MAPS_DIR}/ohc-maps_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${STAR
 
 ${DRIFT_COEFFICIENTS} :
 	mkdir -p ${CONTROL_DIR} 
-	python ${DATA_SCRIPT_DIR}/calc_drift_coefficients.py ${CONTROL_FILES} $@ 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_drift_coefficients.py ${CONTROL_FILES} $@ 
 
 ${DEDRIFTED_TEMPERATURE_DIR} : ${DRIFT_COEFFICIENTS}
 	mkdir -p $@
-	python ${DATA_SCRIPT_DIR}/remove_drift.py ${TEMPERATURE_FILES} $< $@/
+	${PYTHON} ${DATA_SCRIPT_DIR}/remove_drift.py ${TEMPERATURE_FILES} $< $@/
 
 # Core data
 
 ${CLIMATOLOGY_FILE} : ${DEDRIFTED_TEMPERATURE_DIR}
-	python ${DATA_SCRIPT_DIR}/calc_climatology.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climatology.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@
 
 
 # OHC metrics
 
 ${TEMPERATURE_METRICS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${TEMPERATURE_METRICS_DIR}
-	python ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${VOLUME_FILE} --climatology_file $< --max_depth ${MAX_DEPTH}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${VOLUME_FILE} --climatology_file $< --max_depth ${MAX_DEPTH}
 
 ${TEMPERATURE_METRICS_PLOT} : ${TEMPERATURE_METRICS_FILE}
-	python ${VIS_SCRIPT_DIR}/plot_ocean_temperature_metric_timeseries.py $< $@
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_temperature_metric_timeseries.py $< $@
 
 # OHC maps
 
 ${OHC_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${OHC_MAPS_DIR}
-	python ${DATA_SCRIPT_DIR}/calc_ohc_maps.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --climatology_file $< --max_depth ${MAX_DEPTH}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ohc_maps.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --climatology_file $< --max_depth ${MAX_DEPTH}
 
 ${OHC_MAPS_PLOT} : ${OHC_MAPS_FILE}
-	python ${VIS_SCRIPT_DIR}/plot_ohc_trend.py $< $@ --time ${START_DATE} ${END_DATE} 
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ohc_trend.py $< $@ --time ${START_DATE} ${END_DATE} 

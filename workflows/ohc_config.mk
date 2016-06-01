@@ -2,6 +2,8 @@
 
 # System configuration
 
+PYTHON=/g/data/r87/dbi599/miniconda2/envs/default/bin/python
+
 MY_DATA_DIR=/g/data/r87/dbi599
 UA6_DATA_DIR=/g/data/ua6
 CMIP5_DIR_START=/drstree/CMIP5/GCM
@@ -14,10 +16,10 @@ VIS_SCRIPT_DIR=~/climate-analysis/visualisation
 FIG_TYPE=png
 
 # Analysis details
-ORGANISATION=CSIRO-BOM
-MODEL=ACCESS1-0
+ORGANISATION=CSIRO-QCCCE
+MODEL=CSIRO-Mk3-6-0
 EXPERIMENT=historical
-RUN=r1i1p3
+RUN=r1i1p1
 CONTROL_RUN=r1i1p1
 
 MAX_DEPTH=2000
