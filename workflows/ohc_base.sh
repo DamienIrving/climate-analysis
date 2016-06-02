@@ -40,6 +40,16 @@ for experiment in "${experiments[@]}"; do
         #r1i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
         organisation='CSIRO-QCCCE'
 
+    elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'historicalGHG' ]] ; then
+        runs=( r1i1p1 r2i1p1 r3i1p1 ) 
+        #r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
+        organisation='CSIRO-QCCCE'
+
+    elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'historicalNat' ]] ; then
+        runs=( r1i1p1 r2i1p1 r3i1p1 ) 
+        #r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
+        organisation='CSIRO-QCCCE'
+
     elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'noAA' ]] ; then
         experiment='historicalMisc'
         runs=( r1i1p3 r2i1p3 r3i1p3 )
