@@ -43,9 +43,10 @@ except ImportError:
 
 models = []
 experiments = []
-runs = []
+run_ris = []
+run_ps = []
 
-def plot_trend_distribution(trend_data, exponent, model, experiment):
+def plot_trend_distribution(trend_data, exponent, model, experiment, run_p):
     """ """
 
     assert exponent == '22', 'Data re-scaled assuming original unit of 10^22 J'
@@ -53,7 +54,7 @@ def plot_trend_distribution(trend_data, exponent, model, experiment):
 
     seaborn.despine(left=True)
     seaborn.distplot(trend_data, hist=True, kde_kws={"shade": True},
-                     label=model+', '+experiment)
+                     label=model+', '+experiment+', '+run_p)
 
     plt.legend(loc='best')
     plt.ylabel('Density')
@@ -91,8 +92,8 @@ def calc_diff_trends(sthext_cube, notsthext_cube, window=144):
     return trends
 
 
-def update_lists(model, experiment, run):
-    """Update the lists of experiments, models and runs.
+def update_lists(model, experiment, run_ri, run_p):
+    """Update the lists of experiments, models and run components.
     
     Doing it this way instead of sets to keep input file order
     (sorted by model then experiment)
@@ -105,8 +106,11 @@ def update_lists(model, experiment, run):
     if not experiment in experiments:
         experiments.append(experiment)
     
-    if not run in runs:
-        runs.append(run)
+    if not run_ri in run_ris:
+        run_ris.append(run_ri)
+
+    if not run_p in run_ps:
+        run_ps.append(run_p)
 
 
 def main(inargs):
@@ -126,12 +130,14 @@ def main(inargs):
             cube_notsthext = iris.load_cube(infile, 'ocean heat content outside southern extratropics' & time_constraint)
 
         model, experiment, run = gio.get_cmip5_file_details(cube_sthext)
-        update_lists(model, experiment, run)
+        run_ri = run[:-2]
+        run_p = run[-2:]
+        update_lists(model, experiment, run_ri, run_p)
 
         cube_sthext = cube_sthext.rolling_window('time', iris.analysis.MEAN, 12)
         cube_notsthext = cube_notsthext.rolling_window('time', iris.analysis.MEAN, 12)
 
-        diff_trends[(model, experiment, run)] = calc_diff_trends(cube_sthext, cube_notsthext)
+        diff_trends[(model, experiment, run_ri, run_p)] = calc_diff_trends(cube_sthext, cube_notsthext)
         metadata_dict[infile] = cube_sthext.attributes['history']
             
     # Plot
@@ -140,15 +146,16 @@ def main(inargs):
     tex_units, exponent = uconv.units_info(str(cube_sthext.units))
     for model in models:
         for experiment in experiments:
-            data_compilation = numpy.array([])
-            for run in runs:
-                try:
-                    data = diff_trends[(model, experiment, run)]
-                    data_compilation = numpy.concatenate((data_compilation, data))
-                except KeyError:
-                    pass
-            if data_compilation.any():
-                plot_trend_distribution(data_compilation, exponent, model, experiment)
+            for run_p in run_ps:
+                data_compilation = numpy.array([])
+                for run_ri in run_ris:
+                    try:
+                        data = diff_trends[(model, experiment, run_ri, run_p)]
+                        data_compilation = numpy.concatenate((data_compilation, data))
+                    except KeyError:
+                        pass
+                if data_compilation.any():
+                    plot_trend_distribution(data_compilation, exponent, model, experiment, run_p)
 
     plt.title('12-year trends in hemispheric OHC difference')
     plt.savefig(inargs.outfile, bbox_inches='tight')
