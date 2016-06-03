@@ -57,38 +57,48 @@ def plot_timeseries(globe_cube, sthext_cube, notsthext_cube,
 
 def main(inargs):
     """Run the program."""
-    
+
+    assert len(inargs.infiles) <= inargs.nrows * inargs.ncols
+
     # Read data
     try:
         time_constraint = gio.get_time_constraint(inargs.time)
     except AttributeError:
         time_constraint = iris.Constraint()
 
-    data_dict = {}
-    with iris.FUTURE.context(cell_datetime_objects=True):
-        data_dict['globe'] = iris.load_cube(inargs.infile, 'ocean heat content globe' & time_constraint)
-        data_dict['sthext'] = iris.load_cube(inargs.infile, 'ocean heat content southern extratropics' & time_constraint)
-        data_dict['notsthext'] = iris.load_cube(inargs.infile, 'ocean heat content outside southern extratropics' & time_constraint)
+    metadata_dict = {}
+    fig = plt.figure(figsize=inargs.figsize)
+    if not inargs.figsize:
+        print 'figure width: %s' %(str(fig.get_figwidth()))
+        print 'figure height: %s' %(str(fig.get_figheight()))
 
-    model, experiment, run = gio.get_cmip5_file_details(data_dict['globe'])
+    for plotnum, infile in enumerate(inargs.infiles):
 
-    # Calculate the annual mean timeseries
-    for key, value in data_dict.iteritems():
-        data_dict[key] = value.rolling_window('time', iris.analysis.MEAN, 12)
-    tex_units, exponent = uconv.units_info(str(value.units))
+        data_dict = {}
+        with iris.FUTURE.context(cell_datetime_objects=True):
+            data_dict['globe'] = iris.load_cube(infile, 'ocean heat content globe' & time_constraint)
+            data_dict['sthext'] = iris.load_cube(infile, 'ocean heat content southern extratropics' & time_constraint)
+            data_dict['notsthext'] = iris.load_cube(infile, 'ocean heat content outside southern extratropics' & time_constraint)
+        metadata_dict[infile] = data_dict['globe'].attributes['history']
+        model, experiment, run = gio.get_cmip5_file_details(data_dict['globe'])
 
-    # Plot
-    fig = plt.figure() #figsize=[15, 7])
-    
-    plot_timeseries(data_dict['globe'], 
-                    data_dict['sthext'], 
-                    data_dict['notsthext'],
-                    model, experiment, run, tex_units)
+        # Calculate the annual mean timeseries
+        for key, value in data_dict.iteritems():
+            data_dict[key] = value.rolling_window('time', iris.analysis.MEAN, 12)
+        tex_units, exponent = uconv.units_info(str(value.units))
 
+        # Plot
+        ax = plt.subplot(inargs.nrows, inargs.ncols, plotnum + 1)
+        plt.sca(ax)
+        plot_timeseries(data_dict['globe'], 
+                        data_dict['sthext'], 
+                        data_dict['notsthext'],
+                        model, experiment, run, tex_units)
+        
     # Write output
+    plt.tight_layout(pad=0.4, w_pad=2.0, h_pad=2.0)
     plt.savefig(inargs.outfile, bbox_inches='tight')
-    infile_history = data_dict['globe'].attributes['history']
-    gio.write_metadata(inargs.outfile, file_info={inargs.outfile:infile_history})
+    gio.write_metadata(inargs.outfile, file_info=metadata_dict)
 
 
 if __name__ == '__main__':
@@ -105,11 +115,19 @@ author:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infile", type=str, help="Input ocean heat content file")
+    parser.add_argument("infiles", type=str, nargs='*', help="Input ocean heat content file")
     parser.add_argument("outfile", type=str, help="Output file name")
     
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
+
+    parser.add_argument("--nrows", type=int, default=1, 
+                        help="number of rows in the entire grid of plots")
+    parser.add_argument("--ncols", type=int, default=1,
+                        help="number of columns in the entire grid of plots")
+    parser.add_argument("--figsize", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
+                        help="size of the figure (in inches)")
+
 
     args = parser.parse_args()            
     main(args)
