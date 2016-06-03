@@ -74,6 +74,9 @@ def main(inargs):
 
     for plotnum, infile in enumerate(inargs.infiles):
 
+        if not os.path.isfile(infile):
+            continue
+
         data_dict = {}
         with iris.FUTURE.context(cell_datetime_objects=True):
             data_dict['globe'] = iris.load_cube(infile, 'ocean heat content globe' & time_constraint)
@@ -115,7 +118,7 @@ author:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infiles", type=str, nargs='*', help="Input ocean heat content file")
+    parser.add_argument("infiles", type=str, nargs='*', help="Input temperature metric files (write blank for empty plots on grid)")
     parser.add_argument("outfile", type=str, help="Output file name")
     
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
