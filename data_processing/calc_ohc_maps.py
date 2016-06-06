@@ -185,7 +185,7 @@ def main(inargs):
 
     level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
     climatology_cube = read_climatology(inargs.climatology_file, inargs.temperature_var, level_subset)
-    temperature_cubes = iris.load(inargs.temperature_files, inargs.temperature_var, callback=save_history)
+    temperature_cubes = iris.load(inargs.temperature_files, inargs.temperature_var & level_subset, callback=save_history)
     equalise_attributes(temperature_cubes)
     atts = set_attributes(inargs, temperature_cubes[0], climatology_cube)
 
@@ -209,10 +209,13 @@ def main(inargs):
 
         zonal_weights = spatial_weights.calc_zonal_weights(temperature_cube, coord_names)
 
-        ohc_per_m2 = calc_ohc_3D(temperature_cube, vertical_weights, inargs)
+        ohc_per_m2 = calc_ohc_3D(temperature_cube, vertical_weights.astype(numpy.float32), inargs)
         ohc_per_m = calc_ohc_2D(temperature_cube, vertical_weights * zonal_weights, inargs)
 
         # Create the cube
+        ohc_per_m2.data = ohc_per_m2.data.astype(numpy.float32)
+        ohc_per_m.data = ohc_per_m.data.astype(numpy.float32)
+
         ohc_per_m2 = add_metadata(atts, depth_axis.points, ohc_per_m2, '3D', inargs)
         ohc_per_m = add_metadata(atts, depth_axis.points, ohc_per_m, '2D', inargs)
 
@@ -229,7 +232,7 @@ def main(inargs):
         cube_list.append(temp_list.concatenate_cube())
     
     cube_list = iris.cube.CubeList(cube_list)
-    assert cibe_list[0].data.dtype == numpy.float32
+    assert cube_list[0].data.dtype == numpy.float32
     iris.save(cube_list, inargs.outfile)
 
 
