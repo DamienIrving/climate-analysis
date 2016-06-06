@@ -214,7 +214,7 @@ def get_time_constraint(time_list):
     else:  
         start_year, start_month, start_day = start_date.split('-') 
         end_year, end_month, end_day = end_date.split('-')
-        time_constraint = iris.Constraint(time=lambda t: iris.time.PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)) <= t <= iris.time.PartialDateTime(year=int(end_year), month=int(end_month), day=int(end_day)))
+        time_constraint = iris.Constraint(time=lambda t: iris.time.PartialDateTime(year=int(start_year), month=int(start_month), day=int(start_day)) <= t.point <= iris.time.PartialDateTime(year=int(end_year), month=int(end_month), day=int(end_day)))
 
     return time_constraint
 
