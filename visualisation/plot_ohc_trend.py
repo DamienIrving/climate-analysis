@@ -101,20 +101,21 @@ def convert_to_seconds(time_axis):
     return time_axis
 
 
-def plot_3D_trend(trends, lons, lats, gs):
+def plot_3D_trend(trends, lons, lats, gs,
+                  tick_max, tick_step, yticks):
     """Plot the trends."""
 
     ax = plt.subplot(gs[0], projection=ccrs.PlateCarree(central_longitude=180.0))
     plt.sca(ax)
 
     cmap = plt.cm.RdBu_r
-    ticks = numpy.arange(-15, 17.5, 2.5)
+    ticks = numpy.arange(-tick_max, tick_max + tick_step, tick_step)
     cf = ax.contourf(lons, lats, trends, transform=ccrs.PlateCarree(),
                      cmap=cmap, levels=ticks, extend='both')
 
     ax.coastlines()
+    ax.set_yticks(yticks, crs=ccrs.PlateCarree())
     ax.set_xticks([0, 60, 120, 180, 240, 300, 360], crs=ccrs.PlateCarree())
-    ax.set_yticks([-60, -40, -20, 0, 20, 40, 60], crs=ccrs.PlateCarree())
     lon_formatter = LongitudeFormatter(zero_direction_label=True)
     lat_formatter = LatitudeFormatter()
     ax.xaxis.set_major_formatter(lon_formatter)
@@ -126,7 +127,7 @@ def plot_3D_trend(trends, lons, lats, gs):
     cbar.set_label('$Wm^{-2}$')
 
 
-def plot_2D_trend(trends, lats, gs):
+def plot_2D_trend(trends, lats, gs, yticks):
     """Plot the zonally integrated trends (i.e. zonal heat gain)"""
 
     ax = plt.subplot(gs[1])
@@ -135,7 +136,19 @@ def plot_2D_trend(trends, lats, gs):
     ax.set_xlabel('Heat gain ($10^7$ $W m^{-1}$)', fontsize='small')
     ax.set_ylabel('Latitude', fontsize='small')
     ax.axvline(0, color='0.7', linestyle='solid')
+    ax.set_yticks(yticks)
     ax.set_ylim([lats[0], lats[-1]])
+
+
+def set_yticks(max_lat):
+    """Set the ticks for the y-axis"""
+
+    if max_lat > 60:
+        yticks = [-80 ,-60, -40, -20, 0, 20, 40, 60, 80]
+    else:
+        yticks = [-60, -40, -20, 0, 20, 40, 60]
+
+    return yticks
 
 
 def main(inargs):
@@ -161,8 +174,13 @@ def main(inargs):
     # Plot
     fig = plt.figure(figsize=[15, 3])
     gs = gridspec.GridSpec(1, 2, width_ratios=[4, 1]) 
-    plot_3D_trend(ohc_3D_trend, lons, lats, gs)
-    plot_2D_trend(ohc_2D_trend, lats, gs)
+
+    cbar_tick_max, cbar_tick_step = inargs.ticks
+    yticks = set_yticks(inargs.max_lat)
+    plot_3D_trend(ohc_3D_trend, lons, lats, gs,
+                  cbar_tick_max, cbar_tick_step, yticks)
+    plot_2D_trend(ohc_2D_trend, lats, gs,
+                  yticks)
 
     # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
@@ -189,6 +207,10 @@ author:
     
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
+    parser.add_argument("--ticks", type=float, nargs=2, default=(15, 2.5), metavar=('MAX_AMPLITUDE', 'STEP'),
+                        help="Maximum tick amplitude and step size [default = 15, 2.5]")
+    parser.add_argument("--max_lat", type=float, default=60,
+                        help="Maximum latitude [default = 60]")
 
     args = parser.parse_args()            
     main(args)
