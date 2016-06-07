@@ -41,15 +41,21 @@ except ImportError:
 # Define functions
 
 def calc_trend(cube):
-    """ """
+    """Calculate linear trend.
+
+    A 12-month running mean is first applied to the data.
+
+    """
 
     coord_names = [coord.name() for coord in cube.dim_coords]
     assert coord_names[0] == 'time'
 
-    time_axis = cube.coord('time')
-
     cube = undo_unit_scaling(cube)
+    cube = cube.rolling_window('time', iris.analysis.MEAN, 12)
+
+    time_axis = cube.coord('time')
     time_axis = convert_to_seconds(time_axis)
+
     trend = numpy.ma.apply_along_axis(linear_trend, 0, cube.data, time_axis.points)
     trend = numpy.ma.masked_values(trend, cube.data.fill_value)
 
