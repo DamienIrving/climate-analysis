@@ -205,7 +205,7 @@ def main(inargs):
         if depth_axis.units == 'm':
             vertical_weights = spatial_weights.calc_vertical_weights_1D(depth_axis, coord_names, temperature_cube.shape)
         elif depth_axis.units == 'dbar':
-            vertical_weights = spatial_weights.calc_vertical_weights_2D(depth_axis, temperature_cube.coord('latitude'), temperature_cube.shape)
+            vertical_weights = spatial_weights.calc_vertical_weights_2D(depth_axis, temperature_cube.coord('latitude'), coord_names, temperature_cube.shape)
 
         zonal_weights = spatial_weights.calc_zonal_weights(temperature_cube, coord_names)
 
