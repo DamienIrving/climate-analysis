@@ -41,7 +41,9 @@ regions = {'southern_extratropics': [-90, -20],
           'northern_extratropics': [20, 90],
           'outside_southern_extratropics': [-20, 90],
           'globe': [-90, 90],
-          'globe60': [-60, 60]
+          'globe60': [-60, 60],
+          'sh60': [-60, 0],
+          'nh60': [0, 60]
           }
 
 
