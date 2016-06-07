@@ -42,7 +42,7 @@ except ImportError:
 # Define functions
 
 def plot_timeseries(globe_cube, sthext_cube, notsthext_cube, 
-                    model, experiment, run, tex_units):
+                    title, tex_units):
     """Create the timeseries plot."""
 
     qplt.plot(globe_cube.coord('time'), globe_cube, label='global')
@@ -50,7 +50,7 @@ def plot_timeseries(globe_cube, sthext_cube, notsthext_cube,
     qplt.plot(notsthext_cube.coord('time'), notsthext_cube, label='outside southern extratropics')
 
     plt.legend(loc='best')
-    plt.title('%s, %s, %s' %(model, experiment, run))
+    plt.title(title)
     plt.ylabel('Ocean heat content (%s)' %(tex_units))
     plt.xlabel('Year')
 
@@ -83,7 +83,6 @@ def main(inargs):
             data_dict['sthext'] = iris.load_cube(infile, 'ocean heat content southern extratropics' & time_constraint)
             data_dict['notsthext'] = iris.load_cube(infile, 'ocean heat content outside southern extratropics' & time_constraint)
         metadata_dict[infile] = data_dict['globe'].attributes['history']
-        model, experiment, run = gio.get_cmip5_file_details(data_dict['globe'])
 
         # Calculate the annual mean timeseries
         for key, value in data_dict.iteritems():
@@ -91,12 +90,18 @@ def main(inargs):
         tex_units, exponent = uconv.units_info(str(value.units))
 
         # Plot
+        if inargs.argo:
+            title = 'Argo'
+        else:
+            model, experiment, run = gio.get_cmip5_file_details(data_dict['globe'])
+            title = '%s, %s, %s' %(model, experiment, run)
+
         ax = plt.subplot(inargs.nrows, inargs.ncols, plotnum + 1)
         plt.sca(ax)
         plot_timeseries(data_dict['globe'], 
                         data_dict['sthext'], 
                         data_dict['notsthext'],
-                        model, experiment, run, tex_units)
+                        title, tex_units)
         
     # Write output
     plt.tight_layout(pad=0.4, w_pad=2.0, h_pad=2.0)
@@ -130,6 +135,9 @@ author:
                         help="number of columns in the entire grid of plots")
     parser.add_argument("--figsize", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
+
+    parser.add_argument("--argo", action="store_true", default=False,
+                        help="switch for indicated an Argo rather than CMIP5 input file [default: False]")
 
 
     args = parser.parse_args()            

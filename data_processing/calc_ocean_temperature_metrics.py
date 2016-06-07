@@ -109,8 +109,8 @@ def create_volume_cube(cube):
     assert depth_coord.units in ['m', 'dbar'], "Unrecognised depth axis units"
     if depth_coord.units == 'm':
         vert_extents = spatial_weights.calc_vertical_weights_1D(depth_coord, dim_coord_names, cube.shape)
-    elif depth_axis.units == 'dbar':
-        vert_extents = spatial_weights.calc_vertical_weights_2D(depth_coord, cube.coord('latitude'), cube.shape)
+    elif depth_coord.units == 'dbar':
+        vert_extents = spatial_weights.calc_vertical_weights_2D(depth_coord, cube.coord('latitude'), dim_coord_names, cube.shape)
 
     volume_cube = lat_extents * lon_extents * vert_extents
     volume_cube = volume_cube.astype(numpy.float32)
