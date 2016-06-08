@@ -45,12 +45,12 @@ def plot_timeseries(cube_dict, title, tex_units):
     """Create the timeseries plot."""
 
     region_list = [('global', 'black', '-'),
-                   ('northern hemisphere (to 60N)', 'red', '--'),
+                   ('tropics (20S to 20N)', 'purple', '-'),
                    ('northern extratropics (north of 20N)', 'red', '-'),
-                   ('southern hemisphere (to 60S)', 'blue', '--'),
+                   ('northern hemisphere (to 60N)', 'red', '--'),
                    ('southern extratropics (south of 20S)', 'blue', '-'),
-                   ('outside southern extratropics (north of 20S)', 'red', '-.'),
-                   ('tropics (20S to 20N)', 'purple', '-')]
+                   ('southern hemisphere (to 60S)', 'blue', '--'),
+                   ('outside southern extratropics (north of 20S)', '#339cff', '-.')]
 
     for region in region_list:
         name, color, style = region
