@@ -52,14 +52,12 @@ def plot_timeseries(cube_dict, user_regions, title, tex_units):
                    'se': ('southern extratropics (south of 20S)', 'blue', '--'),
                    'se60': ('southern extratropics (60S - 20S)', 'blue', '-'),
                    'sh60': ('southern hemisphere (to 60S)', 'blue', '-.'),
-                   'ose': ('outside southern extratropics (north of 20S)', '#339cff', '-.'),
-                   'ose60': ('outside southern extratropics (20S - 60N)', '#339cff', '--')}
+                   'ose': ('outside southern extratropics (north of 20S)', '#cc0066', '-.'),
+                   'ose60': ('outside southern extratropics (20S - 60N)', '#cc0066', '--')}
 
     for region in user_regions:
         name, color, style = region_dict[region]
         cube = cube_dict[name]
-        print name
-        print cube.data
         qplt.plot(cube.coord('time'), cube, label=name, color=color, linestyle=style)
 
     plt.legend(loc='best')
