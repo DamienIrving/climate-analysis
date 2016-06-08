@@ -36,14 +36,17 @@ except ImportError:
 
 history = []
 
-regions = {'southern_extratropics': [-90, -20],
-          'tropics': [-20, 20],
-          'northern_extratropics': [20, 90],
-          'outside_southern_extratropics': [-20, 90],
-          'globe': [-90, 90],
-          'globe60': [-60, 60],
-          'sh60': [-60, 0],
-          'nh60': [0, 60]
+regions = {'globe': [-90, 90],
+           'globe60': [-60, 60],
+           'tropics': [-20, 20],
+           'northern_extratropics': [20, 90],
+           'northern_extratropics60': [20, 60],
+           'nh60': [0, 60],
+           'southern_extratropics': [-90, -20],
+           'southern_extratropics60': [-60, -20],
+           'sh60': [-60, 0],
+           'outside_southern_extratropics': [-20, 90],
+           'outside_southern_extratropics60': [-20, -60]
           }
 
 
