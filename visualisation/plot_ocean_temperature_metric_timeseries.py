@@ -41,20 +41,25 @@ except ImportError:
 
 # Define functions
 
-def plot_timeseries(cube_dict, title, tex_units):
+def plot_timeseries(cube_dict, user_regions, title, tex_units):
     """Create the timeseries plot."""
 
-    region_list = [('global', 'black', '-'),
-                   ('tropics (20S to 20N)', 'purple', '-'),
-                   ('northern extratropics (north of 20N)', 'red', '-'),
-                   ('northern hemisphere (to 60N)', 'red', '--'),
-                   ('southern extratropics (south of 20S)', 'blue', '-'),
-                   ('southern hemisphere (to 60S)', 'blue', '--'),
-                   ('outside southern extratropics (north of 20S)', '#339cff', '-.')]
+    region_dict = {'global': ('global', 'black', '-'),
+                   'tropics': ('tropics (20S to 20N)', 'purple', '-'),
+                   'ne': ('northern extratropics (north of 20N)', 'red', '--'),
+                   'ne60': ('northern extratropics (20N - 60N)', 'red', '-'),
+                   'nh60': ('northern hemisphere (to 60N)', 'red', '-.'),
+                   'se': ('southern extratropics (south of 20S)', 'blue', '--'),
+                   'se60': ('southern extratropics (60S - 20S)', 'blue', '-'),
+                   'sh60': ('southern hemisphere (to 60S)', 'blue', '-.'),
+                   'ose': ('outside southern extratropics (north of 20S)', '#339cff', '-.'),
+                   'ose60': ('outside southern extratropics (20S - 60N)', '#339cff', '--')}
 
-    for region in region_list:
-        name, color, style = region
+    for region in user_regions:
+        name, color, style = region_dict[region]
         cube = cube_dict[name]
+        print name
+        print cube.data
         qplt.plot(cube.coord('time'), cube, label=name, color=color, linestyle=style)
 
     plt.legend(loc='best')
@@ -90,7 +95,10 @@ def main(inargs):
             data_dict['global'] = iris.load_cube(infile, 'ocean heat content globe' & time_constraint)
             data_dict['southern extratropics (south of 20S)'] = iris.load_cube(infile, 'ocean heat content southern extratropics' & time_constraint)
             data_dict['northern extratropics (north of 20N)'] = iris.load_cube(infile, 'ocean heat content northern extratropics' & time_constraint)
+            data_dict['southern extratropics (60S - 20S)'] = iris.load_cube(infile, 'ocean heat content southern extratropics60' & time_constraint)
+            data_dict['northern extratropics (20N - 60N)'] = iris.load_cube(infile, 'ocean heat content northern extratropics60' & time_constraint)
             data_dict['outside southern extratropics (north of 20S)'] = iris.load_cube(infile, 'ocean heat content outside southern extratropics' & time_constraint)
+            data_dict['outside southern extratropics (20S - 60N)'] = iris.load_cube(infile, 'ocean heat content outside southern extratropics60' & time_constraint)
             data_dict['southern hemisphere (to 60S)'] = iris.load_cube(infile, 'ocean heat content sh60' & time_constraint)
             data_dict['northern hemisphere (to 60N)'] = iris.load_cube(infile, 'ocean heat content nh60' & time_constraint)
             data_dict['tropics (20S to 20N)'] = iris.load_cube(infile, 'ocean heat content tropics' & time_constraint)
@@ -105,12 +113,12 @@ def main(inargs):
         if inargs.argo:
             title = 'Argo'
         else:
-            model, experiment, run = gio.get_cmip5_file_details(data_dict['globe'])
+            model, experiment, run = gio.get_cmip5_file_details(data_dict['global'])
             title = '%s, %s, %s' %(model, experiment, run)
 
         ax = plt.subplot(inargs.nrows, inargs.ncols, plotnum + 1)
         plt.sca(ax)
-        plot_timeseries(data_dict, title, tex_units)
+        plot_timeseries(data_dict, inargs.regions, title, tex_units)
         
     # Write output
     plt.tight_layout(pad=0.4, w_pad=2.0, h_pad=2.0)
@@ -137,6 +145,9 @@ author:
     
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
+
+    parser.add_argument("--regions", type=str, nargs='*', default=('global', 'ne60', 'tropics', 'se60', 'ose60'), 
+                        help="regions to plot")
 
     parser.add_argument("--nrows", type=int, default=1, 
                         help="number of rows in the entire grid of plots")
