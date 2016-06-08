@@ -41,13 +41,21 @@ except ImportError:
 
 # Define functions
 
-def plot_timeseries(globe_cube, sthext_cube, notsthext_cube, 
-                    title, tex_units):
+def plot_timeseries(cube_dict, title, tex_units):
     """Create the timeseries plot."""
 
-    qplt.plot(globe_cube.coord('time'), globe_cube, label='global')
-    qplt.plot(sthext_cube.coord('time'), sthext_cube, label='southern extratropics')
-    qplt.plot(notsthext_cube.coord('time'), notsthext_cube, label='outside southern extratropics')
+    region_list = [('global', 'black', '-'),
+                   ('northern hemisphere (to 60N)', 'red', '-'),
+                   ('northern extratropics (north of 20N)', 'red', '--'),
+                   ('southern hemisphere (to 60S)', 'blue', '-'),
+                   ('southern extratropics (south of 20S)', 'blue', '--'),
+                   ('outside southern extratropics (north of 20S)', 'red', '-.'),
+                   ('tropics (20S to 20N)', 'purple', '-')]
+
+    for region in region_list:
+        name, color, style = region
+        cube = cube_dict[name]
+        qplt.plot(cube.coord('time'), cube, label=name, color=color, linestyle=style)
 
     plt.legend(loc='best')
     plt.title(title)
@@ -79,10 +87,14 @@ def main(inargs):
 
         data_dict = {}
         with iris.FUTURE.context(cell_datetime_objects=True):
-            data_dict['globe'] = iris.load_cube(infile, 'ocean heat content globe' & time_constraint)
-            data_dict['sthext'] = iris.load_cube(infile, 'ocean heat content southern extratropics' & time_constraint)
-            data_dict['notsthext'] = iris.load_cube(infile, 'ocean heat content outside southern extratropics' & time_constraint)
-        metadata_dict[infile] = data_dict['globe'].attributes['history']
+            data_dict['global'] = iris.load_cube(infile, 'ocean heat content globe' & time_constraint)
+            data_dict['southern extratropics (south of 20S)'] = iris.load_cube(infile, 'ocean heat content southern extratropics' & time_constraint)
+            data_dict['northern extratropics (north of 20N)'] = iris.load_cube(infile, 'ocean heat content northern extratropics' & time_constraint)
+            data_dict['outside southern extratropics (north of 20S)'] = iris.load_cube(infile, 'ocean heat content outside southern extratropics' & time_constraint)
+            data_dict['southern hemisphere (to 60S)'] = iris.load_cube(infile, 'ocean heat content sh60' & time_constraint)
+            data_dict['northern hemisphere (to 60N)'] = iris.load_cube(infile, 'ocean heat content nh60' & time_constraint)
+            data_dict['tropics (20S to 20N)'] = iris.load_cube(infile, 'ocean heat content tropics' & time_constraint)
+        metadata_dict[infile] = data_dict['global'].attributes['history']
 
         # Calculate the annual mean timeseries
         for key, value in data_dict.iteritems():
@@ -98,10 +110,7 @@ def main(inargs):
 
         ax = plt.subplot(inargs.nrows, inargs.ncols, plotnum + 1)
         plt.sca(ax)
-        plot_timeseries(data_dict['globe'], 
-                        data_dict['sthext'], 
-                        data_dict['notsthext'],
-                        title, tex_units)
+        plot_timeseries(data_dict, title, tex_units)
         
     # Write output
     plt.tight_layout(pad=0.4, w_pad=2.0, h_pad=2.0)
