@@ -50,21 +50,46 @@ regions = {'globe': [-90, 90],
           }
 
 
-def calc_metrics(inargs, temperature_cube, volume_cube):
-    """Calculate the ocean heat content metrics"""
+def calc_metrics(inargs, temperature_cube, volume_cube, ref_region=None):
+    """Calculate the ocean heat content metrics.
+
+    If a reference region is supplied the metrics are scaled according
+      to the volume of that region. 
+
+    """
 
     TdV = temperature_cube * volume_cube
-               
+
+    if ref_region:
+        ref_bounds = regions[ref_region]
+        ref_volume_mask = region_mask(volume_cube.copy(), ref_bounds[0], ref_bounds[-1])
+        ref_volume = calc_volume(volume_cube.copy(), ref_volume_mask)    
+
     metric_dict = {}
     for region, bounds in regions.iteritems():
-        mask = region_mask(TdV, bounds[0], bounds[-1])
-        TdV_sum = integrate_temperature(TdV.copy(), mask)
+        data_mask = region_mask(TdV, bounds[0], bounds[-1])
+        TdV_sum = integrate_temperature(TdV.copy(), data_mask)
         if inargs.metric == 'inttemp':
             metric_dict[region] = TdV_sum / eval('1e+%i' %(inargs.scaling))
         elif inargs.metric == 'ohc':
             metric_dict[region] = (TdV_sum * inargs.density * inargs.specific_heat) / eval('1e+%i' %(inargs.scaling))
 
+        if ref_region:
+            volume_mask = region_mask(volume_cube.copy(), bounds[0], bounds[-1])
+            volume = calc_volume(volume_cube.copy(), volume_mask)
+            volume_ratio = volume / ref_volume
+            print region, volume_ratio
+            metric_dict[region] = metric_dict[region] / volume_ratio
+
     return metric_dict
+
+
+def calc_volume(volume_cube, mask):
+    """Calculate the volume."""
+
+    volume_cube.data.mask = mask
+    
+    return volume_cube.data.sum()
 
 
 def create_metric_cubelist(metric_name, metric_dict, units, atts, time_coord):
@@ -132,7 +157,7 @@ def integrate_temperature(TdV_cube, mask):
     TdV_sum = TdV_cube.collapsed(coord_names, iris.analysis.SUM)
 
     return TdV_sum
-
+    
 
 def in_flag(lat_value, south_bound, north_bound):
     """Determine if a point is in the region of interest.
@@ -257,7 +282,7 @@ def main(inargs):
         if not volume_cube:
             volume_cube = create_volume_cube(temperature_cube)
 
-        metric_dict = calc_metrics(inargs, temperature_cube, volume_cube)   
+        metric_dict = calc_metrics(inargs, temperature_cube, volume_cube, ref_region=inargs.ref_region)   
         metric_cubelist = create_metric_cubelist(inargs.metric, metric_dict, units, atts, temperature_cube.coord('time'))
             
         out_cubes.append(metric_cubelist)
@@ -301,6 +326,11 @@ notes:
 
     parser.add_argument("--metric", type=str, choices=('inttemp', 'ohc'), default='ohc', 
                         help="Metric to calculate - integrated temperature or ocean heat content")
+
+    region_choices = regions.keys()
+    region_choices.append(None)
+    parser.add_argument("--ref_region", type=str, choices=regions.keys(), default=None, 
+                        help="Scale metrics to the volume of this region")
 
     parser.add_argument("--volume_file", type=str, default=None, 
                         help="Input volume data file")
