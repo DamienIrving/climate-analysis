@@ -28,9 +28,9 @@ VOLUME_FILE=${UA6_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/vol
 
 CLIMATOLOGY_FILE=${DEDRIFTED_TEMPERATURE_DIR}/thetao-annual-clim_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
-TEMPERATURE_METRICS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/ohc-metrics/${RUN}
-TEMPERATURE_METRICS_FILE=${TEMPERATURE_METRICS_DIR}/ohc-metrics_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
-TEMPERATURE_METRICS_PLOT=${TEMPERATURE_METRICS_DIR}/ohc-metrics_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.${FIG_TYPE}
+TEMPERATURE_METRICS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/${METRIC}/${RUN}
+TEMPERATURE_METRICS_FILE=${TEMPERATURE_METRICS_DIR}/${METRIC}_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+TEMPERATURE_METRICS_PLOT=${TEMPERATURE_METRICS_DIR}/${METRIC}_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.${FIG_TYPE}
 
 OHC_MAPS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/ohc-maps/${RUN}
 OHC_MAPS_FILE=${OHC_MAPS_DIR}/ohc-maps_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
@@ -57,10 +57,10 @@ ${CLIMATOLOGY_FILE} : ${DEDRIFTED_TEMPERATURE_DIR}
 
 ${TEMPERATURE_METRICS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${TEMPERATURE_METRICS_DIR}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${VOLUME_FILE} --climatology_file $< --max_depth ${MAX_DEPTH}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${VOLUME_FILE} --climatology_file $< --max_depth ${MAX_DEPTH} ${REF}
 
 ${TEMPERATURE_METRICS_PLOT} : ${TEMPERATURE_METRICS_FILE}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_temperature_metric_timeseries.py $< $@
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_temperature_metric_timeseries.py $< $@ ${REF}
 
 # OHC maps
 

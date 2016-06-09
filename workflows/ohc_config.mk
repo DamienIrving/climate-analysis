@@ -1,4 +1,4 @@
-# zw_climatology_config.mk
+# ohc_config.mk
 
 # System configuration
 
@@ -19,7 +19,7 @@ FIG_TYPE=png
 ORGANISATION=CSIRO-QCCCE
 MODEL=CSIRO-Mk3-6-0
 EXPERIMENT=historical
-RUN=r1i1p1
+RUN=r10i1p1
 CONTROL_RUN=r1i1p1
 VOLUME_RUN=r0i0p0
 
@@ -27,4 +27,7 @@ MAX_DEPTH=2000
 START_DATE=1956-01-01
 END_DATE=2005-12-31
 
-TARGET=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/ohc-maps/${RUN}/ohc-maps_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
+METRIC=ohc-metrics-globe60equiv
+REF=--ref_region globe60
+
+TARGET=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/${METRIC}/${RUN}/${METRIC}_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
