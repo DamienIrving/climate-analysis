@@ -41,10 +41,11 @@ except ImportError:
 
 # Define functions
 
-def plot_timeseries(cube_dict, user_regions, title, tex_units):
+def plot_timeseries(cube_dict, user_regions, title, tex_units, ref_region=None):
     """Create the timeseries plot."""
 
-    region_dict = {'global': ('global', 'black', '-'),
+    region_dict = {'globe': ('globe', 'black', '--'),
+                   'globe60': ('globe (60S - 60N)', 'black', '-'),
                    'tropics': ('tropics (20S to 20N)', 'purple', '-'),
                    'ne': ('northern extratropics (north of 20N)', 'red', '--'),
                    'ne60': ('northern extratropics (20N - 60N)', 'red', '-'),
@@ -62,8 +63,12 @@ def plot_timeseries(cube_dict, user_regions, title, tex_units):
 
     plt.legend(loc='best')
     plt.title(title)
-    plt.ylabel('Ocean heat content (%s)' %(tex_units))
-    plt.xlabel('Year')
+    if ref_region:
+        ylabel = '%s equivalent ocean heat content (%s)' %(region_dict[ref_region][0], tex_units)
+    else:
+        ylabel = 'ocean heat content (%s)' %(tex_units)
+    plt.ylabel(ylabel)
+    plt.xlabel('year')
 
 
 def main(inargs):
@@ -90,7 +95,8 @@ def main(inargs):
 
         data_dict = {}
         with iris.FUTURE.context(cell_datetime_objects=True):
-            data_dict['global'] = iris.load_cube(infile, 'ocean heat content globe' & time_constraint)
+            data_dict['globe'] = iris.load_cube(infile, 'ocean heat content globe' & time_constraint)
+            data_dict['globe (60S - 60N)'] = iris.load_cube(infile, 'ocean heat content globe60' & time_constraint)
             data_dict['southern extratropics (south of 20S)'] = iris.load_cube(infile, 'ocean heat content southern extratropics' & time_constraint)
             data_dict['northern extratropics (north of 20N)'] = iris.load_cube(infile, 'ocean heat content northern extratropics' & time_constraint)
             data_dict['southern extratropics (60S - 20S)'] = iris.load_cube(infile, 'ocean heat content southern extratropics60' & time_constraint)
@@ -100,7 +106,7 @@ def main(inargs):
             data_dict['southern hemisphere (to 60S)'] = iris.load_cube(infile, 'ocean heat content sh60' & time_constraint)
             data_dict['northern hemisphere (to 60N)'] = iris.load_cube(infile, 'ocean heat content nh60' & time_constraint)
             data_dict['tropics (20S to 20N)'] = iris.load_cube(infile, 'ocean heat content tropics' & time_constraint)
-        metadata_dict[infile] = data_dict['global'].attributes['history']
+        metadata_dict[infile] = data_dict['globe'].attributes['history']
 
         # Calculate the annual mean timeseries
         for key, value in data_dict.iteritems():
@@ -111,12 +117,12 @@ def main(inargs):
         if inargs.argo:
             title = 'Argo'
         else:
-            model, experiment, run = gio.get_cmip5_file_details(data_dict['global'])
+            model, experiment, run = gio.get_cmip5_file_details(data_dict['globe'])
             title = '%s, %s, %s' %(model, experiment, run)
 
         ax = plt.subplot(inargs.nrows, inargs.ncols, plotnum + 1)
         plt.sca(ax)
-        plot_timeseries(data_dict, inargs.regions, title, tex_units)
+        plot_timeseries(data_dict, inargs.regions, title, tex_units, ref_region=inargs.ref_region)
         
     # Write output
     plt.tight_layout(pad=0.4, w_pad=2.0, h_pad=2.0)
@@ -141,10 +147,13 @@ author:
     parser.add_argument("infiles", type=str, nargs='*', help="Input temperature metric files (write blank for empty plots on grid)")
     parser.add_argument("outfile", type=str, help="Output file name")
     
+    parser.add_argument("--ref_region", type=str, default=None, 
+                        help="Metrics are scaled to the volume of this region")
+
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
 
-    parser.add_argument("--regions", type=str, nargs='*', default=('global', 'ne60', 'tropics', 'se60', 'ose60'), 
+    parser.add_argument("--regions", type=str, nargs='*', default=('globe60', 'ne60', 'tropics', 'se60', 'ose60'), 
                         help="regions to plot")
 
     parser.add_argument("--nrows", type=int, default=1, 
