@@ -142,8 +142,26 @@ def create_volume_cube(cube):
     elif depth_coord.units == 'dbar':
         vert_extents = spatial_weights.calc_vertical_weights_2D(depth_coord, cube.coord('latitude'), dim_coord_names, cube.shape)
 
-    volume_cube = lat_extents * lon_extents * vert_extents
-    volume_cube = volume_cube.astype(numpy.float32)
+    volume_data = lat_extents * lon_extents * vert_extents
+    volume_data = volume_data.astype(numpy.float32)
+
+    out_dims = []
+    for index, name in enumerate(dim_coord_names):
+        out_dims.append((cube.coord(name), index))
+
+    volume_cube = iris.cube.Cube(volume_data,
+                                 standard_name='ocean_volume',
+                                 long_name='Ocean Grid-Cell Volume',
+                                 var_name='volcello',
+                                 units='m3',
+                                 dim_coords_and_dims=out_dims,
+                                 )
+
+    volume_cube.data = numpy.ma.masked_where(numpy.ma.getmask(cube.data), volume_cube.data)
+
+    if 'time' in dim_coord_names:
+        first_time = volume_cube.coord('time').points[0]
+        volume_cube = volume_cube.extract(iris.Constraint(time=first_time))
 
     return volume_cube
 
