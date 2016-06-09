@@ -61,11 +61,11 @@ def plot_trend_distribution(trend_data, exponent, model, experiment, run_p):
     plt.xlabel('Trend ($10^{14} W$)')
 
 
-def calc_diff_trends(sthext_cube, notsthext_cube, window=144):
+def calc_diff_trends(sthext_cube, notsthext_cube, window=109):
     """Calculate trends in difference between southern extratropics and rest of globe.
 
-    A window of 144 matches the length of the Argo record 
-      (i.e. 12 years of annually smoothed monthly data)
+    A window of 109 matches the length of the Argo record 
+      (i.e. 10 years of annually smoothed monthly data)
 
     """
 
@@ -126,8 +126,8 @@ def main(inargs):
     metadata_dict = {}     
     for infile in inargs.infiles:
         with iris.FUTURE.context(cell_datetime_objects=True):
-            cube_sthext = iris.load_cube(infile, 'ocean heat content southern extratropics' & time_constraint)
-            cube_notsthext = iris.load_cube(infile, 'ocean heat content outside southern extratropics' & time_constraint)
+            cube_sthext = iris.load_cube(infile, 'ocean heat content southern extratropics60' & time_constraint)
+            cube_notsthext = iris.load_cube(infile, 'ocean heat content northern extratropics60' & time_constraint)
 
         model, experiment, run = gio.get_cmip5_file_details(cube_sthext)
         run_ri = run[:-2]
@@ -157,7 +157,10 @@ def main(inargs):
                 if data_compilation.any():
                     plot_trend_distribution(data_compilation, exponent, model, experiment, run_p)
 
-    plt.title('12-year trends in hemispheric OHC difference')
+    if inargs.reference_trend:
+        plt.axvline(x=inargs.reference_trend, linestyle='--', color='0.5')
+
+    plt.title('10-year trends in hemispheric OHC difference')
     plt.savefig(inargs.outfile, bbox_inches='tight')
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)
 
@@ -181,6 +184,9 @@ author:
     
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
+
+    parser.add_argument("--reference_trend", type=float, default=None,
+                        help="Reference trend to show on plot [default = entire]")
 
     args = parser.parse_args()            
     main(args)
