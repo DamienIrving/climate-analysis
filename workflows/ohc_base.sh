@@ -36,8 +36,8 @@ experiments=( $@ )
 volrun='r0i0p0'
 for experiment in "${experiments[@]}"; do
     if [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'historical' ]] ; then
-        runs=(  r2i1p1 r3i1p1 ) 
-        #r1i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
+        runs=( r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 ) 
+        #r1i1p1 
         organisation='CSIRO-QCCCE'
 
     elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'historicalGHG' ]] ; then
@@ -78,6 +78,13 @@ for experiment in "${experiments[@]}"; do
         #r4i1p4 r5i1p4 r6i1p4 r7i1p4 r8i1p4 r9i1p4 r10i1p4
         organisation='CSIRO-QCCCE'
         volrun='r0i0p4'
+
+    elif [[ ${model} == 'CanESM2' && ${experiment} == 'AA' ]] ; then
+        experiment='historicalMisc'
+        runs=( r2i1p4 r3i1p4 )
+        #r1i1p4 r4i1p4 r5i1p4
+        organisation='CCCMA'
+        volrun='r0i0p0'
 
     elif [[ ${model} == 'ACCESS1-0' && ${experiment} == 'historical' ]] ; then
         runs=( r1i1p1 ) # incomplete
