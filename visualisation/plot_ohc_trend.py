@@ -40,10 +40,25 @@ except ImportError:
 
 # Define functions
 
-def calc_trend(cube):
+def calc_seasonal_cycle(ohc_cube):
+    """Calculate the seasonal cycle.
+
+    cycle = (max - min) for each 12 month window 
+
+    """
+
+    max_ohc_cube = ohc_cube.rolling_window('time', iris.analysis.MAX, 12)
+    min_ohc_cube = ohc_cube.rolling_window('time', iris.analysis.MIN, 12)
+
+    seasonal_cycle_cube = max_ohc_cube - min_ohc_cube
+
+    return seasonal_cycle_cube
+
+
+def calc_trend(cube, running_mean=True):
     """Calculate linear trend.
 
-    A 12-month running mean is first applied to the data.
+    A 12-month running mean can first be applied to the data.
 
     """
 
@@ -51,7 +66,8 @@ def calc_trend(cube):
     assert coord_names[0] == 'time'
 
     cube = undo_unit_scaling(cube)
-    cube = cube.rolling_window('time', iris.analysis.MEAN, 12)
+    if running_mean:
+        cube = cube.rolling_window('time', iris.analysis.MEAN, 12)
 
     time_axis = cube.coord('time')
     time_axis = convert_to_seconds(time_axis)
@@ -172,10 +188,18 @@ def main(inargs):
 
     lons = ohc_3D_cube.coord('longitude').points
     lats = ohc_3D_cube.coord('latitude').points
+    infile_history = ohc_3D_cube.attributes['history']
+    
+    # Calculate seasonal cycle
+    running_mean = True
+    if inargs.seasonal_cycle:
+        ohc_3D_cube = calc_seasonal_cycle(ohc_3D_cube) 
+        ohc_2D_cube = calc_seasonal_cycle(ohc_2D_cube)
+        running_mean = False
 
     # Calculate trend
-    ohc_3D_trend = calc_trend(ohc_3D_cube)
-    ohc_2D_trend = calc_trend(ohc_2D_cube)
+    ohc_3D_trend = calc_trend(ohc_3D_cube, running_mean=running_mean)
+    ohc_2D_trend = calc_trend(ohc_2D_cube, running_mean=running_mean)
 
     # Plot
     fig = plt.figure(figsize=[15, 3])
@@ -190,7 +214,6 @@ def main(inargs):
 
     # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
-    infile_history = ohc_3D_cube.attributes['history']
     gio.write_metadata(inargs.outfile, file_info={inargs.outfile:infile_history})
 
 
@@ -217,6 +240,9 @@ author:
                         help="Maximum tick amplitude and step size [default = 15, 2.5]")
     parser.add_argument("--max_lat", type=float, default=60,
                         help="Maximum latitude [default = 60]")
+
+    parser.add_argument("--seasonal_cycle", action="store_true", default=False,
+                        help="Switch for plotting the trend in the seasonal cycle instead [default: False]")
 
     args = parser.parse_args()            
     main(args)
