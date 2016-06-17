@@ -97,7 +97,7 @@ def main(inargs):
 
     # Read the data
 
-    cubes = iris.load(inargs.infiles, callback=save_history)
+    cubes = iris.load(inargs.infiles, inargs.var, callback=save_history)
     global_atts = set_global_atts(inargs, cubes[0])
 
     nvars = len(cubes) / len(inargs.infiles)
@@ -174,6 +174,9 @@ notes:
 
     parser.add_argument("infiles", type=str, nargs='*', help="Input file names")
     parser.add_argument("outfile", type=str, help="Output file name")
+
+    parser.add_argument("--var", type=str, default=None,
+                        help="Input variable [default = None, which means all input variables are done]")
 
     args = parser.parse_args()
     main(args)

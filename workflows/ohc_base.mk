@@ -41,7 +41,7 @@ OHC_MAPS_PLOT=${OHC_MAPS_DIR}/ohc-maps_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${STAR
 
 ${DRIFT_COEFFICIENTS} :
 	mkdir -p ${CONTROL_DIR} 
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_drift_coefficients.py ${CONTROL_FILES} $@ 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_drift_coefficients.py ${CONTROL_FILES} $@ --var sea_water_potential_temperature
 
 ${DEDRIFTED_TEMPERATURE_DIR} : ${DRIFT_COEFFICIENTS}
 	mkdir -p $@
