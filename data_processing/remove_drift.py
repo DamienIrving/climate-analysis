@@ -135,7 +135,7 @@ def time_adjustment(first_data_cube, coefficient_cube):
 def main(inargs):
     """Run the program."""
     
-    first_data_cube = iris.load_cube(inargs.data_files[0])
+    first_data_cube = iris.load_cube(inargs.data_files[0], inargs.var)
     coefficient_cube = iris.load_cube(inargs.coefficient_file)
     thetao_coefficient_sanity_check(coefficient_cube)
 
@@ -145,7 +145,7 @@ def main(inargs):
     new_cubelist = []
     for filename in inargs.data_files:
         
-        data_cube = iris.load_cube(filename)
+        data_cube = iris.load_cube(filename, inargs.var)
         check_attributes(data_cube.attributes, coefficient_cube.attributes)
 
         # Sync the data time axis with the coefficient time axis        
@@ -207,6 +207,7 @@ notes:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("data_files", type=str, nargs='*', help="Input data files, in chronological order (needs to include whole experiment to get time axis correct)")
+    parser.add_argument("var", type=str, help="Variable standard_name")
     parser.add_argument("coefficient_file", type=str, help="Input coefficient file")
     parser.add_argument("outfile", type=str, help="Give a path instead of a file name if you want an output file corresponding to each input file")
     
