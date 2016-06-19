@@ -118,7 +118,7 @@ def thetao_coefficient_sanity_check(coefficient_cube):
 def time_adjustment(first_data_cube, coefficient_cube):
     """Determine the adjustment that needs to be made to time axis."""
 
-    branch_time_value = first_data_cube.attributes['branch_time'] #FIXME: Add half a time step?
+    branch_time_value = float(first_data_cube.attributes['branch_time']) #FIXME: Add half a time step?
     branch_time_unit = coefficient_cube.attributes['time_unit']
     branch_time_calendar = coefficient_cube.attributes['time_calendar']
     data_time_coord = first_data_cube.coord('time')
