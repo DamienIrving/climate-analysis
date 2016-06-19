@@ -12,7 +12,7 @@ Models/runs (focusing on the anthropogenic aerosol only runs):
 | CCSM4         | `r[1,4,6]i1p10`   | Schmidt (2014)  |
 | CESM1-CAM5    | `r[1,2,3]i1p10`   | Schmidt (2014)  |
 | CSIRO-Mk3.6   | `r[1-10]i1p4`     | `/g/data/ua6`   |
-| FGOALS-g2     | `r2i1p1`          | Paola says it's in the NCI "bulk transfer data" |
+| FGOALS-g2     | `r2i1p1`          | In the NCI bulk transfer data: `/g/data1/ua6/NCI_replica_tmp/ua6_cet900_sort/` |
 | GFDL-CM3      | `r[1,3,5]i1p1`    | `/g/data/ua6`   |  
 | GFDL-ESM2M    | `r1i1p5`          | ESGF            |     
 | GISS-E2-H     | `r[1-5]i1p107`    | Schmidt (2014)  |
