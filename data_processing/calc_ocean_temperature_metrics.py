@@ -78,7 +78,6 @@ def calc_metrics(inargs, temperature_cube, volume_cube, ref_region=None):
             volume_mask = region_mask(volume_cube.copy(), bounds[0], bounds[-1])
             volume = calc_volume(volume_cube.copy(), volume_mask)
             volume_ratio = volume / ref_volume
-            print region, volume_ratio
             metric_dict[region] = metric_dict[region] / volume_ratio
 
     return metric_dict
@@ -234,8 +233,13 @@ def region_mask(cube, south_bound, north_bound):
         lat_index = dim_coord_names.index('latitude')
         in_region = uconv.broadcast_array(in_region, lat_index, cube.shape)
     elif 'latitude' in aux_coord_names:
-        assert 'time' in dim_coord_names[0:2], "Last two axes must be spatial coordinates"
-        assert 'depth' in dim_coord_names[0:2], "Last two axes must be spatial coordinates"
+        dim_diff = len(dim_coord_names) - len(aux_coord_names)
+        if dim_diff == 2:
+            assert 'time' in dim_coord_names[0:2], "Last two axes must be spatial coordinates"
+            assert 'depth' in dim_coord_names[0:2], "Last two axes must be spatial coordinates"
+        elif dim_diff == 1:
+            assert dim_coord_names[0] == 'depth', "Last two axes must be spatial coordinates"
+
         while in_region.ndim < data_mask.ndim:
             in_region = in_region[numpy.newaxis, ...]
 
