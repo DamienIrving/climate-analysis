@@ -15,16 +15,16 @@ all : ${TARGET}
 
 # Filenames
 
-CONTROL_FILES=$(wildcard ${UA6_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/thetao/${CONTROL_RUN}/thetao_Omon_${MODEL}_piControl_${CONTROL_RUN}_*.nc)
+CONTROL_FILES=$(wildcard ${ORIG_CONTROL_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/thetao/${CONTROL_RUN}/thetao_Omon_${MODEL}_piControl_${CONTROL_RUN}_*.nc)
 CONTROL_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/piControl/mon/ocean/thetao/${CONTROL_RUN}
 DRIFT_COEFFICIENTS=${CONTROL_DIR}/thetao-coefficients_Omon_${MODEL}_piControl_${CONTROL_RUN}_all.nc
 
-TEMPERATURE_FILES=$(wildcard ${UA6_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao/${RUN}/thetao_Omon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
+TEMPERATURE_FILES=$(wildcard ${ORIG_TEMPERATURE_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao/${RUN}/thetao_Omon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
 
 DEDRIFTED_TEMPERATURE_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao/${RUN}/dedrifted
 DEDRIFTED_TEMPERATURE_FILES = $(patsubst ${UA6_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao/${RUN}/thetao_%.nc, ${DEDRIFTED_TEMPERATURE_DIR}/thetao_%.nc, ${TEMPERATURE_FILES})
 
-VOLUME_FILE=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/volcello/${VOLUME_RUN}/volcello_fx_${MODEL}_${EXPERIMENT}_${VOLUME_RUN}.nc
+VOLUME_FILE=${ORIG_VOLUME_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/volcello/${VOLUME_RUN}/volcello_fx_${MODEL}_${EXPERIMENT}_${VOLUME_RUN}.nc
 
 CLIMATOLOGY_FILE=${DEDRIFTED_TEMPERATURE_DIR}/thetao-annual-clim_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
