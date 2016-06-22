@@ -91,7 +91,22 @@ done
 
 # Download E2-R data
 
-####
+for run in 1 2 3 4 5
+do
+    for physics in 1 106 107 310
+    do 
+        for years in "${e2r_base_years[@]}"
+        do
+	    wget ftp://giss_cmip5:@ftp.nccs.nasa.gov/historical/E2-R_historicalMisc_r${run}i1p${physics}/thetao_Omon_GISS-E2-R_historicalMisc_r${run}i1p${physics}_${years}.nc
+        done
+
+        if [ ${physics} == 310 ] ; then
+            wget ftp://giss_cmip5:@ftp.nccs.nasa.gov/historical/E2-R_historicalMisc_r${run}i1p${physics}/thetao_Omon_GISS-E2-R_historicalMisc_r${run}i1p${physics}_200101-201212.nc
+        else
+            wget ftp://giss_cmip5:@ftp.nccs.nasa.gov/historical/E2-R_historicalMisc_r${run}i1p${physics}/thetao_Omon_GISS-E2-R_historicalMisc_r${run}i1p${physics}_200101-200512.nc
+        fi
+    done
+done
 
 
 
