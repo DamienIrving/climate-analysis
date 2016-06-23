@@ -71,10 +71,37 @@ def plot_timeseries(cube_dict, user_regions, title, tex_units, ref_region=None):
     plt.xlabel('year')
 
 
+def set_title(data_dict, inargs, plotnum):
+    """Set the title for the plot"""
+
+    if inargs.argo:
+        title = 'Argo'
+    else:
+        model, experiment, run = gio.get_cmip5_file_details(data_dict['globe'])
+        if inargs.experiment:
+            experiment = inargs.experiment[plotnum].replace('_',' ')
+        if inargs.run:
+            run = inargs.run[plotnum]
+                  
+        title = '%s, %s, %s' %(model, experiment, run)
+
+    return title
+
+
+def check_inputs(inargs):
+    """Check the validity of the input arguments."""
+
+    assert len(inargs.infiles) <= inargs.nrows * inargs.ncols
+    if inargs.experiment:
+        assert len(inargs.infiles) == len(inargs.experiment)
+    if inargs.run:
+        assert len(inargs.infiles) == len(inargs.run)
+
+
 def main(inargs):
     """Run the program."""
 
-    assert len(inargs.infiles) <= inargs.nrows * inargs.ncols
+    check_inputs(inargs)
 
     # Read data
     try:
@@ -113,13 +140,8 @@ def main(inargs):
             data_dict[key] = value.rolling_window('time', iris.analysis.MEAN, 12)
         tex_units, exponent = uconv.units_info(str(value.units))
 
-        # Plot
-        if inargs.argo:
-            title = 'Argo'
-        else:
-            model, experiment, run = gio.get_cmip5_file_details(data_dict['globe'])
-            title = '%s, %s, %s' %(model, experiment, run)
-
+        # Generate plot
+        title = set_title(data_dict, inargs, plotnum)
         ax = plt.subplot(inargs.nrows, inargs.ncols, plotnum + 1)
         plt.sca(ax)
         plot_timeseries(data_dict, inargs.regions, title, tex_units, ref_region=inargs.ref_region)
@@ -162,6 +184,11 @@ author:
                         help="number of columns in the entire grid of plots")
     parser.add_argument("--figsize", type=float, default=None, nargs=2, metavar=('WIDTH', 'HEIGHT'),
                         help="size of the figure (in inches)")
+    parser.add_argument("--experiment", type=str, nargs='*', default=None,
+                        help="overwrite the default experiment in the plot header (write blank for empty plots on grid)")
+    parser.add_argument("--run", type=str, nargs='*', default=None,
+                        help="overwrite the default run in the plot header (write blank for empty plots on grid)")
+
 
     parser.add_argument("--argo", action="store_true", default=False,
                         help="switch for indicated an Argo rather than CMIP5 input file [default: False]")
