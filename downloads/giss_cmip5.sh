@@ -19,7 +19,7 @@
 #thetao_Omon_GISS-E2-H_historicalMisc_r1i1p107_195001-196912.nc
 #thetao_Omon_GISS-E2-H_historicalMisc_r1i1p107_197001-198912.nc
 #
-#E2-H_historicalMisc_r1i1p107/   r[1-5]i1p1, r[1-5]i1p106, r[1-5]i1p107
+#E2-H_historicalMisc_r1i1p107/   r[1-5]i1p1, r[1-5]i1p107
 #E2-H_historical_r1i1p1/   r[1-6]i1p[1-3]
 #
 #thetao_Omon_GISS-E2-H_historicalMisc_r1i1p107_199001-200512.nc
@@ -30,7 +30,7 @@
 #
 #thetao_Omon_GISS-E2-H_historicalGHG_r1i1p1_200601-201212.nc
 #
-#E2-H_historicalMisc_r3i1p310/ r[1-5]i1p310
+#E2-H_historicalMisc_r3i1p310/ r[1-5]i1p310, r[1-5]i1p106
 #E2-H_historicalNat_r1i1p3/   r[1-5]i1p3
 #
 #thetao_Omon_GISS-E2-H_historicalMisc_r3i1p310_199001-200912.nc
@@ -71,7 +71,7 @@ e2r_base_years=(185001-187512 187601-190012 190101-192512 192601-195012 195101-1
 
 # Download E2-H data
 
-for run in 1 2 3 4 5
+for run in 3 4 5
 do
     for physics in 1 106 107 310
     do 
@@ -80,7 +80,7 @@ do
 	    wget ftp://giss_cmip5:@ftp.nccs.nasa.gov/historical/E2-H_historicalMisc_r${run}i1p${physics}/thetao_Omon_GISS-E2-H_historicalMisc_r${run}i1p${physics}_${years}.nc
         done
 
-        if [ ${physics} == 310 ] ; then
+        if [ ${physics} == 310 ] || [ ${physics} == 106 ] ; then
             wget ftp://giss_cmip5:@ftp.nccs.nasa.gov/historical/E2-H_historicalMisc_r${run}i1p${physics}/thetao_Omon_GISS-E2-H_historicalMisc_r${run}i1p${physics}_199001-200912.nc
             wget ftp://giss_cmip5:@ftp.nccs.nasa.gov/historical/E2-H_historicalMisc_r${run}i1p${physics}/thetao_Omon_GISS-E2-H_historicalMisc_r${run}i1p${physics}_201001-201212.nc
         else
@@ -100,7 +100,7 @@ do
 	    wget ftp://giss_cmip5:@ftp.nccs.nasa.gov/historical/E2-R_historicalMisc_r${run}i1p${physics}/thetao_Omon_GISS-E2-R_historicalMisc_r${run}i1p${physics}_${years}.nc
         done
 
-        if [ ${physics} == 310 ] ; then
+        if [ ${physics} == 310 ] || [ ${physics} == 106 ] ; then
             wget ftp://giss_cmip5:@ftp.nccs.nasa.gov/historical/E2-R_historicalMisc_r${run}i1p${physics}/thetao_Omon_GISS-E2-R_historicalMisc_r${run}i1p${physics}_200101-201212.nc
         else
             wget ftp://giss_cmip5:@ftp.nccs.nasa.gov/historical/E2-R_historicalMisc_r${run}i1p${physics}/thetao_Omon_GISS-E2-R_historicalMisc_r${run}i1p${physics}_200101-200512.nc
