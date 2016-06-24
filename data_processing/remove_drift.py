@@ -72,7 +72,7 @@ def check_attributes(data_attrs, control_attrs):
 
     control_rip = 'r%si%sp%s' %(control_attrs['realization'],
                                 control_attrs['initialization_method'],
-                                control_attrs['realization'])
+                                control_attrs['physics_version'])
     assert data_attrs['parent_experiment_rip'] in [control_rip, 'N/A']
 
 
