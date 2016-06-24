@@ -33,8 +33,11 @@ experiments=( $@ )
 
 # Determine runs based on model and experiment
 
-volrun='r0i0p0'
 for experiment in "${experiments[@]}"; do
+
+    volrun='r0i0p0'
+    controlrun='r1i1p1'
+
     if [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'historical' ]] ; then
         runs=( r1i1p1 ) 
         #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
@@ -138,31 +141,32 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'AA-direct' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p106 r2i1p106 r3i1p106 r4i1p106 r5i1p106 )
+        runs=( r1i1p106 )
         #r1i1p106 r2i1p106 r3i1p106 r4i1p106 r5i1p106
         organisation='NASA-GISS'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'AA-conc' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p107 r2i1p107 r3i1p107 r4i1p107 r5i1p107 )
+        runs=( r1i1p107 )
         #r1i1p107 r2i1p107 r3i1p107 r4i1p107 r5i1p107
         organisation='NASA-GISS'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'AA-emis' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p310 r2i1p310 r3i1p310 r4i1p310 r5i1p310 )
+        runs=( r1i1p310 )
         #r1i1p310 r2i1p310 r3i1p310 r4i1p310 r5i1p310
         organisation='NASA-GISS'
+        controlrun='r1i1p3'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'AA-direct' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p106 r2i1p106 r3i1p106 r4i1p106 r5i1p106 )
+        runs=( r2i1p106 r3i1p106 r4i1p106 r5i1p106 )
         #r1i1p106 r2i1p106 r3i1p106 r4i1p106 r5i1p106
         organisation='NASA-GISS'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'AA-conc' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p107 r2i1p107 r3i1p107 r4i1p107 r5i1p107 )
+        runs=( r2i1p107 r3i1p107 r4i1p107 r5i1p107 )
         #r1i1p107 r2i1p107 r3i1p107 r4i1p107 r5i1p107
         organisation='NASA-GISS'
 
@@ -171,6 +175,7 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p310 r2i1p310 r3i1p310 r4i1p310 r5i1p310 )
         #r1i1p310 r2i1p310 r3i1p310 r4i1p310 r5i1p310
         organisation='NASA-GISS'
+        controlrun='r1i1p3'
 
     else
         echo "Unrecognised model (${model}) / experiment (${experiment}) combination"
@@ -183,6 +188,7 @@ for experiment in "${experiments[@]}"; do
         sed -i "s/^\(EXPERIMENT\s*=\s*\).*$/EXPERIMENT=${experiment}/" ohc_config.mk
         sed -i "s/^\(RUN\s*=\s*\).*$/\RUN=${run}/" ohc_config.mk
         sed -i "s/^\(VOLUME_RUN\s*=\s*\).*$/\VOLUME_RUN=${volrun}/" ohc_config.mk
+        sed -i "s/^\(CONTROL_RUN\s*=\s*\).*$/\CONTROL_RUN=${controlrun}/" ohc_config.mk
         make ${options} -f ohc_base.mk
         echo "DONE: ${model} ${experiment} ${run}: make ${options} -f ohc_base.mk"
     done
