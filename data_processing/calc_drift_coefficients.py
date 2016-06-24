@@ -100,6 +100,8 @@ def main(inargs):
     cubes = iris.load(inargs.infiles, inargs.var, callback=save_history)
     global_atts = set_global_atts(inargs, cubes[0])
 
+    iris.util.unify_time_units(cubes)
+
     nvars = len(cubes) / len(inargs.infiles)
     out_cubes = []
     for var_index in range(0, nvars):
