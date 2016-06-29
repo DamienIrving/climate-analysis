@@ -135,7 +135,7 @@ def main(inargs):
 
         iris.std_names.STD_NAMES[cube.var_name] = {'canonical_units': ' '}
         new_cube = iris.cube.Cube(coefficients,
-                                  standard_name=cube.var_name,
+                                  standard_name=cube.standard_name,
                                   long_name=cube.long_name,
                                   var_name=cube.var_name,
                                   units=' ',
