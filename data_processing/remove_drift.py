@@ -133,7 +133,7 @@ def thetao_coefficient_sanity_check(coefficient_cube):
 def time_adjustment(first_data_cube, coefficient_cube):
     """Determine the adjustment that needs to be made to time axis."""
 
-    branch_time_value = float(first_data_cube.attributes['branch_time']) #FIXME: Add half a time step?
+    branch_time_value = float(first_data_cube.attributes['branch_time'])
     branch_time_unit = coefficient_cube.attributes['time_unit']
     branch_time_calendar = coefficient_cube.attributes['time_calendar']
     data_time_coord = first_data_cube.coord('time')
@@ -144,9 +144,9 @@ def time_adjustment(first_data_cube, coefficient_cube):
     data_time_coord.convert_units(new_unit)
 
     first_experiment_time = data_time_coord.points[0]
-    time_diff = first_experiment_time - branch_time_value 
+    time_diff = first_experiment_time - branch_time_value - coefficient_cube.attributes['time_start']
 
-    return time_diff, first_experiment_time, new_unit
+    return time_diff, branch_time_value, new_unit
 
 
 def main(inargs):
@@ -156,11 +156,11 @@ def main(inargs):
     coefficient_cube = iris.load_cube(inargs.coefficient_file)
     thetao_coefficient_sanity_check(coefficient_cube)
 
-    time_diff, first_experiment_time, new_time_unit = time_adjustment(first_data_cube, coefficient_cube)
+    time_diff, branch_time, new_time_unit = time_adjustment(first_data_cube, coefficient_cube)
     del first_data_cube
 
     new_cubelist = []
-    for filename in inargs.data_files:
+    for fnum, filename in enumerate(inargs.data_files):
         
         data_cube = iris.load_cube(filename, inargs.var)
         check_attributes(data_cube.attributes, coefficient_cube.attributes)
@@ -169,8 +169,9 @@ def main(inargs):
         time_coord = data_cube.coord('time')
         time_coord.convert_units(new_time_unit)
         
-        assert time_coord.points[0] >= first_experiment_time
         time_values = time_coord.points.astype(numpy.float32) - time_diff
+        if fnum == 0:
+            assert time_values[0] == coefficient_cube.attributes['time_start'] + branch_time
 
         # Remove the drift
         drift_signal = apply_polynomial(time_values, coefficient_cube.data)
