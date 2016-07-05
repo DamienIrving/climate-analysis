@@ -82,6 +82,28 @@ def calc_ohc_3D(cube, weights, inargs):
     return ohc_per_m2
 
 
+def check_coord_names(cube, coord_names):
+    """Remove specified coordinate name.
+
+    The iris standard names for lat/lon coordinates are:
+      latitude, grid_latitude, longitude, grid_longitude
+
+    If a cube uses one for the dimension coordinate and the 
+      other for the auxillary coordinate, the 
+      regrid_weighted_curvilinear_to_rectilinear method won't work
+
+    """
+
+    if 'grid_latitude' in coord_names:
+        cube.coord('grid_latitude').standard_name = None
+        coord_names = [coord.name() for coord in cube.dim_coords]
+    if 'grid_longitude' in coord_names:
+        cube.coord('grid_longitude').standard_name = None
+        coord_names = [coord.name() for coord in cube.dim_coords]
+
+    return cube, coord_names
+
+
 def curvilinear_to_rectilinear(cube):
     """Regrid curvilinear data to a rectilinear grid if necessary."""
 
@@ -98,10 +120,11 @@ def curvilinear_to_rectilinear(cube):
         target_grid_cube = make_grid(lats, lons)
 
         # Interate over slices (experimental regridder only works on 2D slices)
-        cube_list = []
+        cube, coord_names =  check_coord_names(cube, coord_names)
         slice_dims = coord_names
         slice_dims.remove('time')
         slice_dims.remove('depth')
+        cube_list = []
         for i, cube_slice in enumerate(cube.slices(slice_dims)):
             weights = numpy.ones(cube_slice.shape)
             regridded_cube = regrid_weighted_curvilinear_to_rectilinear(cube_slice, weights, target_grid_cube)
