@@ -35,6 +35,7 @@ TEMPERATURE_METRICS_PLOT=${TEMPERATURE_METRICS_DIR}/${METRIC}_Omon_${MODEL}_${EX
 OHC_MAPS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/ohc-maps/${RUN}
 OHC_MAPS_FILE=${OHC_MAPS_DIR}/ohc-maps_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 OHC_MAPS_PLOT=${OHC_MAPS_DIR}/ohc-maps_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
+OHC_SEASONAL_CYCLE_PLOT=${OHC_MAPS_DIR}/ohc-maps-seasonal-cycle_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
 
 
 # De-drift
@@ -57,7 +58,7 @@ ${CLIMATOLOGY_FILE} : ${DEDRIFTED_TEMPERATURE_DIR}
 
 ${TEMPERATURE_METRICS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${TEMPERATURE_METRICS_DIR}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --volume_file ${VOLUME_FILE} --climatology_file $< --max_depth ${MAX_DEPTH} ${REF}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_temperature_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --climatology_file $< --max_depth ${MAX_DEPTH} ${REF} --volume_file ${VOLUME_FILE}
 
 ${TEMPERATURE_METRICS_PLOT} : ${TEMPERATURE_METRICS_FILE}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_temperature_metric_timeseries.py $< $@ ${REF}
@@ -70,3 +71,6 @@ ${OHC_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 
 ${OHC_MAPS_PLOT} : ${OHC_MAPS_FILE}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ohc_trend.py $< $@ --time ${START_DATE} ${END_DATE} 
+
+${OHC_SEASONAL_CYCLE_PLOT} : ${OHC_MAPS_FILE}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ohc_trend.py $< $@ --time ${START_DATE} ${END_DATE} --seasonal_cycle

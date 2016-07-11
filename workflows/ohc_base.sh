@@ -96,18 +96,25 @@ for experiment in "${experiments[@]}"; do
         organisation='CCCMA'
         volrun='r0i0p0'
 
+    elif [[ ${model} == 'CanESM2' && ${experiment} == 'historicalNat' ]] ; then
+        experiment='historicalNat'
+        runs=( r2i1p1 )
+        #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        organisation='CCCMA'
+        volrun='r0i0p0'
+
     elif [[ ${model} == 'ACCESS1-0' && ${experiment} == 'historical' ]] ; then
         runs=( r1i1p1 ) # incomplete
         organisation='CSIRO-BOM'
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'historical' ]] ; then
-        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 ) 
+        runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 ) 
         #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='NOAA-GFDL'
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'historicalGHG' ]] ; then
-        runs=( r3i1p1 ) 
-        #r1i1p1 r3i1p1
+        runs=( r1i1p1 r3i1p1 ) 
+        #r1i1p1 r3i1p1 r5i1p1 (r5 I had to download myself)
         organisation='NOAA-GFDL'
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'historicalNat' ]] ; then
@@ -117,7 +124,7 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
-        runs=( r5i1p1 )
+        runs=( r1i1p1 r3i1p1 r5i1p1 )
         #r1i1p1 r3i1p1 r5i1p1
         organisation='NOAA-GFDL'
 
@@ -133,6 +140,30 @@ for experiment in "${experiments[@]}"; do
         #r1i1p5
         organisation='NOAA-GFDL'
 
+    elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'Ant' ]] ; then
+        experiment='historicalMisc'
+        runs=( r1i1p2 )
+        #r1i1p2
+        organisation='NOAA-GFDL'
+
+    elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'historical' ]] ; then
+        experiment='historical'
+        runs=( r1i1p1 )
+        #r1i1p1
+        organisation='NOAA-GFDL'
+
+    elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'historicalGHG' ]] ; then
+        experiment='historicalGHG'
+        runs=( r1i1p1 )
+        #r1i1p1
+        organisation='NOAA-GFDL'
+
+    elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'historicalNat' ]] ; then
+        experiment='historicalNat'
+        runs=( r1i1p1 )
+        #r1i1p1
+        organisation='NOAA-GFDL'
+
     elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
         runs=( r2i1p1 )
@@ -141,19 +172,19 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'AA-direct' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p106 )
+        runs=( r1i1p106 r2i1p106 r3i1p106 r4i1p106 r5i1p106 )
         #r1i1p106 r2i1p106 r3i1p106 r4i1p106 r5i1p106
         organisation='NASA-GISS'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'AA-conc' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p107 )
+        runs=( r1i1p107 r2i1p107 r3i1p107 r4i1p107 r5i1p107 )
         #r1i1p107 r2i1p107 r3i1p107 r4i1p107 r5i1p107
         organisation='NASA-GISS'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'AA-emis' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p310 )
+        runs=( r1i1p310 r2i1p310 r3i1p310 r4i1p310 r5i1p310 )
         #r1i1p310 r2i1p310 r3i1p310 r4i1p310 r5i1p310
         organisation='NASA-GISS'
         controlrun='r1i1p3'
@@ -176,6 +207,12 @@ for experiment in "${experiments[@]}"; do
         #r1i1p310 r2i1p310 r3i1p310 r4i1p310 r5i1p310
         organisation='NASA-GISS'
         controlrun='r1i1p3'
+
+    elif [[ ${model} == 'NorESM1-M' && ${experiment} == 'AA' ]] ; then
+        experiment='historicalMisc'
+        runs=( r1i1p1 )
+        #r1i1p1
+        organisation='NCC'
 
     else
         echo "Unrecognised model (${model}) / experiment (${experiment}) combination"
