@@ -163,7 +163,8 @@ def main(inargs):
     for fnum, filename in enumerate(inargs.data_files):
         
         data_cube = iris.load_cube(filename, inargs.var)
-        check_attributes(data_cube.attributes, coefficient_cube.attributes)
+        if not inargs.no_parent_check:
+            check_attributes(data_cube.attributes, coefficient_cube.attributes)
 
         # Sync the data time axis with the coefficient time axis        
         time_coord = data_cube.coord('time')
@@ -229,6 +230,9 @@ notes:
     parser.add_argument("coefficient_file", type=str, help="Input coefficient file")
     parser.add_argument("outfile", type=str, help="Give a path instead of a file name if you want an output file corresponding to each input file")
     
+    parser.add_argument("--no_parent_check", action="store_true", default=False,
+                        help="Do not perform the parent experiment check [default: False]")
+
     args = parser.parse_args()            
 
     main(args)
