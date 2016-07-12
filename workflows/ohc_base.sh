@@ -87,25 +87,54 @@ for experiment in "${experiments[@]}"; do
         runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 )
         #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='CCCMA'
-        volrun='r0i0p0'
 
     elif [[ ${model} == 'CanESM2' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
         runs=( r4i1p4 r5i1p4 )
         #r1i1p4 r2i1p4 r3i1p4 r4i1p4 r5i1p4
         organisation='CCCMA'
-        volrun='r0i0p0'
 
     elif [[ ${model} == 'CanESM2' && ${experiment} == 'historicalNat' ]] ; then
         experiment='historicalNat'
         runs=( r2i1p1 )
         #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='CCCMA'
-        volrun='r0i0p0'
 
-    elif [[ ${model} == 'ACCESS1-0' && ${experiment} == 'historical' ]] ; then
-        runs=( r1i1p1 ) # incomplete
-        organisation='CSIRO-BOM'
+    elif [[ ${model} == 'CanESM2' && ${experiment} == 'historicalGHG' ]] ; then
+        experiment='historicalGHG'
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )
+        #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        organisation='CCCMA'
+
+    elif [[ ${model} == 'CCSM4' && ${experiment} == 'historical' ]] ; then
+        experiment='historical'
+        runs=( r1i1p1 )
+        # r1i1p1 r1i2p1 r1i2p2 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
+        organisation='NCAR'
+
+    elif [[ ${model} == 'CCSM4' && ${experiment} == 'historicalGHG' ]] ; then
+        experiment='historicalGHG'
+        runs=( r1i1p1 )
+        # r1i1p1 r4i1p1 r6i1p1
+        organisation='NCAR'
+
+    elif [[ ${model} == 'CCSM4' && ${experiment} == 'historicalNat' ]] ; then
+        experiment='historicalNat'
+        runs=( r1i1p1 )
+        # r1i1p1 r2i1p1 r4i1p1 r6i1p1
+        organisation='NCAR'
+
+    elif [[ ${model} == 'CCSM4' && ${experiment} == 'historicalAA' ]] ; then
+        experiment='historicalMisc'
+        runs=( r1i1p10 )
+        # r1i1p10; missing r4i1p10 r6i1p10
+        organisation='NCAR'
+
+    elif [[ ${model} == 'CCSM4' && ${experiment} == 'historicalAnt' ]] ; then
+        experiment='historical'
+        runs=( r1i1p11 )
+        # r1i1p11 r2i1p11; missing r4i1p11 r6i1p11
+        organisation='NCAR'
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'historical' ]] ; then
         runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 ) 
