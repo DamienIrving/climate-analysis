@@ -193,7 +193,10 @@ def main(inargs):
             assert new_cube.data.dtype == numpy.float32
             iris.save(new_cube, outfile, netcdf_format='NETCDF3_CLASSIC')
             print 'output:', outfile
-        
+            del new_cube
+            del drift_signal
+            
+
     if inargs.outfile[-3:] == '.nc':
         new_cubelist = iris.cube.CubeList(new_cubelist)
         equalise_attributes(new_cubelist)
