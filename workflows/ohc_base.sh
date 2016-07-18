@@ -131,7 +131,7 @@ for experiment in "${experiments[@]}"; do
         organisation='NCAR'
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'historicalAnt' ]] ; then
-        experiment='historical'
+        experiment='historicalMisc'
         runs=( r1i1p11 )
         # r1i1p11 r2i1p11; missing r4i1p11 r6i1p11
         organisation='NCAR'
@@ -236,6 +236,36 @@ for experiment in "${experiments[@]}"; do
         #r1i1p310 r2i1p310 r3i1p310 r4i1p310 r5i1p310
         organisation='NASA-GISS'
         controlrun='r1i1p3'
+
+    elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'AA' ]] ; then
+        experiment='historicalMisc'
+        runs=( r1i1p3 )
+        #r1i1p3
+        organisation='IPSL'
+
+    elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'Ant' ]] ; then
+        experiment='historicalMisc'
+        runs=( r1i1p2 )
+        #r1i1p2; missing r2i1p2 r3i1p2  
+        organisation='IPSL'
+
+    elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'historicalGHG' ]] ; then
+        experiment='historicalGHG'
+        runs=( r1i1p1 )
+        #r1i1p1 (and probably more)  
+        organisation='IPSL'
+
+    elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'historical' ]] ; then
+        experiment='historical'
+        runs=( r1i1p1 )
+        #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
+        organisation='IPSL'
+
+    elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'historicalNat' ]] ; then
+        experiment='historicalNat'
+        runs=( r1i1p1 )
+        #r1i1p1 r2i1p1 r3i1p1
+        organisation='IPSL'
 
     elif [[ ${model} == 'NorESM1-M' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
