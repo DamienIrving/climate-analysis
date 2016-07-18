@@ -50,6 +50,19 @@ regions = {'globe': [-90, 90],
           }
 
 
+
+def apply_volume_mask(volume_cube, reference_cube):
+    """Apply the reference_cube mask to volume_cube.
+
+    Some volcello data files (e.g. IPSL-CM5A-LR) don't have a mask.
+
+    """
+
+    volume_cube.data = numpy.ma.masked_where(numpy.ma.getmask(reference_cube.data), volume_cube.data)
+
+    return volume_cube
+
+
 def calc_metrics(inargs, temperature_cube, volume_cube, ref_region=None):
     """Calculate the ocean heat content metrics.
 
@@ -303,6 +316,9 @@ def main(inargs):
 
         if not volume_cube:
             volume_cube = create_volume_cube(temperature_cube)
+        elif not type(volume_cube.data) == numpy.ma.core.MaskedArray:
+            assert temperature_cube.dim_coords[0].name() == 'time'
+            volume_cube = apply_volume_mask(volume_cube, temperature_cube[0, ...]) 
 
         metric_dict = calc_metrics(inargs, temperature_cube, volume_cube, ref_region=inargs.ref_region)   
         metric_cubelist = create_metric_cubelist(inargs.metric, metric_dict, units, atts, temperature_cube.coord('time'))
