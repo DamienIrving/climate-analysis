@@ -218,6 +218,20 @@ for experiment in "${experiments[@]}"; do
         organisation='NASA-GISS'
         controlrun='r1i1p3'
 
+    elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'historicalp3' ]] ; then
+        experiment='historical'
+        runs=( r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3 )
+        #r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3
+        organisation='NASA-GISS'
+        controlrun='r1i1p3'
+
+    elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'historicalp1' ]] ; then
+        experiment='historical'
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )
+        #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        organisation='NASA-GISS'
+        controlrun='r1i1p1'
+
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'AA-direct' ]] ; then
         experiment='historicalMisc'
         runs=( r2i1p106 r3i1p106 r4i1p106 r5i1p106 )
@@ -236,6 +250,20 @@ for experiment in "${experiments[@]}"; do
         #r1i1p310 r2i1p310 r3i1p310 r4i1p310 r5i1p310
         organisation='NASA-GISS'
         controlrun='r1i1p3'
+
+    elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalp3' ]] ; then
+        experiment='historical'
+        runs=( r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3 )
+        #r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3
+        organisation='NASA-GISS'
+        controlrun='r1i1p3'
+
+    elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalp1' ]] ; then
+        experiment='historical'
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )
+        #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        organisation='NASA-GISS'
+        controlrun='r1i1p1'
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
