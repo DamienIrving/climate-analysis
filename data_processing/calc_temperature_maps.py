@@ -37,20 +37,18 @@ except ImportError:
 
 history = []
 
-def add_metadata(orig_atts, name, new_cube):
+def add_metadata(orig_atts, new_cube, standard_name, var_name, units):
     """Add metadata to the output cube.
     
     Name can be 'vertical_mean' or 'zonal_mean'
     
     """
 
-    standard_name = '%s_sea_water_potential_temperature'  %(name)
     iris.std_names.STD_NAMES[standard_name] = {'canonical_units': units}
 
     new_cube.standard_name = standard_name
-    new_cube.long_name = 'ocean heat content %s'  %(dims)
-    new_cube.var_name = 'ohc_%s'  %(dims)
-    #new_cube.units = units
+    new_cube.long_name = standard_name.replace('_', ' ')
+    new_cube.var_name = var_name
     new_cube.attributes = orig_atts  
 
     return new_cube
@@ -229,9 +227,15 @@ def main(inargs):
         vertical_mean_cube.data = vertical_mean_cube.data.astype(numpy.float32)
         zonal_mean_cube.data = zonal_mean_cube.data.astype(numpy.float32)
 
-        units = temperature_cube.units
-        vertical_mean_cube = add_metadata(atts, vertical_mean_cube, 'vertical_mean', units)
-        zonal_mean_cube = add_metadata(atts, zonal_mean_cube, 'zonal_mean', units)
+        units = str(temperature_cube.units)
+        vertical_mean_cube = add_metadata(atts, vertical_mean_cube, 
+                                          'vertical_mean_'+vertical_mean_cube.standard_name, 
+                                          vertical_mean_cube.var_name+'_vm', 
+                                          units)
+        zonal_mean_cube = add_metadata(atts, zonal_mean_cube,
+                                       'zonal_mean_'+zonal_mean_cube.standard_name,
+                                       zonal_mean_cube.var_name+'_zm',
+                                       units)
 
         out_list = iris.cube.CubeList([vertical_mean_cube, zonal_mean_cube])
         out_cubes.append(out_list.concatenate())
