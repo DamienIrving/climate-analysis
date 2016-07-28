@@ -1,5 +1,5 @@
 """
-Filename:     calc_heat_content.py
+Filename:     calc_ohc_maps.py
 Author:       Damien Irving, irving.damien@gmail.com
 Description:  Calculate heat content
 
@@ -13,8 +13,6 @@ import numpy
 import iris
 from iris.experimental.regrid import regrid_weighted_curvilinear_to_rectilinear
 from iris.experimental.equalise_cubes import equalise_attributes
-from iris.analysis.cartography import cosine_latitude_weights
-import gsw
 
 # Import my modules
 
@@ -39,7 +37,7 @@ except ImportError:
 
 history = []
 
-def add_metadata(orig_atts, depth_axis, new_cube, dims, inargs):
+def add_metadata(orig_atts, new_cube, dims, inargs):
     """Add metadata to the output cube.
     
     dims = '3D' or '2D'
@@ -239,8 +237,8 @@ def main(inargs):
         ohc_per_m2.data = ohc_per_m2.data.astype(numpy.float32)
         ohc_per_m.data = ohc_per_m.data.astype(numpy.float32)
 
-        ohc_per_m2 = add_metadata(atts, depth_axis.points, ohc_per_m2, '3D', inargs)
-        ohc_per_m = add_metadata(atts, depth_axis.points, ohc_per_m, '2D', inargs)
+        ohc_per_m2 = add_metadata(atts, ohc_per_m2, '3D', inargs)
+        ohc_per_m = add_metadata(atts, ohc_per_m, '2D', inargs)
 
         ohc_list = iris.cube.CubeList([ohc_per_m2, ohc_per_m])
         out_cubes.append(ohc_list.concatenate())
