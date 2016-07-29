@@ -37,6 +37,16 @@ except ImportError:
 
 history = []
 
+vertical_layers = {'surface': [0, 50],
+                   'shallow': [50, 350],
+                   'middle': [350, 700],
+                   'deep': [700, 2000]}
+
+basins = {'atlantic': 2, 
+          'pacific': 3,
+          'indian': 5}
+
+
 def add_metadata(orig_atts, new_cube, standard_name, var_name, units):
     """Add metadata to the output cube.
     
@@ -193,12 +203,82 @@ def set_attributes(inargs, temperature_cube, climatology_cube):
     return atts
 
 
+def calc_vertical_mean(cube, layer, coord_names):
+    """Calculate the vertical mean over a given depth range."""
+
+    min_depth, max_depth = vertical_layers[layer]
+    level_subset = gio.iris_vertical_constraint(min_depth, max_depth)
+    cube_segment = cube.extract(level_subset)
+
+    depth_axis = cube_segment.coord('depth')
+    if depth_axis.units == 'm':
+        vertical_weights = spatial_weights.calc_vertical_weights_1D(depth_axis, coord_names, cube_segment.shape)
+    elif depth_axis.units == 'dbar':
+        vertical_weights = spatial_weights.calc_vertical_weights_2D(depth_axis, cube_segment.coord('latitude'), coord_names, cube_segment.shape)
+
+    vertical_mean_cube = calc_vertical_mean(cube_segment, vertical_weights.astype(numpy.float32), inargs)
+    vertical_mean_cube.data = vertical_mean_cube.data.astype(numpy.float32)
+        
+    units = str(cube.units)
+    standard_name = 'vertical_mean_%s_%s' %(layer, vertical_mean_cube.standard_name)
+    var_name = '%s_vm_%s'   %(vertical_mean_cube.var_name, layer)
+    vertical_mean_cube = add_metadata(atts, vertical_mean_cube, standard_name, var_name, units)
+
+    return vertical_mean_cube
+
+
+def create_basin_file(cube):
+    """Create a basin file.
+
+    For similarity with the CMIP5 basin file, in the output:
+      Atlantic Ocean = 2
+      Pacific Ocean = 3
+      Indian Ocean = 5
+
+    """
+
+    atlantic_bounds = [114, 203]
+    indian_bounds = [203, 327]
+
+    lat_axis = cube.coord('latitude').points
+    lon_axis = uconv.adjust_lon_range(cube.coord('longitude').points, radians=False)
+
+    lat_array = uconv.broadcast_array(lat_axis.points, 2, cube.shape)
+    lon_array = uconv.broadcast_array(lon_axis.points, 3, cube.shape)
+
+    basin_array = numpy.ones(cube.shape) * 3
+    basin_array = numpy.where((lon_array >= atlantic_bounds[0]) & (lon_array <= atlantic_bounds[1]), 2, basin_array)
+    basin_array = numpy.where((lon_array >= indian_bounds[0]) & (lon_array <= indian_bounds[1]), 5, basin_array)
+
+    basin_array = numpy.where((basin_array == 3) & (lon_array >= 98) & (lat_array >= 20), 2, basin_array)
+    basin_array = numpy.where((basin_array == 5) & (lon_array >= 301) & (lat_array >= 0), 3, basin_array)
+
+    return basin_array
+
+
+def calc_zonal_mean(cube, basin_array, basin_name):
+    """Calculate the zonal mean for a given ocean basin."""
+
+    #FIXME
+    cube.data.mask = mask
+
+    zonal_mean_cube = calc_zonal_mean(temperature_cube, inargs)
+    zonal_mean_cube.data = zonal_mean_cube.data.astype(numpy.float32)
+
+    units = str(temperature_cube.units)
+    zonal_mean_cube = add_metadata(atts, zonal_mean_cube,
+                                   'zonal_mean_'+zonal_mean_cube.standard_name,
+                                    zonal_mean_cube.var_name+'_zm',
+                                    units)
+
+    return zonal_mean_cube
+
+
 def main(inargs):
     """Run the program."""
 
-    level_subset = gio.iris_vertical_constraint(inargs.min_depth, inargs.max_depth)
     climatology_cube = read_climatology(inargs.climatology_file, inargs.temperature_var, level_subset)
-    temperature_cubes = iris.load(inargs.temperature_files, inargs.temperature_var & level_subset, callback=save_history)
+    temperature_cubes = iris.load(inargs.temperature_files, inargs.temperature_var, callback=save_history)
     equalise_attributes(temperature_cubes)
     atts = set_attributes(inargs, temperature_cubes[0], climatology_cube)
 
@@ -214,30 +294,17 @@ def main(inargs):
         depth_axis = temperature_cube.coord('depth')
         assert depth_axis.units in ['m', 'dbar'], "Unrecognised depth axis units"
 
-        # Calculate temperature fields
-        if depth_axis.units == 'm':
-            vertical_weights = spatial_weights.calc_vertical_weights_1D(depth_axis, coord_names, temperature_cube.shape)
-        elif depth_axis.units == 'dbar':
-            vertical_weights = spatial_weights.calc_vertical_weights_2D(depth_axis, temperature_cube.coord('latitude'), coord_names, temperature_cube.shape)
+        out_list = iris.cube.CubeList([])
 
-        vertical_mean_cube = calc_vertical_mean(temperature_cube, vertical_weights.astype(numpy.float32), inargs)
-        zonal_mean_cube = calc_zonal_mean(temperature_cube, inargs)
+        # Calculate vertical mean maps
+        for layer in vertical_layers.keys():
+            out_list.append(calc_vertical_mean(temperature_cube, layer, coord_names))
 
-        # Create the cube
-        vertical_mean_cube.data = vertical_mean_cube.data.astype(numpy.float32)
-        zonal_mean_cube.data = zonal_mean_cube.data.astype(numpy.float32)
+        # Calculate zonal mean maps
+        basin_array = create_basin_file(temperature_cube)
+        for basin in basins.keys():
+            out_list.append(calc_zonal_mean(temperature_cube, basin_array, basin))
 
-        units = str(temperature_cube.units)
-        vertical_mean_cube = add_metadata(atts, vertical_mean_cube, 
-                                          'vertical_mean_'+vertical_mean_cube.standard_name, 
-                                          vertical_mean_cube.var_name+'_vm', 
-                                          units)
-        zonal_mean_cube = add_metadata(atts, zonal_mean_cube,
-                                       'zonal_mean_'+zonal_mean_cube.standard_name,
-                                       zonal_mean_cube.var_name+'_zm',
-                                       units)
-
-        out_list = iris.cube.CubeList([vertical_mean_cube, zonal_mean_cube])
         out_cubes.append(out_list.concatenate())
 
     cube_list = []
@@ -252,6 +319,12 @@ def main(inargs):
     cube_list = iris.cube.CubeList(cube_list)
     assert cube_list[0].data.dtype == numpy.float32
     iris.save(cube_list, inargs.outfile)
+
+
+
+    
+
+
 
 
 if __name__ == '__main__':
@@ -276,11 +349,6 @@ author:
 
     parser.add_argument("--climatology_file", type=str, default=None, 
                         help="Input temperature climatology file (required if input data not already anomaly)")
-    
-    parser.add_argument("--min_depth", type=float, default=None,
-                        help="Only include data below this vertical level")
-    parser.add_argument("--max_depth", type=float, default=None,
-                        help="Only include data above this vertical level")
         
     args = parser.parse_args()             
     main(args)
