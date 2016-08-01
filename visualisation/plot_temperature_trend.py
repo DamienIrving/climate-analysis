@@ -40,6 +40,13 @@ except ImportError:
 
 # Define functions
 
+long_titles = {'argo': 'full depth (0-2000m)',
+               'surface': 'surface (0-50m)',
+               'shallow': 'shallow (50-350m)',
+               'middle': 'mid (350-700m)',
+               'deep': 'deep (700-2000m)'}
+
+
 def calc_seasonal_cycle(cube):
     """Calculate the seasonal cycle.
 
@@ -118,6 +125,8 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
 
     cmap = plt.cm.RdBu_r
     ticks = numpy.arange(-tick_max, tick_max + tick_step, tick_step)
+    if title in ['deep', 'argo']:
+        ticks = ticks / 2.0
     cf = ax.contourf(lons, lats, trends, transform=ccrs.PlateCarree(),
                      cmap=cmap, extend='both', levels=ticks)
 
@@ -130,7 +139,7 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
     ax.yaxis.set_major_formatter(lat_formatter)
     ax.set_xlabel('Longitude', fontsize='small')
     ax.set_ylabel('Latitude', fontsize='small')    
-    ax.set_title(title)
+    ax.set_title(long_titles[title])
 
     cbar = plt.colorbar(cf)
     cbar.set_label('$K yr^{-1}$')
@@ -156,6 +165,10 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     ax.set_xlabel('Latitude', fontsize='small')
     ax.set_ylabel('Depth', fontsize='small')
     ax.set_title(title)
+
+    plt.axhline(y=50, linestyle='dashed', color='0.5')
+    plt.axhline(y=350, linestyle='dashed', color='0.5')
+    plt.axhline(y=700, linestyle='dashed', color='0.5')
 
     cbar = plt.colorbar(cf)
     cbar.set_label('$K yr^{-1}$')
@@ -187,8 +200,8 @@ def main(inargs):
         gs = gridspec.GridSpec(5, 1)
     elif inargs.plot_type == 'zonal_mean':
         plot_names = ['globe', 'indian', 'pacific', 'atlantic']
-        fig = plt.figure(figsize=[35, 6])
-        gs = gridspec.GridSpec(1, 4)
+        fig = plt.figure(figsize=[18, 12])
+        gs = gridspec.GridSpec(2, 2)
  
     for plotnum, plot_name in enumerate(plot_names):
         standard_name = '%s_%s_%s' %(inargs.plot_type, plot_name, inargs.var)
