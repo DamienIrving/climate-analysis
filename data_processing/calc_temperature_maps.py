@@ -217,8 +217,8 @@ def create_basin_file(cube):
 
     """
 
-    atlantic_bounds = [114, 203]
-    indian_bounds = [203, 327]
+    pacific_bounds = [147, 294]
+    indian_bounds = [23, 147]
 
     lat_axis = cube.coord('latitude').points
     lon_axis = uconv.adjust_lon_range(cube.coord('longitude').points, radians=False)
@@ -226,12 +226,12 @@ def create_basin_file(cube):
     lat_array = uconv.broadcast_array(lat_axis, 2, cube.shape)
     lon_array = uconv.broadcast_array(lon_axis, 3, cube.shape)
 
-    basin_array = numpy.ones(cube.shape) * 3
-    basin_array = numpy.where((lon_array >= atlantic_bounds[0]) & (lon_array <= atlantic_bounds[1]), 2, basin_array)
+    basin_array = numpy.ones(cube.shape) * 2
+    basin_array = numpy.where((lon_array >= pacific_bounds[0]) & (lon_array <= pacific_bounds[1]), 3, basin_array)
     basin_array = numpy.where((lon_array >= indian_bounds[0]) & (lon_array <= indian_bounds[1]), 5, basin_array)
 
-    basin_array = numpy.where((basin_array == 3) & (lon_array >= 98) & (lat_array >= 20), 2, basin_array)
-    basin_array = numpy.where((basin_array == 5) & (lon_array >= 301) & (lat_array >= 0), 3, basin_array)
+    basin_array = numpy.where((basin_array == 3) & (lon_array >= 279) & (lat_array >= 10), 2, basin_array)
+    basin_array = numpy.where((basin_array == 5) & (lon_array >= 121) & (lat_array >= 0), 3, basin_array)
 
     return basin_array
 
@@ -279,7 +279,6 @@ def main(inargs):
             out_list.append(calc_vertical_mean(temperature_cube, layer, coord_names, atts))
 
         basin_array = create_basin_file(temperature_cube)
-        numpy.save('/g/data/r87/dbi599/basins.npy', basin_array)
         for basin in basins.keys():
             out_list.append(calc_zonal_mean(temperature_cube, basin_array, basin, atts))
 
