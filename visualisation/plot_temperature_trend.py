@@ -105,15 +105,15 @@ def convert_to_seconds(time_axis):
     return time_axis
 
 
-def plot_vertical_mean_trend(trends, lons, lats, gs,
-                             tick_max, tick_step, yticks):
+def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
+                             tick_max, tick_step, yticks, title):
     """Plot the vertical mean trends.
 
     Produces a lon / lat plot.
  
     """
 
-    ax = plt.subplot(gs[0], projection=ccrs.PlateCarree(central_longitude=180.0))
+    ax = plt.subplot(gs[plotnum], projection=ccrs.PlateCarree(central_longitude=180.0))
     plt.sca(ax)
 
     cmap = plt.cm.RdBu_r
@@ -130,20 +130,21 @@ def plot_vertical_mean_trend(trends, lons, lats, gs,
     ax.yaxis.set_major_formatter(lat_formatter)
     ax.set_xlabel('Longitude', fontsize='small')
     ax.set_ylabel('Latitude', fontsize='small')    
+    ax.set_title(title)
 
     cbar = plt.colorbar(cf)
     cbar.set_label('$K yr^{-1}$')
 
 
-def plot_zonal_mean_trend(trends, lats, levs, gs,
-                          tick_max, tick_step, yticks):
+def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
+                          tick_max, tick_step, yticks, title):
     """Plot the zonal mean trends.
 
     Produces a lat / depth plot.
 
     """
 
-    ax = plt.subplot(gs[1])
+    ax = plt.subplot(gs[plotnum])
     plt.sca(ax)
 
     cmap = plt.cm.RdBu_r
@@ -154,6 +155,7 @@ def plot_zonal_mean_trend(trends, lats, levs, gs,
     ax.invert_yaxis()
     ax.set_xlabel('Latitude', fontsize='small')
     ax.set_ylabel('Depth', fontsize='small')
+    ax.set_title(title)
 
     cbar = plt.colorbar(cf)
     cbar.set_label('$K yr^{-1}$')
@@ -179,44 +181,53 @@ def main(inargs):
     except AttributeError:
         time_constraint = iris.Constraint()
 
-    vm_standard_name = 'vertical_mean_'+inargs.var
-    vm_long_name = vm_standard_name.replace('_', ' ')
-    zm_standard_name = 'zonal_mean_'+inargs.var
-    zm_long_name = zm_standard_name.replace('_', ' ')
-    with iris.FUTURE.context(cell_datetime_objects=True):
-        vertical_mean_cube = iris.load_cube(inargs.infile, vm_long_name & time_constraint)  
-        zonal_mean_cube = iris.load_cube(inargs.infile, zm_long_name & time_constraint)
+    if inargs.plot_type == 'vertical_mean':
+        plot_names = ['argo', 'surface', 'shallow', 'middle', 'deep']
+        fig = plt.figure(figsize=[10, 20])
+        gs = gridspec.GridSpec(5, 1)
+    elif inargs.plot_type == 'zonal_mean':
+        plot_names = ['globe', 'indian', 'pacific', 'atlantic']
+        fig = plt.figure(figsize=[35, 6])
+        gs = gridspec.GridSpec(1, 4)
+ 
+    for plotnum, plot_name in enumerate(plot_names):
+        standard_name = '%s_%s_%s' %(inargs.plot_type, plot_name, inargs.var)
+        long_name = standard_name.replace('_', ' ')
+        with iris.FUTURE.context(cell_datetime_objects=True):
+            cube = iris.load_cube(inargs.infile, long_name & time_constraint)  
 
-    lons = vertical_mean_cube.coord('longitude').points
-    lats = vertical_mean_cube.coord('latitude').points
-    levs = zonal_mean_cube.coord('depth').points
-    infile_history = vertical_mean_cube.attributes['history']
+        # Calculate seasonal cycle
+        running_mean = True
+        if inargs.seasonal_cycle:
+            cube = calc_seasonal_cycle(cube) 
+            running_mean = False
 
-    # Calculate seasonal cycle
-    running_mean = True
-    if inargs.seasonal_cycle:
-        vertical_mean_cube = calc_seasonal_cycle(vertical_mean_cube) 
-        zonal_mean_cube = calc_seasonal_cycle(zonal_mean_cube)
-        running_mean = False
+        # Calculate trend
+        trend = calc_trend(cube, running_mean=running_mean)
 
-    # Calculate trend
-    vertical_mean_trend = calc_trend(vertical_mean_cube, running_mean=running_mean)
-    zonal_mean_trend = calc_trend(zonal_mean_cube, running_mean=running_mean)
+        # Plot
+        if inargs.plot_type == 'vertical_mean':
+            lons = cube.coord('longitude').points
+            lats = cube.coord('latitude').points
+        
+            tick_max, tick_step = inargs.vm_ticks
+            yticks = set_yticks(inargs.max_lat)
+            plot_vertical_mean_trend(trend, lons, lats, gs, plotnum,
+                                     tick_max, tick_step, yticks, plot_name)
 
-    # Plot
-    fig = plt.figure(figsize=[15, 10])
-    gs = gridspec.GridSpec(2, 1, height_ratios=[2, 1]) 
-
-    vm_tick_max, vm_tick_step = inargs.vm_ticks
-    zm_tick_max, zm_tick_step = inargs.zm_ticks
-    yticks = set_yticks(inargs.max_lat)
-    plot_vertical_mean_trend(vertical_mean_trend, lons, lats, gs,
-                             vm_tick_max, vm_tick_step, yticks)
-    plot_zonal_mean_trend(zonal_mean_trend, lats, levs, gs,
-                          zm_tick_max, zm_tick_step, yticks)
+        elif inargs.plot_type == 'zonal_mean':
+            lats = cube.coord('latitude').points
+            levs = cube.coord('depth').points
+        
+            tick_max, tick_step = inargs.zm_ticks
+            yticks = set_yticks(inargs.max_lat)
+            plot_zonal_mean_trend(trend, lats, levs, gs, plotnum,
+                                  tick_max, tick_step, yticks, plot_name)
 
     # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
+
+    infile_history = cube.attributes['history']
     gio.write_metadata(inargs.outfile, file_info={inargs.outfile:infile_history})
 
 
@@ -236,11 +247,12 @@ author:
 
     parser.add_argument("infile", type=str, help="Input temperature maps file")
     parser.add_argument("var", type=str, help="Input temperature variable name (the standard_name without the vertical_mean or zonal_mean bit)")
+    parser.add_argument("plot_type", type=str, choices=('vertical_mean', 'zonal_mean'), help="Type of plot")
     parser.add_argument("outfile", type=str, help="Output file name")
     
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
-    parser.add_argument("--vm_ticks", type=float, nargs=2, default=(0.08, 0.01), metavar=('MAX_AMPLITUDE', 'STEP'),
+    parser.add_argument("--vm_ticks", type=float, nargs=2, default=(0.1, 0.01), metavar=('MAX_AMPLITUDE', 'STEP'),
                         help="Maximum tick amplitude and step size for vertical mean plot [default = 0.2, 0.04]")
     parser.add_argument("--zm_ticks", type=float, nargs=2, default=(0.05, 0.005), metavar=('MAX_AMPLITUDE', 'STEP'),
                         help="Maximum tick amplitude and step size for vertical mean plot [default = 0.1, 0.01]")

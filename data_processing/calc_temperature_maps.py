@@ -248,7 +248,7 @@ def calc_zonal_mean(cube, basin_array, basin_name, atts):
 
     units = str(cube.units)
     standard_name = 'zonal_mean_%s_%s' %(basin_name, zonal_mean_cube.standard_name)
-    var_name = '%s_vm_%s'   %(zonal_mean_cube.var_name, basin_name)
+    var_name = '%s_zm_%s'   %(zonal_mean_cube.var_name, basin_name)
     zonal_mean_cube = add_metadata(atts, zonal_mean_cube, standard_name, var_name, units)
 
     return zonal_mean_cube
