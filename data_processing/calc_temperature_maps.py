@@ -280,7 +280,7 @@ def main(inargs):
 
         basin_array = create_basin_file(temperature_cube)
         for basin in basins.keys():
-            out_list.append(calc_zonal_mean(temperature_cube, basin_array, basin, atts))
+            out_list.append(calc_zonal_mean(temperature_cube.copy(), basin_array, basin, atts))
 
         out_cubes.append(out_list.concatenate())
 
