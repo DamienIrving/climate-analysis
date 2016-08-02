@@ -1,7 +1,7 @@
 """
-Filename:     calc_temperature_maps.py
+Filename:     calc_ocean_maps.py
 Author:       Damien Irving, irving.damien@gmail.com
-Description:  Calculate the zonal and vertical mean temperature anomaly fields
+Description:  Calculate the zonal and vertical mean ocean anomaly fields
 
 """
 
@@ -167,13 +167,13 @@ def save_history(cube, field, filename):
     history.append(cube.attributes['history'])
 
 
-def set_attributes(inargs, temperature_cube, climatology_cube):
+def set_attributes(inargs, data_cube, climatology_cube):
     """Set the attributes for the output cube."""
     
-    atts = temperature_cube.attributes
+    atts = data_cube.attributes
 
     infile_history = {}
-    infile_history[inargs.temperature_files[0]] = history[0]
+    infile_history[inargs.infiles[0]] = history[0]
     if climatology_cube:                  
         infile_history[inargs.climatology_file] = climatology_cube.attributes['history']
 
@@ -257,30 +257,30 @@ def calc_zonal_mean(cube, basin_array, basin_name, atts):
 def main(inargs):
     """Run the program."""
 
-    climatology_cube = read_climatology(inargs.climatology_file, inargs.temperature_var)
-    temperature_cubes = iris.load(inargs.temperature_files, inargs.temperature_var, callback=save_history)
-    equalise_attributes(temperature_cubes)
-    atts = set_attributes(inargs, temperature_cubes[0], climatology_cube)
+    climatology_cube = read_climatology(inargs.climatology_file, inargs.var)
+    data_cubes = iris.load(inargs.infiles, inargs.var, callback=save_history)
+    equalise_attributes(data_cubes)
+    atts = set_attributes(inargs, data_cubes[0], climatology_cube)
 
     out_cubes = []
-    for temperature_cube in temperature_cubes:
+    for data_cube in data_cubes:
 
         if climatology_cube:
-            temperature_cube = temperature_cube - climatology_cube
-        temperature_cube, coord_names = curvilinear_to_rectilinear(temperature_cube)
+            data_cube = data_cube - climatology_cube
+        data_cube, coord_names = curvilinear_to_rectilinear(data_cube)
 
         assert coord_names == ['time', 'depth', 'latitude', 'longitude']
-        depth_axis = temperature_cube.coord('depth')
+        depth_axis = data_cube.coord('depth')
         assert depth_axis.units in ['m', 'dbar'], "Unrecognised depth axis units"
 
         out_list = iris.cube.CubeList([])
 
         for layer in vertical_layers.keys():
-            out_list.append(calc_vertical_mean(temperature_cube, layer, coord_names, atts))
+            out_list.append(calc_vertical_mean(data_cube, layer, coord_names, atts))
 
-        basin_array = create_basin_file(temperature_cube)
+        basin_array = create_basin_file(data_cube)
         for basin in basins.keys():
-            out_list.append(calc_zonal_mean(temperature_cube.copy(), basin_array, basin, atts))
+            out_list.append(calc_zonal_mean(data_cube.copy(), basin_array, basin, atts))
 
         out_cubes.append(out_list.concatenate())
 
@@ -288,7 +288,7 @@ def main(inargs):
     nvars = len(vertical_layers.keys()) + len(basins.keys())
     for var_index in range(0, nvars):
         temp_list = []
-        for infile_index in range(0, len(inargs.temperature_files)):
+        for infile_index in range(0, len(inargs.infiles)):
             temp_list.append(out_cubes[infile_index][var_index])
         
         temp_list = iris.cube.CubeList(temp_list)     
@@ -302,25 +302,24 @@ def main(inargs):
 if __name__ == '__main__':
 
     extra_info =""" 
-example:
-    
+
 author:
     Damien Irving, irving.damien@gmail.com
 
 """
 
-    description='Calculate the zonal and vertical mean temperature anomaly fields'
+    description='Calculate the zonal and vertical mean ocean anomaly fields'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("temperature_files", type=str, nargs='*', help="Input temperature data files")
-    parser.add_argument("temperature_var", type=str, help="Input temperature variable name (the standard_name)")
+    parser.add_argument("infiles", type=str, nargs='*', help="Input data files")
+    parser.add_argument("var", type=str, help="Input variable name (the standard_name)")
     parser.add_argument("outfile", type=str, help="Output file name")
 
     parser.add_argument("--climatology_file", type=str, default=None, 
-                        help="Input temperature climatology file (required if input data not already anomaly)")
+                        help="Input climatology file (required if input data not already anomaly)")
         
     args = parser.parse_args()             
     main(args)
