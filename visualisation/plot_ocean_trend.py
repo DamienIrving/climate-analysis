@@ -113,8 +113,8 @@ def convert_to_seconds(time_axis):
 
 
 def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
-                             tick_max, tick_step, yticks,
-                             title, palette):
+                             ticks, yticks,
+                             title, units, palette):
     """Plot the vertical mean trends.
 
     Produces a lon / lat plot.
@@ -125,9 +125,6 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
     plt.sca(ax)
 
     cmap = eval('plt.cm.'+palette)
-    ticks = numpy.arange(-tick_max, tick_max + tick_step, tick_step)
-    if title in ['deep', 'argo']:
-        ticks = ticks / 2.0
     cf = ax.contourf(lons, lats, trends, transform=ccrs.PlateCarree(),
                      cmap=cmap, extend='both', levels=ticks)
 
@@ -143,12 +140,11 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
     ax.set_title(long_titles[title])
 
     cbar = plt.colorbar(cf)
-    cbar.set_label('$K yr^{-1}$')
+    cbar.set_label(units)
 
 
 def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
-                          tick_max, tick_step, yticks,
-                          title, palette):
+                          ticks, title, units, ylabel, palette):
     """Plot the zonal mean trends.
 
     Produces a lat / depth plot.
@@ -159,13 +155,12 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     plt.sca(ax)
 
     cmap = eval('plt.cm.'+palette)
-    ticks = numpy.arange(-tick_max, tick_max + tick_step, tick_step)
     cf = ax.contourf(lats, levs, trends,
                      cmap=cmap, extend='both', levels=ticks)
 
     ax.invert_yaxis()
     ax.set_xlabel('Latitude', fontsize='small')
-    ax.set_ylabel('Depth', fontsize='small')
+    ax.set_ylabel(ylabel, fontsize='small')
     ax.set_title(title)
 
     plt.axhline(y=50, linestyle='dashed', color='0.5')
@@ -173,8 +168,19 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     plt.axhline(y=700, linestyle='dashed', color='0.5')
 
     cbar = plt.colorbar(cf)
-    cbar.set_label('$K yr^{-1}$')
+    cbar.set_label(units)
     
+
+def set_ticks(tick_max, tick_step, tick_scale=1.0):
+    """Set the colorbar ticks."""
+
+    ticks = numpy.arange(-tick_max, tick_max + tick_step, tick_step)
+    if ticks[0] != -ticks[-1]:
+        ticks = ticks[0:-1]
+    ticks = ticks / tick_scale
+
+    return ticks
+
 
 def set_yticks(max_lat):
     """Set the ticks for the y-axis"""
@@ -219,6 +225,10 @@ def main(inargs):
 
         # Calculate trend
         trend = calc_trend(cube, running_mean=running_mean)
+        if not cube.units == 1:
+            units = '$%s yr^{-1}$' %(cube.units)
+        else:
+            units = '$yr^{-1}$'
 
         # Plot
         if inargs.plot_type == 'vertical_mean':
@@ -226,20 +236,22 @@ def main(inargs):
             lats = cube.coord('latitude').points
         
             tick_max, tick_step = inargs.vm_ticks
+            ticks = set_ticks(tick_max, tick_step, tick_scale=inargs.vm_tick_scale[plotnum])
+
             yticks = set_yticks(inargs.max_lat)
             plot_vertical_mean_trend(trend, lons, lats, gs, plotnum,
-                                     tick_max, tick_step, yticks,
-                                     plot_name, inargs.palette)
+                                     ticks, yticks,
+                                     plot_name, units, inargs.palette)
 
         elif inargs.plot_type == 'zonal_mean':
             lats = cube.coord('latitude').points
-            levs = cube.coord('depth').points
-        
+            levs = cube.coord('depth').points            
+
+            ylabel = 'Depth (%s)' %(cube.coord('depth').units)
             tick_max, tick_step = inargs.zm_ticks
-            yticks = set_yticks(inargs.max_lat)
+            ticks = set_ticks(tick_max, tick_step)
             plot_zonal_mean_trend(trend, lats, levs, gs, plotnum,
-                                  tick_max, tick_step, yticks,
-                                  plot_name, inargs.palette)
+                                  ticks, plot_name, units, ylabel, inargs.palette)
 
     # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
@@ -269,10 +281,13 @@ author:
     
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
-    parser.add_argument("--vm_ticks", type=float, nargs=2, default=(0.1, 0.01), metavar=('MAX_AMPLITUDE', 'STEP'),
-                        help="Maximum tick amplitude and step size for vertical mean plot [default = 0.2, 0.04]")
-    parser.add_argument("--zm_ticks", type=float, nargs=2, default=(0.05, 0.005), metavar=('MAX_AMPLITUDE', 'STEP'),
-                        help="Maximum tick amplitude and step size for vertical mean plot [default = 0.1, 0.01]")
+    parser.add_argument("--vm_ticks", type=float, nargs=2, default=(0.2, 0.04), metavar=('MAX_AMPLITUDE', 'STEP'),
+                        help="Maximum tick amplitude and step size for vertical mean plot [default = 0.1, 0.02]")
+    parser.add_argument("--vm_tick_scale", type=float, nargs=5, default=(1, 1, 1, 1, 1), metavar=('full', 'surface', 'shallow', 'mid', 'deep'),
+                        help="Divide the ticks by this amount")
+
+    parser.add_argument("--zm_ticks", type=float, nargs=2, default=(0.05, 0.01), metavar=('MAX_AMPLITUDE', 'STEP'),
+                        help="Maximum tick amplitude and step size for vertical mean plot [default = 0.05, 0.01]")
     parser.add_argument("--max_lat", type=float, default=60,
                         help="Maximum latitude [default = 60]")
 
