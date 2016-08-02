@@ -1,7 +1,7 @@
 """
-Filename:     plot_temperature_trend.py
+Filename:     plot_ocean_trend.py
 Author:       Damien Irving, irving.damien@gmail.com
-Description:  Plot the spatial trends in ocean temperature
+Description:  Plot the spatial trends in the ocean
 
 """
 
@@ -113,7 +113,8 @@ def convert_to_seconds(time_axis):
 
 
 def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
-                             tick_max, tick_step, yticks, title):
+                             tick_max, tick_step, yticks,
+                             title, palette):
     """Plot the vertical mean trends.
 
     Produces a lon / lat plot.
@@ -123,7 +124,7 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
     ax = plt.subplot(gs[plotnum], projection=ccrs.PlateCarree(central_longitude=180.0))
     plt.sca(ax)
 
-    cmap = plt.cm.RdBu_r
+    cmap = eval('plt.cm.'+palette)
     ticks = numpy.arange(-tick_max, tick_max + tick_step, tick_step)
     if title in ['deep', 'argo']:
         ticks = ticks / 2.0
@@ -146,7 +147,8 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
 
 
 def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
-                          tick_max, tick_step, yticks, title):
+                          tick_max, tick_step, yticks,
+                          title, palette):
     """Plot the zonal mean trends.
 
     Produces a lat / depth plot.
@@ -156,7 +158,7 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     ax = plt.subplot(gs[plotnum])
     plt.sca(ax)
 
-    cmap = plt.cm.RdBu_r
+    cmap = eval('plt.cm.'+palette)
     ticks = numpy.arange(-tick_max, tick_max + tick_step, tick_step)
     cf = ax.contourf(lats, levs, trends,
                      cmap=cmap, extend='both', levels=ticks)
@@ -226,7 +228,8 @@ def main(inargs):
             tick_max, tick_step = inargs.vm_ticks
             yticks = set_yticks(inargs.max_lat)
             plot_vertical_mean_trend(trend, lons, lats, gs, plotnum,
-                                     tick_max, tick_step, yticks, plot_name)
+                                     tick_max, tick_step, yticks,
+                                     plot_name, inargs.palette)
 
         elif inargs.plot_type == 'zonal_mean':
             lats = cube.coord('latitude').points
@@ -235,7 +238,8 @@ def main(inargs):
             tick_max, tick_step = inargs.zm_ticks
             yticks = set_yticks(inargs.max_lat)
             plot_zonal_mean_trend(trend, lats, levs, gs, plotnum,
-                                  tick_max, tick_step, yticks, plot_name)
+                                  tick_max, tick_step, yticks,
+                                  plot_name, inargs.palette)
 
     # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
@@ -252,14 +256,14 @@ author:
     
 """
 
-    description='Plot the spatial trends in ocean temperature'
+    description='Plot the spatial trends in the ocean'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infile", type=str, help="Input temperature maps file")
-    parser.add_argument("var", type=str, help="Input temperature variable name (the standard_name without the vertical_mean or zonal_mean bit)")
+    parser.add_argument("infile", type=str, help="Input ocean maps file")
+    parser.add_argument("var", type=str, help="Input variable name (the standard_name without the vertical_mean or zonal_mean bit)")
     parser.add_argument("plot_type", type=str, choices=('vertical_mean', 'zonal_mean'), help="Type of plot")
     parser.add_argument("outfile", type=str, help="Output file name")
     
@@ -274,6 +278,9 @@ author:
 
     parser.add_argument("--seasonal_cycle", action="store_true", default=False,
                         help="Switch for plotting the trend in the seasonal cycle instead [default: False]")
+
+    parser.add_argument("--palette", type=str, choices=('RdBu_r', 'BrBG_r'), default='RdBu_r',
+                        help="Color palette [default: RdBu_r]")
 
     args = parser.parse_args()            
     main(args)
