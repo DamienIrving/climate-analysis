@@ -1,7 +1,7 @@
 """
 Filename:     fix_argo.py
 Author:       Damien Irving, irving.damien@gmail.com
-Description:  Take the Scripps Institution of Oceanography gridded argo temperature data
+Description:  Take the Scripps Institution of Oceanography gridded argo temperature or salinity data
               (from http://www.argo.ucsd.edu/Gridded_fields.html) and make the file attributes
               more consistent with CMIP5
 """
@@ -43,10 +43,16 @@ def main(inargs):
 
     # Edit variable attributes
     anomaly_cube.attributes = {'comment': anomaly_cube.long_name}
-    anomaly_cube.var_name = 'to'
-    anomaly_cube.standard_name = 'sea_water_temperature'
-    anomaly_cube.long_name = 'Sea Water Temperature'
-    anomaly_cube.units = 'K'
+    if inargs.variable == 'temperature':
+        anomaly_cube.var_name = 'to'
+        anomaly_cube.standard_name = 'sea_water_temperature'
+        anomaly_cube.long_name = 'Sea Water Temperature'
+        anomaly_cube.units = 'K'
+    elif inargs.variable == 'salinity':
+        anomaly_cube.var_name = 'so'
+        anomaly_cube.standard_name = 'sea_water_salinity'
+        anomaly_cube.long_name = 'Sea Water Salinity'
+        anomaly_cube.units = 'psu'
 
     # Edit latitude attributes
     argo_lat = anomaly_cube.coord('latitude')
@@ -75,8 +81,7 @@ def main(inargs):
 
     # Write output file
     timestamp = datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y")
-    old_history = timestamp + ': Scripps Institution of Oceanography gridded argo temperature' + \
-                              ' data downloaded from http://www.argo.ucsd.edu/Gridded_fields.html'
+    old_history = timestamp + ': Scripps Institution of Oceanography gridded argo %s data downloaded from http://www.argo.ucsd.edu/Gridded_fields.html'  %(inargs.variable)
     anomaly_cube.attributes['history'] = gio.write_metadata(file_info={inargs.infile: old_history})
     iris.save(anomaly_cube, inargs.outfile)
 
@@ -88,7 +93,7 @@ author:
     Damien Irving, irving.damien@gmail.com
 notes:
     Applies to Scripps Institution of Oceanography gridded argo 
-    temperature data from http://www.argo.ucsd.edu/Gridded_fields.html
+    temperature or salinity data from http://www.argo.ucsd.edu/Gridded_fields.html
 """
 
     description='Make Argo data file attributes more like CMIP5'
@@ -98,6 +103,7 @@ notes:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("infile", type=str, help="Input file name")
+    parser.add_argument("variable", type=str, choices=('temperature', 'salinity'), help="Input variable") 
     parser.add_argument("outfile", type=str, help="Output file name")
     
     args = parser.parse_args()             
