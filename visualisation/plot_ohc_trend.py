@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 import iris
-import cf_units
 from iris.analysis.cartography import cosine_latitude_weights
 import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
@@ -34,94 +33,12 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import timeseries
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 
 # Define functions
-
-def calc_seasonal_cycle(ohc_cube):
-    """Calculate the seasonal cycle.
-
-    cycle = (max - min) for each 12 month window 
-
-    """
-
-    max_ohc_cube = ohc_cube.rolling_window('time', iris.analysis.MAX, 12)
-    min_ohc_cube = ohc_cube.rolling_window('time', iris.analysis.MIN, 12)
-
-    seasonal_cycle_cube = max_ohc_cube - min_ohc_cube
-
-    return seasonal_cycle_cube
-
-
-def calc_trend(cube, running_mean=True):
-    """Calculate linear trend.
-
-    A 12-month running mean can first be applied to the data.
-
-    """
-
-    coord_names = [coord.name() for coord in cube.dim_coords]
-    assert coord_names[0] == 'time'
-
-    cube = undo_unit_scaling(cube)
-    if running_mean:
-        cube = cube.rolling_window('time', iris.analysis.MEAN, 12)
-
-    time_axis = cube.coord('time')
-    time_axis = convert_to_seconds(time_axis)
-
-    trend = numpy.ma.apply_along_axis(linear_trend, 0, cube.data, time_axis.points)
-    trend = numpy.ma.masked_values(trend, cube.data.fill_value)
-
-    return trend
-
-
-def linear_trend(data, time_axis):
-    """Calculate the linear trend.
-
-    polyfit returns [a, b] corresponding to y = a + bx
-
-    """    
-
-    if data.mask[0]:
-        return data.fill_value
-    else:    
-        return numpy.polynomial.polynomial.polyfit(time_axis, data, 1)[-1]
-
-
-def undo_unit_scaling(cube):
-    """Remove scale factor from input data so unit is Joules.
-
-    Ocean heat content data will often have units like 10^12 J m-2.
-
-    """
-
-    units = str(cube.units)
-
-    if '^' in units:
-        scaling = units.split(' ')[0]
-        factor = float(scaling.split('^')[-1])
-        cube = cube * 10**factor
-    else:
-        pass
-
-    return cube
-
-
-def convert_to_seconds(time_axis):
-    """Convert time axis units to seconds."""
-
-    old_units = str(time_axis.units)
-    old_timestep = old_units.split(' ')[0]
-    new_units = old_units.replace(old_timestep, 'seconds') 
-
-    new_unit = cf_units.Unit(new_units, calendar=time_axis.units.calendar)  
-    time_axis.convert_units(new_unit)
-
-    return time_axis
-
 
 def plot_3D_trend(trends, lons, lats, gs,
                   tick_max, tick_step, yticks):
@@ -193,13 +110,15 @@ def main(inargs):
     # Calculate seasonal cycle
     running_mean = True
     if inargs.seasonal_cycle:
-        ohc_3D_cube = calc_seasonal_cycle(ohc_3D_cube) 
-        ohc_2D_cube = calc_seasonal_cycle(ohc_2D_cube)
+        ohc_3D_cube = timeseries.calc_seasonal_cycle(ohc_3D_cube) 
+        ohc_2D_cube = timeseries.calc_seasonal_cycle(ohc_2D_cube)
         running_mean = False
 
     # Calculate trend
-    ohc_3D_trend = calc_trend(ohc_3D_cube, running_mean=running_mean)
-    ohc_2D_trend = calc_trend(ohc_2D_cube, running_mean=running_mean)
+    ohc_3D_trend = timeseries.calc_trend(ohc_3D_cube, running_mean=running_mean,
+                                         per_yr=False, remove_scaling=True)
+    ohc_2D_trend = timeseries.calc_trend(ohc_2D_cube, running_mean=running_mean,
+                                         per_yr=False, remove_scaling=True)
 
     # Plot
     fig = plt.figure(figsize=[15, 3])

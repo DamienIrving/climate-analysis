@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 import iris
-import cf_units
 from iris.analysis.cartography import cosine_latitude_weights
 import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
@@ -34,6 +33,7 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import timeseries
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -45,71 +45,6 @@ long_titles = {'argo': 'full depth (0-2000m)',
                'shallow': 'shallow (50-350m)',
                'middle': 'mid (350-700m)',
                'deep': 'deep (700-2000m)'}
-
-
-def calc_seasonal_cycle(cube):
-    """Calculate the seasonal cycle.
-
-    cycle = (max - min) for each 12 month window 
-
-    """
-
-    max_cube = cube.rolling_window('time', iris.analysis.MAX, 12)
-    min_cube = cube.rolling_window('time', iris.analysis.MIN, 12)
-
-    seasonal_cycle_cube = max_cube - min_cube
-
-    return seasonal_cycle_cube
-
-
-def calc_trend(cube, running_mean=True):
-    """Calculate linear trend.
-
-    A 12-month running mean can first be applied to the data.
-
-    """
-
-    coord_names = [coord.name() for coord in cube.dim_coords]
-    assert coord_names[0] == 'time'
-
-    if running_mean:
-        cube = cube.rolling_window('time', iris.analysis.MEAN, 12)
-
-    time_axis = cube.coord('time')
-    time_axis = convert_to_seconds(time_axis)
-
-    trend = numpy.ma.apply_along_axis(linear_trend, 0, cube.data, time_axis.points)
-    trend = numpy.ma.masked_values(trend, cube.data.fill_value)
-
-    trend = trend * 60 * 60 * 24 * 365.25  #convert from K/s to K/yr
-
-    return trend
-
-
-def linear_trend(data, time_axis):
-    """Calculate the linear trend.
-
-    polyfit returns [a, b] corresponding to y = a + bx
-
-    """    
-
-    if data.mask[0]:
-        return data.fill_value
-    else:    
-        return numpy.polynomial.polynomial.polyfit(time_axis, data, 1)[-1]
-
-
-def convert_to_seconds(time_axis):
-    """Convert time axis units to seconds."""
-
-    old_units = str(time_axis.units)
-    old_timestep = old_units.split(' ')[0]
-    new_units = old_units.replace(old_timestep, 'seconds') 
-
-    new_unit = cf_units.Unit(new_units, calendar=time_axis.units.calendar)  
-    time_axis.convert_units(new_unit)
-
-    return time_axis
 
 
 def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
@@ -220,11 +155,12 @@ def main(inargs):
         # Calculate seasonal cycle
         running_mean = True
         if inargs.seasonal_cycle:
-            cube = calc_seasonal_cycle(cube) 
+            cube = timeseries.calc_seasonal_cycle(cube) 
             running_mean = False
 
         # Calculate trend
-        trend = calc_trend(cube, running_mean=running_mean)
+        trend = timeseries.calc_trend(cube, running_mean=running_mean,
+                                      per_yr=True, remove_scaling=False)
         if not cube.units == 1:
             units = '$%s yr^{-1}$' %(cube.units)
         else:
