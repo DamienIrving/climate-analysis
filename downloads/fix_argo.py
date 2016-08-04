@@ -52,7 +52,7 @@ def main(inargs):
         anomaly_cube.var_name = 'so'
         anomaly_cube.standard_name = 'sea_water_salinity'
         anomaly_cube.long_name = 'Sea Water Salinity'
-        anomaly_cube.units = 'psu'
+        anomaly_cube.units = ' '
 
     # Edit latitude attributes
     argo_lat = anomaly_cube.coord('latitude')
