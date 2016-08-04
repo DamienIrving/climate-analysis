@@ -1,5 +1,5 @@
 """
-Filename:     plot_ocean_temperature_metric_trend_distribution.py
+Filename:     plot_ohc_metric_trend_distribution.py
 Author:       Damien Irving, irving.damien@gmail.com
 Description:  Plot the distribution of trends OHC difference
 

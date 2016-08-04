@@ -1,5 +1,5 @@
 """
-Filename:     calc_ocean_temperature_metrics.py
+Filename:     calc_ohc_metrics.py
 Author:       Damien Irving, irving.damien@gmail.com
 Description:  Calculate integrated temperature metric for various global regions
 
@@ -48,7 +48,6 @@ regions = {'globe': [-90, 90],
            'outside_southern_extratropics': [-20, 90],
            'outside_southern_extratropics60': [-20, 60]
           }
-
 
 
 def apply_volume_mask(volume_cube, reference_cube):

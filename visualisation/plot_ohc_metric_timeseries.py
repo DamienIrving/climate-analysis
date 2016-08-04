@@ -1,5 +1,5 @@
 """
-Filename:     plot_ocean_temperature_metric_timeseries.py
+Filename:     plot_ohc_metric_timeseries.py
 Author:       Damien Irving, irving.damien@gmail.com
 Description:  Plot timeseries of various ocean temperature metrics
               for a single model/experiment/run
