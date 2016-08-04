@@ -29,6 +29,7 @@ try:
     import general_io as gio
     import convenient_universal as uconv
     import spatial_weights
+    import grids
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -66,84 +67,76 @@ def add_metadata(orig_atts, new_cube, standard_name, var_name, units):
     return new_cube
 
 
-def check_coord_names(cube, coord_names):
-    """Remove specified coordinate name.
+def calc_vertical_mean(cube, layer, coord_names, atts):
+    """Calculate the vertical mean over a given depth range."""
 
-    The iris standard names for lat/lon coordinates are:
-      latitude, grid_latitude, longitude, grid_longitude
+    min_depth, max_depth = vertical_layers[layer]
+    level_subset = gio.iris_vertical_constraint(min_depth, max_depth)
+    cube_segment = cube.extract(level_subset)
 
-    If a cube uses one for the dimension coordinate and the 
-      other for the auxillary coordinate, the 
-      regrid_weighted_curvilinear_to_rectilinear method won't work
+    depth_axis = cube_segment.coord('depth')
+    if depth_axis.units == 'm':
+        vertical_weights = spatial_weights.calc_vertical_weights_1D(depth_axis, coord_names, cube_segment.shape)
+    elif depth_axis.units == 'dbar':
+        vertical_weights = spatial_weights.calc_vertical_weights_2D(depth_axis, cube_segment.coord('latitude'), coord_names, cube_segment.shape)
+
+    vertical_mean_cube = cube_segment.collapsed(['depth'], iris.analysis.MEAN, weights=vertical_weights.astype(numpy.float32))   
+    vertical_mean_cube.remove_coord('depth')
+    vertical_mean_cube.data = vertical_mean_cube.data.astype(numpy.float32)
+        
+    units = str(cube.units)
+    standard_name = 'vertical_mean_%s_%s' %(layer, vertical_mean_cube.standard_name)
+    var_name = '%s_vm_%s'   %(vertical_mean_cube.var_name, layer)
+    vertical_mean_cube = add_metadata(atts, vertical_mean_cube, standard_name, var_name, units)
+
+    return vertical_mean_cube
+
+
+def calc_zonal_mean(cube, basin_array, basin_name, atts):
+    """Calculate the zonal mean for a given ocean basin."""
+
+    if not basin_name == 'globe':  
+        cube.data.mask = numpy.where((cube.data.mask == False) & (basin_array == basins[basin_name]), False, True)
+
+    zonal_mean_cube = cube.collapsed('longitude', iris.analysis.MEAN)
+    zonal_mean_cube.remove_coord('longitude')
+    zonal_mean_cube.data = zonal_mean_cube.data.astype(numpy.float32)
+
+    units = str(cube.units)
+    standard_name = 'zonal_mean_%s_%s' %(basin_name, zonal_mean_cube.standard_name)
+    var_name = '%s_zm_%s'   %(zonal_mean_cube.var_name, basin_name)
+    zonal_mean_cube = add_metadata(atts, zonal_mean_cube, standard_name, var_name, units)
+
+    return zonal_mean_cube
+
+
+def create_basin_file(cube):
+    """Create a basin file.
+
+    For similarity with the CMIP5 basin file, in the output:
+      Atlantic Ocean = 2
+      Pacific Ocean = 3
+      Indian Ocean = 5
 
     """
 
-    if 'grid_latitude' in coord_names:
-        cube.coord('grid_latitude').standard_name = None
-        coord_names = [coord.name() for coord in cube.dim_coords]
-    if 'grid_longitude' in coord_names:
-        cube.coord('grid_longitude').standard_name = None
-        coord_names = [coord.name() for coord in cube.dim_coords]
+    pacific_bounds = [147, 294]
+    indian_bounds = [23, 147]
 
-    return cube, coord_names
+    lat_axis = cube.coord('latitude').points
+    lon_axis = uconv.adjust_lon_range(cube.coord('longitude').points, radians=False)
 
+    lat_array = uconv.broadcast_array(lat_axis, 2, cube.shape)
+    lon_array = uconv.broadcast_array(lon_axis, 3, cube.shape)
 
-def curvilinear_to_rectilinear(cube):
-    """Regrid curvilinear data to a rectilinear grid if necessary."""
+    basin_array = numpy.ones(cube.shape) * 2
+    basin_array = numpy.where((lon_array >= pacific_bounds[0]) & (lon_array <= pacific_bounds[1]), 3, basin_array)
+    basin_array = numpy.where((lon_array >= indian_bounds[0]) & (lon_array <= indian_bounds[1]), 5, basin_array)
 
-    coord_names = [coord.name() for coord in cube.dim_coords]
-    aux_coord_names = [coord.name() for coord in cube.aux_coords]
+    basin_array = numpy.where((basin_array == 3) & (lon_array >= 279) & (lat_array >= 10), 2, basin_array)
+    basin_array = numpy.where((basin_array == 5) & (lon_array >= 121) & (lat_array >= 0), 3, basin_array)
 
-    if aux_coord_names:
-
-        assert aux_coord_names == ['latitude', 'longitude']
-
-        # Create target grid
-        lats = numpy.arange(-90, 91, 1)
-        lons = numpy.arange(0, 360, 1)
-        target_grid_cube = make_grid(lats, lons)
-
-        # Interate over slices (experimental regridder only works on 2D slices)
-        cube, coord_names =  check_coord_names(cube, coord_names)
-        slice_dims = coord_names
-        slice_dims.remove('time')
-        slice_dims.remove('depth')
-        cube_list = []
-        for i, cube_slice in enumerate(cube.slices(slice_dims)):
-            weights = numpy.ones(cube_slice.shape)
-            regridded_cube = regrid_weighted_curvilinear_to_rectilinear(cube_slice, weights, target_grid_cube)
-            cube_list.append(regridded_cube)
-
-        new_cube = iris.cube.CubeList(cube_list)
-        new_cube = new_cube.merge_cube()
-        coord_names = [coord.name() for coord in new_cube.dim_coords]
-
-    else:
-
-        new_cube = cube
-    
-    return new_cube, coord_names
-
-
-def make_grid(lat_values, lon_values):
-    """Make a dummy cube with desired grid."""
-       
-    latitude = iris.coords.DimCoord(lat_values,
-                                    standard_name='latitude',
-                                    units='degrees_north',
-                                    coord_system=None)
-    longitude = iris.coords.DimCoord(lon_values,                    
-                                     standard_name='longitude',
-                                     units='degrees_east',
-                                     coord_system=None)
-
-    dummy_data = numpy.zeros((len(lat_values), len(lon_values)))
-    new_cube = iris.cube.Cube(dummy_data, dim_coords_and_dims=[(latitude, 0), (longitude, 1)])
-
-    new_cube.coord('longitude').guess_bounds()
-    new_cube.coord('latitude').guess_bounds()
-
-    return new_cube
+    return basin_array
 
 
 def read_climatology(climatology_file, variable):
@@ -182,78 +175,6 @@ def set_attributes(inargs, data_cube, climatology_cube):
     return atts
 
 
-def calc_vertical_mean(cube, layer, coord_names, atts):
-    """Calculate the vertical mean over a given depth range."""
-
-    min_depth, max_depth = vertical_layers[layer]
-    level_subset = gio.iris_vertical_constraint(min_depth, max_depth)
-    cube_segment = cube.extract(level_subset)
-
-    depth_axis = cube_segment.coord('depth')
-    if depth_axis.units == 'm':
-        vertical_weights = spatial_weights.calc_vertical_weights_1D(depth_axis, coord_names, cube_segment.shape)
-    elif depth_axis.units == 'dbar':
-        vertical_weights = spatial_weights.calc_vertical_weights_2D(depth_axis, cube_segment.coord('latitude'), coord_names, cube_segment.shape)
-
-    vertical_mean_cube = cube_segment.collapsed(['depth'], iris.analysis.MEAN, weights=vertical_weights.astype(numpy.float32))   
-    vertical_mean_cube.remove_coord('depth')
-    vertical_mean_cube.data = vertical_mean_cube.data.astype(numpy.float32)
-        
-    units = str(cube.units)
-    standard_name = 'vertical_mean_%s_%s' %(layer, vertical_mean_cube.standard_name)
-    var_name = '%s_vm_%s'   %(vertical_mean_cube.var_name, layer)
-    vertical_mean_cube = add_metadata(atts, vertical_mean_cube, standard_name, var_name, units)
-
-    return vertical_mean_cube
-
-
-def create_basin_file(cube):
-    """Create a basin file.
-
-    For similarity with the CMIP5 basin file, in the output:
-      Atlantic Ocean = 2
-      Pacific Ocean = 3
-      Indian Ocean = 5
-
-    """
-
-    pacific_bounds = [147, 294]
-    indian_bounds = [23, 147]
-
-    lat_axis = cube.coord('latitude').points
-    lon_axis = uconv.adjust_lon_range(cube.coord('longitude').points, radians=False)
-
-    lat_array = uconv.broadcast_array(lat_axis, 2, cube.shape)
-    lon_array = uconv.broadcast_array(lon_axis, 3, cube.shape)
-
-    basin_array = numpy.ones(cube.shape) * 2
-    basin_array = numpy.where((lon_array >= pacific_bounds[0]) & (lon_array <= pacific_bounds[1]), 3, basin_array)
-    basin_array = numpy.where((lon_array >= indian_bounds[0]) & (lon_array <= indian_bounds[1]), 5, basin_array)
-
-    basin_array = numpy.where((basin_array == 3) & (lon_array >= 279) & (lat_array >= 10), 2, basin_array)
-    basin_array = numpy.where((basin_array == 5) & (lon_array >= 121) & (lat_array >= 0), 3, basin_array)
-
-    return basin_array
-
-
-def calc_zonal_mean(cube, basin_array, basin_name, atts):
-    """Calculate the zonal mean for a given ocean basin."""
-
-    if not basin_name == 'globe':  
-        cube.data.mask = numpy.where((cube.data.mask == False) & (basin_array == basins[basin_name]), False, True)
-
-    zonal_mean_cube = cube.collapsed('longitude', iris.analysis.MEAN)
-    zonal_mean_cube.remove_coord('longitude')
-    zonal_mean_cube.data = zonal_mean_cube.data.astype(numpy.float32)
-
-    units = str(cube.units)
-    standard_name = 'zonal_mean_%s_%s' %(basin_name, zonal_mean_cube.standard_name)
-    var_name = '%s_zm_%s'   %(zonal_mean_cube.var_name, basin_name)
-    zonal_mean_cube = add_metadata(atts, zonal_mean_cube, standard_name, var_name, units)
-
-    return zonal_mean_cube
-
-
 def main(inargs):
     """Run the program."""
 
@@ -267,7 +188,7 @@ def main(inargs):
 
         if climatology_cube:
             data_cube = data_cube - climatology_cube
-        data_cube, coord_names = curvilinear_to_rectilinear(data_cube)
+        data_cube, coord_names = grids.curvilinear_to_rectilinear(data_cube)
 
         assert coord_names == ['time', 'depth', 'latitude', 'longitude']
         depth_axis = data_cube.coord('depth')
