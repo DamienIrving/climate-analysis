@@ -1,8 +1,17 @@
+"""Collection of functions for dealing with grids.
+
+Functions:
+  curvilinear_to_rectilinear  -- Regrid curvilinear data to a rectilinear 
+                                 grid if necessary
+
+"""
+
+import numpy
+import iris
+from iris.experimental.regrid import regrid_weighted_curvilinear_to_rectilinear
 
 
-
-
-def check_coord_names(cube, coord_names):
+def _check_coord_names(cube, coord_names):
     """Remove specified coordinate name.
 
     The iris standard names for lat/lon coordinates are:
@@ -11,6 +20,10 @@ def check_coord_names(cube, coord_names):
     If a cube uses one for the dimension coordinate and the 
       other for the auxillary coordinate, the 
       regrid_weighted_curvilinear_to_rectilinear method won't work
+
+    Args:
+      cube (iris.cube.Cube)
+      coord_names(list)
 
     """
 
@@ -22,6 +35,27 @@ def check_coord_names(cube, coord_names):
         coord_names = [coord.name() for coord in cube.dim_coords]
 
     return cube, coord_names
+
+
+def _make_grid(lat_values, lon_values):
+    """Make a dummy cube with desired grid."""
+       
+    latitude = iris.coords.DimCoord(lat_values,
+                                    standard_name='latitude',
+                                    units='degrees_north',
+                                    coord_system=None)
+    longitude = iris.coords.DimCoord(lon_values,                    
+                                     standard_name='longitude',
+                                     units='degrees_east',
+                                     coord_system=None)
+
+    dummy_data = numpy.zeros((len(lat_values), len(lon_values)))
+    new_cube = iris.cube.Cube(dummy_data, dim_coords_and_dims=[(latitude, 0), (longitude, 1)])
+
+    new_cube.coord('longitude').guess_bounds()
+    new_cube.coord('latitude').guess_bounds()
+
+    return new_cube
 
 
 def curvilinear_to_rectilinear(cube):
@@ -37,10 +71,10 @@ def curvilinear_to_rectilinear(cube):
         # Create target grid
         lats = numpy.arange(-90, 91, 1)
         lons = numpy.arange(0, 360, 1)
-        target_grid_cube = make_grid(lats, lons)
+        target_grid_cube = _make_grid(lats, lons)
 
         # Interate over slices (experimental regridder only works on 2D slices)
-        cube, coord_names =  check_coord_names(cube, coord_names)
+        cube, coord_names = _check_coord_names(cube, coord_names)
         slice_dims = coord_names
         slice_dims.remove('time')
         slice_dims.remove('depth')
@@ -60,24 +94,4 @@ def curvilinear_to_rectilinear(cube):
     
     return new_cube, coord_names
 
-
-def make_grid(lat_values, lon_values):
-    """Make a dummy cube with desired grid."""
-       
-    latitude = iris.coords.DimCoord(lat_values,
-                                    standard_name='latitude',
-                                    units='degrees_north',
-                                    coord_system=None)
-    longitude = iris.coords.DimCoord(lon_values,                    
-                                     standard_name='longitude',
-                                     units='degrees_east',
-                                     coord_system=None)
-
-    dummy_data = numpy.zeros((len(lat_values), len(lon_values)))
-    new_cube = iris.cube.Cube(dummy_data, dim_coords_and_dims=[(latitude, 0), (longitude, 1)])
-
-    new_cube.coord('longitude').guess_bounds()
-    new_cube.coord('latitude').guess_bounds()
-
-    return new_cube
 

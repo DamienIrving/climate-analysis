@@ -11,7 +11,6 @@ import sys, os, pdb
 import argparse, math
 import numpy
 import iris
-from iris.experimental.regrid import regrid_weighted_curvilinear_to_rectilinear
 from iris.experimental.equalise_cubes import equalise_attributes
 
 # Import my modules
