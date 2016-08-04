@@ -66,7 +66,8 @@ def add_metadata(orig_atts, new_cube, standard_name, var_name, units):
     return new_cube
 
 
-def calc_vertical_mean(cube, layer, coord_names, atts):
+def calc_vertical_mean(cube, layer, coord_names, atts,
+                       original_standard_name, original_var_name):
     """Calculate the vertical mean over a given depth range."""
 
     min_depth, max_depth = vertical_layers[layer]
@@ -84,14 +85,15 @@ def calc_vertical_mean(cube, layer, coord_names, atts):
     vertical_mean_cube.data = vertical_mean_cube.data.astype(numpy.float32)
         
     units = str(cube.units)
-    standard_name = 'vertical_mean_%s_%s' %(layer, vertical_mean_cube.standard_name)
-    var_name = '%s_vm_%s'   %(vertical_mean_cube.var_name, layer)
+    standard_name = 'vertical_mean_%s_%s' %(layer, original_standard_name)
+    var_name = '%s_vm_%s'   %(original_var_name, layer)
     vertical_mean_cube = add_metadata(atts, vertical_mean_cube, standard_name, var_name, units)
 
     return vertical_mean_cube
 
 
-def calc_zonal_mean(cube, basin_array, basin_name, atts):
+def calc_zonal_mean(cube, basin_array, basin_name, atts,
+                    original_standard_name, original_var_name):
     """Calculate the zonal mean for a given ocean basin."""
 
     if not basin_name == 'globe':  
@@ -102,8 +104,8 @@ def calc_zonal_mean(cube, basin_array, basin_name, atts):
     zonal_mean_cube.data = zonal_mean_cube.data.astype(numpy.float32)
 
     units = str(cube.units)
-    standard_name = 'zonal_mean_%s_%s' %(basin_name, zonal_mean_cube.standard_name)
-    var_name = '%s_zm_%s'   %(zonal_mean_cube.var_name, basin_name)
+    standard_name = 'zonal_mean_%s_%s' %(basin_name, original_standard_name)
+    var_name = '%s_zm_%s'   %(original_var_name, basin_name)
     zonal_mean_cube = add_metadata(atts, zonal_mean_cube, standard_name, var_name, units)
 
     return zonal_mean_cube
@@ -185,6 +187,9 @@ def main(inargs):
     out_cubes = []
     for data_cube in data_cubes:
 
+        standard_name = data_cube.standard_name
+        var_name = data_cube.var_name
+
         if climatology_cube:
             data_cube = data_cube - climatology_cube
         data_cube, coord_names = grids.curvilinear_to_rectilinear(data_cube)
@@ -196,11 +201,11 @@ def main(inargs):
         out_list = iris.cube.CubeList([])
 
         for layer in vertical_layers.keys():
-            out_list.append(calc_vertical_mean(data_cube, layer, coord_names, atts))
+            out_list.append(calc_vertical_mean(data_cube, layer, coord_names, atts, standard_name, var_name))
 
         basin_array = create_basin_file(data_cube)
         for basin in basins.keys():
-            out_list.append(calc_zonal_mean(data_cube.copy(), basin_array, basin, atts))
+            out_list.append(calc_zonal_mean(data_cube.copy(), basin_array, basin, atts, standard_name, var_name))
 
         out_cubes.append(out_list.concatenate())
 
