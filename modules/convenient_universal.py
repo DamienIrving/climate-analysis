@@ -3,7 +3,7 @@
 Functions:
   adjust_lon_range   -- Express longitude values in desired 360 degree interval
   apply_lon_filter   -- Set values outside of specified longitude range to zero
-  broadcast_array    -- Broadcast a one dimensional array to a target shape
+  broadcast_array    -- Broadcast an array to a target shape
   calc_significance  -- Perform significance test
   coordinate_paris   -- Generate lat/lon pairs
   dict_filter        -- Filter dictionary according to specified keys
@@ -80,24 +80,35 @@ def apply_lon_filter(data, lon_bounds):
 
 
 def broadcast_array(array, axis_index, shape):
-    """Broadcast a one dimensional array to a target shape.
+    """Broadcast an array to a target shape.
     
     Args:
       array (numpy.ndarray): One dimensional array
-      axis_index (int): Postion in the target shape that the array
-        corresponds to (e.g. if array corresponds to lat in (time, depth
-        lat, lon) array then index = 2
+      axis_index (int or tuple): Postion in the target shape that the 
+        axis/axes of the array corresponds to
+          e.g. if array corresponds to (lat, lon) in (time, depth lat, lon)
+          then axis_index = [2, 3]
+          e.g. if array corresponds to (lat) in (time, depth lat, lon)
+          then axis_index = 2
       shape (tuple): shape to broadcast to
+      
+    For a one dimensional array, make start_axis_index = end_axis_index
     
     """
 
-    dim = axis_index - 1
+    if type(axis_index) in [float, int]:
+        start_axis_index = end_axis_index = axis_index
+    else:
+        assert len(axis_index) == 2
+        start_axis_index, end_axis_index = axis_index
+    
+    dim = start_axis_index - 1
     while dim >= 0:
         array = array[numpy.newaxis, ...]
         array = numpy.repeat(array, shape[dim], axis=0)
         dim = dim - 1
     
-    dim = axis_index + 1
+    dim = end_axis_index + 1
     while dim < len(shape):    
         array = array[..., numpy.newaxis]
         array = numpy.repeat(array, shape[dim], axis=-1)
