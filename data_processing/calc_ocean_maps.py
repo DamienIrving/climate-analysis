@@ -140,6 +140,17 @@ def create_basin_file(cube):
     return basin_array
 
 
+def read_basin(basin_file):
+    """Read the optional basin file."""
+
+    if basin_file:
+        basin_cube = iris.load_cube(basin_file)
+    else:
+        basin_cube = None
+
+    return basin_cube
+
+
 def read_climatology(climatology_file, variable):
     """Read the optional climatology data."""
 
@@ -161,15 +172,18 @@ def save_history(cube, field, filename):
     history.append(cube.attributes['history'])
 
 
-def set_attributes(inargs, data_cube, climatology_cube):
+def set_attributes(inargs, data_cube, climatology_cube, basin_cube):
     """Set the attributes for the output cube."""
     
     atts = data_cube.attributes
 
     infile_history = {}
     infile_history[inargs.infiles[0]] = history[0]
+
     if climatology_cube:                  
         infile_history[inargs.climatology_file] = climatology_cube.attributes['history']
+    if basin_cube:                  
+        infile_history[inargs.basin_file] = basin_cube.attributes['history']
 
     atts['history'] = gio.write_metadata(file_info=infile_history)
 
@@ -179,10 +193,13 @@ def set_attributes(inargs, data_cube, climatology_cube):
 def main(inargs):
     """Run the program."""
 
-    climatology_cube = read_climatology(inargs.climatology_file, inargs.var)
     data_cubes = iris.load(inargs.infiles, inargs.var, callback=save_history)
     equalise_attributes(data_cubes)
-    atts = set_attributes(inargs, data_cubes[0], climatology_cube)
+
+    climatology_cube = read_climatology(inargs.climatology_file, inargs.var)
+    basin_cube = read_basin(inargs.basin_file) 
+
+    atts = set_attributes(inargs, data_cubes[0], climatology_cube, basin_cube)
 
     out_cubes = []
     for data_cube in data_cubes:
@@ -203,7 +220,11 @@ def main(inargs):
         for layer in vertical_layers.keys():
             out_list.append(calc_vertical_mean(data_cube, layer, coord_names, atts, standard_name, var_name))
 
-        basin_array = create_basin_file(data_cube)
+        if basin_cube:
+            basin_array = uconv.broadcast_array(basin_cube.data, [2, 3], data_cube.shape) 
+        else: 
+            basin_array = create_basin_file(data_cube)
+
         for basin in basins.keys():
             out_list.append(calc_zonal_mean(data_cube.copy(), basin_array, basin, atts, standard_name, var_name))
 
@@ -245,6 +266,9 @@ author:
 
     parser.add_argument("--climatology_file", type=str, default=None, 
                         help="Input climatology file (required if input data not already anomaly)")
+
+    parser.add_argument("--basin_file", type=str, default=None, 
+                        help="Input basin file")
         
     args = parser.parse_args()             
     main(args)
