@@ -35,7 +35,7 @@ experiments=( $@ )
 
 for experiment in "${experiments[@]}"; do
 
-    volrun='r0i0p0'
+    fxrun='r0i0p0'
     controlrun='r1i1p1'
 
     if [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'historical' ]] ; then
@@ -58,14 +58,14 @@ for experiment in "${experiments[@]}"; do
         runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 )
         #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
         organisation='CSIRO-QCCCE'
-        volrun='r0i0p1'
+        fxrun='r0i0p1'
 
     #elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'NoOz' ]] ; then
     #    experiment='historicalMisc'
     #    runs=( r1i1p2 r2i1p2 r3i1p2 )
     #    #r4i1p2 r5i1p2 r6i1p2 r7i1p2 r8i1p2 r9i1p2 r10i1p2
     #    organisation='CSIRO-QCCCE'
-    #    volrun='r0i0p2'
+    #    fxrun='r0i0p2'
     #branches from historical experiment
 
     elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'noAA' ]] ; then
@@ -73,14 +73,14 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p3 )
         #r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3 r6i1p3 r7i1p3 r8i1p3 r9i1p3 r10i1p3
         organisation='CSIRO-QCCCE'
-        volrun='r0i0p3'
+        fxrun='r0i0p3'
 
     elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
         runs=( r2i1p4 r3i1p4 r4i1p4 r5i1p4 r6i1p4 r7i1p4 r8i1p4 r9i1p4 r10i1p4 )
         #r1i1p4 r2i1p4 r3i1p4 r4i1p4 r5i1p4 r6i1p4 r7i1p4 r8i1p4 r9i1p4 r10i1p4
         organisation='CSIRO-QCCCE'
-        volrun='r0i0p4'
+        fxrun='r0i0p4'
 
     elif [[ ${model} == 'CanESM2' && ${experiment} == 'historical' ]] ; then
         experiment='historical'
@@ -370,7 +370,7 @@ for experiment in "${experiments[@]}"; do
         sed -i "s/^\(MODEL\s*=\s*\).*$/\MODEL=${model}/" ocean_temperature_config.mk
         sed -i "s/^\(EXPERIMENT\s*=\s*\).*$/EXPERIMENT=${experiment}/" ocean_temperature_config.mk
         sed -i "s/^\(RUN\s*=\s*\).*$/\RUN=${run}/" ocean_temperature_config.mk
-        sed -i "s/^\(VOLUME_RUN\s*=\s*\).*$/\VOLUME_RUN=${volrun}/" ocean_temperature_config.mk
+        sed -i "s/^\(FX_RUN\s*=\s*\).*$/\FX_RUN=${fxrun}/" ocean_temperature_config.mk
         sed -i "s/^\(CONTROL_RUN\s*=\s*\).*$/\CONTROL_RUN=${controlrun}/" ocean_temperature_config.mk
         make ${options} -f ocean_temperature_base.mk
         echo "DONE: ${model} ${experiment} ${run}: make ${options} -f ohc_base.mk"

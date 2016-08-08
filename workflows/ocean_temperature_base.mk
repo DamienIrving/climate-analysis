@@ -24,7 +24,8 @@ TEMPERATURE_FILES=$(wildcard ${ORIG_TEMPERATURE_DIR}/${ORGANISATION}/${MODEL}/${
 DEDRIFTED_TEMPERATURE_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao/${RUN}/dedrifted
 DEDRIFTED_TEMPERATURE_FILES = $(patsubst ${ORIG_TEMPERATURE_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao/${RUN}/thetao_%.nc, ${DEDRIFTED_TEMPERATURE_DIR}/thetao_%.nc, ${TEMPERATURE_FILES})
 
-VOLUME_FILE=${ORIG_VOLUME_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/volcello/${VOLUME_RUN}/volcello_fx_${MODEL}_${EXPERIMENT}_${VOLUME_RUN}.nc
+VOLUME_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/volcello/${FX_RUN}/volcello_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
+BASIN_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/basin/${FX_RUN}/basin_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
 
 CLIMATOLOGY_FILE=${DEDRIFTED_TEMPERATURE_DIR}/thetao-annual-clim_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
@@ -60,21 +61,21 @@ ${CLIMATOLOGY_FILE} : ${DEDRIFTED_TEMPERATURE_DIR}
 
 # Temperature maps
 
-${TEMPERATURE_MAPS_FILE} : ${CLIMATOLOGY_FILE}
+${TEMPERATURE_MAPS_FILE} : ${CLIMATOLOGY_FILE} ${}
 	mkdir -p ${TEMPERATURE_MAPS_DIR}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --climatology_file $<
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --climatology_file $< --basin_file ${BASIN_FILE}
 
 ${TEMPERATURE_MAPS_VERTICAL_PLOT} : ${TEMPERATURE_MAPS_FILE}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< sea_water_potential_temperature vertical_mean $@ --time ${START_DATE} ${END_DATE} --vm_tick_scale 4 1 2 2 6
 
 ${TEMPERATURE_MAPS_ZONAL_PLOT} : ${TEMPERATURE_MAPS_FILE}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< sea_water_potential_temperature zonal_mean $@ --time ${START_DATE} ${END_DATE}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< sea_water_potential_temperature zonal_mean $@ --time ${START_DATE} ${END_DATE} --zm_ticks 0.015 0.003
 
 # OHC metrics
 
 ${OHC_METRICS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${OHC_METRICS_DIR}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ohc_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --climatology_file $< --max_depth ${MAX_DEPTH} ${REF}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ohc_metrics.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --climatology_file $< --max_depth ${MAX_DEPTH} ${REF} --volume_file ${VOLUME_FILE}
 
 ${OHC_METRICS_PLOT} : ${OHC_METRICS_FILE}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ohc_metric_timeseries.py $< $@ ${REF}
