@@ -98,6 +98,7 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     axMain.set_ylim((500.0, 2000.0))
     axMain.invert_yaxis()
     axMain.xaxis.set_ticks_position('bottom')
+    axMain.set_xticks([-60, -40, -20, 0, 20, 40, 60])
 
     # Shallow section
     divider = make_axes_locatable(axMain)
@@ -125,7 +126,7 @@ def set_ticks(tick_max, tick_step, tick_scale=1.0):
     """Set the colorbar ticks."""
 
     ticks = numpy.arange(-tick_max, tick_max + tick_step, tick_step)
-    if ticks[0] != -ticks[-1]:
+    if (len(ticks) % 2 == 0): #even
         ticks = ticks[0:-1]
     ticks = ticks / tick_scale
 
