@@ -12,6 +12,7 @@ import argparse
 import numpy, math
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import iris
 from iris.analysis.cartography import cosine_latitude_weights
@@ -79,30 +80,44 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
 
 
 def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
-                          ticks, title, units, ylabel, palette):
+                          ticks, title, units, ylabel,
+                          palette, cbar_ax):
     """Plot the zonal mean trends.
 
     Produces a lat / depth plot.
 
     """
 
-    ax = plt.subplot(gs[plotnum])
-    plt.sca(ax)
+    axMain = plt.subplot(gs[plotnum])
+    plt.sca(axMain)
 
     cmap = eval('plt.cm.'+palette)
-    cf = ax.contourf(lats, levs, trends,
-                     cmap=cmap, extend='both', levels=ticks)
+    cf = axMain.contourf(lats, levs, trends,
+                         cmap=cmap, extend='both', levels=ticks)
+    # Deep section
+    axMain.set_ylim((500.0, 2000.0))
+    axMain.invert_yaxis()
+    axMain.xaxis.set_ticks_position('bottom')
 
-    ax.invert_yaxis()
-    ax.set_xlabel('Latitude', fontsize='small')
-    ax.set_ylabel(ylabel, fontsize='small')
-    ax.set_title(title)
+    # Shallow section
+    divider = make_axes_locatable(axMain)
+    axShallow = divider.append_axes("top", size=2.2, pad=0.1, sharex=axMain)
+    axShallow.contourf(lats, levs, trends,
+                       cmap=cmap, extend='both', levels=ticks)
+    axShallow.set_ylim((0.0, 500.0))
+    axShallow.invert_yaxis()
+    plt.setp(axShallow.get_xticklabels(), visible=False)
 
-    plt.axhline(y=50, linestyle='dashed', color='0.5')
-    plt.axhline(y=350, linestyle='dashed', color='0.5')
-    plt.axhline(y=700, linestyle='dashed', color='0.5')
+    # Labels
+    plt.title(title)
+    #plt.axhline(y=50, linestyle='dashed', color='0.5')
+    #plt.axhline(y=350, linestyle='dashed', color='0.5')
+ 
+    axMain.set_xlabel('Latitude', fontsize='small')
+    plt.ylabel(ylabel, fontsize='small')
+    #plt.axhline(y=700, linestyle='dashed', color='0.5')
 
-    cbar = plt.colorbar(cf)
+    cbar = plt.colorbar(cf, cbar_ax)
     cbar.set_label(units)
     
 
@@ -144,6 +159,8 @@ def main(inargs):
     elif inargs.plot_type == 'zonal_mean':
         plot_names = ['globe', 'indian', 'pacific', 'atlantic']
         fig = plt.figure(figsize=[18, 12])
+        fig.subplots_adjust(right=0.85)
+        colorbar_axes = fig.add_axes([0.9, 0.2, 0.02, 0.6])
         gs = gridspec.GridSpec(2, 2)
  
     for plotnum, plot_name in enumerate(plot_names):
@@ -187,7 +204,8 @@ def main(inargs):
             tick_max, tick_step = inargs.zm_ticks
             ticks = set_ticks(tick_max, tick_step)
             plot_zonal_mean_trend(trend, lats, levs, gs, plotnum,
-                                  ticks, plot_name, units, ylabel, inargs.palette)
+                                  ticks, plot_name, units, ylabel,
+                                  inargs.palette, colorbar_axes)
 
     # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
