@@ -84,13 +84,13 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'CanESM2' && ${experiment} == 'historical' ]] ; then
         experiment='historical'
-        runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 )
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )
         #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='CCCMA'
 
     elif [[ ${model} == 'CanESM2' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
-        runs=( r4i1p4 r5i1p4 )
+        runs=( r1i1p4 r2i1p4 r3i1p4 r4i1p4 r5i1p4 )
         #r1i1p4 r2i1p4 r3i1p4 r4i1p4 r5i1p4
         organisation='CCCMA'
 
@@ -366,13 +366,13 @@ for experiment in "${experiments[@]}"; do
     fi
 
     for run in "${runs[@]}"; do
-        sed -i "s/^\(ORGANISATION\s*=\s*\).*$/\ORGANISATION=${organisation}/" ohc_config.mk
-        sed -i "s/^\(MODEL\s*=\s*\).*$/\MODEL=${model}/" ohc_config.mk
-        sed -i "s/^\(EXPERIMENT\s*=\s*\).*$/EXPERIMENT=${experiment}/" ohc_config.mk
-        sed -i "s/^\(RUN\s*=\s*\).*$/\RUN=${run}/" ohc_config.mk
-        sed -i "s/^\(VOLUME_RUN\s*=\s*\).*$/\VOLUME_RUN=${volrun}/" ohc_config.mk
-        sed -i "s/^\(CONTROL_RUN\s*=\s*\).*$/\CONTROL_RUN=${controlrun}/" ohc_config.mk
-        make ${options} -f ohc_base.mk
+        sed -i "s/^\(ORGANISATION\s*=\s*\).*$/\ORGANISATION=${organisation}/" ocean_temperature_config.mk
+        sed -i "s/^\(MODEL\s*=\s*\).*$/\MODEL=${model}/" ocean_temperature_config.mk
+        sed -i "s/^\(EXPERIMENT\s*=\s*\).*$/EXPERIMENT=${experiment}/" ocean_temperature_config.mk
+        sed -i "s/^\(RUN\s*=\s*\).*$/\RUN=${run}/" ocean_temperature_config.mk
+        sed -i "s/^\(VOLUME_RUN\s*=\s*\).*$/\VOLUME_RUN=${volrun}/" ocean_temperature_config.mk
+        sed -i "s/^\(CONTROL_RUN\s*=\s*\).*$/\CONTROL_RUN=${controlrun}/" ocean_temperature_config.mk
+        make ${options} -f ocean_temperature_base.mk
         echo "DONE: ${model} ${experiment} ${run}: make ${options} -f ohc_base.mk"
     done
 done

@@ -10,7 +10,7 @@
 
 # Define marcos
 
-include ohc_config.mk
+include ocean_temperature_config.mk
 all : ${TARGET}
 
 # Filenames
