@@ -27,12 +27,13 @@ DEDRIFTED_TEMPERATURE_FILES = $(patsubst ${ORIG_TEMPERATURE_DIR}/${ORGANISATION}
 VOLUME_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/volcello/${FX_RUN}/volcello_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
 BASIN_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/basin/${FX_RUN}/basin_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
 
-CLIMATOLOGY_FILE=${DEDRIFTED_TEMPERATURE_DIR}/thetao-annual-clim_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
-
 TEMPERATURE_MAPS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao-maps/${RUN}
 TEMPERATURE_MAPS_FILE=${TEMPERATURE_MAPS_DIR}/thetao-maps_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 TEMPERATURE_MAPS_VERTICAL_PLOT=${TEMPERATURE_MAPS_DIR}/thetao-maps-vertical-mean_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
 TEMPERATURE_MAPS_ZONAL_PLOT=${TEMPERATURE_MAPS_DIR}/thetao-maps-zonal-mean_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
+
+CLIMATOLOGY_FILE=${DEDRIFTED_TEMPERATURE_DIR}/thetao-annual-clim_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+CLIMATOLOGY_ZONAL_MEAN_FILE=${TEMPERATURE_MAPS_DIR}/thetao-maps-annual-clim_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 OHC_METRICS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/${METRIC}/${RUN}
 OHC_METRICS_FILE=${OHC_METRICS_DIR}/${METRIC}_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
@@ -61,15 +62,18 @@ ${CLIMATOLOGY_FILE} : ${DEDRIFTED_TEMPERATURE_DIR}
 
 # Temperature maps
 
-${TEMPERATURE_MAPS_FILE} : ${CLIMATOLOGY_FILE} ${}
+${TEMPERATURE_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${TEMPERATURE_MAPS_DIR}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_TEMPERATURE_FILES} sea_water_potential_temperature $@ --climatology_file $< --basin_file ${BASIN_FILE}
 
 ${TEMPERATURE_MAPS_VERTICAL_PLOT} : ${TEMPERATURE_MAPS_FILE}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< sea_water_potential_temperature vertical_mean $@ --time ${START_DATE} ${END_DATE} --vm_tick_scale 4 1 2 2 6
 
-${TEMPERATURE_MAPS_ZONAL_PLOT} : ${TEMPERATURE_MAPS_FILE}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< sea_water_potential_temperature zonal_mean $@ --time ${START_DATE} ${END_DATE} --zm_ticks 0.015 0.003
+${CLIMATOLOGY_ZONAL_MEAN_FILE} : ${CLIMATOLOGY_FILE}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< sea_water_potential_temperature $@ --basin_file ${BASIN_FILE}
+
+${TEMPERATURE_MAPS_ZONAL_PLOT} : ${TEMPERATURE_MAPS_FILE} ${CLIMATOLOGY_ZONAL_MEAN_FILE}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< sea_water_potential_temperature zonal_mean $@ --time ${START_DATE} ${END_DATE} --zm_ticks 0.015 0.003 --climatology_file $(word 2,$^)
 
 # OHC metrics
 
