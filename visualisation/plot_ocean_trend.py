@@ -52,6 +52,18 @@ contour_plot_levels = {'sea_water_potential_temperature': numpy.arange(260, 310,
                        'sea_water_density': numpy.arange(20, 30, 0.5)}
 
 
+def get_metadata(inargs, data_cube, climatology_cube):
+    """Get the metadata dictionary."""
+    
+    metadata_dict = {}
+    metadata_dict[inargs.infile] = data_cube.attributes['history']
+
+    if climatology_cube:                  
+        metadata_dict[inargs.climatology_file] = climatology_cube.attributes['history']
+
+    return metadata_dict
+
+
 def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
                              ticks, yticks,
                              title, units, palette):
@@ -140,7 +152,7 @@ def read_climatology(climatology_file, long_name):
     if climatology_file:
         with iris.FUTURE.context(cell_datetime_objects=True):
             climatology_cube = iris.load_cube(climatology_file, long_name)
-        zonal_mean_climatology = climatology_cube.data
+        zonal_mean_climatology = climatology_cube
     else:
         zonal_mean_climatology = None
 
@@ -235,13 +247,13 @@ def main(inargs):
             plot_zonal_mean_trend(trend, lats, levs, gs, plotnum,
                                   ticks, plot_name, units, ylabel,
                                   inargs.palette, colorbar_axes,
-                                  zonal_mean_climatology, contour_plot_levels[inargs.var])
+                                  zonal_mean_climatology.data, contour_plot_levels[inargs.var])
 
     # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
 
-    infile_history = cube.attributes['history']
-    gio.write_metadata(inargs.outfile, file_info={inargs.outfile:infile_history})
+    metadata_dict = get_metadata(inargs, cube, zonal_mean_climatology) 
+    gio.write_metadata(inargs.outfile, file_info=metadata_dict)
 
 
 if __name__ == '__main__':
