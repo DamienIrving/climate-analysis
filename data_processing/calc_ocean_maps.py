@@ -211,7 +211,7 @@ def main(inargs):
             data_cube = data_cube - climatology_cube
         data_cube, coord_names = grids.curvilinear_to_rectilinear(data_cube)
 
-        assert coord_names == ['time', 'depth', 'latitude', 'longitude']
+        assert coord_names[-3:] == ['depth', 'latitude', 'longitude']
         depth_axis = data_cube.coord('depth')
         assert depth_axis.units in ['m', 'dbar'], "Unrecognised depth axis units"
 
@@ -221,7 +221,8 @@ def main(inargs):
             out_list.append(calc_vertical_mean(data_cube, layer, coord_names, atts, standard_name, var_name))
 
         if basin_cube:
-            basin_array = uconv.broadcast_array(basin_cube.data, [2, 3], data_cube.shape) 
+            ndim = data_cube.ndim
+            basin_array = uconv.broadcast_array(basin_cube.data, [ndim - 2, ndim - 1], data_cube.shape) 
         else: 
             basin_array = create_basin_file(data_cube)
 

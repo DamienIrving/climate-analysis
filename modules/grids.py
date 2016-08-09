@@ -64,9 +64,7 @@ def curvilinear_to_rectilinear(cube):
     coord_names = [coord.name() for coord in cube.dim_coords]
     aux_coord_names = [coord.name() for coord in cube.aux_coords]
 
-    if aux_coord_names:
-
-        assert aux_coord_names == ['latitude', 'longitude']
+    if aux_coord_names == ['latitude', 'longitude']:
 
         # Create target grid
         lats = numpy.arange(-90, 91, 1)

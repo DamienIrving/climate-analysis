@@ -47,6 +47,10 @@ long_titles = {'argo': 'full depth (0-2000m)',
                'middle': 'mid (350-700m)',
                'deep': 'deep (700-2000m)'}
 
+contour_plot_levels = {'sea_water_potential_temperature': numpy.arange(260, 310, 2.5),
+                       'sea_water_salinity': numpy.arange(30, 40, 0.25),
+                       'sea_water_density': numpy.arange(20, 30, 0.5)}
+
 
 def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
                              ticks, yticks,
@@ -81,7 +85,8 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
 
 def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
                           ticks, title, units, ylabel,
-                          palette, cbar_ax):
+                          palette, cbar_ax,
+                          climatology, contour_levels):
     """Plot the zonal mean trends.
 
     Produces a lat / depth plot.
@@ -94,6 +99,10 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     cmap = eval('plt.cm.'+palette)
     cf = axMain.contourf(lats, levs, trends,
                          cmap=cmap, extend='both', levels=ticks)
+    if type(climatology) == numpy.ma.core.MaskedArray:
+        cplot_main = axMain.contour(lats, levs, climatology, colors='0.2', levels=contour_levels)
+        plt.clabel(cplot_main, contour_levels[0::2], fmt='%2.1f', colors='0.2', fontsize=8)
+
     # Deep section
     axMain.set_ylim((500.0, 2000.0))
     axMain.invert_yaxis()
@@ -105,6 +114,9 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     axShallow = divider.append_axes("top", size=2.2, pad=0.1, sharex=axMain)
     axShallow.contourf(lats, levs, trends,
                        cmap=cmap, extend='both', levels=ticks)
+    if type(climatology) == numpy.ma.core.MaskedArray:
+        cplot_shallow = axShallow.contour(lats, levs, climatology, colors='0.2', levels=contour_levels)
+        plt.clabel(cplot_shallow, contour_levels[0::2], fmt='%2.1f', colors='0.2', fontsize=8)
     axShallow.set_ylim((0.0, 500.0))
     axShallow.invert_yaxis()
     plt.setp(axShallow.get_xticklabels(), visible=False)
@@ -121,6 +133,19 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     cbar = plt.colorbar(cf, cbar_ax)
     cbar.set_label(units)
     
+
+def read_climatology(climatology_file, long_name):
+    """Read the optional climatology data."""
+
+    if climatology_file:
+        with iris.FUTURE.context(cell_datetime_objects=True):
+            climatology_cube = iris.load_cube(climatology_file, long_name)
+        zonal_mean_climatology = climatology_cube.data
+    else:
+        zonal_mean_climatology = None
+
+    return zonal_mean_climatology
+
 
 def set_ticks(tick_max, tick_step, tick_scale=1.0):
     """Set the colorbar ticks."""
@@ -204,9 +229,13 @@ def main(inargs):
             ylabel = 'Depth (%s)' %(cube.coord('depth').units)
             tick_max, tick_step = inargs.zm_ticks
             ticks = set_ticks(tick_max, tick_step)
+
+            zonal_mean_climatology = read_climatology(inargs.climatology_file, long_name)
+
             plot_zonal_mean_trend(trend, lats, levs, gs, plotnum,
                                   ticks, plot_name, units, ylabel,
-                                  inargs.palette, colorbar_axes)
+                                  inargs.palette, colorbar_axes,
+                                  zonal_mean_climatology, contour_plot_levels[inargs.var])
 
     # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
@@ -233,6 +262,9 @@ author:
     parser.add_argument("var", type=str, help="Input variable name (the standard_name without the vertical_mean or zonal_mean bit)")
     parser.add_argument("plot_type", type=str, choices=('vertical_mean', 'zonal_mean'), help="Type of plot")
     parser.add_argument("outfile", type=str, help="Output file name")
+
+    parser.add_argument("--climatology_file", type=str, default=None,
+                        help="Plot climatology contours on zonal mean plot [default=None]")
     
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
