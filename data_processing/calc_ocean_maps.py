@@ -243,6 +243,8 @@ def main(inargs):
     
     cube_list = iris.cube.CubeList(cube_list)
     assert cube_list[0].data.dtype == numpy.float32
+    if not 'time' in coord_names:
+        iris.FUTURE.netcdf_no_unlimited = True
     iris.save(cube_list, inargs.outfile)
 
 
