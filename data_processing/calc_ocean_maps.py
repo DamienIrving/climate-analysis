@@ -111,8 +111,8 @@ def calc_zonal_mean(cube, basin_array, basin_name, atts,
     return zonal_mean_cube
 
 
-def create_basin_file(cube):
-    """Create a basin file.
+def create_basin_array(cube):
+    """Create a basin array.
 
     For similarity with the CMIP5 basin file, in the output:
       Atlantic Ocean = 2
@@ -224,7 +224,7 @@ def main(inargs):
             ndim = data_cube.ndim
             basin_array = uconv.broadcast_array(basin_cube.data, [ndim - 2, ndim - 1], data_cube.shape) 
         else: 
-            basin_array = create_basin_file(data_cube)
+            basin_array = create_basin_array(data_cube)
 
         for basin in basins.keys():
             out_list.append(calc_zonal_mean(data_cube.copy(), basin_array, basin, atts, standard_name, var_name))
