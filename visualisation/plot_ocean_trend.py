@@ -229,6 +229,7 @@ def main(inargs):
                 units = '$yr^{-1}$'
 
         # Plot
+        zonal_mean_climatology = read_climatology(inargs.climatology_file, long_name)
         if inargs.plot_type == 'vertical_mean':
             lons = cube.coord('longitude').points
             lats = cube.coord('latitude').points
@@ -240,7 +241,7 @@ def main(inargs):
             plot_vertical_mean_trend(trend, lons, lats, gs, plotnum,
                                      ticks, yticks,
                                      plot_name, units, inargs.palette)
-
+        
         elif inargs.plot_type == 'zonal_mean':
             lats = cube.coord('latitude').points
             levs = cube.coord('depth').points            
@@ -248,8 +249,6 @@ def main(inargs):
             ylabel = 'Depth (%s)' %(cube.coord('depth').units)
             tick_max, tick_step = inargs.zm_ticks
             ticks = set_ticks(tick_max, tick_step)
-
-            zonal_mean_climatology = read_climatology(inargs.climatology_file, long_name)
 
             plot_zonal_mean_trend(trend, lats, levs, gs, plotnum,
                                   ticks, plot_name, units, ylabel,
