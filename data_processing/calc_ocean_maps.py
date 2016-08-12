@@ -127,8 +127,12 @@ def create_basin_array(cube):
     lat_axis = cube.coord('latitude').points
     lon_axis = uconv.adjust_lon_range(cube.coord('longitude').points, radians=False)
 
-    lat_array = uconv.broadcast_array(lat_axis, 2, cube.shape)
-    lon_array = uconv.broadcast_array(lon_axis, 3, cube.shape)
+    coord_names = [coord.name() for coord in cube.dim_coords]
+    lat_index = coord_names.index('latitude')
+    lon_index = coord_names.index('longitude')
+
+    lat_array = uconv.broadcast_array(lat_axis, lat_index, cube.shape)
+    lon_array = uconv.broadcast_array(lon_axis, lon_index, cube.shape)
 
     basin_array = numpy.ones(cube.shape) * 2
     basin_array = numpy.where((lon_array >= pacific_bounds[0]) & (lon_array <= pacific_bounds[1]), 3, basin_array)

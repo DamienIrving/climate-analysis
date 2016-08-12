@@ -33,32 +33,41 @@ except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 
+def fix_cube(cube):
+    """Fixes for initial loading of cube"""
+
+    cube = iris.util.squeeze(cube)
+
+    cube.coord('sea_water_pressure').units = 'dbar'
+    cube.coord('sea_water_pressure').standard_name = 'depth'
+
+    cube.data = cube.data / 50.
+    cube.units = 'K/yr'
+
+    return cube
+
+
 def main(inargs):
     """Run the program."""
 
     variables = ['potential_temperature', 'practical_salinity']
 
     # Read data
-
-    change_cubes = {}
-    climatology_cubes = {}
+    change_cube = {}
+    climatology_cube = {}
     for variable in variables:
         change_cube[variable] = iris.load_cube(inargs.infile, 'change_over_time_in_sea_water_'+variable)
-        change_cube[variable] = iris.util.squeeze(change_cube[variable])
+        change_cube[variable] = fix_cube(change_cube[variable])
 
         climatology_cube[variable] = iris.load_cube(inargs.infile, 'sea_water_'+variable)
-        climatology_cube[variable] = iris.util.squeeze(climatology_cube[variable])
+        climatology_cube[variable] = fix_cube(climatology_cube[variable])
 
     basin_array = calc_ocean_maps.create_basin_array(change_cube[variable])
     coord_names = [coord.name() for coord in change_cube[variable].dim_coords]
     atts = change_cube[variable].attributes
 
     # Calculate maps
-
-    #FIXME: Account for units of per 50 years
-
     for variable in variables:
-
         if variable == 'potential_temperature':
             standard_name = 'sea_water_potential_temperature'
             var_name = 'thetao'
@@ -69,18 +78,18 @@ def main(inargs):
         change_cube_list = iris.cube.CubeList([])
         climatology_cube_list = iris.cube.CubeList([])
         for layer in calc_ocean_maps.vertical_layers.keys():
-            change_cube_vm = calc_ocean_maps.calc_vertical_mean(change_cube, layer, coord_names, atts, standard_name, var_name)
-            change_cube_vm.data = change_cube_vm.data / 50.
-            change_cube_vm.units = ?? #FIXME
+            change_cube_vm = calc_ocean_maps.calc_vertical_mean(change_cube[variable].copy(), layer, coord_names, atts, standard_name, var_name)
             change_cube_list.append(change_cube_vm)
 
-            # FIXME Put the above 4 lines in a function
-
-            climatology_cube_list.append(calc_ocean_maps.calc_vertical_mean(climatology_cube.copy(), layer, coord_names, atts, standard_name, var_name))    
+            climatology_cube_vm = calc_ocean_maps.calc_vertical_mean(climatology_cube[variable].copy(), layer, coord_names, atts, standard_name, var_name)
+            climatology_cube_list.append(climatology_cube_vm)   
 
         for basin in calc_ocean_maps.basins.keys():
-            change_cube_list.append(calc_ocean_maps.calc_zonal_mean(change_cube.copy(), basin_array, basin, atts, standard_name, var_name))
-            climatology_cube_list.append(calc_ocean_maps.calc_zonal_mean(climatology_cube.copy(), basin_array, basin, atts, standard_name, var_name))
+            change_cube_zm = calc_ocean_maps.calc_zonal_mean(change_cube[variable].copy(), basin_array, basin, atts, standard_name, var_name)
+            change_cube_list.append(change_cube_zm)
+
+            climatology_cube_zm = calc_ocean_maps.calc_zonal_mean(climatology_cube[variable].copy(), basin_array, basin, atts, standard_name, var_name)
+            climatology_cube_list.append(climatology_cube_zm)
 
         iris.save(change_cube_list, eval('inargs.change_outfile_'+var_name))
         iris.save(climatology_cube_list, eval('inargs.climatology_outfile_'+var_name))
