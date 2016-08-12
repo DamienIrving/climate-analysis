@@ -47,7 +47,7 @@ long_titles = {'argo': 'full depth (0-2000m)',
                'middle': 'mid (350-700m)',
                'deep': 'deep (700-2000m)'}
 
-contour_plot_levels = {'sea_water_potential_temperature': numpy.arange(260, 310, 2.5),
+contour_plot_levels = {'sea_water_potential_temperature': numpy.arange(0.0, 310, 2.5),
                        'sea_water_salinity': numpy.arange(30, 40, 0.25),
                        'sea_water_density': numpy.arange(20, 30, 0.5)}
 
@@ -111,13 +111,14 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     cmap = eval('plt.cm.'+palette)
     cf = axMain.contourf(lats, levs, trends,
                          cmap=cmap, extend='both', levels=ticks)
-    if type(climatology) == numpy.ma.core.MaskedArray:
+    if type(climatology) in [numpy.ma.core.MaskedArray, numpy.ndarray]:
         cplot_main = axMain.contour(lats, levs, climatology, colors='0.2', levels=contour_levels)
         plt.clabel(cplot_main, contour_levels[0::2], fmt='%2.1f', colors='0.2', fontsize=8)
 
     # Deep section
     axMain.set_ylim((500.0, 2000.0))
     axMain.invert_yaxis()
+    axMain.set_xlim((-70, 70))
     axMain.xaxis.set_ticks_position('bottom')
     axMain.set_xticks([-60, -40, -20, 0, 20, 40, 60])
 
@@ -126,11 +127,12 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     axShallow = divider.append_axes("top", size=2.2, pad=0.1, sharex=axMain)
     axShallow.contourf(lats, levs, trends,
                        cmap=cmap, extend='both', levels=ticks)
-    if type(climatology) == numpy.ma.core.MaskedArray:
+    if type(climatology) in [numpy.ma.core.MaskedArray, numpy.ndarray]:
         cplot_shallow = axShallow.contour(lats, levs, climatology, colors='0.2', levels=contour_levels)
         plt.clabel(cplot_shallow, contour_levels[0::2], fmt='%2.1f', colors='0.2', fontsize=8)
     axShallow.set_ylim((0.0, 500.0))
     axShallow.invert_yaxis()
+    axShallow.set_xlim((-70, 70))
     plt.setp(axShallow.get_xticklabels(), visible=False)
 
     # Labels
@@ -183,7 +185,7 @@ def set_yticks(max_lat):
 
 def main(inargs):
     """Run the program."""
-    
+
     # Read data
     try:
         time_constraint = gio.get_time_constraint(inargs.time)
@@ -214,12 +216,17 @@ def main(inargs):
             running_mean = False
 
         # Calculate trend
-        trend = timeseries.calc_trend(cube, running_mean=running_mean,
-                                      per_yr=True, remove_scaling=False)
-        if not cube.units == 1:
-            units = '$%s yr^{-1}$' %(cube.units)
+        if inargs.trend:
+            trend = cube.data
+            units = cube.units
         else:
-            units = '$yr^{-1}$'
+            trend = timeseries.calc_trend(cube, running_mean=running_mean,
+                                          per_yr=True, remove_scaling=False)
+
+            if not cube.units == 1:
+                units = '$%s yr^{-1}$' %(cube.units)
+            else:
+                units = '$yr^{-1}$'
 
         # Plot
         if inargs.plot_type == 'vertical_mean':
@@ -275,9 +282,12 @@ author:
     parser.add_argument("plot_type", type=str, choices=('vertical_mean', 'zonal_mean'), help="Type of plot")
     parser.add_argument("outfile", type=str, help="Output file name")
 
+    parser.add_argument("--trend", action="store_true", default=False,
+                        help="Use this flag if data is already trend [default: False]")
+
     parser.add_argument("--climatology_file", type=str, default=None,
                         help="Plot climatology contours on zonal mean plot [default=None]")
-    
+
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
     parser.add_argument("--vm_ticks", type=float, nargs=2, default=(0.2, 0.04), metavar=('MAX_AMPLITUDE', 'STEP'),

@@ -33,7 +33,7 @@ except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
 
-def fix_cube(cube):
+def fix_cube(cube, data_type):
     """Fixes for initial loading of cube"""
 
     cube = iris.util.squeeze(cube)
@@ -41,8 +41,10 @@ def fix_cube(cube):
     cube.coord('sea_water_pressure').units = 'dbar'
     cube.coord('sea_water_pressure').standard_name = 'depth'
 
-    cube.data = cube.data / 50.
-    cube.units = 'K/yr'
+    assert data_type in ['trend', 'climatology']
+    if data_type == 'trend':
+        cube.data = cube.data / 50.
+        cube.units = 'K/yr'
 
     return cube
 
@@ -57,10 +59,10 @@ def main(inargs):
     climatology_cube = {}
     for variable in variables:
         change_cube[variable] = iris.load_cube(inargs.infile, 'change_over_time_in_sea_water_'+variable)
-        change_cube[variable] = fix_cube(change_cube[variable])
+        change_cube[variable] = fix_cube(change_cube[variable], 'trend')
 
         climatology_cube[variable] = iris.load_cube(inargs.infile, 'sea_water_'+variable)
-        climatology_cube[variable] = fix_cube(climatology_cube[variable])
+        climatology_cube[variable] = fix_cube(climatology_cube[variable], 'climatology')
 
     basin_array = calc_ocean_maps.create_basin_array(change_cube[variable])
     coord_names = [coord.name() for coord in change_cube[variable].dim_coords]

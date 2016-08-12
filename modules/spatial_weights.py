@@ -82,8 +82,11 @@ def calc_vertical_weights_2D(pressure_coord, latitude_coord, coord_names, data_s
 
     """
     
-    assert coord_names == ['time', 'depth', 'latitude', 'longitude']
-    ntime, nlev, nlat, nlon = data_shape
+    if coord_names == ['time', 'depth', 'latitude', 'longitude']:
+        ntime, nlev, nlat, nlon = data_shape
+    elif coord_names == ['depth', 'latitude', 'longitude']:
+        nlev, nlat, nlon = data_shape
+        ntime = None
 
     depth_diffs = numpy.zeros([nlev, nlat])
     for lat_index in range(0, nlat):
@@ -93,8 +96,9 @@ def calc_vertical_weights_2D(pressure_coord, latitude_coord, coord_names, data_s
         depth_diffs[:, lat_index] = numpy.apply_along_axis(lambda x: x[1] - x[0], 1, depth_bounds)
 
     # Braodcast
-    depth_diffs = depth_diffs[numpy.newaxis, ...]
-    depth_diffs = numpy.repeat(depth_diffs, ntime, axis=0)
+    if ntime:
+        depth_diffs = depth_diffs[numpy.newaxis, ...]
+        depth_diffs = numpy.repeat(depth_diffs, ntime, axis=0)
 
     depth_diffs = depth_diffs[..., numpy.newaxis]
     depth_diffs = numpy.repeat(depth_diffs, nlon, axis=-1)
