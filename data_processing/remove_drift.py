@@ -91,25 +91,31 @@ def check_time_units(time_units):
     return time_units
 
 
-def thetao_coefficient_sanity_check(coefficient_cube):
-    """Sanity check the thetao cubic polynomial coefficients.
+def coefficient_sanity_check(coefficient_cube, variable):
+    """Sanity check the cubic polynomial coefficients.
 
     Polynomial is a + bx + cx^2 + dx^3. The telling sign of a poor
-    fit is an 'a' value that does not represent a realistic thetao value.
+    fit is an 'a' value that does not represent a realistic value.
 
     """
     
-    thetao_max = 330
-    thetao_min = 250
-    
+    assert variable in ['sea_water_potential_temperature', 'sea_water_salinity']
+
+    if variable == 'sea_water_potential_temperature':
+        var_max = 330
+        var_min = 250
+    elif variable == 'sea_water_salinity':
+        var_max = 45
+        var_min = 5
+ 
     nmasked_original = numpy.sum(coefficient_cube.data.mask)
 
     a_data = coefficient_cube.data[0, ...]
 
     original_mask = a_data.mask
     
-    crazy_mask_min = numpy.ma.where(a_data < thetao_min, True, False)
-    crazy_mask_max = numpy.ma.where(a_data > thetao_max, True, False)
+    crazy_mask_min = numpy.ma.where(a_data < var_min, True, False)
+    crazy_mask_max = numpy.ma.where(a_data > var_max, True, False)
     new_mask = numpy.ma.mask_or(crazy_mask_min, crazy_mask_max)
     ncrazy_min = numpy.sum(crazy_mask_min)
     ncrazy_max = numpy.sum(crazy_mask_max)
@@ -154,7 +160,7 @@ def main(inargs):
     
     first_data_cube = iris.load_cube(inargs.data_files[0], inargs.var)
     coefficient_cube = iris.load_cube(inargs.coefficient_file)
-    thetao_coefficient_sanity_check(coefficient_cube)
+    coefficient_sanity_check(coefficient_cube, inargs.var)
 
     time_diff, branch_time, new_time_unit = time_adjustment(first_data_cube, coefficient_cube)
     del first_data_cube
