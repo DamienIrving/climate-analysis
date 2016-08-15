@@ -64,6 +64,21 @@ def get_metadata(inargs, data_cube, climatology_cube):
     return metadata_dict
 
 
+def normalise_data(data):
+    """Normalise the data."""
+
+    abs_data = numpy.abs(data)
+
+    min_val = abs_data.min()
+    max_val = abs_data.max()
+
+    abs_normalised_data = (abs_data - min_val) / (max_val - min_val)
+
+    normalised_data = abs_normalised_data * numpy.sign(data)
+
+    return normalised_data 
+
+
 def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
                              ticks, yticks,
                              title, units, palette):
@@ -183,6 +198,28 @@ def set_yticks(max_lat):
     return yticks
 
 
+def get_trend_data(cube, running_mean, calc_trend=True, normalise=False):
+    """Get the trend data."""
+
+    if calc_trend:
+        trend = cube.data
+        units = cube.units
+    else:
+        trend = timeseries.calc_trend(cube, running_mean=running_mean,
+                                      per_yr=True, remove_scaling=False)
+
+        if not cube.units == 1:
+            units = '$%s yr^{-1}$' %(cube.units)
+        else:
+            units = '$yr^{-1}$'
+
+    if normalise:
+        trend = normalise_data(trend)
+        units = units+' (normalised)'
+
+    return trend, units
+
+
 def main(inargs):
     """Run the program."""
 
@@ -216,17 +253,7 @@ def main(inargs):
             running_mean = False
 
         # Calculate trend
-        if inargs.trend:
-            trend = cube.data
-            units = cube.units
-        else:
-            trend = timeseries.calc_trend(cube, running_mean=running_mean,
-                                          per_yr=True, remove_scaling=False)
-
-            if not cube.units == 1:
-                units = '$%s yr^{-1}$' %(cube.units)
-            else:
-                units = '$yr^{-1}$'
+        trend, units = get_trend_data(cube, running_mean, calc_trend=inargs.trend)
 
         # Plot
         zonal_mean_climatology = read_climatology(inargs.climatology_file, long_name)
