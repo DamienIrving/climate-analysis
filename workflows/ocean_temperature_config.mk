@@ -16,14 +16,17 @@ VIS_SCRIPT_DIR=~/climate-analysis/visualisation
 FIG_TYPE=png
 
 # Analysis details
-ORIG_TEMPERATURE_DIR=${UA6_CMIP5_DIR}
+ORIG_VARIABLE_DIR=${MY_CMIP5_DIR}
 ORIG_CONTROL_DIR=${UA6_CMIP5_DIR}
 ORIG_FX_DIR=${UA6_CMIP5_DIR}
 
+VAR=so
+LONG_NAME=sea_water_salinity
+
 ORGANISATION=CCCMA
 MODEL=CanESM2
-EXPERIMENT=historicalMisc
-RUN=r5i1p4
+EXPERIMENT=historicalGHG
+RUN=r3i1p1
 CONTROL_RUN=r1i1p1
 FX_RUN=r0i0p0
 
@@ -34,4 +37,5 @@ END_DATE=2000-12-31
 METRIC=ohc-metrics-globe60equiv
 REF=--ref_region globe60
 
-TARGET=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/thetao-maps/${RUN}/thetao-maps-zonal-mean_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
+TARGET=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/${VAR}-maps/${RUN}/${VAR}-maps-zonal-mean_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
+
