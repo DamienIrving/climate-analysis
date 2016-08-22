@@ -10,7 +10,6 @@ Functions:
   get_timestamp            -- Return a time stamp that includes the command line entry
   iris_vertical_constraint -- Define vertical constraint for iris cube loading.
   read_dates               -- Read in a list of dates
-  salinity_unit_check      -- Check CMIP5 salinity units
   set_dim_atts             -- Set dimension attributes
   set_global_atts          -- Update the global attributes of an xray.DataArray
   set_outfile_date         -- Take an outfile name and replace existing date with new one
@@ -30,7 +29,6 @@ from dateutil import parser
 from collections import defaultdict
 import re
 import iris
-import cf_units
 
 # Import my modules
 
@@ -304,37 +302,6 @@ def read_dates(infile):
         date_metadata=metfile.read()
 
     return date_list, date_metadata
-
-
-def salinity_unit_check(cube):
-    """Check CMIP5 salinity units.
-
-    Most modeling groups store their salinity data
-    in units of g/kg (typically ranging from 5 to 45 g/kg)
-    and label that unit "psu" (which iris doesn't 
-    recognise and converts to unknown).
-
-    Some random data files in some runs have some stored 
-    with units of kg/kg and the unit is labelled 1.
-
-    This function converts to g/kg and unknown.
-
-    Args:
-      cube (iris.cube.Cube) 
-
-    """
-
-    if cube.units == '1':
-        cube.data = cube.data * 1000
-        cube.units = cf_units.Unit('unknown')
-    
-    data_max = cube.data.max()
-    data_min = cube.data.min()
-
-    assert data_max < 55.0
-    assert data_min > 2.0 
-
-    return cube
 
 
 def _sel_or_slice(inargs, dim, kw_dict):

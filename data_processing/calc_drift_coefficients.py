@@ -36,7 +36,7 @@ except ImportError:
 
 history = []
 
-def data_check(cube, field, filename):
+def save_history(cube, field, filename):
     """Save the history attribute when reading the data.
 
     (This is required because the history attribute differs between input files 
@@ -44,14 +44,7 @@ def data_check(cube, field, filename):
 
     """ 
 
-    print filename
-
-    if cube.standard_name == 'sea_water_salinity':
-        cube = gio.salinity_unit_check(cube)
-
     history.append(cube.attributes['history'])
-
-    return cube
 
 
 def polyfit(data, time_axis):
@@ -104,7 +97,7 @@ def main(inargs):
 
     # Read the data
 
-    cubes = iris.load(inargs.infiles, inargs.var, callback=data_check)
+    cubes = iris.load(inargs.infiles, inargs.var, callback=save_history)
     global_atts = set_global_atts(inargs, cubes[0])
 
     iris.util.unify_time_units(cubes)
