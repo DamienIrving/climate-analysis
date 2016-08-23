@@ -3,7 +3,7 @@
 #
 
 function usage {
-    echo "USAGE: bash $0 model experiments"
+    echo "USAGE: bash $0 model variable experiments"
     echo "   e.g. bash $0 CSIRO-Mk3-6-0 thetao historical noAA"
     exit 1
 }
@@ -133,11 +133,24 @@ for experiment in "${experiments[@]}"; do
 
     # FGOALS-g2
 
+    elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'historical' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        organisation='LASG-CESS'
+
+    elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'historicalNat' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1
+        organisation='LASG-CESS'
+
+    elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'historicalGHG' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1
+        organisation='LASG-CESS'
+        vardir='r87/dbi599'
+
     elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
         runs=( r2i1p1 )  #r2i1p1
         organisation='LASG-CESS'
-        controldir='r87/dbi599'
+        vardir='r87/dbi599'
 
     # GFDL-CM3
 
