@@ -304,6 +304,38 @@ def read_dates(infile):
     return date_list, date_metadata
 
 
+def salinity_unit_check(cube):
+    """Check CMIP5 salinity units.
+
+    Most modeling groups store their salinity data
+    in units of g/kg (typically ranging from 5 to 45 g/kg)
+    and label that unit "psu" (which iris doesn't 
+    recognise and converts to unknown).
+
+    Some random data files in some runs have some stored 
+    with units of kg/kg and the unit is labelled 1.
+
+    This function converts to g/kg and unknown.
+
+    Args:
+      cube (iris.cube.Cube) 
+      replace (bool): Return a replacement cube rather than
+        just checking
+
+    """
+
+    if cube.units == '1':
+        cube.data = cube.data * 1000
+        cube.units = cf_units.Unit('unknown')
+    
+    data_max = cube.data.max()
+    data_min = cube.data.min()
+    assert data_max < 55.0
+    assert data_min > 2.0 
+
+    return cube
+
+
 def _sel_or_slice(inargs, dim, kw_dict):
     """Select or slice."""
 

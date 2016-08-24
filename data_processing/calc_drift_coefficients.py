@@ -117,7 +117,7 @@ def main(inargs):
 
         # Write the output file
 
-        iris.std_names.STD_NAMES['drift_coefficient'] = {'canonical_units': 1}
+        iris.std_names.STD_NAMES['drift_coefficient'] = {'canonical_units': cube.units}
         coefficient_coord = iris.coords.DimCoord(numpy.array([1, 2, 3, 4]), 
                                                  standard_name='drift_coefficient', long_name='drift coefficient', 
                                                  var_name='coefficient', attributes=None)
@@ -133,12 +133,12 @@ def main(inargs):
         else:
             aux_coords = None
 
-        iris.std_names.STD_NAMES[cube.var_name] = {'canonical_units': ' '}
+        iris.std_names.STD_NAMES[cube.var_name] = {'canonical_units': cube.units}
         new_cube = iris.cube.Cube(coefficients,
                                   standard_name=cube.standard_name,
                                   long_name=cube.long_name,
                                   var_name=cube.var_name,
-                                  units=' ',
+                                  units=cube.units,
                                   attributes=global_atts,
                                   dim_coords_and_dims=dim_coords,
                                   aux_coords_and_dims=aux_coords)

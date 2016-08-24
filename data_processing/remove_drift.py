@@ -155,6 +155,17 @@ def time_adjustment(first_data_cube, coefficient_cube):
     return time_diff, branch_time_value, new_unit
 
 
+def check_units(data_cube, coefficient_cube):
+    """Make sure the units match."""
+
+    if data_cube.standard_name == 'sea_water_salinity':
+         data_cube = gio.salinity_unit_check(data_cube)
+
+    assert data_cube.units == coefficient_cube.units
+
+    return data_cube
+
+
 def main(inargs):
     """Run the program."""
     
@@ -169,6 +180,7 @@ def main(inargs):
     for fnum, filename in enumerate(inargs.data_files):
         
         data_cube = iris.load_cube(filename, inargs.var)
+        data_cube = check_units(data_cube, coefficient_cube)
         if not inargs.no_parent_check:
             check_attributes(data_cube.attributes, coefficient_cube.attributes)
 

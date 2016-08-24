@@ -32,42 +32,12 @@ except ImportError:
 
 # Define functions
 
-def salinity_unit_check(cube):
-    """Check CMIP5 salinity units.
-
-    Most modeling groups store their salinity data
-    in units of g/kg (typically ranging from 5 to 45 g/kg)
-    and label that unit "psu" (which iris doesn't 
-    recognise and converts to unknown).
-
-    Some random data files in some runs have some stored 
-    with units of kg/kg and the unit is labelled 1.
-
-    This function converts to g/kg and unknown.
-
-    Args:
-      cube (iris.cube.Cube) 
-
-    """
-
-    if cube.units == '1':
-        cube.data = cube.data * 1000
-        cube.units = cf_units.Unit('unknown')
-    
-    data_max = cube.data.max()
-    data_min = cube.data.min()
-    assert data_max < 55.0
-    assert data_min > 2.0 
-
-    return cube
-
-
 def main(inargs):
     """Run the program."""
 
     cube = iris.load_cube(inargs.infile, 'sea_water_salinity')
    
-    cube = salinity_unit_check(cube)
+    cube = gio.salinity_unit_check(cube)
 
     outfile_metadata = {inargs.infile: cube.attributes['history'],}
     cube.attributes['history'] = gio.write_metadata(file_info=outfile_metadata)
