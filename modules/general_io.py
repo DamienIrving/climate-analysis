@@ -326,12 +326,13 @@ def salinity_unit_check(cube):
 
     if cube.units == '1':
         cube.data = cube.data * 1000
-        cube.units = cf_units.Unit('unknown')
     
     data_max = cube.data.max()
     data_min = cube.data.min()
     assert data_max < 55.0
     assert data_min > 2.0 
+
+    cube.units = 'g/kg'   #cf_units.Unit('unknown')
 
     return cube
 
