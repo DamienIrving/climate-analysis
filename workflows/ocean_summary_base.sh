@@ -1,5 +1,5 @@
 #
-# Description: Script for running the ohc_base.mk workflow for a given model/experiment combo
+# Description: Script for running the ocean_summary_base.mk workflow for a given model/variable/experiments combo
 #
 
 function usage {
@@ -35,8 +35,14 @@ experiments=( $@ )
 
 if [[ "${variable}" == "so" ]] ; then
     long_name='sea_water_salinity'
+    zm_tick_max='0.0035'
+    zm_tick_step='0.0005'
+    palette='BrBG_r'
 elif [[ "${variable}" == 'thetao' ]] ; then
     long_name='sea_water_potential_temperature'
+    zm_tick_max='0.015'
+    zm_tick_step='0.003'
+    palette='RdBu_r'
 fi
 
 # Determine runs based on model and experiment
@@ -168,7 +174,7 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p1 r3i1p1 r5i1p1 ) #r1i1p1 r3i1p1 r5i1p1
+        runs=( r1i1p1 ) #r1i1p1 r3i1p1 r5i1p1
         organisation='NOAA-GFDL'
         vardir='r87/dbi599'
 
@@ -401,9 +407,9 @@ for experiment in "${experiments[@]}"; do
         origcontroldir="/g/data/${controldir}/drstree/CMIP5/GCM"
         origfxdir="/g/data/${fxdir}/drstree/CMIP5/GCM"
 
-        make ${options} -f ocean_temperature_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_FX_DIR="${origfxdir}"
+        make ${options} -f ocean_summary_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_FX_DIR="${origfxdir}" VAR="${variable}" LONG_NAME="${long_name}" ZM_TICK_MAX="${zm_tick_max}" ZM_TICK_STEP="${zm_tick_step}" PALETTE="${palette}"
 
-        echo "DONE: make ${options} -f ocean_temperature_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_FX_DIR=${origfxdir}"
+        echo "DONE: make ${options} -f ocean_summary_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_FX_DIR=${origfxdir} VAR=${variable} LONG_NAME=${long_name} ZM_TICK_MAX=${zm_tick_max} ZM_TICK_STEP=${zm_tick_step} PALETTE=${palette}"
     done
 done
 

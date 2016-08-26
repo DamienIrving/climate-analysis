@@ -1,16 +1,19 @@
-# ohc_base.mk
+# ocean_summary_base.mk
 #
-# Description: Core ocean heat content workflows 
+# Description: Core workflow for producing ocean summary data:
+#  - zonal mean ocean temperature and salinity fields
+#  - vertical mean ocean temperature and salinity fields
+#  - ocean heat content fields and timeseries 
 #
 # To execute:
-#      1. copy name of target file from ohc_base.mk 
-#      2. paste it into ohc_config.mk as the target variable  
-#      2. $ make -n -B -f ohc_base.mk  (-n is a dry run) (-B is a force make)
+#   1. copy name of target file from ocean_summary_base.mk 
+#   2. paste it into ocean_summary_config.mk as the target variable  
+#   3. $ make -n -B -f ocean_summary_base.mk  (-n is a dry run) (-B is a force make)
 
 
 # Define marcos
 
-include ocean_temperature_config.mk
+include ocean_summary_config.mk
 all : ${TARGET}
 
 # Filenames
@@ -75,7 +78,7 @@ ${CLIMATOLOGY_ZONAL_MEAN_FILE} : ${CLIMATOLOGY_FILE}
         #--basin_file ${BASIN_FILE}
 
 ${VARIABLE_MAPS_ZONAL_PLOT} : ${VARIABLE_MAPS_FILE} ${CLIMATOLOGY_ZONAL_MEAN_FILE}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --time ${START_DATE} ${END_DATE} --zm_ticks 0.0035 0.0005 --palette BrBG_r --climatology_file $(word 2,$^)
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --time ${START_DATE} ${END_DATE} --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP} --palette ${PALETTE} --climatology_file $(word 2,$^)
 
 # OHC metrics
 

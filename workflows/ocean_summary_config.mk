@@ -1,4 +1,4 @@
-# ohc_config.mk
+# ocean_summary_config.mk
 
 # System configuration
 
@@ -15,7 +15,8 @@ VIS_SCRIPT_DIR=~/climate-analysis/visualisation
 
 FIG_TYPE=png
 
-# Analysis details
+# Analysis details (broad)
+
 ORIG_VARIABLE_DIR=${MY_CMIP5_DIR}
 ORIG_CONTROL_DIR=${UA6_CMIP5_DIR}
 ORIG_FX_DIR=${UA6_CMIP5_DIR}
@@ -30,12 +31,18 @@ RUN=r3i1p1
 CONTROL_RUN=r1i1p1
 FX_RUN=r0i0p0
 
+# Analysis details (specific)
+
 MAX_DEPTH=2000
 START_DATE=1950-01-01
 END_DATE=2000-12-31
 
 METRIC=ohc-metrics-globe60equiv
 REF=--ref_region globe60
+
+ZM_TICK_MAX=0.0035
+ZM_TICK_STEP=0.0005
+PALETTE=BrBG_r
 
 TARGET=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/${VAR}-maps/${RUN}/${VAR}-maps-zonal-mean_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
 
