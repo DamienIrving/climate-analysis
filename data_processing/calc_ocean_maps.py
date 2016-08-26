@@ -194,6 +194,20 @@ def set_attributes(inargs, data_cube, climatology_cube, basin_cube):
     return atts
 
 
+def chunk_time(time_coord, chunk=False):
+    """Provide constraints for chunking by time axis."""
+
+    if chunk:
+        mid_point = len(time_coord.points) / 2     
+        lower_constraint = iris.Constraint(time=lambda t: t <= time_coord.points[mid_point])
+        upper_constraint = iris.Constraint(time=lambda t: t > time_coord.points[mid_point])
+        time_constraint_list = [lower_constraint, upper_constraint]
+    else:
+        time_constraint_list = [iris.Constraint()]
+
+    return time_constraint_list
+
+
 def main(inargs):
     """Run the program."""
 
@@ -219,21 +233,24 @@ def main(inargs):
         depth_axis = data_cube.coord('depth')
         assert depth_axis.units in ['m', 'dbar'], "Unrecognised depth axis units"
 
-        out_list = iris.cube.CubeList([])
+        time_constraint_list = chunck_time(data_cube.coord('time'), chunk=inargs.chunk)
+        for time_constraint in time_constraint_list:
+            chunked_data_cube = data_cube.extract(time_constraint)
+            out_list = iris.cube.CubeList([])
 
-        for layer in vertical_layers.keys():
-            out_list.append(calc_vertical_mean(data_cube, layer, coord_names, atts, standard_name, var_name))
+            for layer in vertical_layers.keys():
+                out_list.append(calc_vertical_mean(chunked_data_cube, layer, coord_names, atts, standard_name, var_name))
 
-        if basin_cube:
-            ndim = data_cube.ndim
-            basin_array = uconv.broadcast_array(basin_cube.data, [ndim - 2, ndim - 1], data_cube.shape) 
-        else: 
-            basin_array = create_basin_array(data_cube)
+            if basin_cube:
+                ndim = data_cube.ndim
+                basin_array = uconv.broadcast_array(basin_cube.data, [ndim - 2, ndim - 1], chunked_data_cube.shape) 
+            else: 
+                basin_array = create_basin_array(chunked_data_cube)
 
-        for basin in basins.keys():
-            out_list.append(calc_zonal_mean(data_cube.copy(), basin_array, basin, atts, standard_name, var_name))
+            for basin in basins.keys():
+                out_list.append(calc_zonal_mean(chunked_data_cube.copy(), basin_array, basin, atts, standard_name, var_name))
 
-        out_cubes.append(out_list.concatenate())
+            out_cubes.append(out_list.concatenate())
 
     cube_list = []
     nvars = len(vertical_layers.keys()) + len(basins.keys())
@@ -273,9 +290,11 @@ author:
 
     parser.add_argument("--climatology_file", type=str, default=None, 
                         help="Input climatology file (required if input data not already anomaly)")
-
     parser.add_argument("--basin_file", type=str, default=None, 
                         help="Input basin file")
+
+    parser.add_argument("--chunk", action="store_true", default=False,
+                        help="Split input files on time axis to avoid memory errors [default: False]")
         
     args = parser.parse_args()             
     main(args)

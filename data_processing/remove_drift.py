@@ -34,12 +34,13 @@ except ImportError:
 
 # Define functions
 
-def apply_polynomial(x_data, coefficient_data):
+def apply_polynomial(x_data, coefficient_data, chunk=False):
     """Evaluate cubic polynomial.
 
     Args:
       x_data (numpy.ndarray): One dimensional x-axis data
       coefficient_data (numpy.ndarray): Multi-dimensional coefficient array (e.g. lat, lon, depth)
+      chunk (bool): Chunk the polynomial calculation to avoid memory errors
 
     """
     
@@ -59,8 +60,14 @@ def apply_polynomial(x_data, coefficient_data):
             assert x_data.ndim == coef.ndim
             coefficient_dict[coefficient] = coef
 
-    # set a to zero so only deviations from start point are subtracted 
-    result = 0 + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3  
+    if chunk:
+        result = numpy.zeros(coefficient_dict['b'].shape, dtype='float32')
+        for index in range(0, coefficient_dict['b'].shape[-1]):
+            # loop to avoid memory error with large arrays
+            # set a to zero so only deviations from start point are subtracted 
+            result[..., index] = 0 + coefficient_dict['b'][..., index] * x_data[..., 0] + coefficient_dict['c'][..., index] * x_data[..., 0]**2 + coefficient_dict['d'][..., index] * x_data[..., 0]**3  
+    else:
+        result = 0 + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3  
 
     return result 
 
@@ -74,6 +81,17 @@ def check_attributes(data_attrs, control_attrs):
                                 control_attrs['initialization_method'],
                                 control_attrs['physics_version'])
     assert data_attrs['parent_experiment_rip'] in [control_rip, 'N/A']
+
+
+def check_data_units(data_cube, coefficient_cube):
+    """Make sure the units of the data and coefficients match."""
+
+    if data_cube.standard_name == 'sea_water_salinity':
+         data_cube = gio.salinity_unit_check(data_cube)
+
+    assert data_cube.units == coefficient_cube.units
+
+    return data_cube
 
 
 def check_time_units(time_units):
@@ -155,17 +173,6 @@ def time_adjustment(first_data_cube, coefficient_cube):
     return time_diff, branch_time_value, new_unit
 
 
-def check_units(data_cube, coefficient_cube):
-    """Make sure the units match."""
-
-    if data_cube.standard_name == 'sea_water_salinity':
-         data_cube = gio.salinity_unit_check(data_cube)
-
-    assert data_cube.units == coefficient_cube.units
-
-    return data_cube
-
-
 def main(inargs):
     """Run the program."""
     
@@ -178,9 +185,8 @@ def main(inargs):
 
     new_cubelist = []
     for fnum, filename in enumerate(inargs.data_files):
-        
         data_cube = iris.load_cube(filename, inargs.var)
-        data_cube = check_units(data_cube, coefficient_cube)
+        data_cube = check_data_units(data_cube, coefficient_cube)
         if not inargs.no_parent_check:
             check_attributes(data_cube.attributes, coefficient_cube.attributes)
 
@@ -193,7 +199,7 @@ def main(inargs):
             assert time_values[0] == coefficient_cube.attributes['time_start'] + branch_time
 
         # Remove the drift
-        drift_signal = apply_polynomial(time_values, coefficient_cube.data)
+        drift_signal = apply_polynomial(time_values, coefficient_cube.data, chunk=inargs.chunk)
         new_cube = data_cube - drift_signal
         new_cube.metadata = data_cube.metadata
 
@@ -253,6 +259,8 @@ notes:
     
     parser.add_argument("--no_parent_check", action="store_true", default=False,
                         help="Do not perform the parent experiment check [default: False]")
+    parser.add_argument("--chunk", action="store_true", default=False,
+                        help="Split the polynomial calculation up to avoid memory errors [default: False]")
 
     args = parser.parse_args()            
 
