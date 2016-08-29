@@ -6,6 +6,7 @@ Functions:
 
 """
 
+import pdb
 import numpy
 import iris
 from iris.experimental.regrid import regrid_weighted_curvilinear_to_rectilinear
@@ -63,6 +64,9 @@ def curvilinear_to_rectilinear(cube):
 
     coord_names = [coord.name() for coord in cube.dim_coords]
     aux_coord_names = [coord.name() for coord in cube.aux_coords]
+    
+    if 'time' in aux_coord_names:
+        aux_coord_names.remove('time')
 
     if aux_coord_names == ['latitude', 'longitude']:
 
@@ -74,8 +78,12 @@ def curvilinear_to_rectilinear(cube):
         # Interate over slices (experimental regridder only works on 2D slices)
         cube, coord_names = _check_coord_names(cube, coord_names)
         slice_dims = coord_names
-        slice_dims.remove('time')
-        slice_dims.remove('depth')
+
+        if 'time' in slice_dims:
+            slice_dims.remove('time')
+        if 'depth' in slice_dims:
+            slice_dims.remove('depth')
+    
         cube_list = []
         for i, cube_slice in enumerate(cube.slices(slice_dims)):
             weights = numpy.ones(cube_slice.shape)
