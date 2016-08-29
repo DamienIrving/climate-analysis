@@ -194,18 +194,26 @@ def set_attributes(inargs, data_cube, climatology_cube, basin_cube):
     return atts
 
 
-def chunk_time(time_coord, chunk=False):
-    """Provide constraints for chunking by time axis."""
+def get_chunks(cube_shape, coord_names, chunk=False):
+    """Provide details for chunking by time axis."""
+
+    ntimes = cube_shape[0]
 
     if chunk:
-        mid_point = len(time_coord.points) / 2     
-        lower_constraint = iris.Constraint(time=lambda t: t <= time_coord.points[mid_point])
-        upper_constraint = iris.Constraint(time=lambda t: t > time_coord.points[mid_point])
-        time_constraint_list = [lower_constraint, upper_constraint]
-    else:
-        time_constraint_list = [iris.Constraint()]
+        assert coord_names[0] == 'time'
 
-    return time_constraint_list
+        step = 2
+        remainder = ntimes % step
+        while remainder == 1:
+            step = step + 1
+            remainder = ntimes % step
+
+        start_indexes = range(0, ntimes, step)
+    else:
+        start_indexes = [0]
+        step = ntimes
+
+    return start_indexes, step
 
 
 def main(inargs):
@@ -221,36 +229,40 @@ def main(inargs):
 
     out_cubes = []
     for data_cube in data_cubes:
-
         standard_name = data_cube.standard_name
         var_name = data_cube.var_name
 
         if climatology_cube:
             data_cube = data_cube - climatology_cube
+
         data_cube, coord_names = grids.curvilinear_to_rectilinear(data_cube)
 
         assert coord_names[-3:] == ['depth', 'latitude', 'longitude']
         depth_axis = data_cube.coord('depth')
         assert depth_axis.units in ['m', 'dbar'], "Unrecognised depth axis units"
 
-        time_constraint_list = chunck_time(data_cube.coord('time'), chunk=inargs.chunk)
-        for time_constraint in time_constraint_list:
-            chunked_data_cube = data_cube.extract(time_constraint)
-            out_list = iris.cube.CubeList([])
+        out_list = iris.cube.CubeList([])
+        start_indexes, step = get_chunks(data_cube.shape, coord_names, chunk=inargs.chunk)
+        for index in start_indexes:
 
+            cube_slice = data_cube[index:index+step, ...]
+            
             for layer in vertical_layers.keys():
-                out_list.append(calc_vertical_mean(chunked_data_cube, layer, coord_names, atts, standard_name, var_name))
+                out_list.append(calc_vertical_mean(cube_slice, layer, coord_names, atts, standard_name, var_name))
 
             if basin_cube:
-                ndim = data_cube.ndim
-                basin_array = uconv.broadcast_array(basin_cube.data, [ndim - 2, ndim - 1], chunked_data_cube.shape) 
+                ndim = cube_slice.ndim
+                basin_array = uconv.broadcast_array(basin_cube.data, [ndim - 2, ndim - 1], cube_slice.shape) 
             else: 
-                basin_array = create_basin_array(chunked_data_cube)
+                basin_array = create_basin_array(cube_slice)
 
             for basin in basins.keys():
-                out_list.append(calc_zonal_mean(chunked_data_cube.copy(), basin_array, basin, atts, standard_name, var_name))
+                out_list.append(calc_zonal_mean(cube_slice.copy(), basin_array, basin, atts, standard_name, var_name))
 
-            out_cubes.append(out_list.concatenate())
+        out_cubes.append(out_list.concatenate())
+        del out_list
+        del cube_slice
+        del basin_array
 
     cube_list = []
     nvars = len(vertical_layers.keys()) + len(basins.keys())
