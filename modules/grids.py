@@ -59,6 +59,29 @@ def _make_grid(lat_values, lon_values):
     return new_cube
 
 
+def get_grid_res(horiz_shape):
+    """Define horizontal resolution of new grid. 
+
+    Calculation makes sure new grid is similar resolution to old grid
+    (erring on side of slightly more coarse)
+
+    """
+
+    assert len(horiz_shape) == 2
+    orig_npoints = horiz_shape[0] * horiz_shape[1]
+
+    res_options = numpy.array([1.0, 1.5, 2.0, 2.5])
+    npoints_ref = numpy.array([181 * 360, 121 * 240, 91 * 180, 73 * 144])
+
+    idx = (numpy.abs(npoints_ref - orig_npoints)).argmin()
+    
+    new_res = res_options[idx]
+    if orig_npoints < npoints_ref[idx]:
+        new_res = new_res + 0.5
+
+    return new_res
+
+
 def curvilinear_to_rectilinear(cube):
     """Regrid curvilinear data to a rectilinear grid if necessary."""
 
@@ -70,9 +93,11 @@ def curvilinear_to_rectilinear(cube):
 
     if aux_coord_names == ['latitude', 'longitude']:
 
+        grid_res = get_grid_res(cube.coord('latitude').shape)
+
         # Create target grid
-        lats = numpy.arange(-90, 91, 1)
-        lons = numpy.arange(0, 360, 1)
+        lats = numpy.arange(-90, 90 + grid_res * 1.5, grid_res)
+        lons = numpy.arange(0, 360, grid_res)
         target_grid_cube = _make_grid(lats, lons)
 
         # Interate over slices (experimental regridder only works on 2D slices)
