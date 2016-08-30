@@ -118,6 +118,10 @@ def create_basin_array(cube):
       Atlantic Ocean = 2
       Pacific Ocean = 3
       Indian Ocean = 5
+      (land = 0)
+
+    FIXME: When applied to CMIP5 data, some of the marginal seas might
+      not be masked
 
     """
 
@@ -140,6 +144,8 @@ def create_basin_array(cube):
 
     basin_array = numpy.where((basin_array == 3) & (lon_array >= 279) & (lat_array >= 10), 2, basin_array)
     basin_array = numpy.where((basin_array == 5) & (lon_array >= 121) & (lat_array >= 0), 3, basin_array)
+
+    basin_array = numpy.where((basin_array == 5) & (lat_array >= 25), 0, basin_array)
 
     return basin_array
 
@@ -216,6 +222,21 @@ def get_chunks(cube_shape, coord_names, chunk=False):
     return start_indexes, step
 
 
+def mask_marginal_seas(data_cube, basin_cube):
+    """Mask marginal seas.
+
+    The marginal seas all have a basin value > 5.
+
+    """
+
+    ndim = data_cube.ndim
+    basin_array = uconv.broadcast_array(basin_cube.data, [ndim - 2, ndim - 1], data_cube.shape)
+
+    data_cube.data.mask = numpy.where((data_cube.data.mask == False) & (basin_array <= 5), False, True)
+
+    return data_cube
+     
+
 def main(inargs):
     """Run the program."""
 
@@ -234,6 +255,9 @@ def main(inargs):
 
         if climatology_cube:
             data_cube = data_cube - climatology_cube
+
+        if basin_cube:
+            data_cube = mask_marginal_seas(data_cube, basin_cube)
 
         data_cube, coord_names = grids.curvilinear_to_rectilinear(data_cube)
 
