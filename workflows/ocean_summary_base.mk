@@ -36,7 +36,7 @@ VARIABLE_MAPS_VERTICAL_PLOT=${VARIABLE_MAPS_DIR}/${VAR}-maps-vertical-mean_Omon_
 VARIABLE_MAPS_ZONAL_PLOT=${VARIABLE_MAPS_DIR}/${VAR}-maps-zonal-mean_Omon_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
 
 CLIMATOLOGY_FILE=${DEDRIFTED_VARIABLE_DIR}/${VAR}-annual-clim_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
-CLIMATOLOGY_ZONAL_MEAN_FILE=${VARIABLE_MAPS_DIR}/${VAR}-maps-annual-clim_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+CLIMATOLOGY_MAPS_FILE=${VARIABLE_MAPS_DIR}/${VAR}-maps-annual-clim_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 OHC_METRICS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/${METRIC}/${RUN}
 OHC_METRICS_FILE=${OHC_METRICS_DIR}/${METRIC}_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
@@ -69,13 +69,13 @@ ${VARIABLE_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${VARIABLE_MAPS_DIR}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_VARIABLE_FILES} ${LONG_NAME} $@ --climatology_file $< --basin_file ${BASIN_FILE}
 
-${VARIABLE_MAPS_VERTICAL_PLOT} : ${VARIABLE_MAPS_FILE}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} vertical_mean $@ --time ${START_DATE} ${END_DATE} --vm_ticks ${VM_TICK_MAX} ${VM_TICK_STEP} --vm_tick_scale 4 1 2 2 6 --palette ${PALETTE}
-
-${CLIMATOLOGY_ZONAL_MEAN_FILE} : ${CLIMATOLOGY_FILE}
+${CLIMATOLOGY_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< ${LONG_NAME} $@ --basin_file ${BASIN_FILE}
 
-${VARIABLE_MAPS_ZONAL_PLOT} : ${VARIABLE_MAPS_FILE} ${CLIMATOLOGY_ZONAL_MEAN_FILE}
+${VARIABLE_MAPS_VERTICAL_PLOT} : ${VARIABLE_MAPS_FILE} ${CLIMATOLOGY_MAPS_FILE}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} vertical_mean $@ --time ${START_DATE} ${END_DATE} --vm_ticks ${VM_TICK_MAX} ${VM_TICK_STEP} --vm_tick_scale 4 1 2 2 6 --palette ${PALETTE} --climatology_file $(word 2,$^)
+
+${VARIABLE_MAPS_ZONAL_PLOT} : ${VARIABLE_MAPS_FILE} ${CLIMATOLOGY_MAPS_FILE}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --time ${START_DATE} ${END_DATE} --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP} --palette ${PALETTE} --climatology_file $(word 2,$^)
 
 # OHC metrics
