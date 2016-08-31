@@ -231,7 +231,7 @@ def main(inargs):
 
     if inargs.plot_type == 'vertical_mean':
         plot_names = ['argo', 'surface', 'shallow', 'middle', 'deep']
-        fig = plt.figure(figsize=[10, 20])
+        fig = plt.figure(figsize=[10, 25])
         gs = gridspec.GridSpec(5, 1)
     elif inargs.plot_type == 'zonal_mean':
         plot_names = ['globe', 'indian', 'pacific', 'atlantic']

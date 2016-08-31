@@ -37,11 +37,15 @@ if [[ "${variable}" == "so" ]] ; then
     long_name='sea_water_salinity'
     zm_tick_max='0.0035'
     zm_tick_step='0.0005'
+    vm_tick_max='0.1'
+    vm_tick_step='0.02'
     palette='BrBG_r'
 elif [[ "${variable}" == 'thetao' ]] ; then
     long_name='sea_water_potential_temperature'
     zm_tick_max='0.015'
     zm_tick_step='0.003'
+    vm_tick_max='0.025'
+    vm_tick_step='0.005'
     palette='RdBu_r'
 fi
 
@@ -372,7 +376,7 @@ for experiment in "${experiments[@]}"; do
         vardir='r87/dbi599'
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'historical' ]] ; then
-        runs=( r2i1p1 r3i1p1 r4i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
+        runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
         organisation='IPSL'
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'historicalNat' ]] ; then
@@ -381,7 +385,7 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'noAA' ]] ; then
         experiment='historicalMisc'
-        runs=( r2i1p4 )  #r1i1p4 r2i1p4 r3i1p4 r4i1p4
+        runs=( r1i1p4 )  #r1i1p4 r2i1p4 r3i1p4 r4i1p4
         organisation='IPSL'
         controlrun='r2i1p1'
         vardir='r87/dbi599'
@@ -407,9 +411,9 @@ for experiment in "${experiments[@]}"; do
         origcontroldir="/g/data/${controldir}/drstree/CMIP5/GCM"
         origfxdir="/g/data/${fxdir}/drstree/CMIP5/GCM"
 
-        make ${options} -f ocean_summary_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_FX_DIR="${origfxdir}" VAR="${variable}" LONG_NAME="${long_name}" ZM_TICK_MAX="${zm_tick_max}" ZM_TICK_STEP="${zm_tick_step}" PALETTE="${palette}"
+        make ${options} -f ocean_summary_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_FX_DIR="${origfxdir}" VAR="${variable}" LONG_NAME="${long_name}" ZM_TICK_MAX="${zm_tick_max}" ZM_TICK_STEP="${zm_tick_step}" VM_TICK_MAX="${vm_tick_max}" VM_TICK_STEP="${vm_tick_step}" PALETTE="${palette}"
 
-        echo "DONE: make ${options} -f ocean_summary_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_FX_DIR=${origfxdir} VAR=${variable} LONG_NAME=${long_name} ZM_TICK_MAX=${zm_tick_max} ZM_TICK_STEP=${zm_tick_step} PALETTE=${palette}"
+        echo "DONE: make ${options} -f ocean_summary_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_FX_DIR=${origfxdir} VAR=${variable} LONG_NAME=${long_name} ZM_TICK_MAX=${zm_tick_max} ZM_TICK_STEP=${zm_tick_step} VM_TICK_MAX=${vm_tick_max} VM_TICK_STEP=${vm_tick_step} PALETTE=${palette}"
     done
 done
 
