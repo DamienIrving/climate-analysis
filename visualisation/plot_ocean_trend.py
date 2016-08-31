@@ -47,9 +47,23 @@ long_titles = {'argo': 'full depth (0-2000m)',
                'middle': 'mid (350-700m)',
                'deep': 'deep (700-2000m)'}
 
-contour_plot_levels = {'sea_water_potential_temperature': numpy.arange(0.0, 310, 2.5),
-                       'sea_water_salinity': numpy.arange(30, 40, 0.25),
-                       'sea_water_density': numpy.arange(20, 30, 0.5)}
+
+def get_countour_levels(variable, plot_type, scale_factor=1.0):
+    """Define levels for contour plot"""
+
+    step_defaults = {('sea_water_potential_temperature', 'zonal_mean'): 2.5,
+                     ('sea_water_salinity', 'zonal_mean'): 0.25,
+                     ('sea_water_density', 'zonal_mean'): 0.5,
+                     ('sea_water_potential_temperature', 'vertical_mean'): 2.5,
+                     ('sea_water_salinity', 'vertical_mean'): 1.0,
+                     ('sea_water_density', 'vertical_mean'): 0.5}
+
+    step = step_defaults[(variable, plot_type)]
+    step = step / float(scale_factor)    
+
+    levels = numpy.arange(0.0, 350.0, step)
+
+    return levels
 
 
 def get_metadata(inargs, data_cube, climatology_cube):
@@ -81,7 +95,8 @@ def normalise_data(data):
 
 def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
                              ticks, yticks,
-                             title, units, palette):
+                             title, units, palette,
+                             climatology, contour_levels):
     """Plot the vertical mean trends.
 
     Produces a lon / lat plot.
@@ -94,6 +109,10 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
     cmap = eval('plt.cm.'+palette)
     cf = ax.contourf(lons, lats, trends, transform=ccrs.PlateCarree(),
                      cmap=cmap, extend='both', levels=ticks)
+    if type(climatology) == iris.cube.Cube:
+        cplot = ax.contour(lons, lats, climatology.data, transform=ccrs.PlateCarree(),
+                           colors='0.2', levels=contour_levels)
+        plt.clabel(cplot, contour_levels[0::2], fmt='%2.1f', colors='0.2', fontsize=8)
 
     ax.coastlines()
     ax.set_yticks(yticks, crs=ccrs.PlateCarree())
@@ -126,8 +145,8 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     cmap = eval('plt.cm.'+palette)
     cf = axMain.contourf(lats, levs, trends,
                          cmap=cmap, extend='both', levels=ticks)
-    if type(climatology) in [numpy.ma.core.MaskedArray, numpy.ndarray]:
-        cplot_main = axMain.contour(lats, levs, climatology, colors='0.2', levels=contour_levels)
+    if type(climatology) in iris.cube.Cube:
+        cplot_main = axMain.contour(lats, levs, climatology.data, colors='0.2', levels=contour_levels)
         plt.clabel(cplot_main, contour_levels[0::2], fmt='%2.1f', colors='0.2', fontsize=8)
 
     # Deep section
@@ -142,8 +161,8 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     axShallow = divider.append_axes("top", size=2.2, pad=0.1, sharex=axMain)
     axShallow.contourf(lats, levs, trends,
                        cmap=cmap, extend='both', levels=ticks)
-    if type(climatology) in [numpy.ma.core.MaskedArray, numpy.ndarray]:
-        cplot_shallow = axShallow.contour(lats, levs, climatology, colors='0.2', levels=contour_levels)
+    if type(climatology) == iris.cube.Cube:
+        cplot_shallow = axShallow.contour(lats, levs, climatology.data, colors='0.2', levels=contour_levels)
         plt.clabel(cplot_shallow, contour_levels[0::2], fmt='%2.1f', colors='0.2', fontsize=8)
     axShallow.set_ylim((0.0, 500.0))
     axShallow.invert_yaxis()
@@ -169,11 +188,11 @@ def read_climatology(climatology_file, long_name):
     if climatology_file:
         with iris.FUTURE.context(cell_datetime_objects=True):
             climatology_cube = iris.load_cube(climatology_file, long_name)
-        zonal_mean_climatology = climatology_cube
+        climatology = climatology_cube
     else:
-        zonal_mean_climatology = None
+        climatology = None
 
-    return zonal_mean_climatology
+    return climatology
 
 
 def set_ticks(tick_max, tick_step, tick_scale=1.0):
@@ -256,18 +275,21 @@ def main(inargs):
         trend, units = get_trend_data(cube, running_mean, calc_trend=inargs.trend)
 
         # Plot
-        zonal_mean_climatology = read_climatology(inargs.climatology_file, long_name)
+        climatology = read_climatology(inargs.climatology_file, long_name)
         if inargs.plot_type == 'vertical_mean':
             lons = cube.coord('longitude').points
             lats = cube.coord('latitude').points
         
             tick_max, tick_step = inargs.vm_ticks
             ticks = set_ticks(tick_max, tick_step, tick_scale=inargs.vm_tick_scale[plotnum])
+            contour_levels = get_countour_levels(inargs.var, inargs.plot_type,
+                                                 scale_factor=inargs.vm_tick_scale[plotnum])
 
             yticks = set_yticks(inargs.max_lat)
             plot_vertical_mean_trend(trend, lons, lats, gs, plotnum,
                                      ticks, yticks,
-                                     plot_name, units, inargs.palette)
+                                     plot_name, units, inargs.palette,
+                                     climatology, contour_levels)
         
         elif inargs.plot_type == 'zonal_mean':
             lats = cube.coord('latitude').points
@@ -276,16 +298,17 @@ def main(inargs):
             ylabel = 'Depth (%s)' %(cube.coord('depth').units)
             tick_max, tick_step = inargs.zm_ticks
             ticks = set_ticks(tick_max, tick_step)
+            contour_levels = get_countour_levels(inargs.var, inargs.plot_type)
 
             plot_zonal_mean_trend(trend, lats, levs, gs, plotnum,
                                   ticks, plot_name, units, ylabel,
                                   inargs.palette, colorbar_axes,
-                                  zonal_mean_climatology.data, contour_plot_levels[inargs.var])
+                                  climatology, contour_levels)
 
     # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
 
-    metadata_dict = get_metadata(inargs, cube, zonal_mean_climatology) 
+    metadata_dict = get_metadata(inargs, cube, climatology) 
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)
 
 
