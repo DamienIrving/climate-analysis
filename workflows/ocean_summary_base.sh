@@ -37,8 +37,8 @@ if [[ "${variable}" == "so" ]] ; then
     long_name='sea_water_salinity'
     zm_tick_max='0.0035'
     zm_tick_step='0.0005'
-    vm_tick_max='0.1'
-    vm_tick_step='0.02'
+    vm_tick_max='0.01'
+    vm_tick_step='0.002'
     palette='BrBG_r'
 elif [[ "${variable}" == 'thetao' ]] ; then
     long_name='sea_water_potential_temperature'
