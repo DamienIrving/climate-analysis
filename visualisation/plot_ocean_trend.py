@@ -52,9 +52,11 @@ def get_countour_levels(variable, plot_type, scale_factor=1.0):
     """Define levels for contour plot"""
 
     step_defaults = {('sea_water_potential_temperature', 'zonal_mean'): 2.5,
+                     ('sea_water_temperature', 'zonal_mean'): 2.5,
                      ('sea_water_salinity', 'zonal_mean'): 0.25,
                      ('sea_water_density', 'zonal_mean'): 0.5,
                      ('sea_water_potential_temperature', 'vertical_mean'): 5.0,
+                     ('sea_water_temperature', 'vertical_mean'): 5.0,
                      ('sea_water_salinity', 'vertical_mean'): 1.0,
                      ('sea_water_density', 'vertical_mean'): 0.5}
 
@@ -145,7 +147,7 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     cmap = eval('plt.cm.'+palette)
     cf = axMain.contourf(lats, levs, trends,
                          cmap=cmap, extend='both', levels=ticks)
-    if type(climatology) in iris.cube.Cube:
+    if type(climatology) == iris.cube.Cube:
         cplot_main = axMain.contour(lats, levs, climatology.data, colors='0.2', levels=contour_levels)
         plt.clabel(cplot_main, contour_levels[0::2], fmt='%2.1f', colors='0.2', fontsize=8)
 
