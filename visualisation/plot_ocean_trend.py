@@ -54,7 +54,7 @@ def get_countour_levels(variable, plot_type, scale_factor=1.0):
     step_defaults = {('sea_water_potential_temperature', 'zonal_mean'): 2.5,
                      ('sea_water_salinity', 'zonal_mean'): 0.25,
                      ('sea_water_density', 'zonal_mean'): 0.5,
-                     ('sea_water_potential_temperature', 'vertical_mean'): 2.5,
+                     ('sea_water_potential_temperature', 'vertical_mean'): 5.0,
                      ('sea_water_salinity', 'vertical_mean'): 1.0,
                      ('sea_water_density', 'vertical_mean'): 0.5}
 
