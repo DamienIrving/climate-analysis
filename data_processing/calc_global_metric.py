@@ -1,7 +1,7 @@
 """
-Filename:     calc_ohc_metrics.py
+Filename:     calc_global_metric.py
 Author:       Damien Irving, irving.damien@gmail.com
-Description:  Calculate integrated temperature metric for various global regions
+Description:  Calculate global metric
 
 """
 
@@ -33,7 +33,6 @@ except ImportError:
 
 # Define functions
 
-history = []
 
 def read_area(area_file):
     """Read the optional area file."""
@@ -46,22 +45,13 @@ def read_area(area_file):
     return area_cube
 
 
-def save_history(cube, field, filename):
-    """Save the history attribute when reading the data.
-    (This is required because the history attribute differs between input files 
-      and is therefore deleted upon equilising attributes)  
-    """ 
-
-    history.append(cube.attributes['history'])
-
-
 def set_attributes(inargs, data_cube, area_cube):
     """Set the attributes for the output cube."""
     
     atts = data_cube.attributes
 
     infile_history = {}
-    infile_history[inargs.infiles[0]] = history[0]
+    infile_history[inargs.infile] = data_cube.attributes['history']
  
     if area_cube:                  
         infile_history[inargs.area_file] = area_cube.attributes['history']
@@ -88,14 +78,17 @@ def calc_mean_anomaly(cube, sign, grid_areas):
 
 
 def calc_amplification_metric(cube, grid_areas, atts):
-    """Calculate salinity amplification metric.
+    """Calculate amplification metric.
+
+    Usually used for sea surface salinity
+      (e.g. Figure 3.21 of the IPCC AR5 report)
 
     Definition: difference between the average positive
       and average negative spatial anomaly.
 
-    Reference: Figure 3.21 of the IPCC AR5 report
-
     """
+
+    assert cube.standard_name == 'sea_surface_salinity'
 
     fldmean = cube.collapsed(['longitude', 'latitude'], iris.analysis.MEAN, weights=grid_areas)
     cube_spatial_anom = cube - fldmean        
@@ -105,11 +98,10 @@ def calc_amplification_metric(cube, grid_areas, atts):
 
     metric = ave_pos_anom - ave_neg_anom 
 
-    iris.std_names.STD_NAMES['sa'] = {'canonical_units': 'g/kg'}
-    metric.var_name = 'sa'
-    metric.standard_name = 'sea_surface_salinity'
-    metric.long_name = 'Sea Surface Salinity'
-    metric.units = 'g/kg'
+    metric.var_name = cube.var_name
+    metric.standard_name = cube.standard_name
+    metric.long_name = cube.long_name
+    metric.units = cube.units
     metric.attributes = atts
 
     return metric
@@ -130,21 +122,33 @@ def get_area_weights(cube, area_cube):
     return area_weights
 
 
+def calc_global_mean(cube, grid_areas, atts):
+    """Calculate global mean."""
+
+    global_mean = cube.collapsed(['longitude', 'latitude'], iris.analysis.MEAN, weights=grid_areas)
+    global_mean.remove_coord('longitude')
+    global_mean.remove_coord('latitude')
+
+    global_mean.attributes = atts
+
+    return global_mean
+
+
 def main(inargs):
     """Run the program."""
 
-    in_cubes = iris.load(inargs.infiles, inargs.var, callback=save_history)
-    equalise_attributes(in_cubes)
-    cube = in_cubes.concatenate_cube()
-
+    cube = iris.load_cube(inargs.infile, inargs.var)
     area_cube = read_area(inargs.area_file) 
 
-    atts = set_attributes(inargs, in_cubes[0], area_cube)
+    atts = set_attributes(inargs, cube, area_cube)
 
     cube = cube.rolling_window('time', iris.analysis.MEAN, 12)
-
     area_weights = get_area_weights(cube, area_cube)
-    metric = calc_amplification_metric(cube, area_weights, atts)
+
+    if inargs.metric == 'amplification':
+        metric = calc_amplification_metric(cube, area_weights, atts)
+    elif inargs.metric == 'mean':
+        metric = calc_global_mean(cube, area_weights, atts)
 
     iris.save(metric, inargs.outfile)
 
@@ -157,14 +161,15 @@ author:
 
 """
 
-    description='Calculate a salinity amplification metric'
+    description='Calculate a global metric'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infiles", type=str, nargs='*', help="Input salinity data files")
-    parser.add_argument("var", type=str, help="Input salinity variable name (i.e. the standard_name)")
+    parser.add_argument("infile", type=str, help="Input data file")
+    parser.add_argument("var", type=str, help="Input variable name (i.e. the standard_name)")
+    parser.add_argument("metric", type=str, choices=('mean', 'amplification'), help="Metric to calculate")
     parser.add_argument("outfile", type=str, help="Output file name")
     
     parser.add_argument("--area_file", type=str, default=None, 
