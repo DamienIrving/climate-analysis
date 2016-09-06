@@ -79,6 +79,8 @@ def get_grid_res(horiz_shape):
     if orig_npoints < npoints_ref[idx]:
         new_res = new_res + 0.5
 
+    new_res = new_res + 0.5  # safety buffer
+
     print "new horizontal grid resolution =", new_res
 
     return new_res
