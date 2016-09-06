@@ -82,14 +82,15 @@ for experiment in "${experiments[@]}"; do
         vardir='r87/dbi599'
 
     # CCSM4 
+    ## (No basin files)
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'historical' ]] ; then
         experiment='historical'
-        runs=( r1i1p1 )  # r1i1p1 r1i2p1 r1i2p2 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
+        runs=( r1i1p1 r4i1p1 r6i1p1 )  # r1i1p1 r1i2p1 r1i2p2 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
         organisation='NCAR'
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'historicalGHG' ]] ; then
-        runs=( r1i1p1 )  # r1i1p1 r4i1p1 r6i1p1
+        runs=( r1i1p1 r4i1p1 r6i1p1 )  # r1i1p1 r4i1p1 r6i1p1
         organisation='NCAR'
         vardir='r87/dbi599'
 
@@ -99,13 +100,13 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p10 )  # r1i1p10; missing r4i1p10 r6i1p10
+        runs=( r1i1p10 )  # r1i1p10 r4i1p10 r6i1p10
         organisation='NCAR'
         vardir='r87/dbi599'
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'Ant' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p11 ) # r1i1p11 r2i1p11; missing r4i1p11 r6i1p11
+        runs=( r1i1p11 r4i1p11 r6i1p11 ) # r1i1p11 r2i1p11 r4i1p11 r6i1p11
         organisation='NCAR'
         vardir='r87/dbi599'
 
