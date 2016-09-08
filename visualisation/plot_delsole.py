@@ -113,7 +113,7 @@ def main(inargs):
         y_data = data_dict[(experiment, 'y_data')]
 
         if numpy.any(x_data):
-            plt.scatter(x_data, y_data, facecolors='none', edgecolors=color, label=experiment)
+            plt.scatter(x_data[::inargs.thin], y_data[::inargs.thin], facecolors='none', edgecolors=color, label=experiment)
             if experiment in ['AA', 'noAA']:
                 x_trend, y_trend = calc_trend(x_data, y_data, experiment)
                 plt.plot(x_trend, y_trend, color=color)
@@ -145,6 +145,8 @@ author:
 
     parser.add_argument("--file_pair", type=str, action='append', default=[], nargs=4,
                         metavar=('X_DATA', 'X_VAR', 'Y_DATA', 'Y_VAR'), help="x and y data pair")
+    parser.add_argument("--thin", type=int, default=1,
+                        help="Stride for thinning the data (e.g. 3 will keep one-third of the data) [default: 1]")
 
     args = parser.parse_args()            
     main(args)
