@@ -69,7 +69,7 @@ def check_attributes(x_cube, y_cube):
     else:
         experiment = x_experiment
 
-    return experiment
+    return experiment, x_model
 
 
 def calc_trend(x_data, y_data, experiment):
@@ -100,12 +100,15 @@ def main(inargs):
         x_cube = iris.load_cube(xfile, xvar)
         y_cube = iris.load_cube(yfile, yvar)
 
-        experiment = check_attributes(x_cube, y_cube)
+        experiment, model = check_attributes(x_cube, y_cube)
         metadata_dict[xfile] = x_cube.attributes['history']
         metadata_dict[yfile] = y_cube.attributes['history']
 
         data_dict[(experiment, 'x_data')] = numpy.append(data_dict[(experiment, 'x_data')], x_cube.data)
-        data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], y_cube.data)
+        if yvar == 'precipitation_flux':
+            data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], y_cube.data * 86400)
+        else:
+            data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], y_cube.data)
 
     fig = plt.figure(figsize=(12,8))
     for experiment, color in experiment_colors.iteritems():
@@ -119,8 +122,13 @@ def main(inargs):
                 plt.plot(x_trend, y_trend, color=color)
 
     plt.legend(loc=4)
-    plt.ylabel('Salinity amplification (g/kg)')
+
+    if yvar == 'sea_surface_salinity':
+        plt.ylabel('Salinity amplification (g/kg)')
+    elif yvar == 'precipitation_flux':
+        plt.ylabel('Global mean precipitation (mm/day)')
     plt.xlabel('Global mean temperature (K)')
+    plt.title(model)
 
     # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')

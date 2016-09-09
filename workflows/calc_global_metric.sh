@@ -45,6 +45,14 @@ for run in "${runs[@]}"; do
         outname=`echo ${data_file} | rev | cut -d / -f 1 | rev | sed s/tas_/tas-global-mean_/`
         outdir=/g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${experiment}/mon/atmos/tas/${run}
         out_file=${outdir}/${outname}
+    elif [[ "${variable}" == "pr" ]] ; then
+        data_file=`ls /g/data/ua6/drstree/CMIP5/GCM/${institution}/${model}/${experiment}/mon/atmos/pr/${run}/pr_Amon_${model}_${experiment}_${run}*.nc`
+        area_file=/g/data/ua6/drstree/CMIP5/GCM/${institution}/${model}/${experiment}/fx/atmos/areacella/${area_run}/areacella_fx_${model}_${experiment}_${area_run}.nc
+        standard_name=precipitation_flux
+        metric=mean
+        outname=`echo ${data_file} | rev | cut -d / -f 1 | rev | sed s/pr_/pr-global-mean_/`
+        outdir=/g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${experiment}/mon/atmos/pr/${run}
+        out_file=${outdir}/${outname}
     fi
 
     echo ${out_file}
