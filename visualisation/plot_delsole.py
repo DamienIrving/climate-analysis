@@ -36,7 +36,9 @@ except ImportError:
 # Define functions
 
 experiment_names = {('CSIRO-Mk3-6-0', 'historicalMisc', 3): 'noAA',
-                    ('CSIRO-Mk3-6-0', 'historicalMisc', 4): 'AA'}
+                    ('CSIRO-Mk3-6-0', 'historicalMisc', 4): 'AA',
+                    ('IPSL-CM5A-LR', 'historicalMisc', 3): 'AA',
+                    ('IPSL-CM5A-LR', 'historicalMisc', 4): 'noAA'}
 
 experiment_colors = {'noAA': 'r',
                      'AA': 'b',
@@ -105,7 +107,7 @@ def main(inargs):
         metadata_dict[yfile] = y_cube.attributes['history']
 
         data_dict[(experiment, 'x_data')] = numpy.append(data_dict[(experiment, 'x_data')], x_cube.data)
-        if yvar == 'precipitation_flux':
+        if yvar in ['precipitation_flux', 'water_evaporation_flux']:
             data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], y_cube.data * 86400)
         else:
             data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], y_cube.data)
@@ -127,6 +129,8 @@ def main(inargs):
         plt.ylabel('Salinity amplification (g/kg)')
     elif yvar == 'precipitation_flux':
         plt.ylabel('Global mean precipitation (mm/day)')
+    elif yvar == 'water_evaporation_flux':
+        plt.ylabel('Global mean evaporation (mm/day)')
     plt.xlabel('Global mean temperature (K)')
     plt.title(model)
 
