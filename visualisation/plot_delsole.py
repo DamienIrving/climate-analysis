@@ -44,7 +44,13 @@ experiment_colors = {'noAA': 'r',
                      'AA': 'b',
                      'historical': 'y',
                      'piControl': '0.5',
-                     'Argo': 'g'}
+                     'Argo': 'g',
+                     '1pctCO2': 'k'}
+
+label_dict = {'sea_surface_salinity': 'Salinity amplification (g/kg)',
+              'precipitation_flux': 'Global mean precipitation (mm/day)',
+              'water_evaporation_flux': 'Global mean evaporation (mm/day)',
+              'air_temperature': 'Global mean temperature (K)'}
 
 
 def check_attributes(x_cube, y_cube):
@@ -89,6 +95,15 @@ def calc_trend(x_data, y_data, experiment):
     return x_trend, y_trend
 
 
+def get_data(data, var):
+    """Adjust data units if required"""
+
+    if var in ['precipitation_flux', 'water_evaporation_flux']:
+        data = data * 86400
+
+    return data
+
+
 def main(inargs):
     """Run the program."""
  
@@ -106,11 +121,8 @@ def main(inargs):
         metadata_dict[xfile] = x_cube.attributes['history']
         metadata_dict[yfile] = y_cube.attributes['history']
 
-        data_dict[(experiment, 'x_data')] = numpy.append(data_dict[(experiment, 'x_data')], x_cube.data)
-        if yvar in ['precipitation_flux', 'water_evaporation_flux']:
-            data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], y_cube.data * 86400)
-        else:
-            data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], y_cube.data)
+        data_dict[(experiment, 'x_data')] = numpy.append(data_dict[(experiment, 'x_data')], get_data(x_cube.data, xvar))
+        data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], get_data(y_cube.data, yvar))
 
     fig = plt.figure(figsize=(12,8))
     for experiment, color in experiment_colors.iteritems():
@@ -124,14 +136,8 @@ def main(inargs):
                 plt.plot(x_trend, y_trend, color=color)
 
     plt.legend(loc=4)
-
-    if yvar == 'sea_surface_salinity':
-        plt.ylabel('Salinity amplification (g/kg)')
-    elif yvar == 'precipitation_flux':
-        plt.ylabel('Global mean precipitation (mm/day)')
-    elif yvar == 'water_evaporation_flux':
-        plt.ylabel('Global mean evaporation (mm/day)')
-    plt.xlabel('Global mean temperature (K)')
+    plt.xlabel(label_dict[xvar])
+    plt.ylabel(label_dict[yvar])
     plt.title(model)
 
     # Write output
