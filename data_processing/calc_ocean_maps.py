@@ -240,8 +240,14 @@ def mask_marginal_seas(data_cube, basin_cube):
 def main(inargs):
     """Run the program."""
 
-    data_cubes = iris.load(inargs.infiles, inargs.var, callback=save_history)
-    equalise_attributes(data_cubes)
+    try:
+        time_constraint = gio.get_time_constraint(inargs.time)
+    except AttributeError:
+        time_constraint = iris.Constraint()
+
+    with iris.FUTURE.context(cell_datetime_objects=True):
+        data_cubes = iris.load(inargs.infiles, inargs.var & time_constraint, callback=save_history)
+        equalise_attributes(data_cubes)
 
     climatology_cube = read_climatology(inargs.climatology_file, inargs.var)
     basin_cube = read_basin(inargs.basin_file) 
@@ -299,9 +305,11 @@ def main(inargs):
         cube_list.append(temp_list.concatenate_cube())
     
     cube_list = iris.cube.CubeList(cube_list)
+
     assert cube_list[0].data.dtype == numpy.float32
     if not 'time' in coord_names:
         iris.FUTURE.netcdf_no_unlimited = True
+
     iris.save(cube_list, inargs.outfile)
 
 
@@ -328,6 +336,9 @@ author:
                         help="Input climatology file (required if input data not already anomaly)")
     parser.add_argument("--basin_file", type=str, default=None, 
                         help="Input basin file")
+
+    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
+                        help="Time period [default = entire]")
 
     parser.add_argument("--chunk", action="store_true", default=False,
                         help="Split input files on time axis to avoid memory errors [default: False]")
