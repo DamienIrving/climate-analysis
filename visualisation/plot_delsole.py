@@ -50,7 +50,8 @@ experiment_colors = {'noAA': 'r',
 label_dict = {'sea_surface_salinity': 'Salinity amplification (g/kg)',
               'precipitation_flux': 'Global mean precipitation (mm/day)',
               'water_evaporation_flux': 'Global mean evaporation (mm/day)',
-              'air_temperature': 'Global mean temperature (K)'}
+              'air_temperature': 'Global mean temperature (K)',
+              'evaporation_minus_precipitation_flux': 'Global mean E-P (mm/day)'}
 
 
 def check_attributes(x_cube, y_cube):
@@ -98,10 +99,29 @@ def calc_trend(x_data, y_data, experiment):
 def get_data(data, var):
     """Adjust data units if required"""
 
-    if var in ['precipitation_flux', 'water_evaporation_flux']:
+    if var in ['precipitation_flux', 'water_evaporation_flux', 'evaporation_minus_precipitation_flux']:
         data = data * 86400
 
     return data
+
+
+def calc_ep(efile, evar, pfile, pvar):
+    """Calculate E-P"""
+    
+    assert evar == 'water_evaporation_flux'
+    e_cube = iris.load_cube(efile, evar)
+
+    assert pvar == 'precipitation_flux'
+    p_cube = iris.load_cube(pfile, pvar)
+
+    experiment, model = check_attributes(e_cube, p_cube)
+
+    y_cube = e_cube + p_cube
+
+    e_hist = e_cube.attributes['history']
+    p_hist = p_cube.attributes['history']
+
+    return y_cube, e_hist, p_hist, experiment, model
 
 
 def main(inargs):
@@ -113,13 +133,25 @@ def main(inargs):
         data_dict[(experiment, 'y_data')] = numpy.array([])
 
     metadata_dict = {}
-    for xfile, xvar, yfile, yvar in inargs.file_pair:
-        x_cube = iris.load_cube(xfile, xvar)
-        y_cube = iris.load_cube(yfile, yvar)
+    for file_group in inargs.file_group:
 
-        experiment, model = check_attributes(x_cube, y_cube)
+        print file_group
+        assert len(file_group) in [4, 6]
+        if len(file_group) == 4:
+            xfile, xvar, yfile, yvar = file_group
+            x_cube = iris.load_cube(xfile, xvar)
+            y_cube = iris.load_cube(yfile, yvar)
+            experiment, model = check_attributes(x_cube, y_cube)
+            metadata_dict[yfile] = y_cube.attributes['history']
+        elif len(file_group) == 6:
+            xfile, xvar, efile, evar, pfile, pvar = file_group
+            x_cube = iris.load_cube(xfile, xvar)
+            y_cube, e_hist, p_hist, experiment, model = calc_ep(efile, evar, pfile, pvar)
+            yvar = 'evaporation_minus_precipitation_flux'
+            metadata_dict[efile] = e_hist
+            metadata_dict[pfile] = p_hist
+        
         metadata_dict[xfile] = x_cube.attributes['history']
-        metadata_dict[yfile] = y_cube.attributes['history']
 
         data_dict[(experiment, 'x_data')] = numpy.append(data_dict[(experiment, 'x_data')], get_data(x_cube.data, xvar))
         data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], get_data(y_cube.data, yvar))
@@ -161,8 +193,8 @@ author:
 
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    parser.add_argument("--file_pair", type=str, action='append', default=[], nargs=4,
-                        metavar=('X_DATA', 'X_VAR', 'Y_DATA', 'Y_VAR'), help="x and y data pair")
+    parser.add_argument("--file_group", type=str, action='append', default=[], nargs='*',
+                        help="list that goes file, var, file, var...")
     parser.add_argument("--thin", type=int, default=1,
                         help="Stride for thinning the data (e.g. 3 will keep one-third of the data) [default: 1]")
 
