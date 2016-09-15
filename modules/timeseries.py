@@ -3,11 +3,13 @@
 Functions:
   calc_seasonal_cycle  -- Calculate the seasonal cycle
   calc_trend           -- Calculate the linear trend
+  convert_to_annual    -- Convert the data to annual mean
 
 """
 
 import numpy
 import iris
+import iris.coord_categorisation
 import cf_units
 import pdb
 
@@ -112,6 +114,22 @@ def calc_trend(cube, running_mean=True, per_yr=True, remove_scaling=False):
         trend = trend * 60 * 60 * 24 * 365.25
 
     return trend
+
+
+def convert_to_annual(cube):
+    """Convert data to annual timescale.
+
+    Args:
+      cube (iris.cube.Cube)
+
+    """
+
+    iris.coord_categorisation.add_year(cube, 'time')
+    cube = cube.aggregated_by(['year'], iris.analysis.MEAN)
+    cube.remove_coord('year')
+
+    return cube
+
 
 
 

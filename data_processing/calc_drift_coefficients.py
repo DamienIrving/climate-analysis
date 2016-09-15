@@ -28,6 +28,7 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import timeseries
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -58,8 +59,14 @@ def polyfit(data, time_axis):
         return numpy.polynomial.polynomial.polyfit(time_axis, data, 3)
 
 
-def calc_coefficients(cube, coord_names, time_axis):
-    """Calculate the polynomial coefficients."""
+def calc_coefficients(cube, coord_names, convert_annual=False):
+    """Calculate the polynomial coefficients.
+
+    Can select to convert data to annual timescale first.
+
+    Choices are made to avoid memory errors on large arrays.
+
+    """
 
     if 'depth' in coord_names:
         assert coord_names[1] == 'depth', 'coordinate order must be time, depth, ...'
@@ -69,17 +76,28 @@ def calc_coefficients(cube, coord_names, time_axis):
         out_shape[0] = 4
         coefficients = numpy.zeros(out_shape, dtype=numpy.float32)
         for i, x_slice in enumerate(cube.slices(slice_dims)):
+            if convert_annual:
+                x_slice = timeseries.convert_to_annual(x_slice)
+            time_axis = x_slice.coord('time').points.astype(numpy.float32)
             coefficients[:,i,::] = numpy.ma.apply_along_axis(polyfit, 0, x_slice.data, time_axis)
         fill_value = x_slice.data.fill_value 
         coefficients = numpy.ma.masked_values(coefficients, fill_value)
-    elif cube.ndim == 1:
-        coefficients = polyfit(cube.data, time_axis)
-    else:    
-        coefficients = numpy.ma.apply_along_axis(polyfit, 0, cube.data, time_axis)
-        fill_value = cube.data.fill_value 
-        coefficients = numpy.ma.masked_values(coefficients, fill_value)
+    else:
+        if convert_annual:
+            cube = timeseries.convert_to_annual(cube)
+        time_axis = cube.coord('time').points.astype(numpy.float32)
+
+        if cube.ndim == 1:
+            coefficients = polyfit(cube.data, time_axis)
+        else:    
+            coefficients = numpy.ma.apply_along_axis(polyfit, 0, cube.data, time_axis)
+            fill_value = cube.data.fill_value 
+            coefficients = numpy.ma.masked_values(coefficients, fill_value)
     
-    return coefficients
+    time_start = time_axis[0]
+    time_end = time_axis[-1]
+
+    return coefficients, time_start, time_end
 
 
 def set_global_atts(inargs, cube):
@@ -108,12 +126,11 @@ def main(inargs):
         cube = cubes[var_index::nvars]
         equalise_attributes(cube)
         cube = cube.concatenate_cube()
-       
+        
         coord_names = [coord.name() for coord in cube.coords(dim_coords=True)]
         assert coord_names[0] == 'time', "First axis must be time"
-        time_axis = cube.coord('time').points.astype(numpy.float32)
        
-        coefficients = calc_coefficients(cube, coord_names, time_axis)
+        coefficients, time_start, time_end = calc_coefficients(cube, coord_names, convert_annual=inargs.annual)
 
         # Write the output file
 
@@ -144,8 +161,8 @@ def main(inargs):
                                   aux_coords_and_dims=aux_coords)
         new_cube.attributes['time_unit'] = str(cube.coord('time').units)
         new_cube.attributes['time_calendar'] = str(cube.coord('time').units.calendar)
-        new_cube.attributes['time_start'] = time_axis[0]
-        new_cube.attributes['time_end'] = time_axis[-1]
+        new_cube.attributes['time_start'] = time_start
+        new_cube.attributes['time_end'] = time_end
         out_cubes.append(new_cube)
 
     cube_list = iris.cube.CubeList(out_cubes)
@@ -177,6 +194,8 @@ notes:
     parser.add_argument("infiles", type=str, nargs='*', help="Input file names")
     parser.add_argument("outfile", type=str, help="Output file name")
 
+    parser.add_argument("--annual", action="store_true", default=False,
+                        help="Convert data to annual timescale [default: False]")
     parser.add_argument("--var", type=str, default=None,
                         help="Input variable [default = None, which means all input variables are done]")
 

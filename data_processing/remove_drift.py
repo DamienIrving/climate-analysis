@@ -28,6 +28,7 @@ sys.path.append(modules_dir)
 
 try:
     import general_io as gio
+    import timeseries
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -173,6 +174,26 @@ def time_adjustment(first_data_cube, coefficient_cube):
     return time_diff, branch_time_value, new_unit
 
 
+def check_start_time(time_values, coefficient_cube, branch_time, annual=False):
+    """Check that the time adjustment was correct
+
+    The branch time given in CMIP5 metadata is for monthly timescale data. 
+
+    If the timescale is unchanged, then after the time adjustment the first time point
+      of the first data file should be zero.
+
+    If the timescale is annual, then after time adjustment the first point should 
+      be about 6 months, because iris sets the time axis values to the mid point of the year.
+    
+    """
+
+    time_diff = time_values[0] - (coefficient_cube.attributes['time_start'] + branch_time)
+    if annual:
+        assert 100 < time_diff < 200 
+    else:
+        assert time_diff == 0
+
+
 def main(inargs):
     """Run the program."""
     
@@ -190,13 +211,17 @@ def main(inargs):
         if not inargs.no_parent_check:
             check_attributes(data_cube.attributes, coefficient_cube.attributes)
 
+        if inargs.annual:
+            data_cube = timeseries.convert_to_annual(data_cube)
+            data_cube.data = data_cube.data.astype(numpy.float32)
+
         # Sync the data time axis with the coefficient time axis        
         time_coord = data_cube.coord('time')
         time_coord.convert_units(new_time_unit)
         
         time_values = time_coord.points.astype(numpy.float32) - time_diff
         if fnum == 0:
-            assert time_values[0] == coefficient_cube.attributes['time_start'] + branch_time
+            check_start_time(time_values, coefficient_cube, branch_time, annual=inargs.annual)    
 
         # Remove the drift
         drift_signal = apply_polynomial(time_values, coefficient_cube.data, chunk=inargs.chunk)
@@ -209,6 +234,8 @@ def main(inargs):
             new_cubelist.append(new_cube)
         elif inargs.outfile[-1] == '/':        
             infile = filename.split('/')[-1]
+            if inargs.annual:
+                infile = re.sub('Omon', 'Oyr', infile)
             outfile = inargs.outfile + infile
             metadata_dict = {infile: data_cube.attributes['history'], 
                              inargs.coefficient_file: coefficient_cube.attributes['history']}
@@ -257,6 +284,8 @@ notes:
     parser.add_argument("coefficient_file", type=str, help="Input coefficient file")
     parser.add_argument("outfile", type=str, help="Give a path instead of a file name if you want an output file corresponding to each input file")
     
+    parser.add_argument("--annual", action="store_true", default=False,
+                        help="Convert data to annual timescale [default: False]")
     parser.add_argument("--no_parent_check", action="store_true", default=False,
                         help="Do not perform the parent experiment check [default: False]")
     parser.add_argument("--chunk", action="store_true", default=False,

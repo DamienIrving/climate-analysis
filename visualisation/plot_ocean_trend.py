@@ -116,7 +116,6 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
                            colors='0.2', levels=contour_levels)
         plt.clabel(cplot, contour_levels[0::2], fmt='%2.1f', colors='0.2', fontsize=8)
 
-    ax.coastlines()
     ax.set_yticks(yticks, crs=ccrs.PlateCarree())
     ax.set_xticks([0, 60, 120, 180, 240, 300, 360], crs=ccrs.PlateCarree())
     lon_formatter = LongitudeFormatter(zero_direction_label=True)
@@ -126,6 +125,7 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
     ax.set_xlabel('Longitude', fontsize='small')
     ax.set_ylabel('Latitude', fontsize='small')    
     ax.set_title(long_titles[title])
+    ax.coastlines()
 
     cbar = plt.colorbar(cf)
     cbar.set_label(units)
@@ -219,14 +219,14 @@ def set_yticks(max_lat):
     return yticks
 
 
-def get_trend_data(cube, running_mean, calc_trend=True, normalise=False):
+def get_trend_data(cube, calc_trend=True, normalise=False):
     """Get the trend data."""
 
     if calc_trend:
         trend = cube.data
         units = cube.units
     else:
-        trend = timeseries.calc_trend(cube, running_mean=running_mean,
+        trend = timeseries.calc_trend(cube, running_mean=False,
                                       per_yr=True, remove_scaling=False)
 
         if not cube.units == 1:
@@ -268,13 +268,11 @@ def main(inargs):
             cube = iris.load_cube(inargs.infile, long_name & time_constraint)  
 
         # Calculate seasonal cycle
-        running_mean = True
         if inargs.seasonal_cycle:
             cube = timeseries.calc_seasonal_cycle(cube) 
-            running_mean = False
 
         # Calculate trend
-        trend, units = get_trend_data(cube, running_mean, calc_trend=inargs.trend)
+        trend, units = get_trend_data(cube, calc_trend=inargs.trend)
 
         # Plot
         climatology = read_climatology(inargs.climatology_file, long_name)
