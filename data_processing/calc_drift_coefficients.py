@@ -163,6 +163,10 @@ def main(inargs):
         new_cube.attributes['time_calendar'] = str(cube.coord('time').units.calendar)
         new_cube.attributes['time_start'] = time_start
         new_cube.attributes['time_end'] = time_end
+
+        if new_cube.standard_name == 'sea_water_salinity':
+            new_cube = gio.salinity_unit_check(new_cube, first_dim=True) 
+
         out_cubes.append(new_cube)
 
     cube_list = iris.cube.CubeList(out_cubes)
