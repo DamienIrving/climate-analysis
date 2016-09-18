@@ -304,7 +304,7 @@ def read_dates(infile):
     return date_list, date_metadata
 
 
-def salinity_unit_check(cube, first_dim=False):
+def salinity_unit_check(cube):
     """Check CMIP5 salinity units.
 
     Most modeling groups store their salinity data
@@ -319,19 +319,15 @@ def salinity_unit_check(cube, first_dim=False):
 
     Args:
       cube (iris.cube.Cube) 
-      first_dim (int): Just test the [0, :::] subset of the cube 
 
     """
 
     if cube.units == '1':
         cube.data = cube.data * 1000
 
-    if first_dim:    
-        data_max = cube[0, ::].data.max()
-        data_min = cube[0, ::].data.min()
-    else:
-        data_max = cube.data.max()
-        data_min = cube.data.min()
+    data_max = cube.data.max()
+    data_min = cube.data.min()
+    
     assert data_max < 55.0, 'Data max is %f' %(data_max)
     assert data_min > 2.0 , 'Data min is %f' %(data_min)
 

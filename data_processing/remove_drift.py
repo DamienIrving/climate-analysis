@@ -124,8 +124,8 @@ def coefficient_sanity_check(coefficient_cube, variable):
         var_max = 330
         var_min = 250
     elif variable == 'sea_water_salinity':
-        var_max = 45
-        var_min = 5
+        var_max = 55
+        var_min = 2
  
     nmasked_original = numpy.sum(coefficient_cube.data.mask)
 
@@ -144,15 +144,15 @@ def coefficient_sanity_check(coefficient_cube, variable):
     new_mask = numpy.repeat(new_mask, 4, axis=0)
 
     nmasked_new = numpy.sum(new_mask)    
-
-    if ncrazy > 0:
-        npoints = numpy.prod(a_data.shape)
-        print "Masked %i of %i points because cubic fit was poor" %(ncrazy, npoints)  
-        #numpy.argwhere(x == np.min(x)) to see what those points are
+    npoints = numpy.prod(a_data.shape)
+    summary = "Masked %i of %i points because cubic fit was poor" %(ncrazy, npoints)  
+    #numpy.argwhere(x == np.min(x)) to see what those points are
     
     coefficient_cube.data.mask = new_mask
   
     assert nmasked_new == ncrazy * 4 + nmasked_original
+
+    return summary
 
 
 def time_adjustment(first_data_cube, coefficient_cube):
@@ -199,7 +199,7 @@ def main(inargs):
     
     first_data_cube = iris.load_cube(inargs.data_files[0], inargs.var)
     coefficient_cube = iris.load_cube(inargs.coefficient_file)
-    coefficient_sanity_check(coefficient_cube, inargs.var)
+    sanity_summary = coefficient_sanity_check(coefficient_cube, inargs.var)
 
     time_diff, branch_time, new_time_unit = time_adjustment(first_data_cube, coefficient_cube)
     del first_data_cube
@@ -227,6 +227,7 @@ def main(inargs):
         drift_signal = apply_polynomial(time_values, coefficient_cube.data, chunk=inargs.chunk)
         new_cube = data_cube - drift_signal
         new_cube.metadata = data_cube.metadata
+        new_cube.metadata['drift_removal'] = sanity_summary
 
         assert (inargs.outfile[-3:] == '.nc') or (inargs.outfile[-1] == '/')
 
