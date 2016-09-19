@@ -227,7 +227,7 @@ def main(inargs):
         drift_signal = apply_polynomial(time_values, coefficient_cube.data, chunk=inargs.chunk)
         new_cube = data_cube - drift_signal
         new_cube.metadata = data_cube.metadata
-        new_cube.metadata['drift_removal'] = sanity_summary
+        new_cube.attributes['drift_removal'] = sanity_summary
 
         assert (inargs.outfile[-3:] == '.nc') or (inargs.outfile[-1] == '/')
 
