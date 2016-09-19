@@ -19,7 +19,6 @@ from iris.analysis.cartography import cosine_latitude_weights
 import cartopy.crs as ccrs
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
-
 # Import my modules
 
 cwd = os.getcwd()
@@ -219,10 +218,18 @@ def set_yticks(max_lat):
     return yticks
 
 
-def get_trend_data(cube, calc_trend=True, normalise=False):
-    """Get the trend data."""
+def get_trend_data(cube, already_trend=False, normalise=False):
+    """Get the trend data.
 
-    if calc_trend:
+    Args:
+      cube (iris.cube.Cube): Data cube
+      already_trend (bool): Indicate whether the data
+        already represent a trend
+      normalise (bool): Normalise the trend
+
+    """
+
+    if already_trend:
         trend = cube.data
         units = cube.units
     else:
@@ -272,7 +279,7 @@ def main(inargs):
             cube = timeseries.calc_seasonal_cycle(cube) 
 
         # Calculate trend
-        trend, units = get_trend_data(cube, calc_trend=inargs.trend)
+        trend, units = get_trend_data(cube, already_trend=inargs.trend)
 
         # Plot
         climatology = read_climatology(inargs.climatology_file, long_name)
