@@ -100,7 +100,7 @@ def curvilinear_to_rectilinear(cube):
         grid_res = get_grid_res(cube.coord('latitude').shape)
 
         # Create target grid
-        lats = numpy.arange(-90, 90 + grid_res * 1.5, grid_res)
+        lats = numpy.arange(-90, 90.01, grid_res)
         lons = numpy.arange(0, 360, grid_res)
         target_grid_cube = _make_grid(lats, lons)
 
