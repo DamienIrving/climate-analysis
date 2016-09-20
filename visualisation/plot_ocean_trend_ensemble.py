@@ -66,9 +66,8 @@ def main(inargs):
     except AttributeError:
         time_constraint = iris.Constraint()
 
-    fig = plt.figure(figsize=[8, 6])
-    fig.subplots_adjust(right=0.85)
-    colorbar_axes = fig.add_axes([0.9, 0.2, 0.02, 0.6])
+    fig = plt.figure(figsize=[8, 8])
+    colorbar_axes = None
     gs = gridspec.GridSpec(1, 1)
  
     standard_name = 'zonal_mean_%s_%s' %(inargs.basin, inargs.var)
@@ -84,7 +83,7 @@ def main(inargs):
         climatology = plot_ocean_trend.read_climatology(inargs.climatology_files[plotnum], long_name)
         metadata_dict[inargs.climatology_files[plotnum]] = climatology.attributes['history']
 
-        trend, units = plot_ocean_trend.get_trend_data(cube, already_trend=False)
+        trend, units = plot_ocean_trend.get_trend_data(cube, already_trend=False, scale_factor=inargs.scale_factor)
 
         lats = cube.coord('latitude').points
         levs = cube.coord('depth').points            
@@ -140,6 +139,9 @@ author:
 
     parser.add_argument("--palette", type=str, choices=('RdBu_r', 'BrBG_r'), default='RdBu_r',
                         help="Color palette [default: RdBu_r]")
+
+    parser.add_argument("--scale_factor", type=int, default=1,
+                        help="Scale factor (e.g. scale factor of 3 will multiply trends by 10^3 [default=1]")
 
     args = parser.parse_args()            
     main(args)

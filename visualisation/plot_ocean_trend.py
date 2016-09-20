@@ -159,7 +159,7 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
 
     # Shallow section
     divider = make_axes_locatable(axMain)
-    axShallow = divider.append_axes("top", size=2.2, pad=0.1, sharex=axMain)
+    axShallow = divider.append_axes("top", size="100%", pad=0.1, sharex=axMain)
     axShallow.contourf(lats, levs, trends,
                        cmap=cmap, extend='both', levels=ticks)
     if type(climatology) == iris.cube.Cube:
@@ -170,16 +170,16 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     axShallow.set_xlim((-70, 70))
     plt.setp(axShallow.get_xticklabels(), visible=False)
 
-    # Labels
-    plt.title(title)
-    #plt.axhline(y=50, linestyle='dashed', color='0.5')
-    #plt.axhline(y=350, linestyle='dashed', color='0.5')
- 
+    # Labels and colorbar
+    plt.title(title) 
     axMain.set_xlabel('Latitude', fontsize='small')
     plt.ylabel(ylabel, fontsize='small')
-    #plt.axhline(y=700, linestyle='dashed', color='0.5')
 
-    cbar = plt.colorbar(cf, cbar_ax)
+    if cbar_ax:
+        cbar = plt.colorbar(cf, cbar_ax)
+    else:
+        cbar_ax = divider.append_axes("bottom", size=0.2, pad=0.6)
+        cbar = plt.colorbar(cf, cbar_ax, orientation='horizontal')
     cbar.set_label(units)
     
 
@@ -218,7 +218,7 @@ def set_yticks(max_lat):
     return yticks
 
 
-def get_trend_data(cube, already_trend=False, normalise=False):
+def get_trend_data(cube, already_trend=False, normalise=False, scale_factor=1):
     """Get the trend data.
 
     Args:
@@ -226,6 +226,9 @@ def get_trend_data(cube, already_trend=False, normalise=False):
       already_trend (bool): Indicate whether the data
         already represent a trend
       normalise (bool): Normalise the trend
+      scale_factor (int): Scale the data
+        e.g. a scale factor of 3 will mean the data are 
+        mutliplied by 10^3 (and units will be 10^-3)
 
     """
 
@@ -236,10 +239,18 @@ def get_trend_data(cube, already_trend=False, normalise=False):
         trend = timeseries.calc_trend(cube, running_mean=False,
                                       per_yr=True, remove_scaling=False)
 
+        unit_scale = ''
+        if scale_factor != 1:
+            trend = trend * 10**scale_factor
+            if scale_factor > 0.0:
+                unit_scale = '10^{-%i}'  %(scale_factor)
+            else:
+                unit_scale = '10^{%i}'  %(abs(scale_factor))
+
         if not cube.units == 1:
-            units = '$%s yr^{-1}$' %(cube.units)
+            units = '$%s \quad %s \quad yr^{-1}$' %(unit_scale, cube.units)
         else:
-            units = '$yr^{-1}$'
+            units = '$%s \quad yr^{-1}$'  %(unit_scale)
 
     if normalise:
         trend = normalise_data(trend)
@@ -279,7 +290,7 @@ def main(inargs):
             cube = timeseries.calc_seasonal_cycle(cube) 
 
         # Calculate trend
-        trend, units = get_trend_data(cube, already_trend=inargs.trend)
+        trend, units = get_trend_data(cube, already_trend=inargs.trend, scale_factor=inargs.scale_factor)
 
         # Plot
         climatology = read_climatology(inargs.climatology_file, long_name)
@@ -346,13 +357,14 @@ author:
 
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
+
     parser.add_argument("--vm_ticks", type=float, nargs=2, default=(0.2, 0.04), metavar=('MAX_AMPLITUDE', 'STEP'),
                         help="Maximum tick amplitude and step size for vertical mean plot [default = 0.1, 0.02]")
     parser.add_argument("--vm_tick_scale", type=float, nargs=5, default=(1, 1, 1, 1, 1), metavar=('full', 'surface', 'shallow', 'mid', 'deep'),
                         help="Divide the ticks by this amount")
 
     parser.add_argument("--zm_ticks", type=float, nargs=2, default=(0.05, 0.01), metavar=('MAX_AMPLITUDE', 'STEP'),
-                        help="Maximum tick amplitude and step size for vertical mean plot [default = 0.05, 0.01]")
+                        help="Maximum tick amplitude and step size for zonal mean plot [default = 0.05, 0.01]")
     parser.add_argument("--max_lat", type=float, default=60,
                         help="Maximum latitude [default = 60]")
 
@@ -361,6 +373,9 @@ author:
 
     parser.add_argument("--palette", type=str, choices=('RdBu_r', 'BrBG_r'), default='RdBu_r',
                         help="Color palette [default: RdBu_r]")
+
+    parser.add_argument("--scale_factor", type=int, default=1,
+                        help="Scale factor (e.g. scale factor of 3 will multiply trends by 10^3 [default=1]")
 
     args = parser.parse_args()            
     main(args)
