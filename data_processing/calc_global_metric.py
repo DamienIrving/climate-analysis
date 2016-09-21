@@ -28,6 +28,7 @@ sys.path.append(modules_dir)
 try:
     import general_io as gio
     import convenient_universal as uconv
+    import timeseries
 except ImportError:
     raise ImportError('Must run this script from anywhere within the climate-analysis git repo')
 
@@ -134,6 +135,19 @@ def calc_global_mean(cube, grid_areas, atts):
     return global_mean
 
 
+def smooth_data(cube, smooth_type):
+    """Apply temporal smoothing to a data cube."""
+
+    assert smooth_type in ['annual', 'annual_running_mean']
+
+    if smooth_type == 'annual_running_mean':
+        cube = cube.rolling_window('time', iris.analysis.MEAN, 12)
+    elif smooth_type == 'annual':
+        cube = timeseries.convert_to_annual(cube)   
+
+    return cube
+
+
 def main(inargs):
     """Run the program."""
 
@@ -142,7 +156,8 @@ def main(inargs):
 
     atts = set_attributes(inargs, cube, area_cube)
 
-    cube = cube.rolling_window('time', iris.analysis.MEAN, 12)
+    if inargs.smoothing:
+        cube = smooth_data(cube, inargs.smoothing)
     area_weights = get_area_weights(cube, area_cube)
 
     if inargs.metric == 'amplification':
@@ -174,6 +189,9 @@ author:
     
     parser.add_argument("--area_file", type=str, default=None, 
                         help="Input cell area file")
+
+    parser.add_argument("--smoothing", type=str, choices=('annual', 'annual_running_mean'), default=None, 
+                        help="Apply smoothing to data")
 
     args = parser.parse_args()            
 
