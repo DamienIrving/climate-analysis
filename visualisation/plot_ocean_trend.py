@@ -248,9 +248,9 @@ def get_trend_data(cube, already_trend=False, normalise=False, scale_factor=1):
                 unit_scale = '10^{%i}'  %(abs(scale_factor))
 
         if not cube.units == 1:
-            units = '$%s \quad %s \quad yr^{-1}$' %(unit_scale, cube.units)
+            units = '$%s \enspace %s \enspace yr^{-1}$' %(unit_scale, cube.units)
         else:
-            units = '$%s \quad yr^{-1}$'  %(unit_scale)
+            units = '$%s \enspace yr^{-1}$'  %(unit_scale)
 
     if normalise:
         trend = normalise_data(trend)

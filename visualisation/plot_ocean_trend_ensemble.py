@@ -66,9 +66,12 @@ def main(inargs):
     except AttributeError:
         time_constraint = iris.Constraint()
 
-    fig = plt.figure(figsize=[8, 8])
+    height = 8 * inargs.nrows
+    width = 8 * inargs.ncols
+    fig = plt.figure(figsize=(width, height))
+    fig.suptitle(inargs.basin.capitalize(), fontsize='x-large')
     colorbar_axes = None
-    gs = gridspec.GridSpec(1, 1)
+    gs = gridspec.GridSpec(inargs.nrows, inargs.ncols)
  
     standard_name = 'zonal_mean_%s_%s' %(inargs.basin, inargs.var)
     long_name = standard_name.replace('_', ' ')
@@ -121,6 +124,8 @@ author:
     parser.add_argument("infiles", type=str, nargs='*', help="Input ocean maps files")
     parser.add_argument("var", type=str, help="Input variable name (the standard_name without the vertical_mean or zonal_mean bit)")
     parser.add_argument("basin", type=str, choices=('pacific', 'indian', 'atlantic', 'globe'), help="Type of plot")
+    parser.add_argument("nrows", type=int, help="number of rows in the entire grid of plots")
+    parser.add_argument("ncols", type=int, help="number of columns in the entire grid of plots")
     parser.add_argument("outfile", type=str, help="Output file name")
 
     parser.add_argument("--trend", action="store_true", default=False,

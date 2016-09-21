@@ -66,18 +66,18 @@ ${CLIMATOLOGY_FILE} : ${DEDRIFTED_VARIABLE_DIR}
 
 ${VARIABLE_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${VARIABLE_MAPS_DIR}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_VARIABLE_FILES} ${LONG_NAME} $@ --climatology_file $< --basin_file ${BASIN_FILE}
-        #--chunk 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_VARIABLE_FILES} ${LONG_NAME} $@ --climatology_file $< 
+        #--chunk --basin_file ${BASIN_FILE}
 
 ${CLIMATOLOGY_MAPS_FILE} : ${CLIMATOLOGY_FILE}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< ${LONG_NAME} $@ --basin_file ${BASIN_FILE}
-        #
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< ${LONG_NAME} $@ 
+        # --basin_file ${BASIN_FILE}
 
 ${VARIABLE_MAPS_VERTICAL_PLOT} : ${VARIABLE_MAPS_FILE}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} vertical_mean $@ --time ${START_DATE} ${END_DATE} --vm_ticks ${VM_TICK_MAX} ${VM_TICK_STEP} --vm_tick_scale 4 1 2 2 6 --palette ${PALETTE} 
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} vertical_mean $@ --time ${START_DATE} ${END_DATE} --vm_ticks ${VM_TICK_MAX} ${VM_TICK_STEP} --scale_factor ${SCALE_FACTOR} --vm_tick_scale 4 1 2 2 6 --palette ${PALETTE} 
 
 ${VARIABLE_MAPS_ZONAL_PLOT} : ${VARIABLE_MAPS_FILE} ${CLIMATOLOGY_MAPS_FILE}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --time ${START_DATE} ${END_DATE} --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP} --palette ${PALETTE} --climatology_file $(word 2,$^)
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --time ${START_DATE} ${END_DATE} --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP} --scale_factor ${SCALE_FACTOR} --palette ${PALETTE} --climatology_file $(word 2,$^)
 
 # OHC metrics
 

@@ -35,17 +35,19 @@ experiments=( $@ )
 
 if [[ "${variable}" == "so" ]] ; then
     long_name='sea_water_salinity'
-    zm_tick_max='0.0035'
-    zm_tick_step='0.0005'
-    vm_tick_max='0.01'
-    vm_tick_step='0.002'
+    zm_tick_max='3.5'
+    zm_tick_step='0.5'
+    vm_tick_max='10'
+    vm_tick_step='2'
+    scale_factor='3'
     palette='BrBG_r'
 elif [[ "${variable}" == 'thetao' ]] ; then
     long_name='sea_water_potential_temperature'
-    zm_tick_max='0.015'
-    zm_tick_step='0.003'
-    vm_tick_max='0.025'
-    vm_tick_step='0.005'
+    zm_tick_max='15'
+    zm_tick_step='3'
+    vm_tick_max='25'
+    vm_tick_step='5'
+    scale_factor='3'
     palette='RdBu_r'
 fi
 
@@ -63,7 +65,7 @@ for experiment in "${experiments[@]}"; do
 
     if [[ ${model} == 'CanESM2' && ${experiment} == 'historical' ]] ; then
         experiment='historical'
-        runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='CCCMA'
 
     elif [[ ${model} == 'CanESM2' && ${experiment} == 'AA' ]] ; then
@@ -86,11 +88,11 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'historical' ]] ; then
         experiment='historical'
-        runs=( r1i1p1 r4i1p1 r6i1p1 )  # r1i1p1 r1i2p1 r1i2p2 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
+        runs=( r6i1p1 )  # r1i1p1 r1i2p1 r1i2p2 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
         organisation='NCAR'
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'historicalGHG' ]] ; then
-        runs=( r1i1p1 r4i1p1 r6i1p1 )  # r1i1p1 r4i1p1 r6i1p1
+        runs=( r6i1p1 )  # r1i1p1 r4i1p1 r6i1p1
         organisation='NCAR'
         vardir='r87/dbi599'
 
@@ -100,7 +102,7 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p10 )  # r1i1p10 r4i1p10 r6i1p10
+        runs=( r1i1p10 r4i1p10 )  # r1i1p10 r4i1p10 r6i1p10
         organisation='NCAR'
         vardir='r87/dbi599'
 
@@ -363,13 +365,13 @@ for experiment in "${experiments[@]}"; do
         experiment='historicalMisc'
         runs=( r1i1p3 )  #r1i1p3
         organisation='IPSL'
-        vardir='r87/dbi599'
+        vardir='r87/dbi599'  # ua6 for thetao but not so
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'Ant' ]] ; then
         experiment='historicalMisc'
         runs=( r1i1p2 )  #r1i1p2; missing r2i1p2 r3i1p2  
         organisation='IPSL'
-        vardir='r87/dbi599'
+        vardir='r87/dbi599'  # ua6 for thetao but not so
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'historicalGHG' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 (and probably more)  
@@ -389,9 +391,17 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p4 )  #r1i1p4 r2i1p4 r3i1p4 r4i1p4
         organisation='IPSL'
         controlrun='r2i1p1'
-        vardir='r87/dbi599'
+        vardir='r87/dbi599' # ua6 for thetao but not so
 
     # NorEMS1-M
+
+    elif [[ ${model} == 'NorESM1-M' && ${experiment} == 'historical' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1 ( no basin )
+        organisation='NCC'
+
+    elif [[ ${model} == 'NorESM1-M' && ${experiment} == 'historicalNat' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1 ( no fx )
+        organisation='NCC'
 
     elif [[ ${model} == 'NorESM1-M' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
@@ -400,6 +410,11 @@ for experiment in "${experiments[@]}"; do
         vardir='r87/dbi599'
         controldir='r87/dbi599'
         fxdir='r87/dbi599'
+
+    elif [[ ${model} == 'NorESM1-M' && ${experiment} == 'historicalGHG' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1
+        organisation='NCC'
+        vardir='r87/dbi599'
 
     else
         echo "Unrecognised model (${model}) / experiment (${experiment}) combination"
@@ -412,9 +427,9 @@ for experiment in "${experiments[@]}"; do
         origcontroldir="/g/data/${controldir}/drstree/CMIP5/GCM"
         origfxdir="/g/data/${fxdir}/drstree/CMIP5/GCM"
 
-        make ${options} -f ocean_summary_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_FX_DIR="${origfxdir}" VAR="${variable}" LONG_NAME="${long_name}" ZM_TICK_MAX="${zm_tick_max}" ZM_TICK_STEP="${zm_tick_step}" VM_TICK_MAX="${vm_tick_max}" VM_TICK_STEP="${vm_tick_step}" PALETTE="${palette}"
+        make ${options} -f ocean_summary_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_FX_DIR="${origfxdir}" VAR="${variable}" LONG_NAME="${long_name}" ZM_TICK_MAX="${zm_tick_max}" ZM_TICK_STEP="${zm_tick_step}" VM_TICK_MAX="${vm_tick_max}" VM_TICK_STEP="${vm_tick_step}" SCALE_FACTOR="${scale_factor}" PALETTE="${palette}"
 
-        echo "DONE: make ${options} -f ocean_summary_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_FX_DIR=${origfxdir} VAR=${variable} LONG_NAME=${long_name} ZM_TICK_MAX=${zm_tick_max} ZM_TICK_STEP=${zm_tick_step} VM_TICK_MAX=${vm_tick_max} VM_TICK_STEP=${vm_tick_step} PALETTE=${palette}"
+        echo "DONE: make ${options} -f ocean_summary_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_FX_DIR=${origfxdir} VAR=${variable} LONG_NAME=${long_name} ZM_TICK_MAX=${zm_tick_max} ZM_TICK_STEP=${zm_tick_step} VM_TICK_MAX=${vm_tick_max} VM_TICK_STEP=${vm_tick_step} SCALE_FACTOR=${scale_factor} PALETTE=${palette}"
     done
 done
 
