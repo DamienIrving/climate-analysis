@@ -34,9 +34,25 @@ except ImportError:
 
 # Define functions
     
+def calc_linear_trend(data, xaxis):
+    """Calculate the linear trend.
+    polyfit returns [a, b] corresponding to y = a + bx
+    """    
+
+    if data.mask[0]:
+        return data.fill_value
+    else:    
+        return numpy.polynomial.polynomial.polyfit(xaxis, data, 1)[-1]
+
 
 def get_trend_cube(cube, xaxis='time'):
-    """Get the trend data."""
+    """Get the trend data.
+
+    Args:
+      cube (iris.cube.Cube)
+      xaxis (iris.cube.Cube)
+
+    """
 
     coord_names = [coord.name() for coord in cube.dim_coords]
     assert coord_names[0] == 'time'
@@ -45,7 +61,9 @@ def get_trend_cube(cube, xaxis='time'):
         trend_data = timeseries.calc_trend(cube, per_yr=True)
         trend_unit = ' yr-1'
     else:
-        pass    
+        trend_data = numpy.ma.apply_along_axis(calc_linear_trend, 0, cube.data, xaxis.data)
+        trend_data = numpy.ma.masked_values(trend_data, cube.data.fill_value)
+        trend_unit = ' '+str(xaxis.units)+'-1'
 
     trend_cube = cube[0, ::].copy()
     trend_cube.data = trend_data
@@ -65,13 +83,20 @@ def main(inargs):
         time_constraint = iris.Constraint()
 
     with iris.FUTURE.context(cell_datetime_objects=True):
-        cube_list = iris.load(inargs.infile, time_constraint)  
+        cube_list = iris.load(inargs.infile, time_constraint)
+        infile_metadata = {inargs.infile: cube_list[0].attributes['history']}
+        if inargs.xaxis:
+            xfile, xvar = inargs.xaxis
+            xaxis = iris.load_cube(xfile, xvar & time_constraint)
+            infile_metadata[xfile] = xaxis.attributes['history']
+        else:
+            xaxis = 'time'    
 
     out_list = iris.cube.CubeList([])
     atts = cube_list[0].attributes    
-    atts['history'] = gio.write_metadata(file_info={inargs.infile: cube_list[0].attributes['history']})
+    atts['history'] = gio.write_metadata(file_info=infile_metadata)
     for cube in cube_list:
-        trend_cube = get_trend_cube(cube)
+        trend_cube = get_trend_cube(cube, xaxis=xaxis)
         trend_cube.attributes = atts
 
         out_list.append(trend_cube)
