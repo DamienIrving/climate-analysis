@@ -1,7 +1,7 @@
 """
-Filename:     plot_ocean_trend.py
+Filename:     calc_trend.py
 Author:       Damien Irving, irving.damien@gmail.com
-Description:  Plot the spatial trends in the ocean
+Description:  Calculate the linear trend
 
 """
 
@@ -36,12 +36,7 @@ except ImportError:
     
 
 def get_trend_cube(cube, xaxis='time'):
-    """Get the trend data.
-
-    Args:
-      cube (iris.cube.Cube): Data cube
-
-    """
+    """Get the trend data."""
 
     coord_names = [coord.name() for coord in cube.dim_coords]
     assert coord_names[0] == 'time'
@@ -91,7 +86,7 @@ author:
     
 """
 
-    description='Plot the spatial trends in the ocean'
+    description='Calculate the linear trend at each grid point'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
