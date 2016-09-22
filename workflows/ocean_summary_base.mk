@@ -32,6 +32,7 @@ BASIN_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/basin/
 
 VARIABLE_MAPS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/${VAR}-maps/${RUN}
 VARIABLE_MAPS_FILE=${VARIABLE_MAPS_DIR}/${VAR}-maps_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+VARIABLE_MAPS_TIME_TREND=${VARIABLE_MAPS_DIR}/${VAR}-maps-time-trend_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.nc
 VARIABLE_MAPS_VERTICAL_PLOT=${VARIABLE_MAPS_DIR}/${VAR}-maps-vertical-mean_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
 VARIABLE_MAPS_ZONAL_PLOT=${VARIABLE_MAPS_DIR}/${VAR}-maps-zonal-mean_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
 
@@ -73,11 +74,14 @@ ${CLIMATOLOGY_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< ${LONG_NAME} $@ 
         # --basin_file ${BASIN_FILE}
 
-${VARIABLE_MAPS_VERTICAL_PLOT} : ${VARIABLE_MAPS_FILE}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} vertical_mean $@ --time ${START_DATE} ${END_DATE} --vm_ticks ${VM_TICK_MAX} ${VM_TICK_STEP} --scale_factor ${SCALE_FACTOR} --vm_tick_scale 4 1 2 2 6 --palette ${PALETTE} 
+${VARIABLE_MAPS_TIME_TREND} : ${VARIABLE_MAPS_FILE}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_trend.py $< $@ --time_bounds ${START_DATE} ${END_DATE}
 
-${VARIABLE_MAPS_ZONAL_PLOT} : ${VARIABLE_MAPS_FILE} ${CLIMATOLOGY_MAPS_FILE}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --time ${START_DATE} ${END_DATE} --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP} --scale_factor ${SCALE_FACTOR} --palette ${PALETTE} --climatology_file $(word 2,$^)
+${VARIABLE_MAPS_VERTICAL_PLOT} : ${VARIABLE_MAPS_TIME_TREND}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} vertical_mean $@  --vm_ticks ${VM_TICK_MAX} ${VM_TICK_STEP} --scale_factor ${SCALE_FACTOR} --vm_tick_scale 4 1 2 2 6 --palette ${PALETTE} 
+
+${VARIABLE_MAPS_ZONAL_PLOT} : ${VARIABLE_MAPS_TIME_TREND} ${CLIMATOLOGY_MAPS_FILE}
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP} --scale_factor ${SCALE_FACTOR} --palette ${PALETTE} --climatology_file $(word 2,$^)
 
 # OHC metrics
 

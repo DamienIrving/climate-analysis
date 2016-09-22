@@ -79,21 +79,6 @@ def get_metadata(inargs, data_cube, climatology_cube):
     return metadata_dict
 
 
-def normalise_data(data):
-    """Normalise the data."""
-
-    abs_data = numpy.abs(data)
-
-    min_val = abs_data.min()
-    max_val = abs_data.max()
-
-    abs_normalised_data = (abs_data - min_val) / (max_val - min_val)
-
-    normalised_data = abs_normalised_data * numpy.sign(data)
-
-    return normalised_data 
-
-
 def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
                              ticks, yticks,
                              title, units, palette,
@@ -218,55 +203,35 @@ def set_yticks(max_lat):
     return yticks
 
 
-def get_trend_data(cube, already_trend=False, normalise=False, scale_factor=1):
-    """Get the trend data.
+def set_units(cube, scale_factor=1):
+    """Set the units.
 
     Args:
       cube (iris.cube.Cube): Data cube
-      already_trend (bool): Indicate whether the data
-        already represent a trend
-      normalise (bool): Normalise the trend
       scale_factor (int): Scale the data
         e.g. a scale factor of 3 will mean the data are 
         mutliplied by 10^3 (and units will be 10^-3)
 
     """
 
-    if already_trend:
-        trend = cube.data
-        units = cube.units
-    else:
-        trend = timeseries.calc_trend(cube, running_mean=False,
-                                      per_yr=True, remove_scaling=False)
-
-        unit_scale = ''
-        if scale_factor != 1:
-            trend = trend * 10**scale_factor
-            if scale_factor > 0.0:
-                unit_scale = '10^{-%i}'  %(scale_factor)
-            else:
-                unit_scale = '10^{%i}'  %(abs(scale_factor))
-
-        if not cube.units == 1:
-            units = '$%s \enspace %s \enspace yr^{-1}$' %(unit_scale, cube.units)
+    unit_scale = ''
+    if scale_factor != 1:
+        trend_data = cube.data * 10**scale_factor
+        if scale_factor > 0.0:
+            unit_scale = '10^{-%i}'  %(scale_factor)
         else:
-            units = '$%s \enspace yr^{-1}$'  %(unit_scale)
+            unit_scale = '10^{%i}'  %(abs(scale_factor))
 
-    if normalise:
-        trend = normalise_data(trend)
-        units = units+' (normalised)'
+    units = str(cube.units)
+    units = units.replace(" ", " \enspace ")
+    units = units.replace("-1", "^{-1}")
+    units = '$%s \enspace %s$'  %(unit_scale, units)
 
-    return trend, units
+    return trend_data, units
 
 
 def main(inargs):
     """Run the program."""
-
-    # Read data
-    try:
-        time_constraint = gio.get_time_constraint(inargs.time)
-    except AttributeError:
-        time_constraint = iris.Constraint()
 
     if inargs.plot_type == 'vertical_mean':
         plot_names = ['argo', 'surface', 'shallow', 'middle', 'deep']
@@ -283,17 +248,11 @@ def main(inargs):
         standard_name = '%s_%s_%s' %(inargs.plot_type, plot_name, inargs.var)
         long_name = standard_name.replace('_', ' ')
         with iris.FUTURE.context(cell_datetime_objects=True):
-            cube = iris.load_cube(inargs.infile, long_name & time_constraint)  
+            cube = iris.load_cube(inargs.infile, long_name)
+        trend_data, units = set_units(cube, scale_factor=inargs.scale_factor)
 
-        # Calculate seasonal cycle
-        if inargs.seasonal_cycle:
-            cube = timeseries.calc_seasonal_cycle(cube) 
-
-        # Calculate trend
-        trend, units = get_trend_data(cube, already_trend=inargs.trend, scale_factor=inargs.scale_factor)
-
-        # Plot
         climatology = read_climatology(inargs.climatology_file, long_name)
+
         if inargs.plot_type == 'vertical_mean':
             lons = cube.coord('longitude').points
             lats = cube.coord('latitude').points
@@ -304,7 +263,7 @@ def main(inargs):
                                                  scale_factor=inargs.vm_tick_scale[plotnum])
 
             yticks = set_yticks(inargs.max_lat)
-            plot_vertical_mean_trend(trend, lons, lats, gs, plotnum,
+            plot_vertical_mean_trend(trend_data, lons, lats, gs, plotnum,
                                      ticks, yticks,
                                      plot_name, units, inargs.palette,
                                      climatology, contour_levels)
@@ -318,12 +277,11 @@ def main(inargs):
             ticks = set_ticks(tick_max, tick_step)
             contour_levels = get_countour_levels(inargs.var, inargs.plot_type)
 
-            plot_zonal_mean_trend(trend, lats, levs, gs, plotnum,
+            plot_zonal_mean_trend(trend_data, lats, levs, gs, plotnum,
                                   ticks, plot_name, units, ylabel,
                                   inargs.palette, colorbar_axes,
                                   climatology, contour_levels)
 
-    # Write output
     plt.savefig(inargs.outfile, bbox_inches='tight')
 
     metadata_dict = get_metadata(inargs, cube, climatology) 
@@ -349,14 +307,8 @@ author:
     parser.add_argument("plot_type", type=str, choices=('vertical_mean', 'zonal_mean'), help="Type of plot")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    parser.add_argument("--trend", action="store_true", default=False,
-                        help="Use this flag if data is already trend [default: False]")
-
     parser.add_argument("--climatology_file", type=str, default=None,
                         help="Plot climatology contours on zonal mean plot [default=None]")
-
-    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
-                        help="Time period [default = entire]")
 
     parser.add_argument("--vm_ticks", type=float, nargs=2, default=(0.2, 0.04), metavar=('MAX_AMPLITUDE', 'STEP'),
                         help="Maximum tick amplitude and step size for vertical mean plot [default = 0.1, 0.02]")
@@ -367,9 +319,6 @@ author:
                         help="Maximum tick amplitude and step size for zonal mean plot [default = 0.05, 0.01]")
     parser.add_argument("--max_lat", type=float, default=60,
                         help="Maximum latitude [default = 60]")
-
-    parser.add_argument("--seasonal_cycle", action="store_true", default=False,
-                        help="Switch for plotting the trend in the seasonal cycle instead [default: False]")
 
     parser.add_argument("--palette", type=str, choices=('RdBu_r', 'BrBG_r'), default='RdBu_r',
                         help="Color palette [default: RdBu_r]")

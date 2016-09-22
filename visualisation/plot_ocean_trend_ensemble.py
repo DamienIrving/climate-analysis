@@ -60,12 +60,6 @@ def main(inargs):
     assert len(inargs.climatology_files) == len(inargs.infiles)
     assert len(inargs.ticks) == len(inargs.infiles)
 
-    # Read data
-    try:
-        time_constraint = gio.get_time_constraint(inargs.time)
-    except AttributeError:
-        time_constraint = iris.Constraint()
-
     height = 8 * inargs.nrows
     width = 8 * inargs.ncols
     fig = plt.figure(figsize=(width, height))
@@ -80,13 +74,13 @@ def main(inargs):
     for plotnum, filename in enumerate(inargs.infiles):
 
         with iris.FUTURE.context(cell_datetime_objects=True):
-            cube = iris.load_cube(filename, long_name & time_constraint)  
+            cube = iris.load_cube(filename, long_name)  
             metadata_dict[filename] = cube.attributes['history']
 
         climatology = plot_ocean_trend.read_climatology(inargs.climatology_files[plotnum], long_name)
         metadata_dict[inargs.climatology_files[plotnum]] = climatology.attributes['history']
 
-        trend, units = plot_ocean_trend.get_trend_data(cube, already_trend=False, scale_factor=inargs.scale_factor)
+        trend_data, units = plot_ocean_trend.set_units(cube, scale_factor=inargs.scale_factor)
 
         lats = cube.coord('latitude').points
         levs = cube.coord('depth').points            
@@ -98,7 +92,7 @@ def main(inargs):
         ticks = plot_ocean_trend.set_ticks(tick_max, tick_step)
         contour_levels = plot_ocean_trend.get_countour_levels(inargs.var, 'zonal_mean')
 
-        plot_ocean_trend.plot_zonal_mean_trend(trend, lats, levs, gs, plotnum,
+        plot_ocean_trend.plot_zonal_mean_trend(trend_data, lats, levs, gs, plotnum,
                                                ticks, title, units, ylabel,
                                                inargs.palette, colorbar_axes,
                                                climatology, contour_levels)
@@ -128,14 +122,8 @@ author:
     parser.add_argument("ncols", type=int, help="number of columns in the entire grid of plots")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    parser.add_argument("--trend", action="store_true", default=False,
-                        help="Use this flag if data is already trend [default: False]")
-
     parser.add_argument("--climatology_files", type=str, nargs='*', default=None,
                         help="Plot climatology contours on zonal mean plots [default=None]")
-
-    parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
-                        help="Time period [default = entire]")
 
     parser.add_argument("--ticks", type=float, nargs=2, action='append', default=[], metavar=('MAX_AMPLITUDE', 'STEP'),
                         help="Maximum tick amplitude and step size for colorbar")
