@@ -29,10 +29,16 @@ DEDRIFTED_VARIABLE_FILES = $(patsubst ${ORIG_VARIABLE_DIR}/${ORGANISATION}/${MOD
 
 VOLUME_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/volcello/${FX_RUN}/volcello_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
 BASIN_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/basin/${FX_RUN}/basin_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
+AREA_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/atmos/areacella/${FX_RUN}/areacella_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
+
+TAS_FILE=$(wildcard ${ORIG_TAS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/tas/${RUN}/tas_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
+GLOBAL_MEAN_TAS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/tas/${RUN}
+GLOBAL_MEAN_TAS_FILE=$(patsubst ${ORIG_TAS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/tas/${RUN}/tas_Amon_%.nc, ${GLOBAL_MEAN_TAS_DIR}/tas-global-mean_Ayr_%.nc, ${TAS_FILE})
 
 VARIABLE_MAPS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/${VAR}-maps/${RUN}
 VARIABLE_MAPS_FILE=${VARIABLE_MAPS_DIR}/${VAR}-maps_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 VARIABLE_MAPS_TIME_TREND=${VARIABLE_MAPS_DIR}/${VAR}-maps-time-trend_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.nc
+VARIABLE_MAPS_TAS_TREND=${VARIABLE_MAPS_DIR}/${VAR}-maps-global-tas-trend_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.nc
 VARIABLE_MAPS_VERTICAL_PLOT=${VARIABLE_MAPS_DIR}/${VAR}-maps-vertical-mean_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
 VARIABLE_MAPS_ZONAL_PLOT=${VARIABLE_MAPS_DIR}/${VAR}-maps-zonal-mean_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.${FIG_TYPE}
 
@@ -63,7 +69,7 @@ ${DEDRIFTED_VARIABLE_DIR} : ${DRIFT_COEFFICIENTS}
 ${CLIMATOLOGY_FILE} : ${DEDRIFTED_VARIABLE_DIR}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climatology.py ${DEDRIFTED_VARIABLE_FILES} ${LONG_NAME} $@
 
-# VARIABLE maps
+# Variable maps
 
 ${VARIABLE_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${VARIABLE_MAPS_DIR}
@@ -82,6 +88,16 @@ ${VARIABLE_MAPS_VERTICAL_PLOT} : ${VARIABLE_MAPS_TIME_TREND}
 
 ${VARIABLE_MAPS_ZONAL_PLOT} : ${VARIABLE_MAPS_TIME_TREND} ${CLIMATOLOGY_MAPS_FILE}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP} --scale_factor ${SCALE_FACTOR} --palette ${PALETTE} --climatology_file $(word 2,$^)
+
+# Trends against global mean temperature
+
+${GLOBAL_MEAN_TAS_FILE} :  
+	mkdir -p ${GLOBAL_MEAN_TAS_DIR}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py ${TAS_FILE} air_temperature mean $@ --area_file ${AREA_FILE} --smoothing annual
+
+${VARIABLE_MAPS_TAS_TREND} : ${VARIABLE_MAPS_FILE} ${GLOBAL_MEAN_TAS_FILE} 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_trend.py $< $@ --time_bounds ${START_DATE} ${END_DATE} --xaxis $(word 2,$^) air_temperature
+
 
 # OHC metrics
 

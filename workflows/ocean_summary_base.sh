@@ -60,6 +60,7 @@ for experiment in "${experiments[@]}"; do
     vardir='ua6'
     controldir='ua6'
     fxdir='ua6'
+    tasdir='ua6'
 
     # CanESM2
 
@@ -366,17 +367,21 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p3 )  #r1i1p3
         organisation='IPSL'
         vardir='r87/dbi599'  # ua6 for thetao but not so
+        fxdir='r87/dbi599'
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'Ant' ]] ; then
         experiment='historicalMisc'
         runs=( r1i1p2 )  #r1i1p2; missing r2i1p2 r3i1p2  
         organisation='IPSL'
         vardir='r87/dbi599'  # ua6 for thetao but not so
+        fxdir='r87/dbi599'
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'historicalGHG' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 (and probably more)  
         organisation='IPSL'
         vardir='r87/dbi599'
+        fxdir='r87/dbi599'
+        tasdir='r87/dbi599'
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'historical' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
@@ -385,6 +390,7 @@ for experiment in "${experiments[@]}"; do
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'historicalNat' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1
         organisation='IPSL'
+        fxdir='r87/dbi599'
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'noAA' ]] ; then
         experiment='historicalMisc'
@@ -392,6 +398,7 @@ for experiment in "${experiments[@]}"; do
         organisation='IPSL'
         controlrun='r2i1p1'
         vardir='r87/dbi599' # ua6 for thetao but not so
+        fxdir='r87/dbi599'
 
     # NorEMS1-M
 
@@ -426,10 +433,11 @@ for experiment in "${experiments[@]}"; do
         origvardir="/g/data/${vardir}/drstree/CMIP5/GCM"
         origcontroldir="/g/data/${controldir}/drstree/CMIP5/GCM"
         origfxdir="/g/data/${fxdir}/drstree/CMIP5/GCM"
+        origtasdir="/g/data/${tasdir}/drstree/CMIP5/GCM"
 
-        make ${options} -f ocean_summary_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_FX_DIR="${origfxdir}" VAR="${variable}" LONG_NAME="${long_name}" ZM_TICK_MAX="${zm_tick_max}" ZM_TICK_STEP="${zm_tick_step}" VM_TICK_MAX="${vm_tick_max}" VM_TICK_STEP="${vm_tick_step}" SCALE_FACTOR="${scale_factor}" PALETTE="${palette}"
+        make ${options} -f ocean_summary_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_FX_DIR="${origfxdir}" ORIG_TAS_DIR="${origtasdir}" VAR="${variable}" LONG_NAME="${long_name}" ZM_TICK_MAX="${zm_tick_max}" ZM_TICK_STEP="${zm_tick_step}" VM_TICK_MAX="${vm_tick_max}" VM_TICK_STEP="${vm_tick_step}" SCALE_FACTOR="${scale_factor}" PALETTE="${palette}"
 
-        echo "DONE: make ${options} -f ocean_summary_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_FX_DIR=${origfxdir} VAR=${variable} LONG_NAME=${long_name} ZM_TICK_MAX=${zm_tick_max} ZM_TICK_STEP=${zm_tick_step} VM_TICK_MAX=${vm_tick_max} VM_TICK_STEP=${vm_tick_step} SCALE_FACTOR=${scale_factor} PALETTE=${palette}"
+        echo "DONE: make ${options} -f ocean_summary_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_FX_DIR=${origfxdir} ORIG_TAS_DIR=${origtasdir} VAR=${variable} LONG_NAME=${long_name} ZM_TICK_MAX=${zm_tick_max} ZM_TICK_STEP=${zm_tick_step} VM_TICK_MAX=${vm_tick_max} VM_TICK_STEP=${vm_tick_step} SCALE_FACTOR=${scale_factor} PALETTE=${palette}"
     done
 done
 
