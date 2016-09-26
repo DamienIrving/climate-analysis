@@ -72,9 +72,13 @@ def main(inargs):
 
     metadata_dict = {}
     for plotnum, filename in enumerate(inargs.infiles):
-
         with iris.FUTURE.context(cell_datetime_objects=True):
             cube = iris.load_cube(filename, long_name)  
+            if inargs.sub_file:
+                sub_cube = iris.load_cube(inargs.sub_file[plotnum], long_name)
+                metadata = cube.metadata
+                cube = cube - sub_cube
+                cube.metadata = metadata
             metadata_dict[filename] = cube.attributes['history']
 
         climatology = plot_ocean_trend.read_climatology(inargs.climatology_files[plotnum], long_name)
@@ -122,6 +126,8 @@ author:
     parser.add_argument("ncols", type=int, help="number of columns in the entire grid of plots")
     parser.add_argument("outfile", type=str, help="Output file name")
 
+    parser.add_argument("--sub_file", type=str, default=None,
+                        help="Ocean maps file to subtract from input ocean maps file [default=None]")
     parser.add_argument("--climatology_files", type=str, nargs='*', default=None,
                         help="Plot climatology contours on zonal mean plots [default=None]")
 

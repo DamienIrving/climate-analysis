@@ -106,6 +106,8 @@ ${VARIABLE_MAPS_TAS_VERTICAL_PLOT} : ${VARIABLE_MAPS_TAS_TREND}
 ${VARIABLE_MAPS_TAS_ZONAL_PLOT} : ${VARIABLE_MAPS_TAS_TREND} ${CLIMATOLOGY_MAPS_FILE}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP} --palette ${PALETTE} --climatology_file $(word 2,$^)
 
+## Use plot_trend_comparison.sh to compare GHG to AA
+## Use plot_ocean_trend_ensemble.py to plot same basin for entire ensemble
 
 # OHC metrics
 

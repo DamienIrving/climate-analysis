@@ -246,6 +246,7 @@ def main(inargs):
         gs = gridspec.GridSpec(2, 2)
  
     for plotnum, plot_name in enumerate(plot_names):
+        print plot_name
         standard_name = '%s_%s_%s' %(inargs.plot_type, plot_name, inargs.var)
         long_name = standard_name.replace('_', ' ')
         with iris.FUTURE.context(cell_datetime_objects=True):
@@ -328,7 +329,7 @@ author:
     parser.add_argument("--max_lat", type=float, default=60,
                         help="Maximum latitude [default = 60]")
 
-    parser.add_argument("--palette", type=str, choices=('RdBu_r', 'BrBG_r', 'RdGy_r'), default='RdBu_r',
+    parser.add_argument("--palette", type=str, choices=('RdBu_r', 'BrBG_r', 'RdGy_r', 'PiYG'), default='RdBu_r',
                         help="Color palette [default: RdBu_r]")
 
     parser.add_argument("--scale_factor", type=int, default=1,
