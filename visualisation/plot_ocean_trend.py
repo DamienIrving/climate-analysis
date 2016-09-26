@@ -214,9 +214,10 @@ def set_units(cube, scale_factor=1):
 
     """
 
+    trend_data = cube.data * 10**scale_factor
+
     unit_scale = ''
     if scale_factor != 1:
-        trend_data = cube.data * 10**scale_factor
         if scale_factor > 0.0:
             unit_scale = '10^{-%i}'  %(scale_factor)
         else:
@@ -249,6 +250,11 @@ def main(inargs):
         long_name = standard_name.replace('_', ' ')
         with iris.FUTURE.context(cell_datetime_objects=True):
             cube = iris.load_cube(inargs.infile, long_name)
+            if inargs.sub_file:
+                sub_cube = iris.load_cube(inargs.sub_file, long_name)
+                metadata = cube.metadata
+                cube = cube - sub_cube
+                cube.metadata = metadata
         trend_data, units = set_units(cube, scale_factor=inargs.scale_factor)
 
         climatology = read_climatology(inargs.climatology_file, long_name)
@@ -307,6 +313,8 @@ author:
     parser.add_argument("plot_type", type=str, choices=('vertical_mean', 'zonal_mean'), help="Type of plot")
     parser.add_argument("outfile", type=str, help="Output file name")
 
+    parser.add_argument("--sub_file", type=str, default=None,
+                        help="Ocean maps file to subtract from input ocean maps file [default=None]")
     parser.add_argument("--climatology_file", type=str, default=None,
                         help="Plot climatology contours on zonal mean plot [default=None]")
 
@@ -320,7 +328,7 @@ author:
     parser.add_argument("--max_lat", type=float, default=60,
                         help="Maximum latitude [default = 60]")
 
-    parser.add_argument("--palette", type=str, choices=('RdBu_r', 'BrBG_r'), default='RdBu_r',
+    parser.add_argument("--palette", type=str, choices=('RdBu_r', 'BrBG_r', 'RdGy_r'), default='RdBu_r',
                         help="Color palette [default: RdBu_r]")
 
     parser.add_argument("--scale_factor", type=int, default=1,
