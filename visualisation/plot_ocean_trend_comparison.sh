@@ -46,6 +46,10 @@ elif [[ "${model}" == 'CSIRO-Mk3-6-0' ]] ; then
     organisation='CSIRO-QCCCE'
     run='ensmean-'
     aa_physics='p4'
+elif [[ "${model}" == 'NorESM1-M' ]] ; then
+    organisation='NCC'
+    run='r1'
+    aa_physics='p1'
 fi
 
 python=/g/data/r87/dbi599/miniconda2/envs/default/bin/python 
@@ -56,5 +60,5 @@ climatology=${model_dir}/historical/yr/ocean/${variable}-maps/${run}i1p1/${varia
 file_AA=${model_dir}/historicalMisc/yr/ocean/${variable}-maps/${run}i1${aa_physics}/${variable}-maps-global-tas-trend_Oyr_${model}_historicalMisc_${run}i1${aa_physics}_1950-01-01_2000-12-31.nc
 
 
-${python} ~/climate-analysis/visualisation/plot_ocean_trend.py ${file_GHG} ${long_name} ${plot_type}_mean ${outfile} --${tick_label}_ticks ${tick_max} ${tick_step} --palette ${palette} --sub_file ${file_AA} --climatology_file ${climatology}
-echo ${outfile}
+echo ${python} ~/climate-analysis/visualisation/plot_ocean_trend.py ${file_GHG} ${long_name} ${plot_type}_mean ${outfile} --palette ${palette} --sub_file ${file_AA} --climatology_file ${climatology} --${tick_label}_ticks ${tick_max} ${tick_step} 
+
