@@ -29,11 +29,26 @@ DEDRIFTED_VARIABLE_FILES = $(patsubst ${ORIG_VARIABLE_DIR}/${ORGANISATION}/${MOD
 
 VOLUME_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/volcello/${FX_RUN}/volcello_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
 BASIN_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/basin/${FX_RUN}/basin_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
-AREA_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/atmos/areacella/${FX_RUN}/areacella_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
+ATMOS_AREA_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/atmos/areacella/${FX_RUN}/areacella_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
+OCEAN_AREA_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/areacello/${FX_RUN}/areacello_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
 
 TAS_FILE=$(wildcard ${ORIG_TAS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/tas/${RUN}/tas_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
 GLOBAL_MEAN_TAS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/tas/${RUN}
 GLOBAL_MEAN_TAS_FILE=$(patsubst ${ORIG_TAS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/tas/${RUN}/tas_Amon_%.nc, ${GLOBAL_MEAN_TAS_DIR}/tas-global-mean_Ayr_%.nc, ${TAS_FILE})
+
+SOS_FILE=$(wildcard ${ORIG_SOS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/sos/${RUN}/sos_Omon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
+GLOBAL_AMP_SOS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/sos/${RUN}
+GLOBAL_AMP_SOS_FILE=$(patsubst ${ORIG_SOS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/sos/${RUN}/sos_Omon_%.nc, ${GLOBAL_AMP_SOS_DIR}/sos-global-amp_Oyr_%.nc, ${SOS_FILE})
+
+PR_FILE=$(wildcard ${ORIG_PR_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/pr/${RUN}/pr_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
+GLOBAL_MEAN_PR_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/pr/${RUN}
+GLOBAL_MEAN_PR_FILE=$(patsubst ${ORIG_PR_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/pr/${RUN}/pr_Amon_%.nc, ${GLOBAL_MEAN_PR_DIR}/pr-global-mean_Ayr_%.nc, ${PR_FILE})
+
+EVSPSBL_FILE=$(wildcard ${ORIG_EVSPSBL_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/evspsbl/${RUN}/evspsbl_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
+GLOBAL_MEAN_EVSPSBL_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/evspsbl/${RUN}
+GLOBAL_MEAN_EVSPSBL_FILE=$(patsubst ${ORIG_EVSPSBL_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/evspsbl/${RUN}/evspsbl_Amon_%.nc, ${GLOBAL_MEAN_EVSPSBL_DIR}/evspsbl-global-mean_Ayr_%.nc, ${EVSPSBL_FILE})
+
+GLOBAL_INDICATORS_PLOT=${MY_DATA_DIR}/figures/global_indicators/global-indicators_${MODEL}_${EXPERIMENT}_${RUN}.nc
 
 VARIABLE_MAPS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/${VAR}-maps/${RUN}
 VARIABLE_MAPS_FILE=${VARIABLE_MAPS_DIR}/${VAR}-maps_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
@@ -86,16 +101,16 @@ ${VARIABLE_MAPS_TIME_TREND} : ${VARIABLE_MAPS_FILE}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_trend.py $< $@ --time_bounds ${START_DATE} ${END_DATE}
 
 ${VARIABLE_MAPS_TIME_VERTICAL_PLOT} : ${VARIABLE_MAPS_TIME_TREND}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} vertical_mean $@  --vm_ticks ${VM_TICK_MAX} ${VM_TICK_STEP} --scale_factor ${SCALE_FACTOR} --vm_tick_scale 4 1 2 2 6 --palette ${PALETTE} 
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} vertical_mean $@ --scale_factor ${SCALE_FACTOR} --vm_tick_scale 4 1 2 2 6 --palette ${PALETTE} --vm_ticks ${VM_TICK_MAX} ${VM_TICK_STEP}
 
 ${VARIABLE_MAPS_TIME_ZONAL_PLOT} : ${VARIABLE_MAPS_TIME_TREND} ${CLIMATOLOGY_MAPS_FILE}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP} --scale_factor ${SCALE_FACTOR} --palette ${PALETTE} --climatology_file $(word 2,$^)
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --scale_factor ${SCALE_FACTOR} --palette ${PALETTE} --climatology_file $(word 2,$^) --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP}
 
 # Trends against global mean temperature
 
 ${GLOBAL_MEAN_TAS_FILE} :  
 	mkdir -p ${GLOBAL_MEAN_TAS_DIR}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py ${TAS_FILE} air_temperature mean $@ --area_file ${AREA_FILE} --smoothing annual
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py ${TAS_FILE} air_temperature mean $@ --area_file ${ATMOS_AREA_FILE} --smoothing annual
 
 ${VARIABLE_MAPS_TAS_TREND} : ${VARIABLE_MAPS_FILE} ${GLOBAL_MEAN_TAS_FILE} 
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_trend.py $< $@ --time_bounds ${START_DATE} ${END_DATE} --xaxis $(word 2,$^) air_temperature
@@ -104,10 +119,27 @@ ${VARIABLE_MAPS_TAS_VERTICAL_PLOT} : ${VARIABLE_MAPS_TAS_TREND}
 	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} vertical_mean $@  --vm_ticks ${VM_TICK_MAX} ${VM_TICK_STEP} --vm_tick_scale 4 1 2 2 6 --palette ${PALETTE} 
 
 ${VARIABLE_MAPS_TAS_ZONAL_PLOT} : ${VARIABLE_MAPS_TAS_TREND} ${CLIMATOLOGY_MAPS_FILE}
-	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP} --palette ${PALETTE} --climatology_file $(word 2,$^)
+	${PYTHON} ${VIS_SCRIPT_DIR}/plot_ocean_trend.py $< ${LONG_NAME} zonal_mean $@ --palette ${PALETTE} --climatology_file $(word 2,$^) --zm_ticks ${ZM_TICK_MAX} ${ZM_TICK_STEP}
 
 ## Use plot_trend_comparison.sh to compare GHG to AA
 ## Use plot_ocean_trend_ensemble.py to plot same basin for entire ensemble
+
+# Global indicators
+
+${GLOBAL_AMP_SOS_FILE} :  
+	mkdir -p ${GLOBAL_AMP_SOS_DIR}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py ${SOS_FILE} sea_surface_salinity amplification $@ --area_file ${OCEAN_AREA_FILE} --smoothing annual
+
+${GLOBAL_MEAN_PR_FILE} :  
+	mkdir -p ${GLOBAL_MEAN_PR_DIR}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py ${PR_FILE} precipitation_flux mean $@ --area_file ${ATMOS_AREA_FILE} --smoothing annual
+
+${GLOBAL_MEAN_EVSPSBL_FILE} :  
+	mkdir -p ${GLOBAL_MEAN_EVSPSBL_DIR}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py ${EVSPSBL_FILE} water_evaporation_flux mean $@ --area_file ${ATMOS_AREA_FILE} --smoothing annual
+
+${GLOBAL_INDICATORS_PLOT} : ${GLOBAL_MEAN_TAS_FILE} ${GLOBAL_AMP_SOS_FILE} ${GLOBAL_MEAN_PR_FILE} ${GLOBAL_MEAN_EVSPSBL_FILE}
+	echo $@
 
 # OHC metrics
 

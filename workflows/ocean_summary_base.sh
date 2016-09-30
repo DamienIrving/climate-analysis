@@ -61,6 +61,9 @@ for experiment in "${experiments[@]}"; do
     controldir='ua6'
     fxdir='ua6'
     tasdir='ua6'
+    sosdir='ua6'
+    prdir='ua6'
+    evspsbldir='ua6'
 
     # CanESM2
 
@@ -434,10 +437,13 @@ for experiment in "${experiments[@]}"; do
         origcontroldir="/g/data/${controldir}/drstree/CMIP5/GCM"
         origfxdir="/g/data/${fxdir}/drstree/CMIP5/GCM"
         origtasdir="/g/data/${tasdir}/drstree/CMIP5/GCM"
+        origsosdir="/g/data/${sosdir}/drstree/CMIP5/GCM"
+        origprdir="/g/data/${prdir}/drstree/CMIP5/GCM"
+        origevspsbldir="/g/data/${evspsbldir}/drstree/CMIP5/GCM"
 
-        make ${options} -f ocean_summary_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_FX_DIR="${origfxdir}" ORIG_TAS_DIR="${origtasdir}" VAR="${variable}" LONG_NAME="${long_name}" ZM_TICK_MAX="${zm_tick_max}" ZM_TICK_STEP="${zm_tick_step}" VM_TICK_MAX="${vm_tick_max}" VM_TICK_STEP="${vm_tick_step}" SCALE_FACTOR="${scale_factor}" PALETTE="${palette}"
+        make ${options} -f ocean_summary_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_FX_DIR="${origfxdir}" ORIG_TAS_DIR="${origtasdir}" ORIG_SOS_DIR="${origsosdir}" ORIG_PR_DIR="${origprdir}" ORIG_EVSPSBL_DIR="${origevspsbldir}" VAR="${variable}" LONG_NAME="${long_name}" ZM_TICK_MAX="${zm_tick_max}" ZM_TICK_STEP="${zm_tick_step}" VM_TICK_MAX="${vm_tick_max}" VM_TICK_STEP="${vm_tick_step}" SCALE_FACTOR="${scale_factor}" PALETTE="${palette}"
 
-        echo "DONE: make ${options} -f ocean_summary_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_FX_DIR=${origfxdir} ORIG_TAS_DIR=${origtasdir} VAR=${variable} LONG_NAME=${long_name} ZM_TICK_MAX=${zm_tick_max} ZM_TICK_STEP=${zm_tick_step} VM_TICK_MAX=${vm_tick_max} VM_TICK_STEP=${vm_tick_step} SCALE_FACTOR=${scale_factor} PALETTE=${palette}"
+        echo "DONE: make ${options} -f ocean_summary_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_FX_DIR=${origfxdir} ORIG_TAS_DIR=${origtasdir} ORIG_SOS_DIR=${origsosdir} ORIG_PR_DIR=${origprdir} ORIG_EVSPSBL_DIR=${origevspsbldir} VAR=${variable} LONG_NAME=${long_name} ZM_TICK_MAX=${zm_tick_max} ZM_TICK_STEP=${zm_tick_step} VM_TICK_MAX=${vm_tick_max} VM_TICK_STEP=${vm_tick_step} SCALE_FACTOR=${scale_factor} PALETTE=${palette}"
     done
 done
 
