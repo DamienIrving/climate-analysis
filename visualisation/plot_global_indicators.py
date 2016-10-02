@@ -12,7 +12,8 @@ import argparse
 import numpy, math
 import matplotlib.pyplot as plt
 import iris
-
+import iris.plot as iplt
+import seaborn
 
 # Import my modules
 
@@ -34,32 +35,94 @@ except ImportError:
 
 # Define functions
 
+experiments = {'historical': 'black',
+               'historicalAA': 'blue',
+               'historicalGHG': 'red',
+               'historicalAnt': 'purple',
+               'historicalNat': '0.5'}
+variables = ['air_temperature', 'sea_surface_salinity',
+             'precipitation_flux', 'water_evaporation_flux'] 
+
+
+def tas_plot(ax, cube_dict):
+    """Plot the global mean temperature timeseries."""
+    
+    plt.sca(ax)
+    for experiment, color in experiments.iteritems():
+        try:
+            cube = cube_dict['air_temperature', experiment]
+            iplt.plot(cube, color=color, label=experiment)
+        except KeyError:
+            pass
+    plt.title('Global mean temperature')
+    plt.xlabel('Year')
+    plt.ylabel(str(cube.units))
+    plt.legend(fontsize='small', loc=2)
+
+
+def sos_plot(ax, cube_dict):
+    """Plot the salinity amplification timeseries."""
+    
+    plt.sca(ax)
+    for experiment, color in experiments.iteritems():
+        try:
+            iplt.plot(cube_dict['sea_surface_salinity', experiment], color=color, label=experiment)
+        except KeyError:
+            pass
+
+    plt.title('Salinity amplification')
+    plt.xlabel('Year')
+    plt.legend(fontsize='small', loc=2)
+
+
+def pe_plot(ax, cube_dict):
+    """Plot the precipiation minus evaproation timeseries."""
+    
+    plt.sca(ax)
+    for experiment, color in experiments.iteritems():
+        try:
+            pe_cube = cube_dict['precipitation_flux', experiment] + cube_dict['water_evaporation_flux', experiment]
+            iplt.plot(pe_cube * 86400, color=color, label=experiment)
+        except KeyError:
+            pass
+    plt.title('P-E')
+    plt.xlabel('Year')
+    plt.ylabel('mm/day')
+    plt.legend(fontsize='small', loc=2)
+
+
 def main(inargs):
     """Run the program."""
 
     # Read and group data
-    timeseries_data = {}
+    cube_dict = {}
+    metadata_dict = {}
     for filename in inargs.infiles:
         cube = iris.load_cube(filename)
-
+        metadata_dict[filename] = cube.attributes['history']
         standard_name = cube.standard_name
+        assert standard_name in variables
+
         experiment = cube.attributes['experiment']
         if experiment == 'historicalMisc':
             physics = cube.attributes['physics_version']
-            experiment = 'historicalAA' # or historicalAnt
+            assert physics in [inargs.aa_physics, inargs.ant_physics]
+            if physics == inargs.aa_physics:
+                experiment = 'historicalAA'
+            elif physics == inargs.ant_physics:
+                experiment == 'historicalAnt'
+        assert experiment in experiments.keys()
                
         key = (standard_name, experiment)
-        if key in timeseries_data.keys():
-            timeseries_data(key).append(cube)
-        else:
-            timeseries_data(key) = [cube,]
-     
-    # take ensemble mean of each group (hopefully without losing time axis metadata??)
-    # create 3 subplots       
-         
+        assert key not in cube_dict.keys()
+        cube_dict[key] = cube
+    
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(20, 5))
+    tas_plot(axes[0], cube_dict) 
+    sos_plot(axes[1], cube_dict)
+    pe_plot(axes[2], cube_dict)
+        
     plt.savefig(inargs.outfile, bbox_inches='tight')
-
-    metadata_dict = get_metadata(inargs, cube, climatology) 
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)
 
 
@@ -86,7 +149,10 @@ example:
     parser.add_argument("infiles", type=str, nargs='*', help="Input global metric files")
     parser.add_argument("outfile", type=str, help="Output file name")
 
-    ## Options to designate the Ant vs AA historicalMisc run
+    parser.add_argument("--aa_physics", type=str, default=None,
+                        help="Physics version for the anthropogenic aerosol only experiment [default=None]")
+    parser.add_argument("--ant_physics", type=str, default=None,
+                        help="Physics version for the anthropogenic only experiment [default=None]")
 
     args = parser.parse_args()            
     main(args)
