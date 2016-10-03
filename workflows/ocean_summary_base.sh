@@ -371,13 +371,17 @@ for experiment in "${experiments[@]}"; do
         organisation='IPSL'
         vardir='r87/dbi599'  # ua6 for thetao but not so
         fxdir='r87/dbi599'
+        sosdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'Ant' ]] ; then
         experiment='historicalMisc'
         runs=( r1i1p2 )  #r1i1p2; missing r2i1p2 r3i1p2  
         organisation='IPSL'
-        vardir='r87/dbi599'  # ua6 for thetao but not so
+        #vardir='r87/dbi599'  # ua6 for thetao but not so
         fxdir='r87/dbi599'
+        sosdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'historicalGHG' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 (and probably more)  
@@ -385,6 +389,7 @@ for experiment in "${experiments[@]}"; do
         vardir='r87/dbi599'
         fxdir='r87/dbi599'
         tasdir='r87/dbi599'
+        sosdir='r87/dbi599'
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'historical' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
@@ -394,6 +399,8 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1
         organisation='IPSL'
         fxdir='r87/dbi599'
+        sosdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     elif [[ ${model} == 'IPSL-CM5A-LR' && ${experiment} == 'noAA' ]] ; then
         experiment='historicalMisc'

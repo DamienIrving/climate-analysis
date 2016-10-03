@@ -112,11 +112,11 @@ def main(inargs):
             elif str(physics) == inargs.ant_physics:
                 experiment = 'historicalAnt'
         assert experiment in experiments.keys(), '%s is not an acceptable experiment name' %(experiment)
-               
+        
         key = (standard_name, experiment)
         assert key not in cube_dict.keys()
         cube_dict[key] = cube
-    
+
     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(20, 5))
     tas_plot(axes[0], cube_dict) 
     sos_plot(axes[1], cube_dict)
@@ -131,12 +131,6 @@ if __name__ == '__main__':
     extra_info =""" 
 author:
   Damien Irving, irving.damien@gmail.com
-    
-example:
-/g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/historical/yr/atmos/tas/r1i1p1/tas-global-mean_Ayr_IPSL-CM5A-LR_historical_r1i1p1_185001-200512.nc  
-/g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/historical/yr/atmos/evspsbl/r1i1p1/evspsbl-global-mean_Ayr_IPSL-CM5A-LR_historical_r1i1p1_185001-200512.nc
-/g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/historical/yr/atmos/pr/r1i1p1/pr-global-mean_Ayr_IPSL-CM5A-LR_historical_r1i1p1_185001-200512.nc
-/g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/historical/yr/ocean/sos/r1i1p1/sos-global-amp_Oyr_IPSL-CM5A-LR_historical_r1i1p1_185001-200512.nc
 
 """
 
