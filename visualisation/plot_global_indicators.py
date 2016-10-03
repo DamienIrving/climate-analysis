@@ -103,15 +103,15 @@ def main(inargs):
         standard_name = cube.standard_name
         assert standard_name in variables
 
-        experiment = cube.attributes['experiment']
+        experiment = cube.attributes['experiment_id']
         if experiment == 'historicalMisc':
             physics = cube.attributes['physics_version']
-            assert physics in [inargs.aa_physics, inargs.ant_physics]
-            if physics == inargs.aa_physics:
+            assert str(physics) in [inargs.aa_physics, inargs.ant_physics], '%s is not an acceptable physics version' %(physics)
+            if str(physics) == inargs.aa_physics:
                 experiment = 'historicalAA'
-            elif physics == inargs.ant_physics:
-                experiment == 'historicalAnt'
-        assert experiment in experiments.keys()
+            elif str(physics) == inargs.ant_physics:
+                experiment = 'historicalAnt'
+        assert experiment in experiments.keys(), '%s is not an acceptable experiment name' %(experiment)
                
         key = (standard_name, experiment)
         assert key not in cube_dict.keys()
