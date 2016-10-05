@@ -34,6 +34,16 @@ except ImportError:
 
 # Define functions
 
+history = []
+
+def save_history(cube, field, filename):
+    """Save the history attribute when reading the data.
+    (This is required because the history attribute differs between input files 
+      and is therefore deleted upon equilising attributes)  
+    """ 
+
+    history.append(cube.attributes['history'])
+
 
 def read_area(area_file):
     """Read the optional area file."""
@@ -52,7 +62,7 @@ def set_attributes(inargs, data_cube, area_cube):
     atts = data_cube.attributes
 
     infile_history = {}
-    infile_history[inargs.infile] = data_cube.attributes['history']
+    infile_history[inargs.infiles[0]] = history[0] 
  
     if area_cube:                  
         infile_history[inargs.area_file] = area_cube.attributes['history']
@@ -151,7 +161,11 @@ def smooth_data(cube, smooth_type):
 def main(inargs):
     """Run the program."""
 
-    cube = iris.load_cube(inargs.infile, inargs.var)
+    cube = iris.load(inargs.infiles, inargs.var, callback=save_history)
+    equalise_attributes(cube)
+    iris.util.unify_time_units(cube)
+    cube = cube.concatenate_cube()
+
     area_cube = read_area(inargs.area_file) 
 
     atts = set_attributes(inargs, cube, area_cube)
@@ -182,7 +196,7 @@ author:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infile", type=str, help="Input data file")
+    parser.add_argument("infiles", type=str, nargs='*', help="Input data files (can merge on time)")
     parser.add_argument("var", type=str, help="Input variable name (i.e. the standard_name)")
     parser.add_argument("metric", type=str, choices=('mean', 'amplification'), help="Metric to calculate")
     parser.add_argument("outfile", type=str, help="Output file name")
