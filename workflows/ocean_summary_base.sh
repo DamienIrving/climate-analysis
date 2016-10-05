@@ -419,6 +419,7 @@ for experiment in "${experiments[@]}"; do
     elif [[ ${model} == 'NorESM1-M' && ${experiment} == 'historicalNat' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 ( no fx )
         organisation='NCC'
+        fxdir='r87/dbi599'
 
     elif [[ ${model} == 'NorESM1-M' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
@@ -432,6 +433,8 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p1 )  #r1i1p1
         organisation='NCC'
         vardir='r87/dbi599'
+        fxdir='r87/dbi599'
+        sosdir='r87/dbi599'
 
     else
         echo "Unrecognised model (${model}) / experiment (${experiment}) combination"
