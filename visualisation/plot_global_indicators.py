@@ -44,6 +44,14 @@ variables = ['air_temperature', 'sea_surface_salinity',
              'precipitation_flux', 'water_evaporation_flux'] 
 
 
+metadata_dict = {}
+
+def save_history(cube, field, filename):
+    """Save the history attribute when reading the data.""" 
+
+    metadata_dict[filename] = cube.attributes['history']
+
+
 def tas_plot(ax, cube_dict):
     """Plot the global mean temperature timeseries."""
     
@@ -95,11 +103,11 @@ def main(inargs):
     """Run the program."""
 
     # Read and group data
+    cube_list = iris.load(inargs.infiles, callback=save_history)
+    iris.util.unify_time_units(cube_list)
+
     cube_dict = {}
-    metadata_dict = {}
-    for filename in inargs.infiles:
-        cube = iris.load_cube(filename)
-        metadata_dict[filename] = cube.attributes['history']
+    for cube in cube_list:
         standard_name = cube.standard_name
         assert standard_name in variables
 
