@@ -102,7 +102,6 @@ def pe_plot(ax, cube_dict):
 def main(inargs):
     """Run the program."""
 
-    # Read and group data
     cube_list = iris.load(inargs.infiles, callback=save_history)
     iris.util.unify_time_units(cube_list)
 
