@@ -202,37 +202,36 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p5 ) #r1i1p5
         organisation='NOAA-GFDL'
         vardir='r87/dbi599'
-        controldir='r87/dbi599'
         fxdir='r87/dbi599'
+        sosdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'Ant' ]] ; then
         experiment='historicalMisc'
         runs=( r1i1p2 ) #r1i1p2
         organisation='NOAA-GFDL'
         vardir='r87/dbi599'
-        controldir='r87/dbi599'
         fxdir='r87/dbi599'
+        sosdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'historical' ]] ; then
         runs=( r1i1p1 ) #r1i1p1
         organisation='NOAA-GFDL'
-        vardir='r87/dbi599'
-        controldir='r87/dbi599'
-        fxdir='r87/dbi599'
+        fxdir='r87/dbi599'  # ua6 for areacella
 
     elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'historicalGHG' ]] ; then
         runs=( r1i1p1 )  #r1i1p1
         organisation='NOAA-GFDL'
         vardir='r87/dbi599'
-        controldir='r87/dbi599'
         fxdir='r87/dbi599'
+        sosdir='r87/dbi599'
 
     elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'historicalNat' ]] ; then
         runs=( r1i1p1 )  #r1i1p1
         organisation='NOAA-GFDL'
-        vardir='r87/dbi599'
-        controldir='r87/dbi599'
         fxdir='r87/dbi599'
+        sosdir='r87/dbi599'
 
     # GISS-E2-H
 
