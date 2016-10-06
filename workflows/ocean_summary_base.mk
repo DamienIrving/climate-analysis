@@ -90,12 +90,11 @@ ${CLIMATOLOGY_FILE} : ${DEDRIFTED_VARIABLE_DIR}
 
 ${VARIABLE_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${VARIABLE_MAPS_DIR}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_VARIABLE_FILES} ${LONG_NAME} $@ --climatology_file $< 
-        #--chunk --basin_file ${BASIN_FILE}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_VARIABLE_FILES} ${LONG_NAME} $@ --climatology_file $< --basin_file ${BASIN_FILE}
+        #--chunk 
 
 ${CLIMATOLOGY_MAPS_FILE} : ${CLIMATOLOGY_FILE}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< ${LONG_NAME} $@ 
-        # --basin_file ${BASIN_FILE}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< ${LONG_NAME} $@ --basin_file ${BASIN_FILE}
 
 ${VARIABLE_MAPS_TIME_TREND} : ${VARIABLE_MAPS_FILE}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_trend.py $< $@ --time_bounds ${START_DATE} ${END_DATE}
