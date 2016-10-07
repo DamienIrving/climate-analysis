@@ -123,10 +123,13 @@ def curvilinear_to_rectilinear(cube):
         new_cube = new_cube.merge_cube()
         coord_names = [coord.name() for coord in new_cube.dim_coords]
 
+        regrid_status = True
+
     else:
 
         new_cube = cube
+        regrid_status = False
     
-    return new_cube, coord_names
+    return new_cube, coord_names, regrid_status
 
 

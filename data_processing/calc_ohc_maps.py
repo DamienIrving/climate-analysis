@@ -135,7 +135,7 @@ def main(inargs):
 
         if climatology_cube:
             temperature_cube = temperature_cube - climatology_cube
-        temperature_cube, coord_names = grids.curvilinear_to_rectilinear(temperature_cube)
+        temperature_cube, coord_names, regrid_status = grids.curvilinear_to_rectilinear(temperature_cube)
 
         assert coord_names == ['time', 'depth', 'latitude', 'longitude']
     

@@ -265,7 +265,7 @@ def main(inargs):
         if basin_cube:
             data_cube = mask_marginal_seas(data_cube, basin_cube)
 
-        data_cube, coord_names = grids.curvilinear_to_rectilinear(data_cube)
+        data_cube, coord_names, regrid_status = grids.curvilinear_to_rectilinear(data_cube)
 
         assert coord_names[-3:] == ['depth', 'latitude', 'longitude']
         depth_axis = data_cube.coord('depth')
@@ -280,7 +280,7 @@ def main(inargs):
             for layer in vertical_layers.keys():
                 out_list.append(calc_vertical_mean(cube_slice, layer, coord_names, atts, standard_name, var_name))
 
-            if basin_cube:
+            if basin_cube and not regrid_status:
                 ndim = cube_slice.ndim
                 basin_array = uconv.broadcast_array(basin_cube.data, [ndim - 2, ndim - 1], cube_slice.shape) 
             else: 
@@ -319,6 +319,14 @@ if __name__ == '__main__':
 
 author:
     Damien Irving, irving.damien@gmail.com
+
+notes:
+    On curvilinear grids it's not a good idea to use the basin file to 
+    select the basin. When you regrid the missing values propagate and you
+    end up with massive areas of missing values. This is what the 
+    regrid_status is for. If it is true the input data is on a curvilinear grid 
+    and thus the basin file will be used to mask the marginal seas but not for 
+    selecting ocean basins.
 
 """
 
