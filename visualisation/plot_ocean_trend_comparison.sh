@@ -50,6 +50,10 @@ elif [[ "${model}" == 'NorESM1-M' ]] ; then
     organisation='NCC'
     run='r1'
     aa_physics='p1'
+elif [[ "${model}" == 'GFDL-ESM2M' ]] ; then
+    organisation='NOAA-GFDL'
+    run='r1'
+    aa_physics='p5'
 fi
 
 python=/g/data/r87/dbi599/miniconda2/envs/default/bin/python 
