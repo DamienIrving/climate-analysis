@@ -34,21 +34,21 @@ OCEAN_AREA_FILE=${ORIG_FX_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/a
 
 TAS_FILE=$(wildcard ${ORIG_TAS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/tas/${RUN}/tas_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
 GLOBAL_MEAN_TAS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/tas/${RUN}
-GLOBAL_MEAN_TAS_FILE=$(patsubst ${ORIG_TAS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/tas/${RUN}/tas_Amon_%.nc, ${GLOBAL_MEAN_TAS_DIR}/tas-global-mean_Ayr_%.nc, ${TAS_FILE})
+GLOBAL_MEAN_TAS_FILE=${GLOBAL_MEAN_TAS_DIR}/tas-global-mean_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 SOS_FILE=$(wildcard ${ORIG_SOS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/sos/${RUN}/sos_Omon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
 GLOBAL_AMP_SOS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/sos/${RUN}
-GLOBAL_AMP_SOS_FILE=$(patsubst ${ORIG_SOS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/sos/${RUN}/sos_Omon_%.nc, ${GLOBAL_AMP_SOS_DIR}/sos-global-amp_Oyr_%.nc, ${SOS_FILE})
+GLOBAL_AMP_SOS_FILE=${GLOBAL_AMP_SOS_DIR}/sos-global-amp_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 PR_FILE=$(wildcard ${ORIG_PR_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/pr/${RUN}/pr_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
 GLOBAL_MEAN_PR_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/pr/${RUN}
-GLOBAL_MEAN_PR_FILE=$(patsubst ${ORIG_PR_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/pr/${RUN}/pr_Amon_%.nc, ${GLOBAL_MEAN_PR_DIR}/pr-global-mean_Ayr_%.nc, ${PR_FILE})
+GLOBAL_MEAN_PR_FILE=${GLOBAL_MEAN_PR_DIR}/pr-global-mean_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 EVSPSBL_FILE=$(wildcard ${ORIG_EVSPSBL_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/evspsbl/${RUN}/evspsbl_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
 GLOBAL_MEAN_EVSPSBL_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/evspsbl/${RUN}
-GLOBAL_MEAN_EVSPSBL_FILE=$(patsubst ${ORIG_EVSPSBL_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/evspsbl/${RUN}/evspsbl_Amon_%.nc, ${GLOBAL_MEAN_EVSPSBL_DIR}/evspsbl-global-mean_Ayr_%.nc, ${EVSPSBL_FILE})
+GLOBAL_MEAN_EVSPSBL_FILE=${GLOBAL_MEAN_EVSPSBL_DIR}/evspsbl-global-mean_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
-GLOBAL_INDICATORS_PLOT=${MY_DATA_DIR}/figures/global_indicators/global-indicators_${MODEL}_${EXPERIMENT}_${RUN}.nc
+GLOBAL_INDICATORS_PLOT=${MY_DATA_DIR}/figures/global_indicators/global-indicators_${MODEL}_${EXPERIMENT}_${RUN}.png
 
 VARIABLE_MAPS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/${VAR}-maps/${RUN}
 VARIABLE_MAPS_FILE=${VARIABLE_MAPS_DIR}/${VAR}-maps_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
@@ -79,7 +79,7 @@ ${DRIFT_COEFFICIENTS} :
 
 ${DEDRIFTED_VARIABLE_DIR} : ${DRIFT_COEFFICIENTS}
 	mkdir -p $@
-	${PYTHON} ${DATA_SCRIPT_DIR}/remove_drift.py ${VARIABLE_FILES} ${LONG_NAME} $< $@/ --annual
+	${PYTHON} ${DATA_SCRIPT_DIR}/remove_drift.py ${VARIABLE_FILES} ${LONG_NAME} $< $@/ --annual --no_parent_check
 
 # Core data
 
@@ -95,6 +95,7 @@ ${VARIABLE_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 
 ${CLIMATOLOGY_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< ${LONG_NAME} $@ --basin_file ${BASIN_FILE}
+        # 
 
 ${VARIABLE_MAPS_TIME_TREND} : ${VARIABLE_MAPS_FILE}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_trend.py $< $@ --time_bounds ${START_DATE} ${END_DATE}
