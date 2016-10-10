@@ -235,8 +235,33 @@ def mask_marginal_seas(data_cube, basin_cube):
     data_cube.data.mask = numpy.where((data_cube.data.mask == False) & (basin_array <= 5), False, True)
 
     return data_cube
-     
 
+
+def regrid_cube(cube):
+    """Regrid the cube.
+
+    For a singleton axis, curvilinear_to_rectilinear moves 
+      that axis from being a dimension coordinate to a 
+      scalar coordinate. 
+
+    This function only focuses on a singleton time axis and 
+      moves it back to being a dimension coordinate if need be 
+
+    """
+
+    singleton_flag = False
+    if cube.shape[0] == 1:
+        singleton_flag = True
+
+    cube, coord_names, regrid_status = grids.curvilinear_to_rectilinear(cube)
+
+    if singleton_flag:
+        cube = iris.util.new_axis(cube, 'time')
+        coord_names = [coord.name() for coord in cube.dim_coords]
+
+    return cube, coord_names, regrid_status
+
+     
 def main(inargs):
     """Run the program."""
 
@@ -265,7 +290,7 @@ def main(inargs):
         if basin_cube:
             data_cube = mask_marginal_seas(data_cube, basin_cube)
 
-        data_cube, coord_names, regrid_status = grids.curvilinear_to_rectilinear(data_cube)
+        data_cube, coord_names, regrid_status = regrid_cube(data_cube)
 
         assert coord_names[-3:] == ['depth', 'latitude', 'longitude']
         depth_axis = data_cube.coord('depth')
