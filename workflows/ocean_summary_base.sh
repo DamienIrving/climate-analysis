@@ -172,12 +172,12 @@ for experiment in "${experiments[@]}"; do
     # GFDL-CM3
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'historical' ]] ; then
-        runs=( r1i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        runs=( r3i1p1 r5i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='NOAA-GFDL'
         fxdir='r87/dbi599'
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'historicalGHG' ]] ; then
-        runs=( r1i1p1 r3i1p1 )  #r1i1p1 r3i1p1 r5i1p1 (r5 I had to download myself)
+        runs=( r1i1p1 )  #r1i1p1 r3i1p1 r5i1p1 (r5 I had to download myself)
         organisation='NOAA-GFDL'
         #vardir='r87/dbi599'
         fxdir='r87/dbi599'
@@ -189,14 +189,15 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p1 r3i1p1 r5i1p1 ) #r1i1p1 r3i1p1 r5i1p1
+        runs=( r3i1p1 r5i1p1 ) #r1i1p1 r3i1p1 r5i1p1
         organisation='NOAA-GFDL'
         evspsbldir='r87/dbi599'
         fxdir='r87/dbi599'
+        vardir='r87/dbi599'  # for thetao, because the ua6 data has time axis problems
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'Ant' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p2 r3i1p2 r5i1p2 ) #r1i1p2 r3i1p2 r5i1p2
+        runs=( r1i1p2 ) #r1i1p2 r3i1p2 r5i1p2
         organisation='NOAA-GFDL'
         evspsbldir='r87/dbi599'
         fxdir='r87/dbi599'

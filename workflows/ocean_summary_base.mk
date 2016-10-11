@@ -79,7 +79,8 @@ ${DRIFT_COEFFICIENTS} :
 
 ${DEDRIFTED_VARIABLE_DIR} : ${DRIFT_COEFFICIENTS}
 	mkdir -p $@
-	${PYTHON} ${DATA_SCRIPT_DIR}/remove_drift.py ${VARIABLE_FILES} ${LONG_NAME} $< $@/ --annual --no_parent_check
+	${PYTHON} ${DATA_SCRIPT_DIR}/remove_drift.py ${VARIABLE_FILES} ${LONG_NAME} $< $@/ --annual 
+        #--no_parent_check
 
 # Core data
 
