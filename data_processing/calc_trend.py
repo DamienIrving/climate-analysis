@@ -101,6 +101,7 @@ def main(inargs):
 
         out_list.append(trend_cube)
 
+    iris.FUTURE.netcdf_no_unlimited = True
     iris.save(out_list, inargs.outfile)
 
 if __name__ == '__main__':
