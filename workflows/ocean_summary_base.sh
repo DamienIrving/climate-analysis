@@ -153,33 +153,39 @@ for experiment in "${experiments[@]}"; do
     elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'historical' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='LASG-CESS'
+        fxdir='r87/dbi599'
 
     elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'historicalNat' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1
         organisation='LASG-CESS'
+        fxdir='r87/dbi599'
 
     elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'historicalGHG' ]] ; then
         runs=( r1i1p1 )  #r1i1p1
         organisation='LASG-CESS'
         vardir='r87/dbi599'
+        fxdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
         runs=( r2i1p1 )  #r2i1p1
         organisation='LASG-CESS'
         vardir='r87/dbi599'
+        fxdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     # GFDL-CM3
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'historical' ]] ; then
-        runs=( r3i1p1 r5i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        runs=( r1i1p1 r3i1p1 r5i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='NOAA-GFDL'
         fxdir='r87/dbi599'
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'historicalGHG' ]] ; then
-        runs=( r1i1p1 )  #r1i1p1 r3i1p1 r5i1p1 (r5 I had to download myself)
+        runs=( r5i1p1 )  #r1i1p1 r3i1p1 r5i1p1 (r5 I had to download myself)
         organisation='NOAA-GFDL'
-        #vardir='r87/dbi599'
+        vardir='r87/dbi599'
         fxdir='r87/dbi599'
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'historicalNat' ]] ; then
@@ -189,7 +195,7 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
-        runs=( r3i1p1 r5i1p1 ) #r1i1p1 r3i1p1 r5i1p1
+        runs=( r1i1p1 r3i1p1 r5i1p1 ) #r1i1p1 r3i1p1 r5i1p1
         organisation='NOAA-GFDL'
         evspsbldir='r87/dbi599'
         fxdir='r87/dbi599'
