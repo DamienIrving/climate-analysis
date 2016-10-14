@@ -95,21 +95,6 @@ def check_data_units(data_cube, coefficient_cube):
     return data_cube
 
 
-def check_time_units(time_units):
-    """Check that the time units are formatted correctly. 
-
-    Known issues:
-      Not including the day (e.g. days since 0001-01)
-
-    """
-
-    no_day_pattern = '([0-9]{4})-([0-9]{1,2})$'
-    if bool(re.search(no_day_pattern, time_units)):
-        time_units = time_units+'-01'
-
-    return time_units
-
-
 def coefficient_sanity_check(coefficient_cube, variable):
     """Sanity check the cubic polynomial coefficients.
 
@@ -163,8 +148,6 @@ def time_adjustment(first_data_cube, coefficient_cube):
     branch_time_calendar = coefficient_cube.attributes['time_calendar']
     data_time_coord = first_data_cube.coord('time')
 
-    branch_time_unit = check_time_units(branch_time_unit)
-
     new_unit = cf_units.Unit(branch_time_unit, calendar=branch_time_calendar)  
     data_time_coord.convert_units(new_unit)
 
@@ -208,6 +191,7 @@ def main(inargs):
     for fnum, filename in enumerate(inargs.data_files):
         data_cube = iris.load_cube(filename, inargs.var)
         data_cube = check_data_units(data_cube, coefficient_cube)
+        data_cube = gio.check_time_units(data_cube)
         if not inargs.no_parent_check:
             check_attributes(data_cube.attributes, coefficient_cube.attributes)
 

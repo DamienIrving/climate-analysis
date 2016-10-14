@@ -2,6 +2,7 @@
 Collection of commonly used functions for general file input and output.
 
 Functions:
+  check_time_units         -- Check time axis units
   check_xrayDataset        -- Check xray.Dataset for data format compliance
   get_cmip5_file_details   -- Extract details from a CMIP5 filename
   get_subset_kwargs        -- Get keyword arguments for xray subsetting
@@ -29,6 +30,7 @@ from dateutil import parser
 from collections import defaultdict
 import re
 import iris
+import cf_units
 
 # Import my modules
 
@@ -91,6 +93,26 @@ regions = {'asl': [-75, -60, 180, 310],
            'zw32': [-50, -45, 161, 171],
            'zw33': [-50, -45, 279, 289],
            }
+
+
+def check_time_units(cube):
+    """Check time axis units.
+
+    Iris requires "days since YYYY-MM-DD".
+
+    Known issues in CMIP data files:
+      Not including the day (e.g. days since 0001-01)
+
+    """
+
+    missing_day_pattern = 'days since ([0-9]{4})-([0-9]{2})$'
+
+    time_units = str(cube.coord('time').units)
+    if bool(re.search(missing_day_pattern, time_units)):
+        calendar = cube.coord('time').units.calendar
+        cube.coord('time').units = cf_units.Unit(time_units+'-01', calendar=calendar)
+
+    return cube
 
 
 def check_xrayDataset(dset, var_list):

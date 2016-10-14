@@ -137,6 +137,7 @@ def main(inargs):
         cube = cubes[var_index::nvars]
         equalise_attributes(cube)
         cube = cube.concatenate_cube()
+        cube = gio.check_time_units(cube)
         
         coord_names = [coord.name() for coord in cube.coords(dim_coords=True)]
         assert coord_names[0] == 'time', "First axis must be time"
@@ -182,6 +183,7 @@ def main(inargs):
     out_cube = cube_list.concatenate()
 
     assert out_cube[0].data.dtype == numpy.float32
+    iris.FUTURE.netcdf_no_unlimited = True
     iris.save(out_cube, inargs.outfile, netcdf_format='NETCDF3_CLASSIC')
 
 
