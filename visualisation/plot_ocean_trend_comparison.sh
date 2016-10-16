@@ -54,6 +54,10 @@ elif [[ "${model}" == 'GFDL-ESM2M' ]] ; then
     organisation='NOAA-GFDL'
     run='r1'
     aa_physics='p5'
+elif [[ "${model}" == 'FGOALS-g2' ]] ; then
+    organisation='LASG-CESS'
+    run='r1'  #manually edit to r2 for AA
+    aa_physics='p1'
 fi
 
 python=/g/data/r87/dbi599/miniconda2/envs/default/bin/python 
