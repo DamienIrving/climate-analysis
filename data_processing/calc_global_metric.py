@@ -165,6 +165,7 @@ def main(inargs):
     equalise_attributes(cube)
     iris.util.unify_time_units(cube)
     cube = cube.concatenate_cube()
+    cube = gio.check_time_units(cube)
 
     area_cube = read_area(inargs.area_file) 
 
