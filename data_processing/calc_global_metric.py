@@ -158,9 +158,6 @@ def smooth_data(cube, smooth_type):
     return cube
 
 
-#level_10 = iris.Constraint(model_level_number=10)
-
-
 def main(inargs):
     """Run the program."""
 
