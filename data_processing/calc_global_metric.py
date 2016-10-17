@@ -99,7 +99,7 @@ def calc_amplification_metric(cube, grid_areas, atts):
 
     """
 
-    assert cube.standard_name == 'sea_surface_salinity'
+    assert cube.standard_name in ['sea_surface_salinity', 'sea_water_salinity']
 
     fldmean = cube.collapsed(['longitude', 'latitude'], iris.analysis.MEAN, weights=grid_areas)
     cube_spatial_anom = cube - fldmean        
@@ -158,10 +158,18 @@ def smooth_data(cube, smooth_type):
     return cube
 
 
+#level_10 = iris.Constraint(model_level_number=10)
+
+
 def main(inargs):
     """Run the program."""
 
-    cube = iris.load(inargs.infiles, inargs.var, callback=save_history)
+    if inargs.depth:
+        level_constraint = iris.Constraint(depth=inargs.depth)
+    else:
+        level_constraint = iris.Constraint()
+
+    cube = iris.load(inargs.infiles, inargs.var & level_constraint, callback=save_history)
     equalise_attributes(cube)
     iris.util.unify_time_units(cube)
     cube = cube.concatenate_cube()
@@ -207,6 +215,9 @@ author:
 
     parser.add_argument("--smoothing", type=str, choices=('annual', 'annual_running_mean'), default=None, 
                         help="Apply smoothing to data")
+
+    parser.add_argument("--depth", type=float, default=None, 
+                        help="Level selection")
 
     args = parser.parse_args()            
 
