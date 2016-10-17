@@ -40,9 +40,6 @@ experiments = {'historical': 'black',
                'historicalGHG': 'red',
                'historicalAnt': 'purple',
                'historicalNat': '0.5'}
-variables = ['air_temperature', 'sea_surface_salinity',
-             'precipitation_flux', 'water_evaporation_flux'] 
-
 
 metadata_dict = {}
 
@@ -68,13 +65,23 @@ def tas_plot(ax, cube_dict):
     plt.legend(fontsize='small', loc=2)
 
 
-def sos_plot(ax, cube_dict):
-    """Plot the salinity amplification timeseries."""
+def sos_plot(ax, cube_dict, so=False):
+    """Plot the salinity amplification timeseries.
+
+    so: Sea water salinity (so) used for salinity data instead of 
+      sea surface salinity (sos)  
+
+    """
     
     plt.sca(ax)
+    if so:
+        var = 'sea_water_salinity'
+    else:
+        var = 'sea_surface_salinity'
+
     for experiment, color in experiments.iteritems():
         try:
-            iplt.plot(cube_dict['sea_surface_salinity', experiment], color=color, label=experiment)
+            iplt.plot(cube_dict[var, experiment], color=color, label=experiment)
         except KeyError:
             pass
 
@@ -108,6 +115,9 @@ def main(inargs):
     cube_dict = {}
     for cube in cube_list:
         standard_name = cube.standard_name
+        variables = ['air_temperature', 'sea_surface_salinity',
+                     'sea_water_salinity', 'precipitation_flux',
+                     'water_evaporation_flux']
         assert standard_name in variables
 
         experiment = cube.attributes['experiment_id']
@@ -126,7 +136,7 @@ def main(inargs):
 
     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(20, 5))
     tas_plot(axes[0], cube_dict) 
-    sos_plot(axes[1], cube_dict)
+    sos_plot(axes[1], cube_dict, so=inargs.so)
     pe_plot(axes[2], cube_dict)
         
     plt.savefig(inargs.outfile, bbox_inches='tight')
@@ -154,6 +164,9 @@ author:
                         help="Physics version for the anthropogenic aerosol only experiment [default=None]")
     parser.add_argument("--ant_physics", type=str, default=None,
                         help="Physics version for the anthropogenic only experiment [default=None]")
+
+    parser.add_argument("--so", action="store_true", default=False,
+                        help="so rather than sos used for salinity [default: False]")
 
     args = parser.parse_args()            
     main(args)
