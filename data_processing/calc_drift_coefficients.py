@@ -121,20 +121,12 @@ def check_units(cube):
     return cube
 
 
-def concatenate_cube(cube_list, variable):
+def concatenate_cube(cube_list):
     """Concatenate cube_list"""
 
     equalise_attributes(cube_list)
-        
-    print len(cube_list)
-    for index, cube in enumerate(cube_list):
-        print index
-        cube = gio.check_time_units(cube)
-        if variable == 'sea_water_salinity':
-            cube = gio.salinity_unit_check(cube)
-        cube_list[index] = cube
-        
     cube = cube_list.concatenate_cube()
+    cube = gio.check_time_units(cube)
 
     coord_names = [coord.name() for coord in cube.coords(dim_coords=True)]
     assert coord_names[0] == 'time', "First axis must be time"
@@ -156,7 +148,7 @@ def main(inargs):
     out_cubes = []
     for var_index in range(0, nvars):
         cube = cubes[var_index::nvars]
-        cube, coord_names = concatenate_cube(cube, inargs.var)       
+        cube, coord_names = concatenate_cube(cube)       
         coefficients, time_start, time_end = calc_coefficients(cube, coord_names, convert_annual=inargs.annual)
 
         # Write the output file
