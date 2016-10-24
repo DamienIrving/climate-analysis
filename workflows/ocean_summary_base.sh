@@ -92,7 +92,7 @@ for experiment in "${experiments[@]}"; do
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'historical' ]] ; then
         experiment='historical'
-        runs=( r1i1p1 )  # r1i1p1 r1i2p1 r1i2p2 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
+        runs=( r4i1p1 r6i1p1 )  # r1i1p1 r1i2p1 r1i2p2 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
         organisation='NCAR'
         controldir='r87/dbi599'  # for so, because had to fix_salinity_units.sh first
 
@@ -100,10 +100,16 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p1 r4i1p1 r6i1p1 )  # r1i1p1 r4i1p1 r6i1p1
         organisation='NCAR'
         vardir='r87/dbi599'
+        evspsbldir='r87/dbi599'
+        sosdir='r87/dbi599'
+        fxdir='r87/dbi599'
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'historicalNat' ]] ; then
         runs=( r1i1p1 r4i1p1 r6i1p1 )  # r1i1p1 r2i1p1 r4i1p1 r6i1p1
         organisation='NCAR'
+        evspsbldir='r87/dbi599'
+        sosdir='r87/dbi599'
+        fxdir='r87/dbi599'
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
