@@ -105,10 +105,10 @@ for region in atlantic pacific indian globe; do
         elif [[ ${variable} == 'thetao' ]] ; then
             long_name=sea_water_potential_temperature
             ccsm_ticks="--ticks 15 3"
-            fgoals_ticks="--ticks 15 3"
+            fgoals_ticks="--ticks 20 4"
             gfdl_cm_ticks="--ticks 20 4"
-            gfdl_esm_ticks="--ticks 15 3"
-            ipsl_ticks="--ticks 15 3"
+            gfdl_esm_ticks="--ticks 20 4"
+            ipsl_ticks="--ticks 25 5"
             noresm_ticks="--ticks 25 5"
             palette='RdBu_r'
         fi
