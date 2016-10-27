@@ -90,7 +90,7 @@ for exp in "${experiments[@]}"; do
         outdir=/g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/ensmean-i1p1
         outfile=${outdir}/${var}-maps-time-trend_Oyr_${model}_${exp}_ensmean-i1p1_1950-01-01_2000-12-31.nc
         climfile=${outdir}/${var}-maps-clim_Oyr_${model}_${exp}_ensmean-i1p1_all.nc
-        tasfile=${outdir}/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_ensmean-i1p1_1950-01-01_1999-12-31.nc
+        tasfile=${outdir}/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_ensmean-i1p1_1950-01-01_2000-12-31.nc
 
         mkdir -p ${outdir}
         cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p1/${var}-maps-time-trend_Oyr_${model}_${exp}_r*i1p1_1950-01-01_2000-12-31.nc ${outfile}
@@ -99,7 +99,7 @@ for exp in "${experiments[@]}"; do
         cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p1/${var}-maps-clim_Oyr_${model}_${exp}_r*i1p1_all.nc ${climfile}
         echo ${climfile}
 
-        cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p1/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_r*i1p1_1950-01-01_1999-12-31.nc ${tasfile}
+        cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p1/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_r*i1p1_1950-01-01_2000-12-31.nc ${tasfile}
         echo ${tasfile}
 
     done
@@ -114,7 +114,7 @@ for phys in "${physics[@]}"; do
         outdir=/g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/ensmean-i1p${phys}
         outfile=${outdir}/${var}-maps-time-trend_Oyr_${model}_${exp}_ensmean-i1p${phys}_1950-01-01_2000-12-31.nc
         climfile=${outdir}/${var}-maps-clim_Oyr_${model}_${exp}_ensmean-i1p${phys}_all.nc
-        tasfile=${outdir}/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_ensmean-i1p${phys}_1950-01-01_1999-12-31.nc
+        tasfile=${outdir}/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_ensmean-i1p${phys}_1950-01-01_2000-12-31.nc
 
         mkdir -p ${outdir}
         cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p${phys}/${var}-maps-time-trend_Oyr_${model}_${exp}_r*i1p${phys}_1950-01-01_2000-12-31.nc ${outfile}
@@ -123,7 +123,7 @@ for phys in "${physics[@]}"; do
         cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p${phys}/${var}-maps-clim_Oyr_${model}_${exp}_r*i1p${phys}_all.nc ${climfile}
         echo ${climfile}
 
-        cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p${phys}/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_r*i1p${phys}_1950-01-01_1999-12-31.nc ${tasfile}
+        cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p${phys}/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_r*i1p${phys}_1950-01-01_2000-12-31.nc ${tasfile}
         echo ${tasfile}
 
     done

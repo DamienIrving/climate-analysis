@@ -131,7 +131,7 @@ def main(inargs):
         assert experiment in experiments.keys(), '%s is not an acceptable experiment name' %(experiment)
         
         key = (standard_name, experiment)
-        assert key not in cube_dict.keys()
+        assert key not in cube_dict.keys(), '%s, %s not in cube dict' %(standard_name, experiment)
         cube_dict[key] = cube
 
     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(20, 5))

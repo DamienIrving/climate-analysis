@@ -63,7 +63,12 @@ def main(inargs):
     height = 8 * inargs.nrows
     width = 8 * inargs.ncols
     fig = plt.figure(figsize=(width, height))
-    fig.suptitle(inargs.basin.capitalize(), fontsize='x-large')
+
+    if inargs.experiment:
+        title = inargs.basin.capitalize() + ', ' + inargs.experiment
+    else:
+        title = inargs.basin.capitalize()
+    fig.suptitle(title, fontsize='x-large')
     colorbar_axes = None
     gs = gridspec.GridSpec(inargs.nrows, inargs.ncols)
  
@@ -89,7 +94,12 @@ def main(inargs):
         lats = cube.coord('latitude').points
         levs = cube.coord('depth').points            
 
-        title = cube.attributes['model_id']
+        model = cube.attributes['model_id']
+        if 'GISS-E2' in model:
+            physics = cube.attributes['physics_version']
+            title = '%s (%s)'  %(model, physics)
+         else:
+            title = model 
         ylabel = 'Depth (%s)' %(cube.coord('depth').units)
 
         tick_max, tick_step = inargs.ticks[plotnum]
@@ -141,6 +151,9 @@ author:
 
     parser.add_argument("--scale_factor", type=int, default=1,
                         help="Scale factor (e.g. scale factor of 3 will multiply trends by 10^3 [default=1]")
+
+    parser.add_argument("--experiment", type=str, default=None,
+                        help="Put the experiment in the title [default=None]")
 
     args = parser.parse_args()            
     main(args)
