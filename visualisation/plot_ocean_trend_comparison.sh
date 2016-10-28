@@ -46,6 +46,10 @@ elif [[ "${model}" == 'CSIRO-Mk3-6-0' ]] ; then
     organisation='CSIRO-QCCCE'
     run='ensmean-'
     aa_physics='p4'
+elif [[ "${model}" == 'CanESM2' ]] ; then
+    organisation='CCCMA'
+    run='ensmean-'
+    aa_physics='p4'
 elif [[ "${model}" == 'NorESM1-M' ]] ; then
     organisation='NCC'
     run='r1'

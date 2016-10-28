@@ -34,7 +34,7 @@ for region in atlantic pacific indian globe; do
 
         if [[ ${variable} == 'so' ]] ; then
             long_name=sea_water_salinity
-            canesm_ticks="--ticks  "
+            canesm_ticks="--ticks 2.5 0.5"
             ccsm_ticks="--ticks 2.0 0.4"
             fgoals_ticks="--ticks 2.5 0.5"
             gfdl_cm_ticks="--ticks 2.5 0.5"
@@ -44,7 +44,7 @@ for region in atlantic pacific indian globe; do
             palette='BrBG_r'
         elif [[ ${variable} == 'thetao' ]] ; then
             long_name=sea_water_potential_temperature
-            canesm_ticks="--ticks  "
+            canesm_ticks="--ticks 15 3"
             ccsm_ticks="--ticks 15 3"
             fgoals_ticks="--ticks 15 3"
             gfdl_cm_ticks="--ticks 15 3"
@@ -99,7 +99,7 @@ for region in atlantic pacific indian globe; do
 
         if [[ ${variable} == 'so' ]] ; then
             long_name=sea_water_salinity
-            canesm_ticks="--ticks  "
+            canesm_ticks="--ticks 3.75 0.75"
             ccsm_ticks="--ticks 3.0 0.6"
             fgoals_ticks="--ticks 3.0 0.6"
             gfdl_cm_ticks="--ticks 3.75 0.75"
@@ -109,7 +109,7 @@ for region in atlantic pacific indian globe; do
             palette='BrBG_r'
         elif [[ ${variable} == 'thetao' ]] ; then
             long_name=sea_water_potential_temperature
-            canesm_ticks="--ticks  "
+            canesm_ticks="--ticks 20 4"
             ccsm_ticks="--ticks 15 3"
             fgoals_ticks="--ticks 20 4"
             gfdl_cm_ticks="--ticks 20 4"
@@ -164,7 +164,7 @@ for region in atlantic pacific indian globe; do
 
         if [[ ${variable} == 'so' ]] ; then
             long_name=sea_water_salinity
-            canesm_ticks="--ticks  "
+            canesm_ticks="--ticks 2.5 0.5"
             ccsm_ticks="--ticks 2.0 0.4"
             fgoals_ticks="--ticks 2.0 0.4"
             gfdl_cm_ticks="--ticks 3.75 0.75"
@@ -174,7 +174,7 @@ for region in atlantic pacific indian globe; do
             palette='BrBG_r'
         elif [[ ${variable} == 'thetao' ]] ; then
             long_name=sea_water_potential_temperature
-            canesm_ticks="--ticks  "
+            canesm_ticks="--ticks 15 3"
             ccsm_ticks="--ticks 7.5 1.5"
             fgoals_ticks="--ticks 7.5 1.5"
             gfdl_cm_ticks="--ticks 20 4"
@@ -198,7 +198,7 @@ for region in atlantic pacific indian globe; do
 
         outfile=/g/data/r87/dbi599/figures/ocean_trend_ensembles/historicalAA/${variable}-maps-time-trend-zonal-mean-${region}_Oyr_ensemble_historicalAA_i1_1950-01-01_2000-12-31.png
 
-        canesm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/CCCMA/CanESM2/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p4/${variable}-maps-clim_Oyr_CCSM4_${experiment}_ensmean-i1p4_all.nc"
+        canesm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/CCCMA/CanESM2/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p4/${variable}-maps-clim_Oyr_CanESM2_${experiment}_ensmean-i1p4_all.nc"
         ccsm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCAR/CCSM4/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p10/${variable}-maps-clim_Oyr_CCSM4_${experiment}_ensmean-i1p10_all.nc"
         fgoals_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/LASG-CESS/FGOALS-g2/${experiment}/yr/ocean/${variable}-maps/r2i1p1/${variable}-maps-clim_Oyr_FGOALS-g2_${experiment}_r2i1p1_all.nc"
         gfdl_cm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/NOAA-GFDL/GFDL-CM3/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-clim_Oyr_GFDL-CM3_${experiment}_ensmean-i1p1_all.nc"
