@@ -98,7 +98,7 @@ def main(inargs):
         if 'GISS-E2' in model:
             physics = cube.attributes['physics_version']
             title = '%s (%s)'  %(model, physics)
-         else:
+        else:
             title = model 
         ylabel = 'Depth (%s)' %(cube.coord('depth').units)
 
