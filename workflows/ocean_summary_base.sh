@@ -72,7 +72,7 @@ for experiment in "${experiments[@]}"; do
 
     if [[ ${model} == 'CanESM2' && ${experiment} == 'historical' ]] ; then
         experiment='historical'
-        runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='CCCMA'
 
     elif [[ ${model} == 'CanESM2' && ${experiment} == 'AA' ]] ; then
@@ -323,22 +323,16 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p106 r2i1p106 r3i1p106 r4i1p106 r5i1p106 )  #r1i1p106 r2i1p106 r3i1p106 r4i1p106 r5i1p106
         organisation='NASA-GISS'
         vardir='r87/dbi599'
-        controldir='r87/dbi599'
         voldir='r87/dbi599'
-        basindir='r87/dbi599'
-        areaadir='r87/dbi599'
-        areaodir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'AA-conc' ]] ; then
         experiment='historicalMisc'
         runs=( r1i1p107 r2i1p107 r3i1p107 r4i1p107 r5i1p107 )  #r1i1p107 r2i1p107 r3i1p107 r4i1p107 r5i1p107
         organisation='NASA-GISS'
         vardir='r87/dbi599'
-        controldir='r87/dbi599'
         voldir='r87/dbi599'
-        basindir='r87/dbi599'
-        areaadir='r87/dbi599'
-        areaodir='r87/dbi599'
+        sosdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'AA-emis' ]] ; then
         experiment='historicalMisc'
@@ -346,25 +340,23 @@ for experiment in "${experiments[@]}"; do
         organisation='NASA-GISS'
         controlrun='r1i1p3'
         vardir='r87/dbi599'
-        controldir='r87/dbi599'
         voldir='r87/dbi599'
-        basindir='r87/dbi599'
-        areaadir='r87/dbi599'
-        areaodir='r87/dbi599'
+        sosdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'historicalp3' ]] ; then
         experiment='historical'
-        runs=( r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3 )  #r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3
+        runs=( r2i1p3 r3i1p3 r4i1p3 r5i1p3 )  #r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3
         organisation='NASA-GISS'
         controlrun='r1i1p3'
-        controldir='r87/dbi599'
+        sosdir='r87/dbi599'
+        voldir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'historicalp1' ]] ; then
         experiment='historical'
-        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='NASA-GISS'
-        controlrun='r1i1p1'
-        controldir='r87/dbi599'
+        voldir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'historicalNatp3' ]] ; then
         experiment='historicalNat'
