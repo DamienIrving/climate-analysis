@@ -351,7 +351,7 @@ def salinity_unit_check(cube):
     data_min = cube.data.min()
     
     assert data_max < 100.0, 'Data max is %f' %(data_max)
-    assert data_min > 0.0 , 'Data min is %f' %(data_min)
+    assert data_min >= 0.0 , 'Data min is %f' %(data_min)
 
     cube.units = 'g/kg'   #cf_units.Unit('unknown')
 
