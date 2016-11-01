@@ -82,7 +82,7 @@ done
 
 ### Ocean maps
 
-experiments=(historical historicalGHG historicalNat)
+experiments=(historical historicalGHG)
 variables=(so thetao)
 for exp in "${experiments[@]}"; do
     for var in "${variables[@]}"; do
