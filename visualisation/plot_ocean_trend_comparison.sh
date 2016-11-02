@@ -4,7 +4,7 @@
 
 function usage {
     echo "USAGE: bash $0 model variable plot_type"
-    echo "   e.g. bash $0 IPSL-CM5A-LR thetao vertical"
+    echo "   e.g. bash $0 IPSL-CM5A-LR thetao zonal"
     exit 1
 }
 
@@ -46,6 +46,10 @@ elif [[ "${model}" == 'CSIRO-Mk3-6-0' ]] ; then
     organisation='CSIRO-QCCCE'
     run='ensmean-'
     aa_physics='p4'
+elif [[ "${model}" == 'GISS-E2-H' ]] ; then
+    organisation='NASA-GISS'
+    run='ensmean-'
+    aa_physics='p310'
 elif [[ "${model}" == 'CanESM2' ]] ; then
     organisation='CCCMA'
     run='ensmean-'
