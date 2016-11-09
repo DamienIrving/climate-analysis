@@ -111,6 +111,33 @@ def calc_zonal_mean(cube, basin_array, basin_name, atts,
     return zonal_mean_cube
 
 
+def calc_zonal_vertical_mean(vertical_mean_cube, depth_cube, layer, atts,
+                             original_standard_name, original_var_name):
+    """Calculate the zonal mean of the vertical mean field."""
+
+    assert layer in ['surface', 'argo']
+
+    if depth_cube:
+        ndim = vertical_mean_cube.ndim
+        depth_array = uconv.broadcast_array(depth_cube.data, [ndim - 2, ndim - 1], vertical_mean_cube.shape) 
+    else: 
+        depth_array = create_depth_array(vertical_mean_cube)
+
+    max_depth = vertical_layers[layer][-1]
+    depth_weights = numpy.ma.where(depth_array > max_depth, max_depth, depth_array)    
+
+    zonal_vertical_mean_cube = vertical_mean_cube.collapsed(['longitude'], iris.analysis.MEAN, weights=depth_weights.astype(numpy.float32))   
+    zonal_vertical_mean_cube.remove_coord('longitude')
+    zonal_vertical_mean_cube.data = zonal_vertical_mean_cube.data.astype(numpy.float32)
+        
+    units = str(vertical_mean_cube.units)
+    standard_name = 'zonal_vertical_mean_%s_%s' %(layer, original_standard_name)
+    var_name = '%s_zvm_%s'   %(original_var_name, layer)
+    zonal_vertical_mean_cube = add_metadata(atts, zonal_vertical_mean_cube, standard_name, var_name, units)
+
+    return zonal_vertical_mean_cube
+
+
 def create_basin_array(cube):
     """Create a basin array.
 
@@ -150,15 +177,24 @@ def create_basin_array(cube):
     return basin_array
 
 
-def read_basin(basin_file):
-    """Read the optional basin file."""
+def create_depth_array(cube):
+    """Create depth array."""
 
-    if basin_file:
-        basin_cube = iris.load_cube(basin_file)
+    # Idea would be to use iris to iterate over x-y slices checking
+    # for first instance of missing value
+
+    return numpy.ones(cube.shape) 
+
+
+def read_optional(optional_file):
+    """Read an optional file."""
+
+    if optional_file:
+        cube = iris.load_cube(optional_file)
     else:
-        basin_cube = None
+        cube = None
 
-    return basin_cube
+    return cube
 
 
 def read_climatology(climatology_file, variable):
@@ -275,7 +311,8 @@ def main(inargs):
         equalise_attributes(data_cubes)
 
     climatology_cube = read_climatology(inargs.climatology_file, inargs.var)
-    basin_cube = read_basin(inargs.basin_file) 
+    basin_cube = read_optional(inargs.basin_file)
+    depth_cube = read_optional(inargs.depth_file) 
 
     atts = set_attributes(inargs, data_cubes[0], climatology_cube, basin_cube)
 
@@ -301,9 +338,16 @@ def main(inargs):
         for index in start_indexes:
 
             cube_slice = data_cube[index:index+step, ...]
+
+            # Vertical
             
             for layer in vertical_layers.keys():
-                out_list.append(calc_vertical_mean(cube_slice, layer, coord_names, atts, standard_name, var_name))
+                vertical_mean = calc_vertical_mean(cube_slice, layer, coord_names, atts, standard_name, var_name)
+                out_list.append(vertical_mean)
+                if layer in ['surface', 'argo']:
+                     out_list.append(calc_zonal_vertical_mean(vertical_mean, depth_cube, layer, atts, standard_name, var_name))
+
+            # Zonal
 
             if basin_cube and not regrid_status:
                 ndim = cube_slice.ndim
@@ -320,7 +364,7 @@ def main(inargs):
         del basin_array
 
     cube_list = []
-    nvars = len(vertical_layers.keys()) + len(basins.keys())
+    nvars = len(vertical_layers.keys()) + len(basins.keys()) + 2
     for var_index in range(0, nvars):
         temp_list = []
         for infile_index in range(0, len(inargs.infiles)):
@@ -369,6 +413,8 @@ notes:
                         help="Input climatology file (required if input data not already anomaly)")
     parser.add_argument("--basin_file", type=str, default=None, 
                         help="Input basin file")
+    parser.add_argument("--depth_file", type=str, default=None, 
+                        help="Input depth file")
 
     parser.add_argument("--time", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'),
                         help="Time period [default = entire]")
