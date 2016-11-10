@@ -115,7 +115,7 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
     cbar.set_label(units)
 
 
-def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
+def plot_zonal_mean_trend(trends, integral, lats, levs, gs, plotnum,
                           ticks, title, units, ylabel,
                           palette, cbar_ax,
                           climatology, contour_levels):
@@ -141,6 +141,7 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     axMain.set_xlim((-70, 70))
     axMain.xaxis.set_ticks_position('bottom')
     axMain.set_xticks([-60, -40, -20, 0, 20, 40, 60])
+    plt.ylabel(ylabel, fontsize='small')
 
     # Shallow section
     divider = make_axes_locatable(axMain)
@@ -155,11 +156,15 @@ def plot_zonal_mean_trend(trends, lats, levs, gs, plotnum,
     axShallow.set_xlim((-70, 70))
     plt.setp(axShallow.get_xticklabels(), visible=False)
 
+    # Integral
+    axIntegral = divider.append_axes("top", size="40%", pad=0.2, sharex=axMain)
+    integral_plot = axIntegral.plot(lats, integral.data)
+    plt.setp(axIntegral.get_xticklabels(), visible=False)
+
     # Labels and colorbar
     plt.title(title) 
     axMain.set_xlabel('Latitude', fontsize='small')
-    plt.ylabel(ylabel, fontsize='small')
-
+    
     if cbar_ax:
         cbar = plt.colorbar(cf, cbar_ax)
     else:
@@ -179,6 +184,21 @@ def read_climatology(climatology_file, long_name):
         climatology = None
 
     return climatology
+
+
+def read_data(data_file, sub_file, long_name, scale_factor):
+    """Read data"""
+
+    with iris.FUTURE.context(cell_datetime_objects=True):
+        cube = iris.load_cube(data_file, long_name)
+        if sub_file:
+            sub_cube = iris.load_cube(sub_file, long_name)
+            metadata = cube.metadata
+            cube = cube - sub_cube
+            cube.metadata = metadata
+    trend_data, units = set_units(cube, scale_factor=scale_factor)
+
+    return cube, trend_data, units
 
 
 def set_ticks(tick_max, tick_step, tick_scale=1.0):
@@ -247,17 +267,10 @@ def main(inargs):
  
     for plotnum, plot_name in enumerate(plot_names):
         print plot_name
+
         standard_name = '%s_%s_%s' %(inargs.plot_type, plot_name, inargs.var)
         long_name = standard_name.replace('_', ' ')
-        with iris.FUTURE.context(cell_datetime_objects=True):
-            cube = iris.load_cube(inargs.infile, long_name)
-            if inargs.sub_file:
-                sub_cube = iris.load_cube(inargs.sub_file, long_name)
-                metadata = cube.metadata
-                cube = cube - sub_cube
-                cube.metadata = metadata
-        trend_data, units = set_units(cube, scale_factor=inargs.scale_factor)
-
+        cube, trend_data, units = read_data(inargs.infile, inargs.sub_file, long_name, inargs.scale_factor)
         climatology = read_climatology(inargs.climatology_file, long_name)
 
         if inargs.plot_type == 'vertical_mean':
@@ -284,7 +297,16 @@ def main(inargs):
             ticks = set_ticks(tick_max, tick_step)
             contour_levels = get_countour_levels(inargs.var, inargs.plot_type)
 
-            plot_zonal_mean_trend(trend_data, lats, levs, gs, plotnum,
+            if inargs.var == 'sea_water_potential_temperature':
+                layer = 'argo'
+            elif inargs.var == 'sea_water_salinity':
+                layer = 'surface' 
+
+            standard_name = 'zonal_vertical_mean_%s_%s_%s' %(plot_name, layer, inargs.var) 
+            long_name = standard_name.replace('_', ' ')           
+            cube, integral_data, units = read_data(inargs.infile, inargs.sub_file, long_name, inargs.scale_factor)
+
+            plot_zonal_mean_trend(trend_data, integral_data, lats, levs, gs, plotnum,
                                   ticks, plot_name, units, ylabel,
                                   inargs.palette, colorbar_axes,
                                   climatology, contour_levels)

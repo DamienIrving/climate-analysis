@@ -111,11 +111,14 @@ def calc_zonal_mean(cube, basin_array, basin_name, atts,
     return zonal_mean_cube
 
 
-def calc_zonal_vertical_mean(vertical_mean_cube, depth_cube, layer, atts,
+def calc_zonal_vertical_mean(vertical_mean_cube, depth_cube, basin_array, basin_name, layer, atts,
                              original_standard_name, original_var_name):
     """Calculate the zonal mean of the vertical mean field."""
 
     assert layer in ['surface', 'argo']
+
+    if not basin_name == 'globe':  
+        vertical_mean_cube.data.mask = numpy.where((vertical_mean_cube.data.mask == False) & (basin_array == basins[basin_name]), False, True)
 
     if depth_cube:
         ndim = vertical_mean_cube.ndim
@@ -131,8 +134,8 @@ def calc_zonal_vertical_mean(vertical_mean_cube, depth_cube, layer, atts,
     zonal_vertical_mean_cube.data = zonal_vertical_mean_cube.data.astype(numpy.float32)
         
     units = str(vertical_mean_cube.units)
-    standard_name = 'zonal_vertical_mean_%s_%s' %(layer, original_standard_name)
-    var_name = '%s_zvm_%s'   %(original_var_name, layer)
+    standard_name = 'zonal_vertical_mean_%s_%s_%s' %(basin_name, layer, original_standard_name)
+    var_name = '%s_zvm_%s_%s'   %(original_var_name, basin_name, layer)
     zonal_vertical_mean_cube = add_metadata(atts, zonal_vertical_mean_cube, standard_name, var_name, units)
 
     return zonal_vertical_mean_cube
@@ -345,7 +348,14 @@ def main(inargs):
                 vertical_mean = calc_vertical_mean(cube_slice, layer, coord_names, atts, standard_name, var_name)
                 out_list.append(vertical_mean)
                 if layer in ['surface', 'argo']:
-                     out_list.append(calc_zonal_vertical_mean(vertical_mean, depth_cube, layer, atts, standard_name, var_name))
+                    for basin in basins.keys():
+
+                        if basin_cube and not regrid_status:
+                            basin_array = basin_cube.data
+                        else: 
+                            basin_array = create_basin_array(vertical_mean)
+
+                        out_list.append(calc_zonal_vertical_mean(vertical_mean, depth_cube, basin_array, basin, layer, atts, standard_name, var_name))
 
             # Zonal
 
@@ -364,7 +374,7 @@ def main(inargs):
         del basin_array
 
     cube_list = []
-    nvars = len(vertical_layers.keys()) + len(basins.keys()) + 2
+    nvars = len(vertical_layers.keys()) + len(basins.keys()) + 2*len(basins.keys())
     for var_index in range(0, nvars):
         temp_list = []
         for infile_index in range(0, len(inargs.infiles)):
