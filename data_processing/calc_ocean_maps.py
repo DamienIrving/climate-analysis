@@ -355,7 +355,7 @@ def main(inargs):
                         else: 
                             basin_array = create_basin_array(vertical_mean)
 
-                        out_list.append(calc_zonal_vertical_mean(vertical_mean, depth_cube, basin_array, basin, layer, atts, standard_name, var_name))
+                        out_list.append(calc_zonal_vertical_mean(vertical_mean.copy(), depth_cube, basin_array, basin, layer, atts, standard_name, var_name))
 
             # Zonal
 

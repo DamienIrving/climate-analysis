@@ -142,6 +142,7 @@ def plot_zonal_mean_trend(trends, integral, lats, levs, gs, plotnum,
     axMain.xaxis.set_ticks_position('bottom')
     axMain.set_xticks([-60, -40, -20, 0, 20, 40, 60])
     plt.ylabel(ylabel, fontsize='small')
+    axMain.get_yaxis().set_label_coords(-0.11, 1.1)
 
     # Shallow section
     divider = make_axes_locatable(axMain)
@@ -153,16 +154,21 @@ def plot_zonal_mean_trend(trends, integral, lats, levs, gs, plotnum,
         plt.clabel(cplot_shallow, contour_levels[0::2], fmt='%2.1f', colors='0.2', fontsize=8)
     axShallow.set_ylim((0.0, 500.0))
     axShallow.invert_yaxis()
-    axShallow.set_xlim((-70, 70))
     plt.setp(axShallow.get_xticklabels(), visible=False)
 
     # Integral
     axIntegral = divider.append_axes("top", size="40%", pad=0.2, sharex=axMain)
-    integral_plot = axIntegral.plot(lats, integral.data)
+    lats = numpy.ma.asarray(lats)
+    lats.mask = integral.mask
+    integral_plot = axIntegral.plot(lats, integral.data, color='black')
+    plt.axhline(y=0, color='0.5')
     plt.setp(axIntegral.get_xticklabels(), visible=False)
+    plt.setp(axIntegral.get_yticklabels(), visible=False)
+    axIntegral.yaxis.set_ticks_position('none')
 
     # Labels and colorbar
-    plt.title(title) 
+    plt.title(title.title()) 
+    axMain.set_xlim((-70, 70))
     axMain.set_xlabel('Latitude', fontsize='small')
     
     if cbar_ax:

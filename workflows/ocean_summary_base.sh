@@ -61,6 +61,7 @@ for experiment in "${experiments[@]}"; do
     controldir='ua6'
     voldir='ua6'
     basindir='ua6'
+    depthdir='ua6'
     areaadir='ua6'
     areaodir='ua6'
     tasdir='ua6'
@@ -400,13 +401,15 @@ for experiment in "${experiments[@]}"; do
         organisation='NASA-GISS'
         vardir='r87/dbi599'
         controldir='r87/dbi599'
+        basindir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'AA-conc' ]] ; then
         experiment='historicalMisc'
-        runs=( r2i1p107 r3i1p107 r4i1p107 r5i1p107 )  #r1i1p107 r2i1p107 r3i1p107 r4i1p107 r5i1p107
+        runs=( r1i1p107 r2i1p107 r3i1p107 r4i1p107 r5i1p107 )  #r1i1p107 r2i1p107 r3i1p107 r4i1p107 r5i1p107
         organisation='NASA-GISS'
         vardir='r87/dbi599'
         controldir='r87/dbi599'
+        basindir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'AA-emis' ]] ; then
         experiment='historicalMisc'
@@ -415,32 +418,27 @@ for experiment in "${experiments[@]}"; do
         controlrun='r1i1p3'
         vardir='r87/dbi599'
         controldir='r87/dbi599'
+        basindir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'Ant' ]] ; then
         experiment='historicalMisc'
         runs=( r1i1p109 r2i1p109 r3i1p109 r4i1p109 r5i1p109 )  #r1i1p109 r2i1p109 r3i1p109 r4i1p109 r5i1p109
         organisation='NASA-GISS'
         controldir='r87/dbi599'
-
-    elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'Oz' ]] ; then
-        experiment='historicalMisc'
-        runs=( r1i1p105 r2i1p105 r3i1p105 r4i1p105 r5i1p105 )  #r1i1p105 r2i1p105 r3i1p105 r4i1p105 r5i1p105
-        organisation='NASA-GISS'
-        controldir='r87/dbi599'
+        basindir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalp3' ]] ; then
         experiment='historical'
-        runs=( r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3 )  #r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3
+        runs=( r2i1p3 r3i1p3 r4i1p3 r5i1p3 )  #r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3
         organisation='NASA-GISS'
         controlrun='r1i1p3'
-        controldir='r87/dbi599'
+        basindir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalp1' ]] ; then
         experiment='historical'
-        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='NASA-GISS'
-        controlrun='r1i1p1'
-        controldir='r87/dbi599'
+        basindir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalNatp3' ]] ; then
         experiment='historicalNat'
@@ -448,6 +446,7 @@ for experiment in "${experiments[@]}"; do
         organisation='NASA-GISS'
         controlrun='r1i1p3'
         controldir='r87/dbi599'
+        basindir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalNatp1' ]] ; then
         experiment='historicalNat'
@@ -455,11 +454,13 @@ for experiment in "${experiments[@]}"; do
         organisation='NASA-GISS'
         controlrun='r1i1p1'
         controldir='r87/dbi599'
+        basindir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalGHG' ]] ; then
         runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='NASA-GISS'
         controldir='r87/dbi599'
+        basindir='r87/dbi599'
 
     # IPSL-CM5A-LR
 
@@ -571,6 +572,7 @@ for experiment in "${experiments[@]}"; do
         origcontroldir="/g/data/${controldir}/drstree/CMIP5/GCM"
         origvoldir="/g/data/${voldir}/drstree/CMIP5/GCM"
         origbasindir="/g/data/${basindir}/drstree/CMIP5/GCM"
+        origdepthdir="/g/data/${depthdir}/drstree/CMIP5/GCM"
         origareaadir="/g/data/${areaadir}/drstree/CMIP5/GCM"
         origareaodir="/g/data/${areaodir}/drstree/CMIP5/GCM"
         origtasdir="/g/data/${tasdir}/drstree/CMIP5/GCM"
@@ -578,9 +580,9 @@ for experiment in "${experiments[@]}"; do
         origprdir="/g/data/${prdir}/drstree/CMIP5/GCM"
         origevspsbldir="/g/data/${evspsbldir}/drstree/CMIP5/GCM"
 
-        make ${options} -f ocean_summary_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_VOL_DIR="${origvoldir}" ORIG_BASIN_DIR="${origbasindir}" ORIG_AREAA_DIR="${origareaadir}" ORIG_AREAO_DIR="${origareaodir}" ORIG_TAS_DIR="${origtasdir}" ORIG_SOS_DIR="${origsosdir}" ORIG_PR_DIR="${origprdir}" ORIG_EVSPSBL_DIR="${origevspsbldir}" VAR="${variable}" LONG_NAME="${long_name}" ZM_TICK_MAX="${zm_tick_max}" ZM_TICK_STEP="${zm_tick_step}" VM_TICK_MAX="${vm_tick_max}" VM_TICK_STEP="${vm_tick_step}" SCALE_FACTOR="${scale_factor}" PALETTE="${palette}"
+        make ${options} -f ocean_summary_base.mk ORGANISATION="${organisation}" MODEL="${model}" EXPERIMENT="${experiment}" RUN="${run}" FX_RUN="${fxrun}" CONTROL_RUN="${controlrun}" ORIG_VARIABLE_DIR="${origvardir}" ORIG_CONTROL_DIR="${origcontroldir}" ORIG_VOL_DIR="${origvoldir}" ORIG_BASIN_DIR="${origbasindir}" ORIG_DEPTH_DIR="${origdepthdir}" ORIG_AREAA_DIR="${origareaadir}" ORIG_AREAO_DIR="${origareaodir}" ORIG_TAS_DIR="${origtasdir}" ORIG_SOS_DIR="${origsosdir}" ORIG_PR_DIR="${origprdir}" ORIG_EVSPSBL_DIR="${origevspsbldir}" VAR="${variable}" LONG_NAME="${long_name}" ZM_TICK_MAX="${zm_tick_max}" ZM_TICK_STEP="${zm_tick_step}" VM_TICK_MAX="${vm_tick_max}" VM_TICK_STEP="${vm_tick_step}" SCALE_FACTOR="${scale_factor}" PALETTE="${palette}"
 
-        echo "DONE: make ${options} -f ocean_summary_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_VOL_DIR=${origvoldir} ORIG_BASIN_DIR=${origbasindir} ORIG_AREAA_DIR=${origareaadir} ORIG_AREAO_DIR=${origareaodir} ORIG_TAS_DIR=${origtasdir} ORIG_SOS_DIR=${origsosdir} ORIG_PR_DIR=${origprdir} ORIG_EVSPSBL_DIR=${origevspsbldir} VAR=${variable} LONG_NAME=${long_name} ZM_TICK_MAX=${zm_tick_max} ZM_TICK_STEP=${zm_tick_step} VM_TICK_MAX=${vm_tick_max} VM_TICK_STEP=${vm_tick_step} SCALE_FACTOR=${scale_factor} PALETTE=${palette}"
+        echo "DONE: make ${options} -f ocean_summary_base.mk ORGANISATION=${organisation} MODEL=${model} EXPERIMENT=${experiment} RUN=${run} FX_RUN=${fxrun} CONTROL_RUN=${controlrun} ORIG_VARIABLE_DIR=${origvardir} ORIG_CONTROL_DIR=${origcontroldir} ORIG_VOL_DIR=${origvoldir} ORIG_BASIN_DIR=${origbasindir} ORIG_DEPTH_DIR=${origdepthdir} ORIG_AREAA_DIR=${origareaadir} ORIG_AREAO_DIR=${origareaodir} ORIG_TAS_DIR=${origtasdir} ORIG_SOS_DIR=${origsosdir} ORIG_PR_DIR=${origprdir} ORIG_EVSPSBL_DIR=${origevspsbldir} VAR=${variable} LONG_NAME=${long_name} ZM_TICK_MAX=${zm_tick_max} ZM_TICK_STEP=${zm_tick_step} VM_TICK_MAX=${vm_tick_max} VM_TICK_STEP=${vm_tick_step} SCALE_FACTOR=${scale_factor} PALETTE=${palette}"
     done
 done
 
