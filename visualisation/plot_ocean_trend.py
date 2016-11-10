@@ -303,12 +303,7 @@ def main(inargs):
             ticks = set_ticks(tick_max, tick_step)
             contour_levels = get_countour_levels(inargs.var, inargs.plot_type)
 
-            if inargs.var == 'sea_water_potential_temperature':
-                layer = 'argo'
-            elif inargs.var == 'sea_water_salinity':
-                layer = 'surface' 
-
-            standard_name = 'zonal_vertical_mean_%s_%s_%s' %(plot_name, layer, inargs.var) 
+            standard_name = 'zonal_vertical_mean_%s_argo_%s' %(plot_name, inargs.var) 
             long_name = standard_name.replace('_', ' ')           
             cube, integral_data, units = read_data(inargs.infile, inargs.sub_file, long_name, inargs.scale_factor)
 
