@@ -410,6 +410,8 @@ for experiment in "${experiments[@]}"; do
         vardir='r87/dbi599'
         controldir='r87/dbi599'
         basindir='r87/dbi599'
+        sosdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'AA-emis' ]] ; then
         experiment='historicalMisc'
@@ -419,26 +421,41 @@ for experiment in "${experiments[@]}"; do
         vardir='r87/dbi599'
         controldir='r87/dbi599'
         basindir='r87/dbi599'
+        sosdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
-    elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'Ant' ]] ; then
+    elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'Antp1' ]] ; then
         experiment='historicalMisc'
         runs=( r1i1p109 r2i1p109 r3i1p109 r4i1p109 r5i1p109 )  #r1i1p109 r2i1p109 r3i1p109 r4i1p109 r5i1p109
         organisation='NASA-GISS'
         controldir='r87/dbi599'
         basindir='r87/dbi599'
 
+    elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'Antp3' ]] ; then
+        experiment='historicalMisc'
+        runs=( r1i1p309 r2i1p309 r3i1p309 r4i1p309 r5i1p309 )  #r1i1p309 r2i1p309 r3i1p309 r4i1p309 r5i1p309
+        organisation='NASA-GISS'
+        controldir='r87/dbi599'
+        basindir='r87/dbi599'
+        evspsbldir='r87/dbi599'
+        sosdir='r87/dbi599'
+
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalp3' ]] ; then
         experiment='historical'
-        runs=( r2i1p3 r3i1p3 r4i1p3 r5i1p3 )  #r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3
+        runs=( r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3 )  #r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3
         organisation='NASA-GISS'
         controlrun='r1i1p3'
         basindir='r87/dbi599'
+        sosdir='r87/dbi599'
+        tasdir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalp1' ]] ; then
         experiment='historical'
-        runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='NASA-GISS'
         basindir='r87/dbi599'
+        sosdir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalNatp3' ]] ; then
         experiment='historicalNat'
@@ -447,6 +464,9 @@ for experiment in "${experiments[@]}"; do
         controlrun='r1i1p3'
         controldir='r87/dbi599'
         basindir='r87/dbi599'
+        evspsbldir='r87/dbi599'
+        sosdir='r87/dbi599'
+        tasdir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalNatp1' ]] ; then
         experiment='historicalNat'
@@ -455,12 +475,14 @@ for experiment in "${experiments[@]}"; do
         controlrun='r1i1p1'
         controldir='r87/dbi599'
         basindir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-R' && ${experiment} == 'historicalGHG' ]] ; then
         runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='NASA-GISS'
         controldir='r87/dbi599'
         basindir='r87/dbi599'
+        evspsbldir='r87/dbi599'
 
     # IPSL-CM5A-LR
 
