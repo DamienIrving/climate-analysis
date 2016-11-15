@@ -42,7 +42,7 @@ for region in atlantic pacific indian globe; do
             gisseh_p1_ticks="--ticks 1.5 0.3"
             gisseh_p3_ticks="--ticks 1.5 0.3"
             gisser_p1_ticks="--ticks 1.5 0.3"
-            gisser_p3_ticks="--ticks 1.5 0.3"
+            gisser_p3_ticks="--ticks 2.5 0.5"
             ipsl_ticks="--ticks 3.75 0.75"
             noresm_ticks="--ticks 5 1"
             palette='BrBG_r'
@@ -121,7 +121,7 @@ for region in atlantic pacific indian globe; do
             gfdl_cm_ticks="--ticks 3.75 0.75"
             gfdl_esm_ticks="--ticks 5 1"
             gisseh_ticks="--ticks 2.5 0.5"
-            gisser_ticks="--ticks 2.5 0.5"
+            gisser_ticks="--ticks 3.5 0.7"
             ipsl_ticks="--ticks 3.75 0.75"
             noresm_ticks="--ticks 5 1"
             palette='BrBG_r'
@@ -195,8 +195,8 @@ for region in atlantic pacific indian globe; do
             gfdl_esm_ticks="--ticks 5 1"
             gisseh_p107_ticks="--ticks 1.5 0.3"
             gisseh_p310_ticks="--ticks 1.5 0.3"
-            gisser_p107_ticks="--ticks 1.5 0.3"
-            gisser_p310_ticks="--ticks 1.5 0.3"
+            gisser_p107_ticks="--ticks 2.5 0.5"
+            gisser_p310_ticks="--ticks 2.5 0.5"
             ipsl_ticks="--ticks 3.75 0.75"
             noresm_ticks="--ticks 5 1"
             palette='BrBG_r'
