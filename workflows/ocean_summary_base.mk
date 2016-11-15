@@ -28,11 +28,10 @@ DEDRIFTED_VARIABLE_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr
 DEDRIFTED_VARIABLE_FILES = $(patsubst ${ORIG_VARIABLE_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/${VAR}/${RUN}/${VAR}_Omon_%.nc, ${DEDRIFTED_VARIABLE_DIR}/${VAR}_Oyr_%.nc, ${VARIABLE_FILES})
 
 VOLUME_FILE=${ORIG_VOL_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/volcello/${FX_RUN}/volcello_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
-BASIN_FILE=${ORIG_BASIN_DIR}/${ORGANISATION}/${MODEL}/historical/fx/ocean/basin/${FX_RUN}/basin_fx_${MODEL}_historical_${FX_RUN}.nc
-DEPTH_FILE=${ORIG_DEPTH_DIR}/${ORGANISATION}/${MODEL}/historical/fx/ocean/deptho/${FX_RUN}/deptho_fx_${MODEL}_historical_${FX_RUN}.nc
-ATMOS_AREA_FILE=${ORIG_AREAA_DIR}/${ORGANISATION}/${MODEL}/historical/fx/atmos/areacella/${FX_RUN}/areacella_fx_${MODEL}_historical_${FX_RUN}.nc
-OCEAN_AREA_FILE=${ORIG_AREAA_DIR}/${ORGANISATION}/${MODEL}/historical/fx/atmos/areacella/${FX_RUN}/areacella_fx_${MODEL}_historical_${FX_RUN}.nc
-#OCEAN_AREA_FILE=${ORIG_AREAO_DIR}/${ORGANISATION}/${MODEL}/historical/fx/ocean/areacello/${FX_RUN}/areacello_fx_${MODEL}_historical_${FX_RUN}.nc
+BASIN_FILE=${ORIG_BASIN_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/basin/${FX_RUN}/basin_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
+DEPTH_FILE=${ORIG_DEPTH_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/deptho/${FX_RUN}/deptho_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
+ATMOS_AREA_FILE=${ORIG_AREAA_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/atmos/areacella/${FX_RUN}/areacella_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
+OCEAN_AREA_FILE=${ORIG_AREAO_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/areacello/${FX_RUN}/areacello_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
 
 TAS_FILE=$(wildcard ${ORIG_TAS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/tas/${RUN}/tas_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
 GLOBAL_MEAN_TAS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/tas/${RUN}
@@ -93,11 +92,11 @@ ${CLIMATOLOGY_FILE} : ${DEDRIFTED_VARIABLE_DIR}
 
 ${VARIABLE_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${VARIABLE_MAPS_DIR}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_VARIABLE_FILES} ${LONG_NAME} $@ --climatology_file $< --basin_file ${BASIN_FILE} --depth_file ${DEPTH_FILE}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_VARIABLE_FILES} ${LONG_NAME} $@ --climatology_file $< --depth_file ${DEPTH_FILE} --basin_file ${BASIN_FILE}
         #--chunk 
 
 ${CLIMATOLOGY_MAPS_FILE} : ${CLIMATOLOGY_FILE}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< ${LONG_NAME} $@ --basin_file ${BASIN_FILE} --depth_file ${DEPTH_FILE}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< ${LONG_NAME} $@ --depth_file ${DEPTH_FILE} --basin_file ${BASIN_FILE}
         # 
 
 ${VARIABLE_MAPS_TIME_TREND} : ${VARIABLE_MAPS_FILE}

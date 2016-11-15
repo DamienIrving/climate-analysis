@@ -17,7 +17,7 @@ physics=( $@ )
 
 ### Atmospheric global metrics
 
-experiments=(historical historicalGHG historicalNat)
+experiments=(historical historicalNat historicalGHG)  # 
 variables=(pr evspsbl tas)
 for exp in "${experiments[@]}"; do
     for var in "${variables[@]}"; do
@@ -52,7 +52,7 @@ done
 
 ### Oceanic global metrics
 
-experiments=(historical historicalGHG historicalNat)
+experiments=(historical historicalNat historicalGHG) #  
 for exp in "${experiments[@]}"; do
 
     outdir=/g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/sos/ensmean-i1p1
@@ -82,7 +82,7 @@ done
 
 ### Ocean maps
 
-experiments=(historical historicalGHG)
+experiments=(historical historicalGHG)  # 
 variables=(so thetao)
 for exp in "${experiments[@]}"; do
     for var in "${variables[@]}"; do
