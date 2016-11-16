@@ -79,6 +79,21 @@ def get_metadata(inargs, data_cube, climatology_cube):
     return metadata_dict
 
 
+def prepare_integral(integral, lats, basin):
+    """Prepare integral data for plotting."""
+
+    lats = numpy.ma.asarray(lats)
+    mask = integral.mask
+
+    if basin == 'pacific':
+        mask = numpy.ma.where(lats > 60, True, mask)
+        integral.mask = mask
+
+    lats.mask = mask
+
+    return integral, lats
+
+
 def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
                              ticks, yticks,
                              title, units, palette,
@@ -158,8 +173,7 @@ def plot_zonal_mean_trend(trends, integral, lats, levs, gs, plotnum,
 
     # Integral
     axIntegral = divider.append_axes("top", size="40%", pad=0.2, sharex=axMain)
-    lats = numpy.ma.asarray(lats)
-    lats.mask = integral.mask
+    integral, lats = prepare_integral(integral, lats, title)
     integral_plot = axIntegral.plot(lats, integral.data, color='black')
     plt.axhline(y=0, color='0.5')
     plt.setp(axIntegral.get_xticklabels(), visible=False)
@@ -177,7 +191,7 @@ def plot_zonal_mean_trend(trends, integral, lats, levs, gs, plotnum,
         cbar_ax = divider.append_axes("bottom", size=0.2, pad=0.6)
         cbar = plt.colorbar(cf, cbar_ax, orientation='horizontal')
     cbar.set_label(units)
-    
+
 
 def read_climatology(climatology_file, long_name):
     """Read the optional climatology data."""
