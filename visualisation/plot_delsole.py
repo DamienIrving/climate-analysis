@@ -35,16 +35,17 @@ except ImportError:
 
 # Define functions
 
-experiment_names = {('CSIRO-Mk3-6-0', 'historicalMisc', 3): 'noAA',
-                    ('CSIRO-Mk3-6-0', 'historicalMisc', 4): 'AA',
-                    ('IPSL-CM5A-LR', 'historicalMisc', 3): 'AA',
+experiment_names = {('CanESM2', 'historicalMisc', 4): 'historicalAA',
+                    ('CSIRO-Mk3-6-0', 'historicalMisc', 3): 'noAA',
+                    ('CSIRO-Mk3-6-0', 'historicalMisc', 4): 'historicalAA',
+                    ('IPSL-CM5A-LR', 'historicalMisc', 3): 'historicalAA',
                     ('IPSL-CM5A-LR', 'historicalMisc', 4): 'noAA'}
 
-experiment_colors = {'noAA': 'r',
-                     'AA': 'b',
+experiment_colors = {'historicalGHG': 'r',
+                     'noAA': 'g',
+                     'historicalAA': 'b',
                      'historical': 'y',
                      'piControl': '0.5',
-                     'Argo': 'g',
                      '1pctCO2': 'k'}
 
 label_dict = {'sea_surface_salinity': 'Salinity amplification (g/kg)',
@@ -135,6 +136,8 @@ def main(inargs):
     metadata_dict = {}
     for file_group in inargs.file_group:
 
+        #pdb.set_trace()
+
         print file_group
         assert len(file_group) in [4, 6]
         if len(file_group) == 4:
@@ -163,7 +166,7 @@ def main(inargs):
 
         if numpy.any(x_data):
             plt.scatter(x_data[::inargs.thin], y_data[::inargs.thin], facecolors='none', edgecolors=color, label=experiment)
-            if experiment in ['AA', 'noAA']:
+            if experiment in ['historicalAA', 'noAA', 'historicalGHG']:
                 x_trend, y_trend = calc_trend(x_data, y_data, experiment)
                 plt.plot(x_trend, y_trend, color=color)
 
