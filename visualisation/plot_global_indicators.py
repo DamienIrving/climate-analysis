@@ -39,9 +39,35 @@ experiments = {'historical': 'black',
                'historicalAA': 'blue',
                'historicalGHG': 'red',
                'historicalAnt': 'purple',
+               'historicalAAGHGmean': 'purple',
                'historicalNat': '0.5'}
 
 metadata_dict = {}
+
+
+def fake_ant(cube_dict, standard_name):
+    """Create a fake historicalAnt timeseries using AA and GHG average."""
+
+    try:
+        aa_cube = cube_dict[standard_name, 'historicalAA']
+        ghg_cube = cube_dict[standard_name, 'historicalGHG']
+        cube_dict[(standard_name, 'historicalAAGHGmean')] = (aa_cube + ghg_cube) / 2.0
+    except KeyError:
+        pass
+
+    return cube_dict
+
+
+def get_linestyle(experiment):
+    """Select linestyle depending on experiment."""
+
+    if experiment == 'historicalAAGHGmean':
+        linestyle = 'dotted'
+    else:
+        linestyle = '-'
+
+    return linestyle
+
 
 def save_history(cube, field, filename):
     """Save the history attribute when reading the data.""" 
@@ -53,10 +79,13 @@ def tas_plot(ax, cube_dict):
     """Plot the global mean temperature timeseries."""
     
     plt.sca(ax)
+    cube_dict = fake_ant(cube_dict, 'air_temperature')
     for experiment, color in experiments.iteritems():
+        print experiment, 'tas'
         try:
             cube = cube_dict['air_temperature', experiment]
-            iplt.plot(cube, color=color, label=experiment)
+            #pdb.set_trace()
+            iplt.plot(cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
     plt.title('Global mean temperature')
@@ -79,9 +108,13 @@ def sos_plot(ax, cube_dict, so=False):
     else:
         var = 'sea_surface_salinity'
 
+    cube_dict = fake_ant(cube_dict, var)
     for experiment, color in experiments.iteritems():
+        print experiment, 'sos'
         try:
-            iplt.plot(cube_dict[var, experiment], color=color, label=experiment)
+            #pdb.set_trace()
+            iplt.plot(cube_dict[var, experiment], color=color, label=experiment,
+                      linestyle=get_linestyle(experiment))
         except KeyError:
             pass
 
@@ -94,10 +127,15 @@ def pe_plot(ax, cube_dict):
     """Plot the precipiation minus evaproation timeseries."""
     
     plt.sca(ax)
+    cube_dict = fake_ant(cube_dict, 'precipitation_flux')
+    cube_dict = fake_ant(cube_dict, 'water_evaporation_flux')
     for experiment, color in experiments.iteritems():
+        print experiment, 'pe'
         try:
             pe_cube = cube_dict['precipitation_flux', experiment] + cube_dict['water_evaporation_flux', experiment]
-            iplt.plot(pe_cube * 86400, color=color, label=experiment)
+            pe_cube = iris.analysis.maths.multiply(pe_cube, 86400)
+            #pdb.set_trace()
+            iplt.plot(pe_cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
     plt.title('P-E')
