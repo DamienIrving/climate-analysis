@@ -51,7 +51,7 @@ def fake_ant(cube_dict, standard_name):
     try:
         aa_cube = cube_dict[standard_name, 'historicalAA']
         ghg_cube = cube_dict[standard_name, 'historicalGHG']
-        cube_dict[(standard_name, 'historicalAAGHGmean')] = (aa_cube + ghg_cube) / 2.0
+        cube_dict[(standard_name, 'historicalAAGHGmean')] = iris.analysis.maths.add(aa_cube.copy(), ghg_cube, in_place=True) / 2.0
     except KeyError:
         pass
 
@@ -81,10 +81,8 @@ def tas_plot(ax, cube_dict):
     plt.sca(ax)
     cube_dict = fake_ant(cube_dict, 'air_temperature')
     for experiment, color in experiments.iteritems():
-        print experiment, 'tas'
         try:
             cube = cube_dict['air_temperature', experiment]
-            #pdb.set_trace()
             iplt.plot(cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
@@ -110,11 +108,8 @@ def sos_plot(ax, cube_dict, so=False):
 
     cube_dict = fake_ant(cube_dict, var)
     for experiment, color in experiments.iteritems():
-        print experiment, 'sos'
         try:
-            #pdb.set_trace()
-            iplt.plot(cube_dict[var, experiment], color=color, label=experiment,
-                      linestyle=get_linestyle(experiment))
+            iplt.plot(cube_dict[var, experiment], color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
 
@@ -130,11 +125,10 @@ def pe_plot(ax, cube_dict):
     cube_dict = fake_ant(cube_dict, 'precipitation_flux')
     cube_dict = fake_ant(cube_dict, 'water_evaporation_flux')
     for experiment, color in experiments.iteritems():
-        print experiment, 'pe'
         try:
-            pe_cube = cube_dict['precipitation_flux', experiment] + cube_dict['water_evaporation_flux', experiment]
-            pe_cube = iris.analysis.maths.multiply(pe_cube, 86400)
-            #pdb.set_trace()
+            p_cube = cube_dict['precipitation_flux', experiment]
+            e_cube = cube_dict['water_evaporation_flux', experiment]
+            pe_cube = iris.analysis.maths.add(p_cube.copy(), e_cube, in_place=True) * 86400
             iplt.plot(pe_cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
@@ -187,6 +181,12 @@ if __name__ == '__main__':
 author:
   Damien Irving, irving.damien@gmail.com
 
+note:
+  In a couple of places this script uses 'in_place' cube arithmetic.
+  This is because if I did the default arithmetic (in_place=False) I
+  would inconsistently generate a segmentation fault upon trying to plot
+  the resulting cube. 
+   
 """
 
     description='Plot global mean surface temperature, salinity amplifcation and P-E'
