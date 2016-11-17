@@ -1,7 +1,6 @@
 name: default
 channels:
-    - ioos
-    - scitools
+    - conda-forge
 dependencies:
     - python=2.7
     - eofs
