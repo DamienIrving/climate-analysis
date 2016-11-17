@@ -46,7 +46,11 @@ experiment_colors = {'historicalGHG': 'r',
                      'historicalAA': 'b',
                      'historical': 'y',
                      'piControl': '0.5',
-                     '1pctCO2': 'k'}
+                     '1pctCO2': 'k',
+                     'rcp85': 'c',
+                     'rcp45': 'm',
+                     'rcp26': 'g'}
+ 
 
 label_dict = {'sea_surface_salinity': 'Salinity amplification (g/kg)',
               'precipitation_flux': 'Global mean precipitation (mm/day)',
@@ -136,7 +140,7 @@ def main(inargs):
     metadata_dict = {}
     for file_group in inargs.file_group:
 
-        #pdb.set_trace()
+        pdb.set_trace()
 
         print file_group
         assert len(file_group) in [4, 6]
@@ -166,9 +170,8 @@ def main(inargs):
 
         if numpy.any(x_data):
             plt.scatter(x_data[::inargs.thin], y_data[::inargs.thin], facecolors='none', edgecolors=color, label=experiment)
-            if experiment in ['historicalAA', 'noAA', 'historicalGHG']:
-                x_trend, y_trend = calc_trend(x_data, y_data, experiment)
-                plt.plot(x_trend, y_trend, color=color)
+            x_trend, y_trend = calc_trend(x_data, y_data, experiment)
+            plt.plot(x_trend, y_trend, color=color)
 
     plt.legend(loc=4)
     plt.xlabel(label_dict[xvar])
