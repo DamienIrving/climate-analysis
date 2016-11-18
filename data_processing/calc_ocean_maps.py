@@ -340,7 +340,7 @@ def main(inargs):
         start_indexes, step = get_chunks(data_cube.shape, coord_names, chunk=inargs.chunk)
         for index in start_indexes:
 
-            cube_slice = data_cube[index:index+step, ...]
+            cube_slice = data_cube[index:index+step, 0:1000, ...]
 
             # Vertical
             
