@@ -44,11 +44,11 @@ def _make_grid(lat_values, lon_values):
     latitude = iris.coords.DimCoord(lat_values,
                                     standard_name='latitude',
                                     units='degrees_north',
-                                    coord_system=None)
+                                    coord_system=iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS))
     longitude = iris.coords.DimCoord(lon_values,                    
                                      standard_name='longitude',
                                      units='degrees_east',
-                                     coord_system=None)
+                                     coord_system=iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS))
 
     dummy_data = numpy.zeros((len(lat_values), len(lon_values)))
     new_cube = iris.cube.Cube(dummy_data, dim_coords_and_dims=[(latitude, 0), (longitude, 1)])
@@ -116,6 +116,8 @@ def curvilinear_to_rectilinear(cube):
         cube_list = []
         for i, cube_slice in enumerate(cube.slices(slice_dims)):
             weights = numpy.ones(cube_slice.shape)
+            cube_slice.coord(axis='x').coord_system = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
+            cube_slice.coord(axis='y').coord_system = iris.coord_systems.GeogCS(iris.fileformats.pp.EARTH_RADIUS)
             regridded_cube = regrid_weighted_curvilinear_to_rectilinear(cube_slice, weights, target_grid_cube)
             cube_list.append(regridded_cube)
 
