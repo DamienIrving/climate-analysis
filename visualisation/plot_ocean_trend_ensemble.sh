@@ -226,7 +226,7 @@ for region in atlantic pacific indian globe; do
             palette='RdBu_r'
         fi
 
-        ticks="${canesm_ticks} ${ccsm_ticks} ${csiro_ticks} ${fgoals_ticks} ${gfdl_cm_ticks} ${gfdl_esm_ticks} ${gisseh_p107_ticks} ${gisseh_p310_ticks} ${ipsl_ticks} ${noresm_ticks}"
+        ticks="${canesm_ticks} ${ccsm_ticks} ${csiro_ticks} ${fgoals_ticks} ${gfdl_cm_ticks} ${gfdl_esm_ticks} ${gisseh_p107_ticks} ${gisseh_p310_ticks} ${gisser_p107_ticks} ${gisser_p310_ticks} ${ipsl_ticks} ${noresm_ticks}"
 
         canesm_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/CCCMA/CanESM2/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p4/${variable}-maps-time-trend_Oyr_CanESM2_${experiment}_ensmean-i1p4_1950-01-01_2000-12-31.nc"
         ccsm_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCAR/CCSM4/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p10/${variable}-maps-time-trend_Oyr_CCSM4_${experiment}_ensmean-i1p10_1950-01-01_2000-12-31.nc"
