@@ -72,42 +72,51 @@ def main(inargs):
     colorbar_axes = None
     gs = gridspec.GridSpec(inargs.nrows, inargs.ncols)
  
-    standard_name = 'zonal_mean_%s_%s' %(inargs.basin, inargs.var)
-    long_name = standard_name.replace('_', ' ')
+    zm_standard_name = 'zonal_mean_%s_%s' %(inargs.basin, inargs.var)
+    zm_long_name = zm_standard_name.replace('_', ' ')
+
+    zvm_standard_name = 'zonal_vertical_mean_%s_argo_%s' %(inargs.basin, inargs.var) 
+    zvm_long_name = zvm_standard_name.replace('_', ' ') 
 
     metadata_dict = {}
     for plotnum, filename in enumerate(inargs.infiles):
         with iris.FUTURE.context(cell_datetime_objects=True):
-            cube = iris.load_cube(filename, long_name)  
+            zm_cube = iris.load_cube(filename, zm_long_name)  
+            zvm_cube = iris.load_cube(filename, zvm_long_name)
             if inargs.sub_file:
-                sub_cube = iris.load_cube(inargs.sub_file[plotnum], long_name)
-                metadata = cube.metadata
-                cube = cube - sub_cube
-                cube.metadata = metadata
-            metadata_dict[filename] = cube.attributes['history']
+                zm_sub_cube = iris.load_cube(inargs.sub_file[plotnum], zm_long_name)
+                zvm_sub_cube = iris.load_cube(inargs.sub_file[plotnum], zvm_long_name)
+                metadata = zm_cube.metadata
+                zm_cube = zm_cube - zm_sub_cube
+                zvm_cube = zvm_cube - zvm_sub_cube
+                zm_cube.metadata = metadata
+                zvm_cube.metadata = metadata
+            metadata_dict[filename] = zm_cube.attributes['history']
 
-        climatology = plot_ocean_trend.read_climatology(inargs.climatology_files[plotnum], long_name)
+        climatology = plot_ocean_trend.read_climatology(inargs.climatology_files[plotnum], zm_long_name)
         metadata_dict[inargs.climatology_files[plotnum]] = climatology.attributes['history']
 
-        trend_data, units = plot_ocean_trend.set_units(cube, scale_factor=inargs.scale_factor)
+        zm_trend_data, zm_units = plot_ocean_trend.set_units(zm_cube, scale_factor=inargs.scale_factor)
+        zvm_trend_data, zvm_units = plot_ocean_trend.set_units(zvm_cube, scale_factor=inargs.scale_factor)
 
-        lats = cube.coord('latitude').points
-        levs = cube.coord('depth').points            
+        lats = zm_cube.coord('latitude').points
+        levs = zm_cube.coord('depth').points            
 
-        model = cube.attributes['model_id']
+        model = zm_cube.attributes['model_id']
         if 'GISS-E2' in model:
-            physics = cube.attributes['physics_version']
-            title = '%s (%s)'  %(model, physics)
+            physics = zm_cube.attributes['physics_version']
+            title = '%s (p%s)'  %(model, physics)
         else:
             title = model 
-        ylabel = 'Depth (%s)' %(cube.coord('depth').units)
+        ylabel = 'Depth (%s)' %(zm_cube.coord('depth').units)
 
         tick_max, tick_step = inargs.ticks[plotnum]
         ticks = plot_ocean_trend.set_ticks(tick_max, tick_step)
         contour_levels = plot_ocean_trend.get_countour_levels(inargs.var, 'zonal_mean')
 
-        plot_ocean_trend.plot_zonal_mean_trend(trend_data, lats, levs, gs, plotnum,
-                                               ticks, title, units, ylabel,
+        plot_ocean_trend.plot_zonal_mean_trend(zm_trend_data, zvm_trend_data,
+                                               lats, levs, gs, plotnum,
+                                               ticks, title, zm_units, ylabel,
                                                inargs.palette, colorbar_axes,
                                                climatology, contour_levels)
 

@@ -181,7 +181,7 @@ def plot_zonal_mean_trend(trends, integral, lats, levs, gs, plotnum,
     axIntegral.yaxis.set_ticks_position('none')
 
     # Labels and colorbar
-    plt.title(title.title()) 
+    plt.title(title) 
     axMain.set_xlim((-70, 70))
     axMain.set_xlabel('Latitude', fontsize='small')
     
@@ -322,7 +322,7 @@ def main(inargs):
             cube, integral_data, units = read_data(inargs.infile, inargs.sub_file, long_name, inargs.scale_factor)
 
             plot_zonal_mean_trend(trend_data, integral_data, lats, levs, gs, plotnum,
-                                  ticks, plot_name, units, ylabel,
+                                  ticks, plot_name.title(), units, ylabel,
                                   inargs.palette, colorbar_axes,
                                   climatology, contour_levels)
 
