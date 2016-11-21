@@ -138,27 +138,30 @@ def main(inargs):
         data_dict[(experiment, 'y_data')] = numpy.array([])
 
     metadata_dict = {}
-    for file_group in inargs.file_group:
-
-        pdb.set_trace()
-
-        print file_group
+    for file_group in inargs.file_group:       
         assert len(file_group) in [4, 6]
         if len(file_group) == 4:
             xfile, xvar, yfile, yvar = file_group
             x_cube = iris.load_cube(xfile, xvar)
             y_cube = iris.load_cube(yfile, yvar)
             experiment, model = check_attributes(x_cube, y_cube)
+            metadata_dict[xfile] = x_cube.attributes['history']
             metadata_dict[yfile] = y_cube.attributes['history']
         elif len(file_group) == 6:
-            xfile, xvar, efile, evar, pfile, pvar = file_group
-            x_cube = iris.load_cube(xfile, xvar)
-            y_cube, e_hist, p_hist, experiment, model = calc_ep(efile, evar, pfile, pvar)
-            yvar = 'evaporation_minus_precipitation_flux'
+            if inargs.pe_axis == 'x':
+                efile, evar, pfile, pvar, yfile, yvar = file_group
+                y_cube = iris.load_cube(yfile, yvar)
+                x_cube, e_hist, p_hist, experiment, model = calc_ep(efile, evar, pfile, pvar)
+                xvar = 'evaporation_minus_precipitation_flux'
+                metadata_dict[yfile] = y_cube.attributes['history']
+            elif inargs.pe_axis == 'y':
+                xfile, xvar, efile, evar, pfile, pvar = file_group
+                x_cube = iris.load_cube(xfile, xvar)
+                y_cube, e_hist, p_hist, experiment, model = calc_ep(efile, evar, pfile, pvar)
+                yvar = 'evaporation_minus_precipitation_flux'
+                metadata_dict[xfile] = x_cube.attributes['history']
             metadata_dict[efile] = e_hist
             metadata_dict[pfile] = p_hist
-        
-        metadata_dict[xfile] = x_cube.attributes['history']
 
         data_dict[(experiment, 'x_data')] = numpy.append(data_dict[(experiment, 'x_data')], get_data(x_cube.data, xvar))
         data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], get_data(y_cube.data, yvar))
@@ -203,6 +206,8 @@ author:
                         help="list that goes file, var, file, var...")
     parser.add_argument("--thin", type=int, default=1,
                         help="Stride for thinning the data (e.g. 3 will keep one-third of the data) [default: 1]")
+    parser.add_argument("--pe_axis", type=str, default='x', choices=('x', 'y'),
+                        help="Axis for P-E data (if any)")
 
     args = parser.parse_args()            
     main(args)
