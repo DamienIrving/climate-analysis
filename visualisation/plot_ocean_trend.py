@@ -85,8 +85,11 @@ def prepare_integral(integral, lats, basin):
     lats = numpy.ma.asarray(lats)
     mask = integral.mask
 
-    if basin.lower() in ['pacific', 'indian']:
+    if basin.lower() == 'pacific':
         mask = numpy.ma.where(lats > 58, True, mask)
+        integral.mask = mask
+    elif basin.lower() == 'indian':
+        mask = numpy.ma.where(lats > 20, True, mask)
         integral.mask = mask
 
     lats.mask = mask
