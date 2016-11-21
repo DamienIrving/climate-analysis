@@ -42,9 +42,19 @@ experiments['historicalNat'] = '0.5'
 experiments['historicalAA'] = 'blue'
 experiments['historicalGHG'] = 'red'
 experiments['historicalAnt'] = 'purple'
-experiments['mean: AA, GHG'] = 'purple'
+experiments['linear combination: AA, GHG'] = 'purple'
                
 metadata_dict = {}
+
+
+def calc_pe(cube_dict, experiment):
+    """Calculate P-E."""
+
+    p_cube = cube_dict['precipitation_flux', experiment]
+    e_cube = cube_dict['water_evaporation_flux', experiment]
+    pe_cube = iris.analysis.maths.add(p_cube.copy(), e_cube, in_place=True) * 86400
+
+    return pe_cube
 
 
 def get_common_time_period(cube_dict, standard_name):
@@ -72,11 +82,11 @@ def get_common_time_period(cube_dict, standard_name):
 
 
 def fake_ant(cube_dict, standard_name):
-    """Create a fake historicalAnt timeseries using AA and GHG average."""
+    """Create a fake historicalAnt timeseries by adding the AA and GHG anomalies."""
 
     try:
         aa_cube, ghg_cube = get_common_time_period(cube_dict, standard_name)
-        cube_dict[(standard_name, 'mean: AA, GHG')] = iris.analysis.maths.add(aa_cube, ghg_cube, in_place=True) / 2.0
+        cube_dict[(standard_name, 'linear combination: AA, GHG')] = iris.analysis.maths.add(aa_cube, ghg_cube, in_place=True)
     except KeyError:
         pass
 
@@ -86,7 +96,7 @@ def fake_ant(cube_dict, standard_name):
 def get_linestyle(experiment):
     """Select linestyle depending on experiment."""
 
-    if experiment == 'mean: AA, GHG':
+    if experiment == 'linear combination: AA, GHG':
         linestyle = 'dotted'
     else:
         linestyle = '-'
@@ -113,7 +123,7 @@ def tas_plot(ax, cube_dict):
             pass
     plt.title('Global mean temperature')
     plt.xlabel('Year')
-    plt.ylabel(str(cube.units))
+    plt.ylabel('anomaly relative to first decade (%s)' %(str(cube.units)))
     plt.legend(fontsize='small', loc=2)
 
 
@@ -134,12 +144,14 @@ def sos_plot(ax, cube_dict, so=False):
     cube_dict = fake_ant(cube_dict, var)
     for experiment, color in experiments.iteritems():
         try:
-            iplt.plot(cube_dict[var, experiment], color=color, label=experiment, linestyle=get_linestyle(experiment))
+            cube = cube_dict[var, experiment]
+            iplt.plot(cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
 
     plt.title('Salinity amplification')
     plt.xlabel('Year')
+    plt.ylabel('anomaly relative to first decade')
     plt.legend(fontsize='small', loc=2)
 
 
@@ -147,19 +159,16 @@ def pe_plot(ax, cube_dict):
     """Plot the precipiation minus evaproation timeseries."""
     
     plt.sca(ax)
-    cube_dict = fake_ant(cube_dict, 'precipitation_flux')
-    cube_dict = fake_ant(cube_dict, 'water_evaporation_flux')
+    cube_dict = fake_ant(cube_dict, 'pe_flux')
     for experiment, color in experiments.iteritems():
         try:
-            p_cube = cube_dict['precipitation_flux', experiment]
-            e_cube = cube_dict['water_evaporation_flux', experiment]
-            pe_cube = iris.analysis.maths.add(p_cube.copy(), e_cube, in_place=True) * 86400
-            iplt.plot(pe_cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
+            cube = cube_dict['pe_flux', experiment]
+            iplt.plot(cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
     plt.title('P-E')
     plt.xlabel('Year')
-    plt.ylabel('mm/day')
+    plt.ylabel('anomaly relative to first decade (mm/day)')
     plt.legend(fontsize='small', loc=2)
 
 
@@ -190,6 +199,17 @@ def main(inargs):
         key = (standard_name, experiment)
         assert key not in cube_dict.keys(), '%s, %s not in cube dict' %(standard_name, experiment)
         cube_dict[key] = cube
+
+    for experiment in experiments.keys():
+        if 'historical' in experiment:
+            try:
+                cube_dict['pe_flux', experiment] = calc_pe(cube_dict, experiment)
+            except KeyError:
+                pass
+
+    for key, cube in cube_dict.iteritems():
+        baseline = cube[0:10].data.mean()
+        cube_dict[key] = cube - baseline
 
     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(20, 5))
     tas_plot(axes[0], cube_dict) 
