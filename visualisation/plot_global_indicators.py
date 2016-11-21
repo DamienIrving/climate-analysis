@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import iris
 import iris.plot as iplt
 import seaborn
+from collections import OrderedDict
 
 # Import my modules
 
@@ -35,23 +36,47 @@ except ImportError:
 
 # Define functions
 
-experiments = {'historical': 'black',
-               'historicalAA': 'blue',
-               'historicalGHG': 'red',
-               'historicalAnt': 'purple',
-               'historicalAAGHGmean': 'purple',
-               'historicalNat': '0.5'}
-
+experiments = OrderedDict()
+experiments['historical'] = 'black'
+experiments['historicalNat'] = '0.5'
+experiments['historicalAA'] = 'blue'
+experiments['historicalGHG'] = 'red'
+experiments['historicalAnt'] = 'purple'
+experiments['mean: AA, GHG'] = 'purple'
+               
 metadata_dict = {}
+
+
+def get_common_time_period(cube_dict, standard_name):
+    """Select cubes of a common time period"""
+
+    aa_cube = cube_dict[standard_name, 'historicalAA']
+    ghg_cube = cube_dict[standard_name, 'historicalGHG']
+
+    aa_time = aa_cube.coord('time').points
+    ghg_time = ghg_cube.coord('time').points
+
+    common_times = set(aa_time).intersection(ghg_time)
+    start_common = min(common_times)
+    end_common = max(common_times)
+
+    start_aa = aa_time.tolist().index(start_common)
+    end_aa = aa_time.tolist().index(end_common)
+    start_ghg = ghg_time.tolist().index(start_common)
+    end_ghg = ghg_time.tolist().index(end_common)
+
+    aa_cube = aa_cube.copy()[start_aa : end_aa + 1]
+    ghg_cube = ghg_cube.copy()[start_ghg : end_ghg + 1]
+
+    return aa_cube, ghg_cube 
 
 
 def fake_ant(cube_dict, standard_name):
     """Create a fake historicalAnt timeseries using AA and GHG average."""
 
     try:
-        aa_cube = cube_dict[standard_name, 'historicalAA']
-        ghg_cube = cube_dict[standard_name, 'historicalGHG']
-        cube_dict[(standard_name, 'historicalAAGHGmean')] = iris.analysis.maths.add(aa_cube.copy(), ghg_cube, in_place=True) / 2.0
+        aa_cube, ghg_cube = get_common_time_period(cube_dict, standard_name)
+        cube_dict[(standard_name, 'mean: AA, GHG')] = iris.analysis.maths.add(aa_cube, ghg_cube, in_place=True) / 2.0
     except KeyError:
         pass
 
@@ -61,7 +86,7 @@ def fake_ant(cube_dict, standard_name):
 def get_linestyle(experiment):
     """Select linestyle depending on experiment."""
 
-    if experiment == 'historicalAAGHGmean':
+    if experiment == 'mean: AA, GHG':
         linestyle = 'dotted'
     else:
         linestyle = '-'
