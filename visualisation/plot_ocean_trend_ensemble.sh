@@ -28,7 +28,7 @@ python='/g/data/r87/dbi599/miniconda2/envs/default/bin/python'
 # historical zonal plots
 
 experiment='historical'
-for region in atlantic pacific indian globe; do
+for region in pacific indian; do
 
     for variable in thetao so; do
 
@@ -113,7 +113,7 @@ done
 # historicalGHG zonal plots
 
 experiment='historicalGHG'
-for region in atlantic pacific indian globe; do
+for region in pacific indian; do
 
     for variable in thetao so; do
 
@@ -190,7 +190,7 @@ done
 # historicalAA zonal plots
 
 experiment='historicalMisc'
-for region in atlantic pacific indian globe; do
+for region in pacific indian; do
 
     for variable in thetao so; do
 

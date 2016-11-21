@@ -118,7 +118,7 @@ def main(inargs):
                                                lats, levs, gs, plotnum,
                                                ticks, title, zm_units, ylabel,
                                                inargs.palette, colorbar_axes,
-                                               climatology, contour_levels)
+                                               climatology, contour_levels, basin=inargs.basin)
 
     plt.savefig(inargs.outfile, bbox_inches='tight')
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)

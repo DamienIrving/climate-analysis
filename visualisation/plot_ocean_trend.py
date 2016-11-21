@@ -85,8 +85,8 @@ def prepare_integral(integral, lats, basin):
     lats = numpy.ma.asarray(lats)
     mask = integral.mask
 
-    if basin == 'pacific':
-        mask = numpy.ma.where(lats > 60, True, mask)
+    if basin.lower() in ['pacific', 'indian']:
+        mask = numpy.ma.where(lats > 58, True, mask)
         integral.mask = mask
 
     lats.mask = mask
@@ -133,10 +133,12 @@ def plot_vertical_mean_trend(trends, lons, lats, gs, plotnum,
 def plot_zonal_mean_trend(trends, integral, lats, levs, gs, plotnum,
                           ticks, title, units, ylabel,
                           palette, cbar_ax,
-                          climatology, contour_levels):
+                          climatology, contour_levels, basin=False):
     """Plot the zonal mean trends.
 
     Produces a lat / depth plot.
+
+    Use the basin keyword argument if the title is not the name of basin
 
     """
 
@@ -173,7 +175,9 @@ def plot_zonal_mean_trend(trends, integral, lats, levs, gs, plotnum,
 
     # Integral
     axIntegral = divider.append_axes("top", size="40%", pad=0.2, sharex=axMain)
-    integral, lats = prepare_integral(integral, lats, title)
+    if not basin:
+        basin = title
+    integral, lats = prepare_integral(integral, lats, basin)
     integral_plot = axIntegral.plot(lats, integral.data, color='black')
     plt.axhline(y=0, color='0.5')
     plt.setp(axIntegral.get_xticklabels(), visible=False)
