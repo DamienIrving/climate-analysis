@@ -34,6 +34,7 @@ for region in indian pacific atlantic globe; do
 
         if [[ ${variable} == 'so' ]] ; then
             long_name=sea_water_salinity
+            obs_ticks="--ticks 2.5 0.5"
             canesm_ticks="--ticks 2.5 0.5"
             ccsm_ticks="--ticks 2.0 0.4"
             csiro_ticks="--ticks 1.5 0.3"
@@ -49,6 +50,7 @@ for region in indian pacific atlantic globe; do
             palette='BrBG_r'
         elif [[ ${variable} == 'thetao' ]] ; then
             long_name=sea_water_potential_temperature
+            obs_ticks="--ticks 15 3"
             canesm_ticks="--ticks 15 3"
             ccsm_ticks="--ticks 15 3"
             csiro_ticks="--ticks 7.5 1.5"
@@ -64,8 +66,9 @@ for region in indian pacific atlantic globe; do
             palette='RdBu_r'
         fi
 
-        ticks="${canesm_ticks} ${ccsm_ticks} ${csiro_ticks} ${fgoals_ticks} ${gfdl_cm_ticks} ${gfdl_esm_ticks} ${gisseh_p1_ticks} ${gisseh_p3_ticks} ${gisser_p1_ticks} ${gisser_p3_ticks} ${ipsl_ticks} ${noresm_ticks}"
+        ticks="${obs_ticks} ${canesm_ticks} ${ccsm_ticks} ${csiro_ticks} ${fgoals_ticks} ${gfdl_cm_ticks} ${gfdl_esm_ticks} ${gisseh_p1_ticks} ${gisseh_p3_ticks} ${gisser_p1_ticks} ${gisser_p3_ticks} ${ipsl_ticks} ${noresm_ticks}"
 
+        obs_file="/g/data/r87/dbi599/drstree/observations/DurackandWijffels/yr/ocean/${variable}-maps/${variable}-maps-time-trend_Oyr_DurackandWijffels_1950-01-01_2000-12-31.nc"
         canesm_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/CCCMA/CanESM2/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-time-trend_Oyr_CanESM2_${experiment}_ensmean-i1p1_1950-01-01_2000-12-31.nc"
         ccsm_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCAR/CCSM4/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-time-trend_Oyr_CCSM4_${experiment}_ensmean-i1p1_1950-01-01_2000-12-31.nc"
         csiro_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/CSIRO-QCCCE/CSIRO-Mk3-6-0/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-time-trend_Oyr_CSIRO-Mk3-6-0_${experiment}_ensmean-i1p1_1950-01-01_2000-12-31.nc"
@@ -79,10 +82,11 @@ for region in indian pacific atlantic globe; do
         ipsl_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-time-trend_Oyr_IPSL-CM5A-LR_${experiment}_r1i1p1_1950-01-01_2000-12-31.nc"
         noresm_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCC/NorESM1-M/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-time-trend_Oyr_NorESM1-M_${experiment}_r1i1p1_1950-01-01_2000-12-31.nc"
         
-        data_files="${canesm_file} ${ccsm_file} ${csiro_file} ${fgoals_file} ${gfdl_cm_file} ${gfdl_esm_file} ${gisseh_p1_file} ${gisseh_p3_file} ${gisser_p1_file} ${gisser_p3_file} ${ipsl_file} ${noresm_file}"
+        data_files="${obs_file} ${canesm_file} ${ccsm_file} ${csiro_file} ${fgoals_file} ${gfdl_cm_file} ${gfdl_esm_file} ${gisseh_p1_file} ${gisseh_p3_file} ${gisser_p1_file} ${gisser_p3_file} ${ipsl_file} ${noresm_file}"
 
         outfile=/g/data/r87/dbi599/figures/ocean_trend_ensembles/${experiment}/${variable}-maps-time-trend-zonal-mean-${region}_Oyr_ensemble_${experiment}_i1p1_1950-01-01_2000-12-31.png
 
+        obs_clim="/g/data/r87/dbi599/drstree/observations/DurackandWijffels/yr/ocean/${variable}-maps/${variable}-maps-clim_Oyr_DurackandWijffels_all.nc"
         canesm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/CCCMA/CanESM2/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-clim_Oyr_CanESM2_${experiment}_ensmean-i1p1_all.nc"
         ccsm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCAR/CCSM4/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-clim_Oyr_CCSM4_${experiment}_ensmean-i1p1_all.nc"
         csiro_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/CSIRO-QCCCE/CSIRO-Mk3-6-0/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-clim_Oyr_CSIRO-Mk3-6-0_${experiment}_ensmean-i1p1_all.nc"
@@ -96,12 +100,12 @@ for region in indian pacific atlantic globe; do
         ipsl_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-clim_Oyr_IPSL-CM5A-LR_${experiment}_r1i1p1_all.nc"
         noresm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCC/NorESM1-M/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-clim_Oyr_NorESM1-M_${experiment}_r1i1p1_all.nc"
         
-        climatology_files="${canesm_clim} ${ccsm_clim} ${csiro_clim} ${fgoals_clim} ${gfdl_cm_clim} ${gfdl_esm_clim} ${gisseh_p1_clim} ${gisseh_p3_clim} ${gisser_p1_clim} ${gisser_p3_clim} ${ipsl_clim} ${noresm_clim}"
+        climatology_files="${obs_clim} ${canesm_clim} ${ccsm_clim} ${csiro_clim} ${fgoals_clim} ${gfdl_cm_clim} ${gfdl_esm_clim} ${gisseh_p1_clim} ${gisseh_p3_clim} ${gisser_p1_clim} ${gisser_p3_clim} ${ipsl_clim} ${noresm_clim}"
 
     if [[ ${dry_run} == 'yes' ]] ; then
-        echo  ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 2 6 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historical
+        echo  ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 3 5 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historical
     else
-         ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 2 6 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historical
+         ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 3 5 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historical
         echo ${outfile}
     fi
 
