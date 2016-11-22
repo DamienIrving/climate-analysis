@@ -83,6 +83,7 @@ def prepare_integral(integral, lats, basin):
     """Prepare integral data for plotting."""
 
     lats = numpy.ma.asarray(lats)
+    integral = numpy.ma.asarray(integral)
     mask = integral.mask
 
     if basin.lower() == 'pacific':
