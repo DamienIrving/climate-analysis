@@ -64,7 +64,7 @@ def main(inargs):
         climatology_cube[variable] = iris.load_cube(inargs.infile, 'sea_water_'+variable)
         climatology_cube[variable] = fix_cube(climatology_cube[variable], 'climatology')
 
-    basin_array = calc_ocean_maps.create_basin_array(change_cube[variable])
+    basin_array_default = calc_ocean_maps.create_basin_array(change_cube[variable])
     coord_names = [coord.name() for coord in change_cube[variable].dim_coords]
     atts = change_cube[variable].attributes
 
@@ -86,12 +86,20 @@ def main(inargs):
             climatology_cube_vm = calc_ocean_maps.calc_vertical_mean(climatology_cube[variable].copy(), layer, coord_names, atts, standard_name, var_name)
             climatology_cube_list.append(climatology_cube_vm)   
 
+            if layer in ['surface', 'argo']:
+                for basin in calc_ocean_maps.basins.keys():
+                    basin_array = calc_ocean_maps.create_basin_array(change_cube_vm)
+                    depth_cube = None
+                    change_cube_list.append(calc_ocean_maps.calc_zonal_vertical_mean(change_cube_vm.copy(), depth_cube, basin_array, basin, layer, atts, standard_name, var_name))
+
         for basin in calc_ocean_maps.basins.keys():
-            change_cube_zm = calc_ocean_maps.calc_zonal_mean(change_cube[variable].copy(), basin_array, basin, atts, standard_name, var_name)
+            change_cube_zm = calc_ocean_maps.calc_zonal_mean(change_cube[variable].copy(), basin_array_default, basin, atts, standard_name, var_name)
             change_cube_list.append(change_cube_zm)
 
-            climatology_cube_zm = calc_ocean_maps.calc_zonal_mean(climatology_cube[variable].copy(), basin_array, basin, atts, standard_name, var_name)
+            climatology_cube_zm = calc_ocean_maps.calc_zonal_mean(climatology_cube[variable].copy(), basin_array_default, basin, atts, standard_name, var_name)
             climatology_cube_list.append(climatology_cube_zm)
+
+        pdb.set_trace()
 
         iris.save(change_cube_list, eval('inargs.change_outfile_'+var_name))
         iris.save(climatology_cube_list, eval('inargs.climatology_outfile_'+var_name))
