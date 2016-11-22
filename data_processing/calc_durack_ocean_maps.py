@@ -67,6 +67,7 @@ def main(inargs):
     basin_array_default = calc_ocean_maps.create_basin_array(change_cube[variable])
     coord_names = [coord.name() for coord in change_cube[variable].dim_coords]
     atts = change_cube[variable].attributes
+    atts['history'] = gio.write_metadata(file_info={inargs.infile: atts['history']})
 
     # Calculate maps
     for variable in variables:
@@ -98,8 +99,6 @@ def main(inargs):
 
             climatology_cube_zm = calc_ocean_maps.calc_zonal_mean(climatology_cube[variable].copy(), basin_array_default, basin, atts, standard_name, var_name)
             climatology_cube_list.append(climatology_cube_zm)
-
-        pdb.set_trace()
 
         iris.save(change_cube_list, eval('inargs.change_outfile_'+var_name))
         iris.save(climatology_cube_list, eval('inargs.climatology_outfile_'+var_name))
