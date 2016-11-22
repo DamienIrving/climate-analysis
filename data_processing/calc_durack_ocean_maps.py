@@ -68,6 +68,7 @@ def main(inargs):
     coord_names = [coord.name() for coord in change_cube[variable].dim_coords]
     atts = change_cube[variable].attributes
     atts['history'] = gio.write_metadata(file_info={inargs.infile: atts['history']})
+    atts['model_id'] = 'Durack and Wijffels'
 
     # Calculate maps
     for variable in variables:
