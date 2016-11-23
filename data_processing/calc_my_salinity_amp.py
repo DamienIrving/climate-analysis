@@ -76,10 +76,13 @@ def set_attributes(inargs, data_cube, area_cube, clim_cube):
 def calc_mean_anomaly(data_cube, clim_cube, sign, grid_areas):
     """Calculate the mean of all the positive or negative anomalies."""
 
+    clim_data = uconv.broadcast_array(clim_cube.data, [1, 2], data_cube.shape)
+    grid_areas = uconv.broadcast_array(grid_areas, [1, 2], data_cube.shape)
+
     if sign == 'positive':
-        new_mask = numpy.where((data_cube.data.mask == False) & (clim_cube.data > 0.0), False, True)
+        new_mask = numpy.where((data_cube.data.mask == False) & (clim_data > 0.0), False, True)
     elif sign == 'negative':
-        new_mask = numpy.where((data_cube.data.mask == False) & (clim_cube.data < 0.0), False, True)
+        new_mask = numpy.where((data_cube.data.mask == False) & (clim_data < 0.0), False, True)
 
     data_cube.data.mask = new_mask
     data_cube = data_cube.collapsed(['longitude', 'latitude'], iris.analysis.MEAN, weights=grid_areas)
@@ -100,10 +103,10 @@ def calc_amplification_metric(data_cube, clim_cube, grid_areas, atts):
     assert data_cube.standard_name in ['sea_surface_salinity', 'sea_water_salinity']
 
     clim_fldmean = clim_cube.collapsed(['longitude', 'latitude'], iris.analysis.MEAN, weights=grid_areas)
-    clim_spatial_anom = clim_cube - clim_fldmean  # I'll need to braodcast this       
+    clim_spatial_anom = clim_cube - clim_fldmean       
 
-    ave_pos_anom = calc_mean_anomaly(data_cube.copy(), clim_spatial_anom.copy(), 'positive', grid_areas)
-    ave_neg_anom = calc_mean_anomaly(data_cube.copy(), clim_spatial_anom.copy(), 'negative', grid_areas)
+    ave_pos_anom = calc_mean_anomaly(data_cube.copy(), clim_spatial_anom.copy(), 'positive', grid_areas.copy())
+    ave_neg_anom = calc_mean_anomaly(data_cube.copy(), clim_spatial_anom.copy(), 'negative', grid_areas.copy())
 
     metric = ave_pos_anom - ave_neg_anom 
 
@@ -120,7 +123,7 @@ def get_area_weights(cube, area_cube):
     """Get area weights for averaging"""
 
     if area_cube:
-        area_weights = uconv.broadcast_array(area_cube.data, [1, 2], cube.shape)
+        area_weights = area_cube.data
     else:
         if not cube.coord('latitude').has_bounds():
             cube.coord('latitude').guess_bounds()
@@ -159,16 +162,15 @@ def main(inargs):
     cube = gio.check_time_units(cube)
 
     area_cube = read_area(inargs.area_file) 
-    clim_cube = iris.load_cube(climatology_file, inargs.var & level_constraint)
+    clim_cube = iris.load_cube(inargs.climatology, inargs.var & level_constraint)
 
     atts = set_attributes(inargs, cube, area_cube, clim_cube)
 
     if inargs.smoothing:
         cube = smooth_data(cube, inargs.smoothing)
-    area_weights = get_area_weights(cube, area_cube)
+    area_weights = get_area_weights(clim_cube, area_cube)
 
-    metric = calc_amplification_metric(cube, area_weights, atts)
-    
+    metric = calc_amplification_metric(cube, clim_cube, area_weights, atts)
     iris.save(metric, inargs.outfile)
 
 
