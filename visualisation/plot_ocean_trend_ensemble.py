@@ -68,7 +68,8 @@ def main(inargs):
         title = inargs.basin.capitalize() + ', ' + inargs.experiment
     else:
         title = inargs.basin.capitalize()
-    fig.suptitle(title, fontsize='x-large')
+    if not inargs.no_title:
+        fig.suptitle(title, fontsize='x-large')
     colorbar_axes = None
     gs = gridspec.GridSpec(inargs.nrows, inargs.ncols)
  
@@ -80,45 +81,46 @@ def main(inargs):
 
     metadata_dict = {}
     for plotnum, filename in enumerate(inargs.infiles):
-        with iris.FUTURE.context(cell_datetime_objects=True):
-            zm_cube = iris.load_cube(filename, zm_long_name)  
-            zvm_cube = iris.load_cube(filename, zvm_long_name)
-            if inargs.sub_file:
-                zm_sub_cube = iris.load_cube(inargs.sub_file[plotnum], zm_long_name)
-                zvm_sub_cube = iris.load_cube(inargs.sub_file[plotnum], zvm_long_name)
-                metadata = zm_cube.metadata
-                zm_cube = zm_cube - zm_sub_cube
-                zvm_cube = zvm_cube - zvm_sub_cube
-                zm_cube.metadata = metadata
-                zvm_cube.metadata = metadata
-            metadata_dict[filename] = zm_cube.attributes['history']
+        if not filename == 'blank':
+            with iris.FUTURE.context(cell_datetime_objects=True):
+                zm_cube = iris.load_cube(filename, zm_long_name)  
+                zvm_cube = iris.load_cube(filename, zvm_long_name)
+                if inargs.sub_file:
+                    zm_sub_cube = iris.load_cube(inargs.sub_file[plotnum], zm_long_name)
+                    zvm_sub_cube = iris.load_cube(inargs.sub_file[plotnum], zvm_long_name)
+                    metadata = zm_cube.metadata
+                    zm_cube = zm_cube - zm_sub_cube
+                    zvm_cube = zvm_cube - zvm_sub_cube
+                    zm_cube.metadata = metadata
+                    zvm_cube.metadata = metadata
+                metadata_dict[filename] = zm_cube.attributes['history']
 
-        climatology = plot_ocean_trend.read_climatology(inargs.climatology_files[plotnum], zm_long_name)
-        metadata_dict[inargs.climatology_files[plotnum]] = climatology.attributes['history']
+            climatology = plot_ocean_trend.read_climatology(inargs.climatology_files[plotnum], zm_long_name)
+            metadata_dict[inargs.climatology_files[plotnum]] = climatology.attributes['history']
 
-        zm_trend_data, zm_units = plot_ocean_trend.set_units(zm_cube, scale_factor=inargs.scale_factor)
-        zvm_trend_data, zvm_units = plot_ocean_trend.set_units(zvm_cube, scale_factor=inargs.scale_factor)
+            zm_trend_data, zm_units = plot_ocean_trend.set_units(zm_cube, scale_factor=inargs.scale_factor)
+            zvm_trend_data, zvm_units = plot_ocean_trend.set_units(zvm_cube, scale_factor=inargs.scale_factor)
 
-        lats = zm_cube.coord('latitude').points
-        levs = zm_cube.coord('depth').points            
+            lats = zm_cube.coord('latitude').points
+            levs = zm_cube.coord('depth').points            
 
-        model = zm_cube.attributes['model_id']
-        if 'GISS-E2' in model:
-            physics = zm_cube.attributes['physics_version']
-            title = '%s (p%s)'  %(model, physics)
-        else:
-            title = model 
-        ylabel = 'Depth (%s)' %(zm_cube.coord('depth').units)
+            model = zm_cube.attributes['model_id']
+            if 'GISS-E2' in model:
+                physics = zm_cube.attributes['physics_version']
+                title = '%s (p%s)'  %(model, physics)
+            else:
+                title = model 
+            ylabel = 'Depth (%s)' %(zm_cube.coord('depth').units)
 
-        tick_max, tick_step = inargs.ticks[plotnum]
-        ticks = plot_ocean_trend.set_ticks(tick_max, tick_step)
-        contour_levels = plot_ocean_trend.get_countour_levels(inargs.var, 'zonal_mean')
+            tick_max, tick_step = inargs.ticks[plotnum]
+            ticks = plot_ocean_trend.set_ticks(tick_max, tick_step)
+            contour_levels = plot_ocean_trend.get_countour_levels(inargs.var, 'zonal_mean')
 
-        plot_ocean_trend.plot_zonal_mean_trend(zm_trend_data, zvm_trend_data,
-                                               lats, levs, gs, plotnum,
-                                               ticks, title, zm_units, ylabel,
-                                               inargs.palette, colorbar_axes,
-                                               climatology, contour_levels, basin=inargs.basin)
+            plot_ocean_trend.plot_zonal_mean_trend(zm_trend_data, zvm_trend_data,
+                                                   lats, levs, gs, plotnum,
+                                                   ticks, title, zm_units, ylabel,
+                                                   inargs.palette, colorbar_axes,
+                                                   climatology, contour_levels, basin=inargs.basin)
 
     plt.savefig(inargs.outfile, bbox_inches='tight')
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)
@@ -138,7 +140,7 @@ author:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infiles", type=str, nargs='*', help="Input ocean maps files")
+    parser.add_argument("infiles", type=str, nargs='*', help="Input ocean maps files (write blank if no file for that location)")
     parser.add_argument("var", type=str, help="Input variable name (the standard_name without the vertical_mean or zonal_mean bit)")
     parser.add_argument("basin", type=str, choices=('pacific', 'indian', 'atlantic', 'globe'), help="Type of plot")
     parser.add_argument("nrows", type=int, help="number of rows in the entire grid of plots")
@@ -163,6 +165,9 @@ author:
 
     parser.add_argument("--experiment", type=str, default=None,
                         help="Put the experiment in the title [default=None]")
+
+    parser.add_argument("--no_title", action="store_true", default=False,
+                        help="switch for turning off plot title [default: False]")
 
     args = parser.parse_args()            
     main(args)
