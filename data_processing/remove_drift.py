@@ -209,7 +209,12 @@ def main(inargs):
 
         # Remove the drift
         drift_signal = apply_polynomial(time_values, coefficient_cube.data, chunk=inargs.chunk)
-        new_cube = data_cube - drift_signal
+        
+        if not inargs.dummy:
+            new_cube = data_cube - drift_signal
+        else:
+            print 'fake run - drift signal not subtracted'
+            new_cube = data_cube
         new_cube.metadata = data_cube.metadata
         new_cube.attributes['drift_removal'] = sanity_summary
 
@@ -275,6 +280,9 @@ notes:
                         help="Do not perform the parent experiment check [default: False]")
     parser.add_argument("--chunk", action="store_true", default=False,
                         help="Split the polynomial calculation up to avoid memory errors [default: False]")
+    
+    parser.add_argument("--dummy", action="store_true", default=False,
+                        help="Do not actually subtract the drift [default: False]")
 
     args = parser.parse_args()            
 
