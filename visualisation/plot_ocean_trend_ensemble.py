@@ -59,6 +59,8 @@ def main(inargs):
 
     assert len(inargs.climatology_files) == len(inargs.infiles)
     assert len(inargs.ticks) == len(inargs.infiles)
+    if inargs.runs:
+        assert len(inargs.climatology_files) == len(inargs.infiles)
 
     height = 8 * inargs.nrows
     width = 8 * inargs.ncols
@@ -105,7 +107,9 @@ def main(inargs):
             levs = zm_cube.coord('depth').points            
 
             model = zm_cube.attributes['model_id']
-            if 'GISS-E2' in model:
+            if inargs.runs:
+                title = '%s, %s' %(model, inargs.runs[plotnum])
+            elif 'GISS-E2' in model:
                 physics = zm_cube.attributes['physics_version']
                 title = '%s (p%s)'  %(model, physics)
             else:
@@ -151,6 +155,9 @@ author:
                         help="Ocean maps file to subtract from input ocean maps file [default=None]")
     parser.add_argument("--climatology_files", type=str, nargs='*', default=None,
                         help="Plot climatology contours on zonal mean plots [default=None]")
+
+    parser.add_argument("--runs", type=str, nargs='*', default=None,
+                        help="Run details (e.g. r1i1p1) to put in plot headings (write blank if no file for that location) [default=None]")
 
     parser.add_argument("--ticks", type=float, nargs=2, action='append', default=[], metavar=('MAX_AMPLITUDE', 'STEP'),
                         help="Maximum tick amplitude and step size for colorbar")
