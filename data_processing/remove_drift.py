@@ -64,9 +64,9 @@ def apply_polynomial(x_data, coefficient_a_data, coefficient_b_data, coefficient
         result = numpy.zeros(coefficient_dict['b'].shape, dtype='float32')
         for index in range(0, coefficient_dict['b'].shape[-1]):
             # loop to avoid memory error with large arrays 
-            result[..., index] = control_start_data - (coefficient_dict['a'] + coefficient_dict['b'][..., index] * x_data[..., 0] + coefficient_dict['c'][..., index] * x_data[..., 0]**2 + coefficient_dict['d'][..., index] * x_data[..., 0]**3 ) 
+            result[..., index] = coefficient_dict['a'] + coefficient_dict['b'][..., index] * x_data[..., 0] + coefficient_dict['c'][..., index] * x_data[..., 0]**2 + coefficient_dict['d'][..., index] * x_data[..., 0]**3 - control_start_data 
     else:
-        result = control_start_data - (coefficient_dict['a'] + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3)  
+        result = coefficient_dict['a'] + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3 - control_start_data
 
     return result 
 
