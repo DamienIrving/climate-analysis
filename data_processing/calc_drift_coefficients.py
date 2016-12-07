@@ -141,57 +141,61 @@ def main(inargs):
 
     cubes = iris.load(inargs.infiles, inargs.var, callback=save_history)
     global_atts = set_global_atts(inargs, cubes[0])
-
     iris.util.unify_time_units(cubes)
+    cube, coord_names = concatenate_cube(cubes)
 
-    nvars = len(cubes) / len(inargs.infiles)
+    # Coefficients cube
+
+    coefficients, time_start, time_end = calc_coefficients(cube, coord_names, convert_annual=inargs.annual)
+    global_atts['time_unit'] = str(cube.coord('time').units)
+    global_atts['time_calendar'] = str(cube.coord('time').units.calendar)
+    global_atts['time_start'] = time_start
+    global_atts['time_end'] = time_end
+
+    dim_coords = []
+    for i, coord_name in enumerate(coord_names[1:]):
+        dim_coords.append((cube.coord(coord_name), i))
+
+    if cube.aux_coords:
+        assert len(cube.aux_coords) == 2, "Script can only deal with two auxillary coordinates"
+        dims = range(0, coefficients[0, ::].ndim)
+        aux_coords = [(cube.aux_coords[0], [dims[-2], dims[-1]]), (cube.aux_coords[1], [dims[-2], dims[-1]])]
+    else:
+        aux_coords = None
+
     out_cubes = []
-    for var_index in range(0, nvars):
-        cube = cubes[var_index::nvars]
-        cube, coord_names = concatenate_cube(cube)       
-        coefficients, time_start, time_end = calc_coefficients(cube, coord_names, convert_annual=inargs.annual)
-
-        # Write the output file
-
-        iris.std_names.STD_NAMES['drift_coefficient'] = {'canonical_units': cube.units}
-        coefficient_coord = iris.coords.DimCoord(numpy.array([1, 2, 3, 4]), 
-                                                 standard_name='drift_coefficient', long_name='drift coefficient', 
-                                                 var_name='coefficient', attributes=None)
-
-        dim_coords = [(coefficient_coord, 0)]
-        for i, coord_name in enumerate(coord_names[1:]):
-            dim_coords.append((cube.coord(coord_name), i + 1))
-
-        if cube.aux_coords:
-            assert len(cube.aux_coords) == 2, "Script can only deal with two auxillary coordinates"
-            dims = range(0, coefficients.ndim)
-            aux_coords = [(cube.aux_coords[0], [dims[-2], dims[-1]]), (cube.aux_coords[1], [dims[-2], dims[-1]])]
-        else:
-            aux_coords = None
-
-        iris.std_names.STD_NAMES[cube.var_name] = {'canonical_units': cube.units}
-        new_cube = iris.cube.Cube(coefficients,
-                                  standard_name=cube.standard_name,
-                                  long_name=cube.long_name,
-                                  var_name=cube.var_name,
+    pdb.set_trace()
+    for index, letter in enumerate(['a', 'b', 'c', 'd']):
+        standard_name = 'coefficient_'+letter
+        iris.std_names.STD_NAMES[standard_name] = {'canonical_units': cube.units}
+        new_cube = iris.cube.Cube(coefficients[index, ::],
+                                  standard_name=standard_name,
+                                  long_name='coefficient '+letter,
+                                  var_name='coef_'+letter,
                                   units=cube.units,
                                   attributes=global_atts,
                                   dim_coords_and_dims=dim_coords,
-                                  aux_coords_and_dims=aux_coords)
-        new_cube.attributes['time_unit'] = str(cube.coord('time').units)
-        new_cube.attributes['time_calendar'] = str(cube.coord('time').units.calendar)
-        new_cube.attributes['time_start'] = time_start
-        new_cube.attributes['time_end'] = time_end 
-
+                                  aux_coords_and_dims=aux_coords) 
         new_cube = check_units(new_cube)
         out_cubes.append(new_cube)
 
-    cube_list = iris.cube.CubeList(out_cubes)
-    out_cube = cube_list.concatenate()
+    # First decadal mean cube
 
-    assert out_cube[0].data.dtype == numpy.float32
+    assert coord_names[0] == 'time'
+    end = 10 if inargs.annual else 120
+    time_mean = cube[0:end, ::].collapsed('time', iris.analysis.MEAN)
+    time_mean.remove_coord('time')
+    time_mean.attributes = global_atts
+    out_cubes.append(time_mean)
+
+    # Write output file  
+  
+    for cube in out_cubes:
+        assert cube.data.dtype == numpy.float32
+    cube_list = iris.cube.CubeList(out_cubes)
+
     iris.FUTURE.netcdf_no_unlimited = True
-    iris.save(out_cube, inargs.outfile, netcdf_format='NETCDF3_CLASSIC')
+    iris.save(cube_list, inargs.outfile, netcdf_format='NETCDF3_CLASSIC')
 
 
 if __name__ == '__main__':
