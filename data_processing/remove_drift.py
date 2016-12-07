@@ -35,7 +35,7 @@ except ImportError:
 
 # Define functions
 
-def apply_polynomial(x_data, coefficient_data, chunk=False):
+def apply_polynomial(x_data, coefficient_a_data, coefficient_b_data, coefficient_c_data, coefficient_d_data, control_start_data, chunk=False):
     """Evaluate cubic polynomial.
 
     Args:
@@ -47,28 +47,26 @@ def apply_polynomial(x_data, coefficient_data, chunk=False):
     
     x_data = x_data.astype(numpy.float32)
     coefficient_dict = {}
-    if coefficient_data.ndim == 1:
-        coefficient_dict['a'] = coefficient_data[0]
-        coefficient_dict['b'] = coefficient_data[1]
-        coefficient_dict['c'] = coefficient_data[2]
-        coefficient_dict['d'] = coefficient_data[3]
-    else:
-        while x_data.ndim < coefficient_data.ndim:
-            x_data = x_data[..., numpy.newaxis]
-        for index, coefficient in enumerate(['a', 'b', 'c', 'd']):
-            coef = coefficient_data[index, ...]
-            coef = numpy.repeat(coef[numpy.newaxis, ...], x_data.shape[0], axis=0)
-            assert x_data.ndim == coef.ndim
-            coefficient_dict[coefficient] = coef
+    coefficient_dict['a'] = coefficient_a_data
+    coefficient_dict['b'] = coefficient_b_data
+    coefficient_dict['c'] = coefficient_c_data
+    coefficient_dict['d'] = coefficient_d_data
+
+    while x_data.ndim < coefficient_a_data.ndim + 1:
+        x_data = x_data[..., numpy.newaxis]
+    for letter in ['a', 'b', 'c', 'd']:
+        coef = coefficient_dict[letter]
+        coef = numpy.repeat(coef[numpy.newaxis, ...], x_data.shape[0], axis=0)
+        assert x_data.ndim == coef.ndim
+        coefficient_dict[letter] = coef
 
     if chunk:
         result = numpy.zeros(coefficient_dict['b'].shape, dtype='float32')
         for index in range(0, coefficient_dict['b'].shape[-1]):
-            # loop to avoid memory error with large arrays
-            # set a to zero so only deviations from start point are subtracted 
-            result[..., index] = 0 + coefficient_dict['b'][..., index] * x_data[..., 0] + coefficient_dict['c'][..., index] * x_data[..., 0]**2 + coefficient_dict['d'][..., index] * x_data[..., 0]**3  
+            # loop to avoid memory error with large arrays 
+            result[..., index] = control_start_data - (coefficient_dict['a'] + coefficient_dict['b'][..., index] * x_data[..., 0] + coefficient_dict['c'][..., index] * x_data[..., 0]**2 + coefficient_dict['d'][..., index] * x_data[..., 0]**3 ) 
     else:
-        result = 0 + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3  
+        result = control_start_data - (coefficient_dict['a'] + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3)  
 
     return result 
 
@@ -95,7 +93,7 @@ def check_data_units(data_cube, coefficient_cube):
     return data_cube
 
 
-def coefficient_sanity_check(coefficient_cube, variable):
+def coefficient_sanity_check(coefficient_a_cube, coefficient_b_cube, coefficient_c_cube, coefficient_d_cube, variable):
     """Sanity check the cubic polynomial coefficients.
 
     Polynomial is a + bx + cx^2 + dx^3. The telling sign of a poor
@@ -112,9 +110,9 @@ def coefficient_sanity_check(coefficient_cube, variable):
         var_max = 55
         var_min = 2
  
-    nmasked_original = numpy.sum(coefficient_cube.data.mask)
+    nmasked_original = numpy.sum(coefficient_a_cube.data.mask)
 
-    a_data = coefficient_cube.data[0, ...]
+    a_data = coefficient_a_cube.data
 
     original_mask = a_data.mask
     
@@ -125,17 +123,17 @@ def coefficient_sanity_check(coefficient_cube, variable):
     ncrazy_max = numpy.sum(crazy_mask_max)
     ncrazy = ncrazy_min + ncrazy_max
 
-    new_mask = new_mask[numpy.newaxis, ...]
-    new_mask = numpy.repeat(new_mask, 4, axis=0)
-
     nmasked_new = numpy.sum(new_mask)    
     npoints = numpy.prod(a_data.shape)
     summary = "Masked %i of %i points because cubic fit was poor" %(ncrazy, npoints)  
     #numpy.argwhere(x == np.min(x)) to see what those points are
     
-    coefficient_cube.data.mask = new_mask
+    coefficient_a_cube.data.mask = new_mask
+    coefficient_b_cube.data.mask = new_mask
+    coefficient_c_cube.data.mask = new_mask
+    coefficient_d_cube.data.mask = new_mask
   
-    assert nmasked_new == ncrazy * 4 + nmasked_original
+    assert nmasked_new == ncrazy + nmasked_original
 
     return summary
 
@@ -181,19 +179,24 @@ def main(inargs):
     """Run the program."""
     
     first_data_cube = iris.load_cube(inargs.data_files[0], inargs.var)
-    coefficient_cube = iris.load_cube(inargs.coefficient_file)
-    sanity_summary = coefficient_sanity_check(coefficient_cube, inargs.var)
+    coefficient_a_cube = iris.load_cube(inargs.coefficient_file, 'coefficient a')
+    coefficient_b_cube = iris.load_cube(inargs.coefficient_file, 'coefficient b')
+    coefficient_c_cube = iris.load_cube(inargs.coefficient_file, 'coefficient c')
+    coefficient_d_cube = iris.load_cube(inargs.coefficient_file, 'coefficient d')
+    control_start_cube = iris.load_cube(inargs.coefficient_file, inargs.var)
 
-    time_diff, branch_time, new_time_unit = time_adjustment(first_data_cube, coefficient_cube)
+    sanity_summary = coefficient_sanity_check(coefficient_a_cube, coefficient_b_cube, coefficient_c_cube, coefficient_d_cube, inargs.var)
+
+    time_diff, branch_time, new_time_unit = time_adjustment(first_data_cube, coefficient_a_cube)
     del first_data_cube
 
     new_cubelist = []
     for fnum, filename in enumerate(inargs.data_files):
         data_cube = iris.load_cube(filename, inargs.var)
-        data_cube = check_data_units(data_cube, coefficient_cube)
+        data_cube = check_data_units(data_cube, coefficient_a_cube)
         data_cube = gio.check_time_units(data_cube)
         if not inargs.no_parent_check:
-            check_attributes(data_cube.attributes, coefficient_cube.attributes)
+            check_attributes(data_cube.attributes, coefficient_a_cube.attributes)
 
         if inargs.annual:
             data_cube = timeseries.convert_to_annual(data_cube)
@@ -205,10 +208,10 @@ def main(inargs):
         
         time_values = time_coord.points.astype(numpy.float32) - time_diff
         if fnum == 0:
-            check_start_time(time_values, coefficient_cube, branch_time, annual=inargs.annual)    
+            check_start_time(time_values, coefficient_a_cube, branch_time, annual=inargs.annual)    
 
         # Remove the drift
-        drift_signal = apply_polynomial(time_values, coefficient_cube.data, chunk=inargs.chunk)
+        drift_signal = apply_polynomial(time_values, coefficient_a_cube.data, coefficient_b_cube.data, coefficient_c_cube.data, coefficient_d_cube.data, control_start_cube.data, chunk=inargs.chunk)
         
         if not inargs.dummy:
             new_cube = data_cube - drift_signal
@@ -228,7 +231,7 @@ def main(inargs):
                 infile = re.sub('Omon', 'Oyr', infile)
             outfile = inargs.outfile + infile
             metadata_dict = {infile: data_cube.attributes['history'], 
-                             inargs.coefficient_file: coefficient_cube.attributes['history']}
+                             inargs.coefficient_file: coefficient_a_cube.attributes['history']}
             new_cube.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
 
             assert new_cube.data.dtype == numpy.float32
@@ -244,7 +247,7 @@ def main(inargs):
         new_cubelist = new_cubelist.concatenate_cube()
 
         metadata_dict = {inargs.data_files[0]: data_cubelist[0].attributes['history'], 
-                        inargs.coefficient_file: coefficient_cube.attributes['history']}
+                        inargs.coefficient_file: coefficient_a_cube.attributes['history']}
         new_cubelist.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
 
         assert new_cubelist[0].data.dtype == numpy.float32
