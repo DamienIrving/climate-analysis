@@ -64,9 +64,11 @@ def apply_polynomial(x_data, coefficient_a_data, coefficient_b_data, coefficient
         result = numpy.zeros(coefficient_dict['b'].shape, dtype='float32')
         for index in range(0, coefficient_dict['b'].shape[-1]):
             # loop to avoid memory error with large arrays 
-            result[..., index] = coefficient_dict['a'] + coefficient_dict['b'][..., index] * x_data[..., 0] + coefficient_dict['c'][..., index] * x_data[..., 0]**2 + coefficient_dict['d'][..., index] * x_data[..., 0]**3 - control_start_data 
+            polynomial = coefficient_dict['a'] + coefficient_dict['b'][..., index] * x_data[..., 0] + coefficient_dict['c'][..., index] * x_data[..., 0]**2 + coefficient_dict['d'][..., index] * x_data[..., 0]**3
+            result[..., index] = polynomial - polynomial[0, ::] 
     else:
-        result = coefficient_dict['a'] + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3 - control_start_data
+        polynomial = coefficient_dict['a'] + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3
+        result = polynomial - polynomial[0, ::]
 
     return result 
 
@@ -139,9 +141,18 @@ def coefficient_sanity_check(coefficient_a_cube, coefficient_b_cube, coefficient
 
 
 def time_adjustment(first_data_cube, coefficient_cube):
-    """Determine the adjustment that needs to be made to time axis."""
+    """Determine the adjustment that needs to be made to time axis.
 
-    branch_time_value = float(first_data_cube.attributes['branch_time'])
+    For monthly data, the branch time represents the start of the month (e.g. 1 Jan),
+      while the first data time is mid-month. A factor of 15.5 is used to fix this.
+      This means this function is hard wired for monthly time adjustment only.
+    
+    """
+
+    assert first_data_cube.attributes['frequency'] == 'mon'
+    assert coefficient_cube.attributes['frequency'] == 'mon'
+
+    branch_time_value = float(first_data_cube.attributes['branch_time']) + 15.5
     branch_time_unit = coefficient_cube.attributes['time_unit']
     branch_time_calendar = coefficient_cube.attributes['time_calendar']
     data_time_coord = first_data_cube.coord('time')
@@ -150,12 +161,12 @@ def time_adjustment(first_data_cube, coefficient_cube):
     data_time_coord.convert_units(new_unit)
 
     first_experiment_time = data_time_coord.points[0]
-    time_diff = first_experiment_time - branch_time_value - coefficient_cube.attributes['time_start']
+    time_diff = first_experiment_time - branch_time_value
 
     return time_diff, branch_time_value, new_unit
 
 
-def check_start_time(time_values, coefficient_cube, branch_time, annual=False):
+def check_time_adjustment(time_values, coefficient_cube, branch_time, fnum, annual=False):
     """Check that the time adjustment was correct
 
     The branch time given in CMIP5 metadata is for monthly timescale data. 
@@ -168,11 +179,16 @@ def check_start_time(time_values, coefficient_cube, branch_time, annual=False):
     
     """
 
-    time_diff = time_values[0] - (coefficient_cube.attributes['time_start'] + branch_time)
-    if annual:
-        assert 100 < time_diff < 200 
-    else:
-        assert time_diff == 0
+    assert time_values[0] > coefficient_cube.attributes['time_start'] - 1.0 
+    assert time_values[-1] < coefficient_cube.attributes['time_end'] + 1.0
+    # 1.0 allows wriggle room for time_adjustment
+
+    if fnum == 0:
+        time_diff = time_values[0] - branch_time
+        if annual:
+            assert 100 < time_diff < 200 
+        else:
+            assert time_diff == 0
 
 
 def main(inargs):
@@ -185,6 +201,8 @@ def main(inargs):
     coefficient_d_cube = iris.load_cube(inargs.coefficient_file, 'coefficient d')
     control_start_cube = iris.load_cube(inargs.coefficient_file, inargs.var)
 
+    coord_names = [coord.name() for coord in first_data_cube.coords(dim_coords=True)]
+    assert coord_names[0] == 'time'
     sanity_summary = coefficient_sanity_check(coefficient_a_cube, coefficient_b_cube, coefficient_c_cube, coefficient_d_cube, inargs.var)
 
     time_diff, branch_time, new_time_unit = time_adjustment(first_data_cube, coefficient_a_cube)
@@ -192,23 +210,24 @@ def main(inargs):
 
     new_cubelist = []
     for fnum, filename in enumerate(inargs.data_files):
+        # Read data
         data_cube = iris.load_cube(filename, inargs.var)
         data_cube = check_data_units(data_cube, coefficient_a_cube)
         data_cube = gio.check_time_units(data_cube)
         if not inargs.no_parent_check:
             check_attributes(data_cube.attributes, coefficient_a_cube.attributes)
 
+        # Convert timescale
         if inargs.annual:
             data_cube = timeseries.convert_to_annual(data_cube)
             data_cube.data = data_cube.data.astype(numpy.float32)
-
+ 
         # Sync the data time axis with the coefficient time axis        
         time_coord = data_cube.coord('time')
         time_coord.convert_units(new_time_unit)
         
         time_values = time_coord.points.astype(numpy.float32) - time_diff
-        if fnum == 0:
-            check_start_time(time_values, coefficient_a_cube, branch_time, annual=inargs.annual)    
+        check_time_adjustment(time_values, coefficient_a_cube, branch_time, fnum, annual=inargs.annual)    
 
         # Remove the drift
         drift_signal = apply_polynomial(time_values, coefficient_a_cube.data, coefficient_b_cube.data, coefficient_c_cube.data, coefficient_d_cube.data, control_start_cube.data, chunk=inargs.chunk)
