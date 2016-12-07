@@ -164,7 +164,6 @@ def main(inargs):
         aux_coords = None
 
     out_cubes = []
-    pdb.set_trace()
     for index, letter in enumerate(['a', 'b', 'c', 'd']):
         standard_name = 'coefficient_'+letter
         iris.std_names.STD_NAMES[standard_name] = {'canonical_units': cube.units}
