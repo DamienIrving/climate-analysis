@@ -58,7 +58,11 @@ def main(inargs):
     """Run the program."""
 
     assert len(inargs.climatology_files) == len(inargs.infiles)
-    assert len(inargs.ticks) == len(inargs.infiles)
+    if len(inargs.ticks) == 1:
+        input_ticks = inargs.ticks * len(inargs.infiles)
+    else:
+        input_ticks = inargs.ticks
+    assert len(input_ticks) == len(inargs.infiles)
     if inargs.runs:
         assert len(inargs.climatology_files) == len(inargs.infiles)
 
@@ -116,7 +120,7 @@ def main(inargs):
                 title = model 
             ylabel = 'Depth (%s)' %(zm_cube.coord('depth').units)
 
-            tick_max, tick_step = inargs.ticks[plotnum]
+            tick_max, tick_step = input_ticks[plotnum]
             ticks = plot_ocean_trend.set_ticks(tick_max, tick_step)
             contour_levels = plot_ocean_trend.get_countour_levels(inargs.var, 'zonal_mean')
 
@@ -160,7 +164,7 @@ author:
                         help="Run details (e.g. r1i1p1) to put in plot headings (write blank if no file for that location) [default=None]")
 
     parser.add_argument("--ticks", type=float, nargs=2, action='append', default=[], metavar=('MAX_AMPLITUDE', 'STEP'),
-                        help="Maximum tick amplitude and step size for colorbar")
+                        help="Maximum tick amplitude and step size for colorbar. If you supply only one tick pair it will be applied to all.")
     parser.add_argument("--max_lat", type=float, default=60,
                         help="Maximum latitude [default = 60]")
 
