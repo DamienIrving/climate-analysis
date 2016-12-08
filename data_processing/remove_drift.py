@@ -35,7 +35,8 @@ except ImportError:
 
 # Define functions
 
-def apply_polynomial(x_data, coefficient_a_data, coefficient_b_data, coefficient_c_data, coefficient_d_data, control_start_data, chunk=False):
+def apply_polynomial(x_data, coefficient_a_data, coefficient_b_data, coefficient_c_data, coefficient_d_data,
+                     poly_start=None, chunk=False):
     """Evaluate cubic polynomial.
 
     Args:
@@ -61,16 +62,22 @@ def apply_polynomial(x_data, coefficient_a_data, coefficient_b_data, coefficient
         coefficient_dict[letter] = coef
 
     if chunk:
+        polynomial = numpy.zeros(coefficient_dict['b'].shape, dtype='float32')
         result = numpy.zeros(coefficient_dict['b'].shape, dtype='float32')
         for index in range(0, coefficient_dict['b'].shape[-1]):
             # loop to avoid memory error with large arrays 
-            polynomial = coefficient_dict['a'] + coefficient_dict['b'][..., index] * x_data[..., 0] + coefficient_dict['c'][..., index] * x_data[..., 0]**2 + coefficient_dict['d'][..., index] * x_data[..., 0]**3
-            result[..., index] = polynomial - polynomial[0, ::] 
+            poly = coefficient_dict['a'] + coefficient_dict['b'][..., index] * x_data[..., 0] + coefficient_dict['c'][..., index] * x_data[..., 0]**2 + coefficient_dict['d'][..., index] * x_data[..., 0]**3
+            if not type(poly_start) == numpy.ma.core.MaskedArray:
+                poly_start = poly[0, ::]
+            result[..., index] = poly - poly_start
+            polynomial[..., index] = poly 
     else:
         polynomial = coefficient_dict['a'] + coefficient_dict['b'] * x_data + coefficient_dict['c'] * x_data**2 + coefficient_dict['d'] * x_data**3
-        result = polynomial - polynomial[0, ::]
+        if not type(poly_start) == numpy.ma.core.MaskedArray:
+            poly_start = polynomial[0, ::]
+        result = polynomial - poly_start
 
-    return result 
+    return result, polynomial 
 
 
 def check_attributes(data_attrs, control_attrs):
@@ -199,7 +206,6 @@ def main(inargs):
     coefficient_b_cube = iris.load_cube(inargs.coefficient_file, 'coefficient b')
     coefficient_c_cube = iris.load_cube(inargs.coefficient_file, 'coefficient c')
     coefficient_d_cube = iris.load_cube(inargs.coefficient_file, 'coefficient d')
-    control_start_cube = iris.load_cube(inargs.coefficient_file, inargs.var)
 
     coord_names = [coord.name() for coord in first_data_cube.coords(dim_coords=True)]
     assert coord_names[0] == 'time'
@@ -230,8 +236,12 @@ def main(inargs):
         check_time_adjustment(time_values, coefficient_a_cube, branch_time, fnum, annual=inargs.annual)    
 
         # Remove the drift
-        drift_signal = apply_polynomial(time_values, coefficient_a_cube.data, coefficient_b_cube.data, coefficient_c_cube.data, coefficient_d_cube.data, control_start_cube.data, chunk=inargs.chunk)
-        
+        if fnum == 0:
+            drift_signal, start_polynomial = apply_polynomial(time_values, coefficient_a_cube.data, coefficient_b_cube.data, coefficient_c_cube.data, coefficient_d_cube.data, poly_start=None, chunk=inargs.chunk)
+        else:
+            drift_signal, scraps = apply_polynomial(time_values, coefficient_a_cube.data, coefficient_b_cube.data, coefficient_c_cube.data, coefficient_d_cube.data,
+                                                    poly_start=start_polynomial[0, ::], chunk=inargs.chunk)
+
         if not inargs.dummy:
             new_cube = data_cube - drift_signal
         else:
