@@ -21,16 +21,31 @@ while getopts ":n" opt; do
   esac
 done
 
-
 python='/g/data/r87/dbi599/miniconda2/envs/default/bin/python'
-
+format='eps'
+dummy_ticks="--ticks 0 10"
 
 # historical zonal plots
 
 experiment='historical'
-for region in indian pacific atlantic globe; do
 
-    for variable in thetao so; do
+canesm_runs="r[1-5]i1p1"
+ccsm_runs="r[1,4,6]i1p1"
+csiro_runs="r[1-10]i1p1"
+fgoals_runs="r1i1p1"
+gfdl_cm_runs="r[1,3,5]i1p1"
+gfdl_esm_runs="r1i1p1"
+gisseh_p1_runs="r[1-5]i1p1"
+gisseh_p3_runs="r[1-5]i1p3"
+gisser_p1_runs="r[1-5]i1p1"
+gisser_p3_runs="r[1-5]i1p3"
+ipsl_runs="r1i1p1"
+noresm_runs="r1i1p1"
+runs="${canesm_runs} ${ccsm_runs} ${csiro_runs} ${fgoals_runs} ${gfdl_cm_runs} ${gfdl_esm_runs} ${gisseh_p1_runs} ${gisseh_p3_runs} ${gisser_p1_runs} ${gisser_p3_runs} ${ipsl_runs} ${noresm_runs}"
+
+for region in globe; do  # indian pacific atlantic 
+
+    for variable in thetao; do  # so
 
         if [[ ${variable} == 'so' ]] ; then
             long_name=sea_water_salinity
@@ -51,22 +66,22 @@ for region in indian pacific atlantic globe; do
         elif [[ ${variable} == 'thetao' ]] ; then
             long_name=sea_water_potential_temperature
             obs_ticks="--ticks 15 3"
-            canesm_ticks="--ticks 15 3"
+            canesm_ticks="--ticks 12.5 2.5"
             ccsm_ticks="--ticks 15 3"
-            csiro_ticks="--ticks 7.5 1.5"
+            csiro_ticks="--ticks 5 1"
             fgoals_ticks="--ticks 15 3"
-            gfdl_cm_ticks="--ticks 15 3"
-            gfdl_esm_ticks="--ticks 25 5"
+            gfdl_cm_ticks="--ticks 10 2"
+            gfdl_esm_ticks="--ticks 15 3"
             gisseh_p1_ticks="--ticks 10 2"
             gisseh_p3_ticks="--ticks 10 2"
             gisser_p1_ticks="--ticks 10 2"
             gisser_p3_ticks="--ticks 10 2"
             ipsl_ticks="--ticks 15 3"
-            noresm_ticks="--ticks 20 4"
+            noresm_ticks="--ticks 10 2"
             palette='RdBu_r'
         fi
 
-        ticks="${obs_ticks} ${canesm_ticks} ${ccsm_ticks} ${csiro_ticks} ${fgoals_ticks} ${gfdl_cm_ticks} ${gfdl_esm_ticks} ${gisseh_p1_ticks} ${gisseh_p3_ticks} ${gisser_p1_ticks} ${gisser_p3_ticks} ${ipsl_ticks} ${noresm_ticks}"
+        ticks="${canesm_ticks} ${ccsm_ticks} ${csiro_ticks} ${fgoals_ticks} ${gfdl_cm_ticks} ${gfdl_esm_ticks} ${gisseh_p1_ticks} ${gisseh_p3_ticks} ${gisser_p1_ticks} ${gisser_p3_ticks} ${ipsl_ticks} ${noresm_ticks}" # ${obs_ticks} 
 
         obs_file="/g/data/r87/dbi599/drstree/observations/DurackandWijffels/yr/ocean/${variable}-maps/${variable}-maps-time-trend_Oyr_DurackandWijffels_1950-01-01_2000-12-31.nc"
         canesm_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/CCCMA/CanESM2/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-time-trend_Oyr_CanESM2_${experiment}_ensmean-i1p1_1950-01-01_2000-12-31.nc"
@@ -82,9 +97,9 @@ for region in indian pacific atlantic globe; do
         ipsl_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-time-trend_Oyr_IPSL-CM5A-LR_${experiment}_r1i1p1_1950-01-01_2000-12-31.nc"
         noresm_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCC/NorESM1-M/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-time-trend_Oyr_NorESM1-M_${experiment}_r1i1p1_1950-01-01_2000-12-31.nc"
         
-        data_files="${obs_file} ${canesm_file} ${ccsm_file} ${csiro_file} ${fgoals_file} ${gfdl_cm_file} ${gfdl_esm_file} ${gisseh_p1_file} ${gisseh_p3_file} ${gisser_p1_file} ${gisser_p3_file} ${ipsl_file} ${noresm_file}"
+        data_files="${canesm_file} ${ccsm_file} ${csiro_file} ${fgoals_file} ${gfdl_cm_file} ${gfdl_esm_file} ${gisseh_p1_file} ${gisseh_p3_file} ${gisser_p1_file} ${gisser_p3_file} ${ipsl_file} ${noresm_file}"  # ${obs_file} 
 
-        outfile=/g/data/r87/dbi599/figures/ocean_trend_ensembles/${experiment}/${variable}-maps-time-trend-zonal-mean-${region}_Oyr_ensemble_${experiment}_i1p1_1950-01-01_2000-12-31.png
+        outfile=/g/data/r87/dbi599/figures/ocean_trend_ensembles/${experiment}/${variable}-maps-time-trend-zonal-mean-${region}_Oyr_ensemble_${experiment}_i1p1_1950-01-01_2000-12-31_agu-poster.${format}
 
         obs_clim="/g/data/r87/dbi599/drstree/observations/DurackandWijffels/yr/ocean/${variable}-maps/${variable}-maps-clim_Oyr_DurackandWijffels_all.nc"
         canesm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/CCCMA/CanESM2/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-clim_Oyr_CanESM2_${experiment}_ensmean-i1p1_all.nc"
@@ -100,12 +115,12 @@ for region in indian pacific atlantic globe; do
         ipsl_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-clim_Oyr_IPSL-CM5A-LR_${experiment}_r1i1p1_all.nc"
         noresm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCC/NorESM1-M/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-clim_Oyr_NorESM1-M_${experiment}_r1i1p1_all.nc"
         
-        climatology_files="${obs_clim} ${canesm_clim} ${ccsm_clim} ${csiro_clim} ${fgoals_clim} ${gfdl_cm_clim} ${gfdl_esm_clim} ${gisseh_p1_clim} ${gisseh_p3_clim} ${gisser_p1_clim} ${gisser_p3_clim} ${ipsl_clim} ${noresm_clim}"
+        climatology_files="${canesm_clim} ${ccsm_clim} ${csiro_clim} ${fgoals_clim} ${gfdl_cm_clim} ${gfdl_esm_clim} ${gisseh_p1_clim} ${gisseh_p3_clim} ${gisser_p1_clim} ${gisser_p3_clim} ${ipsl_clim} ${noresm_clim}"  # ${obs_clim} 
 
     if [[ ${dry_run} == 'yes' ]] ; then
-        echo  ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 3 5 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historical
+        echo  ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 6 2 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historical --no_title --runs ${runs[@]}
     else
-         ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 3 5 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historical
+         ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 6 2 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historical --no_title --runs ${runs[@]}
         echo ${outfile}
     fi
 
@@ -117,9 +132,22 @@ done
 # historicalGHG zonal plots
 
 experiment='historicalGHG'
-for region in indian pacific atlantic globe; do
 
-    for variable in thetao so; do
+canesm_runs="r[1-5]i1p1"
+ccsm_runs="r[1,4,6]i1p1"
+csiro_runs="r[1-10]i1p1"
+fgoals_runs="r1i1p1"
+gfdl_cm_runs="r[1,3,5]i1p1"
+gfdl_esm_runs="r1i1p1"
+gisseh_p1_runs="r[1-5]i1p1"
+gisser_p1_runs="r[1-5]i1p1"
+ipsl_runs="r1i1p1"
+noresm_runs="r1i1p1"
+runs="${canesm_runs} ${ccsm_runs} ${csiro_runs} ${fgoals_runs} ${gfdl_cm_runs} ${gfdl_esm_runs} ${gisseh_p1_runs} blank ${gisser_p1_runs} blank ${ipsl_runs} ${noresm_runs}"
+
+for region in globe; do  # indian pacific atlantic
+
+    for variable in thetao; do   # so
 
         if [[ ${variable} == 'so' ]] ; then
             long_name=sea_water_salinity
@@ -145,11 +173,11 @@ for region in indian pacific atlantic globe; do
             gisseh_ticks="--ticks 15 3"
             gisser_ticks="--ticks 15 3"
             ipsl_ticks="--ticks 25 5"
-            noresm_ticks="--ticks 25 5"
+            noresm_ticks="--ticks 20 4"
             palette='RdBu_r'
         fi
 
-        ticks="${canesm_ticks} ${ccsm_ticks} ${csiro_ticks} ${fgoals_ticks} ${gfdl_cm_ticks} ${gfdl_esm_ticks} ${gisseh_ticks} ${gisser_ticks} ${ipsl_ticks} ${noresm_ticks}"
+        ticks="${canesm_ticks} ${ccsm_ticks} ${csiro_ticks} ${fgoals_ticks} ${gfdl_cm_ticks} ${gfdl_esm_ticks} ${gisseh_ticks} ${dummy_ticks} ${gisser_ticks} ${dummy_ticks} ${ipsl_ticks} ${noresm_ticks}"
 
         canesm_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/CCCMA/CanESM2/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-time-trend_Oyr_CanESM2_${experiment}_ensmean-i1p1_1950-01-01_2000-12-31.nc"
         ccsm_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCAR/CCSM4/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-time-trend_Oyr_CCSM4_${experiment}_ensmean-i1p1_1950-01-01_2000-12-31.nc"
@@ -162,9 +190,9 @@ for region in indian pacific atlantic globe; do
         ipsl_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-time-trend_Oyr_IPSL-CM5A-LR_${experiment}_r1i1p1_1950-01-01_2000-12-31.nc"
         noresm_file="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCC/NorESM1-M/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-time-trend_Oyr_NorESM1-M_${experiment}_r1i1p1_1950-01-01_2000-12-31.nc"
 
-        data_files="${canesm_file} ${ccsm_file} ${csiro_file} ${fgoals_file} ${gfdl_cm_file} ${gfdl_esm_file} ${gisseh_file} ${gisser_file} ${ipsl_file} ${noresm_file}"
+        data_files="${canesm_file} ${ccsm_file} ${csiro_file} ${fgoals_file} ${gfdl_cm_file} ${gfdl_esm_file} ${gisseh_file} blank ${gisser_file} blank ${ipsl_file} ${noresm_file}"
 
-        outfile=/g/data/r87/dbi599/figures/ocean_trend_ensembles/${experiment}/${variable}-maps-time-trend-zonal-mean-${region}_Oyr_ensemble_${experiment}_i1p1_1950-01-01_2000-12-31.png
+        outfile=/g/data/r87/dbi599/figures/ocean_trend_ensembles/${experiment}/${variable}-maps-time-trend-zonal-mean-${region}_Oyr_ensemble_${experiment}_i1p1_1950-01-01_2000-12-31_agu_poster.${format}
 
         canesm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/CCCMA/CanESM2/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-clim_Oyr_CanESM2_${experiment}_ensmean-i1p1_all.nc"
         ccsm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCAR/CCSM4/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p1/${variable}-maps-clim_Oyr_CCSM4_${experiment}_ensmean-i1p1_all.nc"
@@ -177,12 +205,12 @@ for region in indian pacific atlantic globe; do
         ipsl_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-clim_Oyr_IPSL-CM5A-LR_${experiment}_r1i1p1_all.nc"
         noresm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCC/NorESM1-M/${experiment}/yr/ocean/${variable}-maps/r1i1p1/${variable}-maps-clim_Oyr_NorESM1-M_${experiment}_r1i1p1_all.nc"
 
-        climatology_files="${canesm_clim} ${ccsm_clim} ${csiro_clim} ${fgoals_clim} ${gfdl_cm_clim} ${gfdl_esm_clim} ${gisseh_clim} ${gisser_clim} ${ipsl_clim} ${noresm_clim}"
+        climatology_files="${canesm_clim} ${ccsm_clim} ${csiro_clim} ${fgoals_clim} ${gfdl_cm_clim} ${gfdl_esm_clim} ${gisseh_clim} blank ${gisser_clim} blank ${ipsl_clim} ${noresm_clim}"
 
     if [[ ${dry_run} == 'yes' ]] ; then
-        echo  ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 2 5 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historicalGHG
+        echo  ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 6 2 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historicalGHG --no_title --runs ${runs[@]}
     else
-         ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 2 5 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historicalGHG
+         ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 6 2 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historicalGHG --no_title --runs ${runs[@]}
         echo ${outfile}
     fi
 
@@ -194,9 +222,24 @@ done
 # historicalAA zonal plots
 
 experiment='historicalMisc'
-for region in indian pacific atlantic globe; do
 
-    for variable in thetao so; do
+canesm_runs="r[1-5]i1p4"
+ccsm_runs="r[1,4,6]i1p10"
+csiro_runs="r[1-10]i1p4"
+fgoals_runs="r2i1p1"
+gfdl_cm_runs="r[1,3,5]i1p1"
+gfdl_esm_runs="r1i1p5"
+gisseh_p1_runs="r[1-5]i1p107"
+gisseh_p3_runs="r[1-5]i1p310"
+gisser_p1_runs="r[1-5]i1p107"
+gisser_p3_runs="r[1-5]i1p310"
+ipsl_runs="r1i1p3"
+noresm_runs="r1i1p1"
+runs="${canesm_runs} ${ccsm_runs} ${csiro_runs} ${fgoals_runs} ${gfdl_cm_runs} ${gfdl_esm_runs} ${gisseh_p1_runs} ${gisseh_p3_runs} ${gisser_p1_runs} ${gisser_p3_runs} ${ipsl_runs} ${noresm_runs}"
+
+for region in globe; do  # indian pacific atlantic 
+
+    for variable in thetao; do   # so
 
         if [[ ${variable} == 'so' ]] ; then
             long_name=sea_water_salinity
@@ -216,17 +259,17 @@ for region in indian pacific atlantic globe; do
         elif [[ ${variable} == 'thetao' ]] ; then
             long_name=sea_water_potential_temperature
             canesm_ticks="--ticks 15 3"
-            ccsm_ticks="--ticks 7.5 1.5"
-            csiro_ticks="--ticks 15 3"
+            ccsm_ticks="--ticks 5 1"
+            csiro_ticks="--ticks 12.5 2.5"
             fgoals_ticks="--ticks 7.5 1.5"
-            gfdl_cm_ticks="--ticks 20 4"
-            gfdl_esm_ticks="--ticks 15 3"
+            gfdl_cm_ticks="--ticks 15 3"
+            gfdl_esm_ticks="--ticks 10 2"
             gisseh_p107_ticks="--ticks 10 2"
-            gisseh_p310_ticks="--ticks 10 2"
+            gisseh_p310_ticks="--ticks 7.5 1.5"
             gisser_p107_ticks="--ticks 10 2"
-            gisser_p310_ticks="--ticks 10 2"
-            ipsl_ticks="--ticks 15 3"
-            noresm_ticks="--ticks 25 5"
+            gisser_p310_ticks="--ticks 7.5 1.5"
+            ipsl_ticks="--ticks 10 2"
+            noresm_ticks="--ticks 10 2"
             palette='RdBu_r'
         fi
 
@@ -247,7 +290,7 @@ for region in indian pacific atlantic globe; do
 
         data_files="${canesm_file} ${ccsm_file} ${csiro_file} ${fgoals_file} ${gfdl_cm_file} ${gfdl_esm_file} ${gisseh_p107_file} ${gisseh_p310_file} ${gisser_p107_file} ${gisser_p310_file} ${ipsl_file} ${noresm_file}"
 
-        outfile=/g/data/r87/dbi599/figures/ocean_trend_ensembles/historicalAA/${variable}-maps-time-trend-zonal-mean-${region}_Oyr_ensemble_historicalAA_i1_1950-01-01_2000-12-31.png
+        outfile=/g/data/r87/dbi599/figures/ocean_trend_ensembles/historicalAA/${variable}-maps-time-trend-zonal-mean-${region}_Oyr_ensemble_historicalAA_i1_1950-01-01_2000-12-31_agu-poster.${format}
 
         canesm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/CCCMA/CanESM2/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p4/${variable}-maps-clim_Oyr_CanESM2_${experiment}_ensmean-i1p4_all.nc"
         ccsm_clim="/g/data/r87/dbi599/drstree/CMIP5/GCM/NCAR/CCSM4/${experiment}/yr/ocean/${variable}-maps/ensmean-i1p10/${variable}-maps-clim_Oyr_CCSM4_${experiment}_ensmean-i1p10_all.nc"
@@ -265,9 +308,9 @@ for region in indian pacific atlantic globe; do
         climatology_files="${canesm_clim} ${ccsm_clim} ${csiro_clim} ${fgoals_clim} ${gfdl_cm_clim} ${gfdl_esm_clim} ${gisseh_p107_clim} ${gisseh_p310_clim} ${gisser_p107_clim} ${gisser_p310_clim} ${ipsl_clim} ${noresm_clim}"
 
     if [[ ${dry_run} == 'yes' ]] ; then
-        echo  ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 2 6 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historicalAA
+        echo  ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 6 2 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historicalAA --no_title --runs ${runs[@]}
     else
-         ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 2 6 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historicalAA
+         ${python} ~/climate-analysis/visualisation/plot_ocean_trend_ensemble.py ${data_files[@]} ${long_name} ${region} 6 2 ${outfile} --palette ${palette} --climatology_files ${climatology_files[@]} ${ticks[@]} --scale_factor 3 --experiment historicalAA --no_title --runs ${runs[@]}
         echo ${outfile}
     fi
 
