@@ -110,12 +110,13 @@ def set_global_atts(inargs, cube):
     return atts
 
 
-def check_units(cube):
+def check_units(cube, variable, magnitude_check=True):
     """Check that the units are valid."""
 
-    if cube.standard_name == 'sea_water_salinity':
-        coeff_a_mean = cube[0, ::].data.mean() 
-        assert 2.0 < coeff_a_mean < 55.0
+    if variable == 'sea_water_salinity':
+        if magnitude_check:
+            salinity_mean = cube.data.mean() 
+            assert 2.0 < salinity_mean < 55.0
         cube.units = 'g/kg' 
 
     return cube
@@ -175,7 +176,10 @@ def main(inargs):
                                   attributes=global_atts,
                                   dim_coords_and_dims=dim_coords,
                                   aux_coords_and_dims=aux_coords) 
-        new_cube = check_units(new_cube)
+        if letter == 'a':
+            new_cube = check_units(new_cube, inargs.var, magnitude_check=True)
+        else:
+            new_cube = check_units(new_cube, inargs.var, magnitude_check=False)
         out_cubes.append(new_cube)
 
     # First decadal mean cube
@@ -183,6 +187,7 @@ def main(inargs):
     end = 120
     time_mean = cube[0:end, ::].collapsed('time', iris.analysis.MEAN)
     time_mean.remove_coord('time')
+    time_mean = check_units(time_mean, inargs.var, magnitude_check=True)
     time_mean.attributes = global_atts
     out_cubes.append(time_mean)
 
