@@ -179,9 +179,8 @@ def main(inargs):
         out_cubes.append(new_cube)
 
     # First decadal mean cube
-
     assert coord_names[0] == 'time'
-    end = 10 if inargs.annual else 120
+    end = 120
     time_mean = cube[0:end, ::].collapsed('time', iris.analysis.MEAN)
     time_mean.remove_coord('time')
     time_mean.attributes = global_atts
