@@ -176,10 +176,6 @@ done
 # historicalGHG zonal plots
 
 experiment='historicalGHG'
-nrows=3
-ncols=4
-
-
 if [[ ${group} == 'ensmean' ]] ; then
     canesm_runs="r[1-5]i1p1"
     ccsm_runs="r[1,4,6]i1p1"
@@ -296,12 +292,9 @@ for region in ${regions[@]}; do
     done
 done
 
-
-
 # historicalAA zonal plots
 
 experiment='historicalMisc'
-
 if [[ ${group} == 'ensmean' ]] ; then
     canesm_runs="r[1-5]i1p4"
     ccsm_runs="r[1,4,6]i1p10"
@@ -348,10 +341,10 @@ for region in ${regions[@]}; do
                 fgoals_ticks="--ticks 2.0 0.4"
                 gfdl_cm_ticks="--ticks 2.0 0.4"
                 gfdl_esm_ticks="--ticks 2.0 0.4"
-                gisseh_p1_ticks="--ticks 1.5 0.3"
-                gisseh_p3_ticks="--ticks 1.5 0.3"
-                gisser_p1_ticks="--ticks 1.5 0.3"
-                gisser_p3_ticks="--ticks 2.5 0.5"
+                gisseh_p107_ticks="--ticks 1.5 0.3"
+                gisseh_p310_ticks="--ticks 1.5 0.3"
+                gisser_p107_ticks="--ticks 1.5 0.3"
+                gisser_p310_ticks="--ticks 2.5 0.5"
                 ipsl_ticks="--ticks 2.0 0.4"
                 noresm_ticks="--ticks 2.0 0.4"
                 palette='BrBG_r'
