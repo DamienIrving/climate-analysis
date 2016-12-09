@@ -112,7 +112,10 @@ def main(inargs):
 
             model = zm_cube.attributes['model_id']
             if inargs.runs:
-                title = '%s, %s' %(model, inargs.runs[plotnum])
+                if inargs.runs[plotnum] == 'blank':
+                    title = '%s' %(model)
+                else:
+                    title = '%s, %s' %(model, inargs.runs[plotnum])
             elif 'GISS-E2' in model:
                 physics = zm_cube.attributes['physics_version']
                 title = '%s (p%s)'  %(model, physics)
