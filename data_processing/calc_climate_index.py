@@ -10,7 +10,7 @@ Description:  Calculate common climate indices
 import sys, os
 import argparse
 import numpy
-import xray
+import xarray
 import pdb
 
 # Import my modules
@@ -49,8 +49,8 @@ def calc_asl(ifile, var_id, ofile):
     """
 
     # Read data
-    dset_in = xray.open_dataset(ifile)
-    gio.check_xrayDataset(dset_in, var_id)
+    dset_in = xarray.open_dataset(ifile)
+    gio.check_xarrayDataset(dset_in, var_id)
 
     south_lat, north_lat, west_lon, east_lon = gio.regions['asl']
     darray = dset_in[var_id].sel(latitude=slice(south_lat, north_lat), 
@@ -80,7 +80,7 @@ def calc_asl(ifile, var_id, ofile):
     d['asl_value'] = (['time'], min_values)
     d['asl_lat'] = (['time'], min_lats)
     d['asl_lon'] = (['time'], min_lons)    
-    dset_out = xray.Dataset(d)
+    dset_out = xarray.Dataset(d)
     
     ref = 'Ref: Turner et al (2013). Int J Clim. 33, 1818-1829. doi:10.1002/joc.3558.'
     dset_out['asl_value'].attrs = {'long_name': 'asl_minimum_pressure',
@@ -110,8 +110,8 @@ def calc_nino(index, ifile, var_id, base_period, ofile):
     index_name = 'nino'+index[4:]
 
     # Read the data
-    dset_in = xray.open_dataset(ifile)
-    gio.check_xrayDataset(dset_in, var_id)
+    dset_in = xarray.open_dataset(ifile)
+    gio.check_xarrayDataset(dset_in, var_id)
 
     # Calculate the index
     south_lat, north_lat, west_lon, east_lon = gio.regions[index_name]
@@ -127,7 +127,7 @@ def calc_nino(index, ifile, var_id, base_period, ofile):
 	d = {}
 	d['time'] = darray['time']
 	d[index_name] = (['time'], anom.values) 
-	dset_out = xray.Dataset(d)
+	dset_out = xarray.Dataset(d)
 
 	hx = 'lat: %s to %s, lon: %s to %s, base: %s to %s' %(south_lat, north_lat,
                                                               west_lon, east_lon,
@@ -181,7 +181,7 @@ def calc_nino_new(index, ifile, var_id, base_period, ofile):
     d = {}
     d['time'] = dset_in['time']
     d['nino'+index[4:]] = (['time'], nino_new_timeseries) 
-    dset_out = xray.Dataset(d)
+    dset_out = xarray.Dataset(d)
 
     hx = 'Ref: Ren & Jin 2011, GRL, 38, L04704. Base period: %s to %s'  %(base_period[0], base_period[1])
     long_name = {}
@@ -201,33 +201,32 @@ def calc_pwi(ifile, var_id, ofile):
 
     Ref: Irving & Simmonds (2015). A novel approach to diagnosing Southern 
       Hemisphere planetary wave activity and its influence on regional 
-      climate variability. 
-      https://www.authorea.com/users/5641/articles/12197/_show_article
-
+      climate variability. Journal of Climate. 28, 9041-9057. 
+      doi:10.1175/JCLI-D-15-0287.1.
+      
     Expected input: Wave envelope.   
 
     """
     
     # Read data
-    dset_in = xray.open_dataset(ifile)
-    gio.check_xrayDataset(dset_in, var_id)
+    dset_in = xarray.open_dataset(ifile)
+    gio.check_xarrayDataset(dset_in, var_id)
 
     # Calculate index
     darray = dset_in[var_id].sel(latitude=slice(-70, -40))
     mermax = darray.max(dim='latitude')
     pwi_timeseries = mermax.median(dim='longitude')
 
-
     # Write output file
     d = {}
     d['time'] = darray['time']
     d['pwi'] = (['time'], pwi_timeseries.values)
-    dset_out = xray.Dataset(d)
+    dset_out = xarray.Dataset(d)
     
     dset_out['pwi'].attrs = {'long_name': 'planetary_wave_index',
                              'standard_name': 'planetary_wave_index',
                              'units': darray.attrs['units'],
-                             'notes': 'Ref: https://www.authorea.com/users/5641/articles/12197/_show_article'}
+                             'notes': 'Ref: PWI of Irving and Simmonds (2015)'}
     
     gio.set_global_atts(dset_out, dset_in.attrs, {ifile: dset_in.attrs['history']})
     dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
@@ -248,8 +247,8 @@ def calc_sam(ifile, var_id, ofile):
     """
  
     # Read data
-    dset_in = xray.open_dataset(ifile)
-    gio.check_xrayDataset(dset_in, var_id)
+    dset_in = xarray.open_dataset(ifile)
+    gio.check_xarrayDataset(dset_in, var_id)
  
     # Calculate index
     north_lat = uconv.find_nearest(dset_in['latitude'].values, -40)
@@ -268,7 +267,7 @@ def calc_sam(ifile, var_id, ofile):
     d = {}
     d['time'] = darray['time']
     d['sam'] = (['time'], sam_timeseries)
-    dset_out = xray.Dataset(d)
+    dset_out = xarray.Dataset(d)
     
     hx = 'Ref: Gong & Wang (1999). GRL, 26, 459-462. doi:10.1029/1999GL900003'
     dset_out['sam'].attrs = {'long_name': 'Southern_Annular_Mode_Index',
@@ -301,8 +300,8 @@ def calc_zw3(ifile, var_id, ofile):
     """
 
     # Read data
-    dset_in = xray.open_dataset(ifile)
-    gio.check_xrayDataset(dset_in, var_id)
+    dset_in = xarray.open_dataset(ifile)
+    gio.check_xarrayDataset(dset_in, var_id)
     
     # Calculate the index
     groupby_op = get_groupby_op(dset_in['time'].values)
@@ -324,7 +323,7 @@ def calc_zw3(ifile, var_id, ofile):
     d = {}
     d['time'] = darray['time']
     d['zw3'] = (['time'], zw3_timeseries)
-    dset_out = xray.Dataset(d)
+    dset_out = xarray.Dataset(d)
     
     dset_out['zw3'].attrs = {'id': 'zw3',
                              'long_name': 'zonal_wave_3_index',
@@ -343,7 +342,7 @@ def get_groupby_op(time_array):
       indata (numpy array): Array of numpy.datetime64 instances
 
     Returns:
-      'time.dayofyear' or 'time.month' for xray climatology calculation
+      'time.dayofyear' or 'time.month' for xarray climatology calculation
 
     """
 
