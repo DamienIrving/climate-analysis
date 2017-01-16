@@ -196,6 +196,42 @@ def calc_nino_new(index, ifile, var_id, base_period, ofile):
     dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
 
 
+def calc_mi(ifile, var_id, ofile):
+    """Calculate the meridional wind index.
+
+    Represents the average amplitude of the meridional wind
+    over the 70S to 40S latitude band.
+      
+    Expected input: Meridional wind
+
+    """
+    
+    # Read data
+    dset_in = xarray.open_dataset(ifile)
+    gio.check_xarrayDataset(dset_in, var_id)
+
+    # Calculate index
+    darray = dset_in[var_id].sel(latitude=slice(-70, -40))
+    units = darray.attrs['units']
+
+    darray = (darray ** 2) ** 0.5  # absolute value
+    mi_timeseries = darray.mean(dim=['latitude', 'longitude'])
+
+    # Write output file
+    d = {}
+    d['time'] = darray['time']
+    d['pwi'] = (['time'], mi_timeseries.values)
+    dset_out = xarray.Dataset(d)
+    
+    dset_out['pwi'].attrs = {'long_name': 'meridional_wind_index',
+                             'standard_name': 'meridional_wind_index',
+                             'units': units,
+                             'notes': 'Average amplitude of meridional wind over 70S to 40S'}
+    
+    gio.set_global_atts(dset_out, dset_in.attrs, {ifile: dset_in.attrs['history']})
+    dset_out.to_netcdf(ofile, format='NETCDF3_CLASSIC')
+
+
 def calc_pwi(ifile, var_id, ofile):
     """Calculate the Planetary Wave Index.
 
@@ -359,6 +395,7 @@ def main(inargs):
 
     function_for_index = {'ASL': calc_asl,
                           'NINO': calc_nino,
+                          'MI': calc_mi,
 			  'SAM': calc_sam,
 			  'PWI': calc_pwi,
                           'ZW3': calc_zw3,
