@@ -1,6 +1,6 @@
 """
 Filename:     calc_fourier_transform.py
-Author:       Damien Irving, d.irving@student.unimelb.edu.au
+Author:       Damien Irving, irving.damien@gmail.com
 Description:  Calculate Fourier transform
 
 """
@@ -10,7 +10,7 @@ Description:  Calculate Fourier transform
 import sys, os, pdb
 import argparse
 import numpy, math
-import xray
+import xarray
 from scipy import fftpack
 from scipy import signal
 from copy import deepcopy
@@ -362,8 +362,8 @@ def main(inargs):
     """Run the program."""
     
     # Read the data
-    dset_in = xray.open_dataset(inargs.infile)
-    gio.check_xrayDataset(dset_in, inargs.var)
+    dset_in = xarray.open_dataset(inargs.infile)
+    gio.check_xarrayDataset(dset_in, inargs.var)
     darray, long_name, units = extract_data(dset_in, inargs)
 
     # Perform task
@@ -396,7 +396,7 @@ def main(inargs):
     for outvar in outdata_dict.keys(): 
         d[outvar] = (dims, outdata_dict[outvar][0])
 
-    dset_out = xray.Dataset(d)
+    dset_out = xarray.Dataset(d)
 
     for outvar in outdata_dict.keys(): 
         dset_out[outvar].attrs = outdata_dict[outvar][1]

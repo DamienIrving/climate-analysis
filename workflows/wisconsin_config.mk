@@ -2,8 +2,6 @@
 
 ## System configuration
 
-PYTHON=/g/data/r87/dbi599/miniconda2/envs/default/bin/python
-
 DATA_DIR=/g/data/r87/dbi599/data_eraint
 WISCONSIN_DIR=${DATA_DIR}/wisconsin
 SCRIPT_DIR=/home/599/dbi599/climate-analysis/data_processing

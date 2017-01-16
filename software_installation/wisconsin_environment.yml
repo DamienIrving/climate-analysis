@@ -1,0 +1,15 @@
+name: wisconsin
+channels:
+    - conda-forge
+dependencies:
+    - python=2.7
+    - iris
+    - jupyter
+    - scipy
+    - xarray
+    - dask
+    - bottleneck
+    - nco
+    - cdo    
+    - pip:
+      - gitpython

@@ -60,23 +60,23 @@ ${ZG_DATA} : ${Z_RAW}
 
 ${ENV_DATA} : ${VA_DATA}
 	mkdir -p ${WISCONSIN_DIR}
-	${PYTHON} ${SCRIPT_DIR}/calc_fourier_transform.py $< va $@ 1 9 hilbert --valid_lon -70 -40 
+	python ${SCRIPT_DIR}/calc_fourier_transform.py $< va $@ 1 9 envelope 
 
 ${PWI_DATA} : ${ENV_DATA}
-	${PYTHON} ${SCRIPT_DIR}/calc_climate_index.py PWI $< envva $@
+	python ${SCRIPT_DIR}/calc_climate_index.py PWI $< envva $@
 
 # ZW3
 
 ${ZG_ZONAL_ANOM} : ${ZG_DATA}
-	${PYTHON} ${SCRIPT_DIR}/calc_zonal_anomaly.py $< zg $@
+	python ${SCRIPT_DIR}/calc_zonal_anomaly.py $< zg $@
 
 ${ZW3_DATA} : ${ZG_ZONAL_ANOM}
 	mkdir -p ${WISCONSIN_DIR}
-	${PYTHON} ${SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
+	python ${SCRIPT_DIR}/calc_climate_index.py ZW3 $< zg $@
 
 # MI (meridional index)
 
 ${MI_DATA} : ${VA_DATA}
 	mkdir -p ${WISCONSIN_DIR}
-	${PYTHON} ${SCRIPT_DIR}/calc_climate_index.py MI $< va $@
+	python ${SCRIPT_DIR}/calc_climate_index.py MI $< va $@
 

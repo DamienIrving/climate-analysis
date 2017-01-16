@@ -1,6 +1,6 @@
 """
 Filename:     calc_climate_index.py
-Author:       Damien Irving, d.irving@student.unimelb.edu.au
+Author:       Damien Irving, irving.damien@gmail.com
 Description:  Calculate common climate indices
 
 """
