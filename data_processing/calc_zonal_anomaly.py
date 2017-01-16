@@ -9,7 +9,7 @@ Description:  Calculate the zonal anomaly (i.e. subtract the zonal mean at each 
 
 import os, sys, pdb
 import argparse
-import xray
+import xarray
 
 # Import my modules
 
@@ -35,8 +35,8 @@ def main(inargs):
     """Run the program."""
     
     # Read the data
-    dset_in = xray.open_dataset(inargs.infile)
-    gio.check_xrayDataset(dset_in, inargs.variable)
+    dset_in = xarray.open_dataset(inargs.infile)
+    gio.check_xarrayDataset(dset_in, inargs.variable)
 
     subset_dict = gio.get_subset_kwargs(inargs)
     darray = dset_in[inargs.variable].sel(**subset_dict)
@@ -51,7 +51,7 @@ def main(inargs):
         d[dim] = darray[dim]
     d[inargs.variable] = (darray.dims, zonal_anomaly)
 
-    dset_out = xray.Dataset(d)
+    dset_out = xarray.Dataset(d)
 
     dset_out[inargs.variable].attrs = {'long_name': darray.attrs['long_name'],
         'standard_name': darray.attrs['standard_name'],
