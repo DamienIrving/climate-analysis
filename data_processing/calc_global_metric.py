@@ -149,6 +149,8 @@ def calc_mean_abs(cube, grid_areas, atts):
     """Calculate the global mean absolute value"""
 
     abs_val = (cube ** 2) ** 0.5
+    abs_val.metadata = cube.metadata
+
     global_mean_abs = abs_val.collapsed(['longitude', 'latitude'], iris.analysis.MEAN, weights=grid_areas)
     global_mean_abs.remove_coord('longitude')
     global_mean_abs.remove_coord('latitude')
@@ -180,11 +182,9 @@ def main(inargs):
         level_constraint = iris.Constraint()
     
     if inargs.var == 'precipitation_minus_evaporation_flux':
-        var = inargs.var.replace('_', ' ')
-    else:
-        var = inargs.var
+        iris.std_names.STD_NAMES['precipitation_minus_evaporation_flux'] = {'canonical_units': "kg m-2 s-1"}
 
-    cube = iris.load(inargs.infiles, var & level_constraint, callback=save_history)
+    cube = iris.load(inargs.infiles, inargs.var & level_constraint, callback=save_history)
     equalise_attributes(cube)
     iris.util.unify_time_units(cube)
     cube = cube.concatenate_cube()
