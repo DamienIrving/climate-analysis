@@ -96,12 +96,24 @@ for experiment in "${experiments[@]}"; do
         evspsbldir='r87/dbi599'
         areaadir='r87/dbi599'
 
+    elif [[ ${model} == 'CanESM2' && ${experiment} == 'rcp85' ]] ; then
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        organisation='CCCMA'
+
+    elif [[ ${model} == 'CanESM2' && ${experiment} == 'rcp45' ]] ; then
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        organisation='CCCMA'
+
+    elif [[ ${model} == 'CanESM2' && ${experiment} == 'rcp26' ]] ; then
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
+        organisation='CCCMA'
+
     # CCSM4 
     ## (No basin files)
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'historical' ]] ; then
         experiment='historical'
-        runs=( r1i1p1 )  # r1i1p1 r1i2p1 r1i2p2 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
+        runs=( r1i1p1 r4i1p1 r6i1p1 )  # r1i1p1 r1i2p1 r1i2p2 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
         organisation='NCAR'
         controldir='r87/dbi599'  # for so, because had to fix_salinity_units.sh first
 
@@ -115,6 +127,7 @@ for experiment in "${experiments[@]}"; do
         basindir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'historicalNat' ]] ; then
         runs=( r1i1p1 r4i1p1 r6i1p1 )  # r1i1p1 r2i1p1 r4i1p1 r6i1p1
@@ -138,6 +151,7 @@ for experiment in "${experiments[@]}"; do
         sosdir='r87/dbi599'
         evspsbldir='r87/dbi599'
         prdir='r87/dbi599'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'CCSM4' && ${experiment} == 'Ant' ]] ; then
         experiment='historicalMisc'
@@ -154,32 +168,32 @@ for experiment in "${experiments[@]}"; do
     # CSIRO-Mk3-6-0
         
     elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'historical' ]] ; then
-        runs=( r1i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
         organisation='CSIRO-QCCCE'
 
     elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'historicalGHG' ]] ; then
-        runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
         organisation='CSIRO-QCCCE'
 
     elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'historicalNat' ]] ; then
-        runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
         organisation='CSIRO-QCCCE'
 
     elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'Ant' ]] ; then
         experiment='historicalMisc'
-        runs=( r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
         organisation='CSIRO-QCCCE'
         fxrun='r0i0p1'
 
     elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'noAA' ]] ; then
         experiment='historicalMisc'
-        runs=( r1i1p3 ) #r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3 r6i1p3 r7i1p3 r8i1p3 r9i1p3 r10i1p3
+        runs=( r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3 r6i1p3 r7i1p3 r8i1p3 r9i1p3 r10i1p3 ) #r1i1p3 r2i1p3 r3i1p3 r4i1p3 r5i1p3 r6i1p3 r7i1p3 r8i1p3 r9i1p3 r10i1p3
         organisation='CSIRO-QCCCE'
         fxrun='r0i0p3'
 
     elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'AA' ]] ; then
         experiment='historicalMisc'
-        runs=( r2i1p4 r3i1p4 r4i1p4 r5i1p4 r6i1p4 r7i1p4 r8i1p4 r9i1p4 r10i1p4 ) #r1i1p4 r2i1p4 r3i1p4 r4i1p4 r5i1p4 r6i1p4 r7i1p4 r8i1p4 r9i1p4 r10i1p4
+        runs=( r1i1p4 r2i1p4 r3i1p4 r4i1p4 r5i1p4 r6i1p4 r7i1p4 r8i1p4 r9i1p4 r10i1p4 ) #r1i1p4 r2i1p4 r3i1p4 r4i1p4 r5i1p4 r6i1p4 r7i1p4 r8i1p4 r9i1p4 r10i1p4
         organisation='CSIRO-QCCCE'
         fxrun='r0i0p4'
 
@@ -188,13 +202,16 @@ for experiment in "${experiments[@]}"; do
     elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'historical' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='LASG-CESS'
-        fxdir='r87/dbi599'
+        basindir='r87/dbi599'
+        depthdir='r87/dbi599'
+        areaadir='r87/dbi599'
 
     elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'historicalNat' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1
         organisation='LASG-CESS'
         fxdir='r87/dbi599'
         evspsbldir='r87/dbi599'
+        areaadir='r87/dbi599'
 
     elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'historicalGHG' ]] ; then
         runs=( r1i1p1 )  #r1i1p1
@@ -202,6 +219,7 @@ for experiment in "${experiments[@]}"; do
         vardir='r87/dbi599'
         voldir='r87/dbi599'
         basindir='r87/dbi599'
+        depthdir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
         evspsbldir='r87/dbi599'
@@ -213,6 +231,7 @@ for experiment in "${experiments[@]}"; do
         vardir='r87/dbi599'
         voldir='r87/dbi599'
         basindir='r87/dbi599'
+        depthdir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
         evspsbldir='r87/dbi599'
@@ -224,15 +243,17 @@ for experiment in "${experiments[@]}"; do
         organisation='NOAA-GFDL'
         voldir='r87/dbi599'
         basindir='r87/dbi599'
+        depthdir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'historicalGHG' ]] ; then
-        runs=( r1i1p1 r3i1p1 )  #r1i1p1 r3i1p1 r5i1p1 (r5 I had to download myself)
+        runs=( r1i1p1 r3i1p1 r5i1p1 )  #r1i1p1 r3i1p1 r5i1p1 (r5 I had to download myself)
         organisation='NOAA-GFDL'
-        #vardir='r87/dbi599' # for r5
+        vardir='r87/dbi599' # for r5
         voldir='r87/dbi599'
         basindir='r87/dbi599'
+        depthdir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
         #sosdir='r87/dbi599'  # for r5
@@ -253,9 +274,10 @@ for experiment in "${experiments[@]}"; do
         evspsbldir='r87/dbi599'
         voldir='r87/dbi599'
         basindir='r87/dbi599'
+        depthdir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
-        vardir='r87/dbi599'  # for thetao, because the ua6 data has time axis problems
+        #vardir='r87/dbi599'  # for thetao, because the ua6 data has time axis problems
 
     elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'Ant' ]] ; then
         experiment='historicalMisc'
@@ -276,6 +298,7 @@ for experiment in "${experiments[@]}"; do
         vardir='r87/dbi599'
         voldir='r87/dbi599'
         basindir='r87/dbi599'
+        depthdir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
         sosdir='r87/dbi599'
@@ -296,7 +319,9 @@ for experiment in "${experiments[@]}"; do
     elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'historical' ]] ; then
         runs=( r1i1p1 ) #r1i1p1
         organisation='NOAA-GFDL'
-        fxdir='ua6'    #'r87/dbi599'  # ua6 for areacella
+        areaodir='r87/dbi599'
+        basindir='r87/dbi599'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'historicalGHG' ]] ; then
         runs=( r1i1p1 )  #r1i1p1
@@ -304,6 +329,7 @@ for experiment in "${experiments[@]}"; do
         vardir='r87/dbi599'
         voldir='r87/dbi599'
         basindir='r87/dbi599'
+        depthdir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
         sosdir='r87/dbi599'
@@ -325,6 +351,7 @@ for experiment in "${experiments[@]}"; do
         organisation='NASA-GISS'
         vardir='r87/dbi599'
         voldir='r87/dbi599'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'AA-conc' ]] ; then
         experiment='historicalMisc'
@@ -334,6 +361,7 @@ for experiment in "${experiments[@]}"; do
         voldir='r87/dbi599'
         sosdir='r87/dbi599'
         evspsbldir='r87/dbi599'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'AA-emis' ]] ; then
         experiment='historicalMisc'
@@ -344,6 +372,7 @@ for experiment in "${experiments[@]}"; do
         voldir='r87/dbi599'
         sosdir='r87/dbi599'
         evspsbldir='r87/dbi599'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'historicalp3' ]] ; then
         experiment='historical'
@@ -352,6 +381,7 @@ for experiment in "${experiments[@]}"; do
         controlrun='r1i1p3'
         sosdir='r87/dbi599'
         voldir='r87/dbi599'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'historicalp1' ]] ; then
         experiment='historical'
@@ -360,6 +390,7 @@ for experiment in "${experiments[@]}"; do
         voldir='r87/dbi599'
         tasdir='r87/dbi599'
         evspsbldir='r87/dbi599'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'historicalNatp3' ]] ; then
         experiment='historicalNat'
@@ -368,17 +399,20 @@ for experiment in "${experiments[@]}"; do
         controlrun='r1i1p3'
         sosdir='r87/dbi599'
         evspsbldir='r87/dbi599'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'historicalNatp1' ]] ; then
         experiment='historicalNat'
         runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='NASA-GISS'
         controlrun='r1i1p1'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'historicalGHG' ]] ; then
         experiment='historicalGHG'
         runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 )  #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1
         organisation='NASA-GISS'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'Antp3' ]] ; then
         experiment='historicalMisc'
@@ -386,11 +420,13 @@ for experiment in "${experiments[@]}"; do
         organisation='NASA-GISS'
         sosdir='r87/dbi599'
         evspsbldir='r87/dbi599'
+        depthdir='r87/dbi599'
 
     elif [[ ${model} == 'GISS-E2-H' && ${experiment} == 'Antp1' ]] ; then
         experiment='historicalMisc'
         runs=( r1i1p109 r2i1p109 r3i1p109 r4i1p109 r5i1p109 )  #r1i1p109 r2i1p109 r3i1p109 r4i1p109 r5i1p109
         organisation='NASA-GISS'
+        depthdir='r87/dbi599'
 
 
     # GISS-E2-R
@@ -490,7 +526,7 @@ for experiment in "${experiments[@]}"; do
         experiment='historicalMisc'
         runs=( r1i1p3 )  #r1i1p3
         organisation='IPSL'
-        vardir='r87/dbi599'  # ua6 for thetao but not so
+        #vardir='r87/dbi599'  # ua6 for thetao but not so
         voldir='r87/dbi599'
         basindir='r87/dbi599'
         areaadir='r87/dbi599'
@@ -551,6 +587,7 @@ for experiment in "${experiments[@]}"; do
     elif [[ ${model} == 'NorESM1-M' && ${experiment} == 'historical' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 r2i1p1 r3i1p1 ( no basin )
         organisation='NCC'
+        controldir='r87/dbi599'
 
     elif [[ ${model} == 'NorESM1-M' && ${experiment} == 'historicalNat' ]] ; then
         runs=( r1i1p1 )  #r1i1p1 ( no fx )
@@ -582,6 +619,7 @@ for experiment in "${experiments[@]}"; do
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
         sosdir='r87/dbi599'
+        controldir='r87/dbi599'
 
     else
         echo "Unrecognised model (${model}) / experiment (${experiment}) combination"
