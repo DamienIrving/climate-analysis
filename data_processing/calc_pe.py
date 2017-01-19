@@ -11,6 +11,7 @@ import sys, os, pdb
 import argparse
 import numpy
 import iris
+from iris.experimental.equalise_cubes import equalise_attributes
 
 # Import my modules
 
@@ -32,25 +33,56 @@ except ImportError:
 
 # Define functions
 
+history = []
+
+def save_history(cube, field, filename):
+    """Save the history attribute when reading the data.
+    (This is required because the history attribute differs between input files 
+      and is therefore deleted upon equilising attributes)  
+    """ 
+
+    history.append(cube.attributes['history'])
+
+
+def get_file_names(precip_file, evap_dir, pe_dir):
+    """Get evap and p-e file names corresponding to precip file."""
+
+    precip_fname = precip_file.split('/')[-1]
+
+    evap_fname = precip_fname.replace('pr_', 'evspsbl_')
+    evap_file = evap_dir + '/' + evap_fname
+
+    pe_fname = precip_fname.replace('pr_', 'pe_')
+    pe_file = pe_dir + '/' + pe_fname
+
+    return evap_file, pe_file
+
+
 def main(inargs):
     """Run the program."""
-  
-    precip_cube = iris.load_cube(inargs.precip_file, inargs.precip_var)
-    evap_cube = iris.load_cube(inargs.evap_file, inargs.evap_var)
-    pe_cube = precip_cube - evap_cube
 
-    pe_cube.metadata = precip_cube.metadata
-    iris.std_names.STD_NAMES['precipitation_minus_evaporation_flux'] = {'canonical_units': pe_cube.units}
-    pe_cube.standard_name = 'precipitation_minus_evaporation_flux'
-    pe_cube.long_name = 'precipitation minus evaporation flux'
-    pe_cube.var_name = 'pe'
-    metadata_dict = {inargs.precip_file: precip_cube.attributes['history'], 
-                     inargs.evap_file: evap_cube.attributes['history']}
-    pe_cube.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
+    for precip_file in inargs.precip_files:
+        precip_cube = iris.load_cube(precip_file, inargs.precip_var)
+        evap_file, pe_file = get_file_names(precip_file, inargs.evap_dir, inargs.pe_dir)
 
-    assert pe_cube.data.dtype == numpy.float32
-    iris.save(pe_cube, inargs.pe_file, netcdf_format='NETCDF3_CLASSIC')
-        
+        evap_cube = iris.load_cube(evap_file, inargs.evap_var)
+
+        pe_cube = precip_cube - evap_cube
+
+        pe_cube.metadata = precip_cube.metadata
+        iris.std_names.STD_NAMES['precipitation_minus_evaporation_flux'] = {'canonical_units': pe_cube.units}
+        pe_cube.standard_name = 'precipitation_minus_evaporation_flux'
+        pe_cube.long_name = 'precipitation minus evaporation flux'
+        pe_cube.var_name = 'pe'
+        metadata_dict = {precip_file: precip_cube.attributes['history'], 
+                         evap_file: evap_cube.attributes['history']}
+        pe_cube.attributes['history'] = gio.write_metadata(file_info=metadata_dict)
+
+        assert pe_cube.data.dtype == numpy.float32
+        iris.save(pe_cube, pe_file, netcdf_format='NETCDF3_CLASSIC')
+        print pe_file
+        del pe_cube
+
 
 if __name__ == '__main__':
 
@@ -68,11 +100,11 @@ author:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("precip_file", type=str, help="Precipitation file")
+    parser.add_argument("precip_files", type=str, nargs='*', help="Precipitation file")
     parser.add_argument("precip_var", type=str, help="Precipitation standard_name")
-    parser.add_argument("evap_file", type=str, help="Evaporation file")
+    parser.add_argument("evap_dir", type=str, help="Evaporation file")
     parser.add_argument("evap_var", type=str, help="Evaporation standard_name")
-    parser.add_argument("pe_file", type=str, help="Output p-e file")
+    parser.add_argument("pe_dir", type=str, help="Output p-e directory")
 
     args = parser.parse_args()            
 

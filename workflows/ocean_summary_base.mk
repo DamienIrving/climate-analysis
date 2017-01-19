@@ -40,14 +40,22 @@ GLOBAL_MEAN_TAS_FILE=${GLOBAL_MEAN_TAS_DIR}/tas-global-mean_Ayr_${MODEL}_${EXPER
 SOS_FILE=$(wildcard ${ORIG_SOS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/sos/${RUN}/sos_Omon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
 GLOBAL_AMP_SOS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/sos/${RUN}
 GLOBAL_AMP_SOS_FILE=${GLOBAL_AMP_SOS_DIR}/sos-global-amp_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+SOS_CLIM_FILE=${GLOBAL_AMP_SOS_DIR}/sos-clim_Omon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+GLOBAL_MYAMP_SOS_FILE=${GLOBAL_AMP_SOS_DIR}/sos-global-myamp_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 PR_FILE=$(wildcard ${ORIG_PR_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/pr/${RUN}/pr_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
 GLOBAL_MEAN_PR_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/pr/${RUN}
 GLOBAL_MEAN_PR_FILE=${GLOBAL_MEAN_PR_DIR}/pr-global-mean_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
-EVSPSBL_FILE=$(wildcard ${ORIG_EVSPSBL_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/evspsbl/${RUN}/evspsbl_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
+EVSPSBL_DIR=${ORIG_EVSPSBL_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/evspsbl/${RUN}
+EVSPSBL_FILE=$(wildcard ${EVSPSBL_DIR}/evspsbl_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
 GLOBAL_MEAN_EVSPSBL_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/evspsbl/${RUN}
 GLOBAL_MEAN_EVSPSBL_FILE=${GLOBAL_MEAN_EVSPSBL_DIR}/evspsbl-global-mean_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+
+PE_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/pe/${RUN}
+PE_FILE=${PE_DIR}/pe_Amon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+GLOBAL_ABS_PE_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/pe/${RUN}
+GLOBAL_ABS_PE_FILE=${GLOBAL_ABS_PE_DIR}/pe-global-abs_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 GLOBAL_INDICATORS_PLOT=${MY_DATA_DIR}/figures/global_indicators/global-indicators_${MODEL}_${EXPERIMENT}_${RUN}.png
 
@@ -92,12 +100,12 @@ ${CLIMATOLOGY_FILE} : ${DEDRIFTED_VARIABLE_DIR}
 
 ${VARIABLE_MAPS_FILE} : ${CLIMATOLOGY_FILE}
 	mkdir -p ${VARIABLE_MAPS_DIR}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_VARIABLE_FILES} ${LONG_NAME} $@ --climatology_file $< --depth_file ${DEPTH_FILE} --basin_file ${BASIN_FILE}
-        #--chunk 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py ${DEDRIFTED_VARIABLE_FILES} ${LONG_NAME} $@ --climatology_file $<
+        #--chunk x --basin_file ${BASIN_FILE} --depth_file ${DEPTH_FILE}
 
 ${CLIMATOLOGY_MAPS_FILE} : ${CLIMATOLOGY_FILE}
-	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< ${LONG_NAME} $@ --depth_file ${DEPTH_FILE} --basin_file ${BASIN_FILE}
-        # 
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_ocean_maps.py $< ${LONG_NAME} $@ 
+        # --basin_file ${BASIN_FILE}  --depth_file ${DEPTH_FILE}
 
 ${VARIABLE_MAPS_TIME_TREND} : ${VARIABLE_MAPS_FILE}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_trend.py $< $@ --time_bounds ${START_DATE} ${END_DATE}
@@ -129,9 +137,24 @@ ${VARIABLE_MAPS_TAS_ZONAL_PLOT} : ${VARIABLE_MAPS_TAS_TREND} ${CLIMATOLOGY_MAPS_
 
 # Global indicators
 
+${PE_DIR} :
+	mkdir -p $@
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_pe.py ${PR_FILE} precipitation_flux ${EVSPSBL_DIR} water_evaporation_flux $@
+
+${GLOBAL_ABS_PE_FILE} : ${PE_DIR}
+	mkdir -p ${GLOBAL_ABS_PE_DIR}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py $(wildcard ${PE_DIR}/pe_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc) precipitation_minus_evaporation_flux mean-abs $@ --area_file ${ATMOS_AREA_FILE} --smoothing annual
+
 ${GLOBAL_AMP_SOS_FILE} :  
 	mkdir -p ${GLOBAL_AMP_SOS_DIR}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py ${SOS_FILE} sea_surface_salinity amplification $@ --area_file ${OCEAN_AREA_FILE} --smoothing annual
+
+${SOS_CLIM_FILE} :
+	mkdir -p ${GLOBAL_AMP_SOS_DIR}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_climatology.py ${SOS_FILE} sea_surface_salinity $@
+
+${GLOBAL_MYAMP_SOS_FILE} : ${SOS_CLIM_FILE}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_my_salinity_amp.py ${SOS_FILE} sea_surface_salinity $< $@ --area_file ${OCEAN_AREA_FILE} --smoothing annual
 
 ${GLOBAL_MEAN_PR_FILE} :  
 	mkdir -p ${GLOBAL_MEAN_PR_DIR}
@@ -141,7 +164,7 @@ ${GLOBAL_MEAN_EVSPSBL_FILE} :
 	mkdir -p ${GLOBAL_MEAN_EVSPSBL_DIR}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py ${EVSPSBL_FILE} water_evaporation_flux mean $@ --area_file ${ATMOS_AREA_FILE} --smoothing annual
 
-${GLOBAL_INDICATORS_PLOT} : ${GLOBAL_MEAN_TAS_FILE} ${GLOBAL_AMP_SOS_FILE} ${GLOBAL_MEAN_PR_FILE} ${GLOBAL_MEAN_EVSPSBL_FILE}
+${GLOBAL_INDICATORS_PLOT} : ${GLOBAL_MEAN_TAS_FILE} ${GLOBAL_AMP_SOS_FILE} ${GLOBAL_ABS_PE_FILE}
 	echo $@
 
         ## e.g. python plot_global_indicators.py /g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/*/yr/ocean/sos/*/sos-global-amp_Oyr_IPSL-CM5A-LR_*_*_*.nc /g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/*/yr/*/*/*/*global-mean_Ayr_IPSL-CM5A-LR_*_*_*.nc /g/data/r87/dbi599/figures/global_indicators/global-indcators_yr_IPSL-CM5A-LR_historicalAll_r1i1_all.png --aa_physics 3 --ant_physics 2
