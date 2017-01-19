@@ -156,7 +156,7 @@ def pe_plot(ax, cube_dict):
             iplt.plot(cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
-    plt.title('P-E')
+    plt.title('Global mean $|P-E|$')
     plt.xlabel('Year')
     plt.ylabel('anomaly relative to first decade (mm/day)')
     plt.legend(fontsize='small', loc=2)
