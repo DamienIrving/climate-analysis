@@ -47,11 +47,11 @@ experiments['linear combination: AA, GHG'] = 'purple'
 metadata_dict = {}
 
 
-def get_common_time_period(cube_dict, standard_name):
+def get_common_time_period(cube_dict, long_name):
     """Select cubes of a common time period"""
 
-    aa_cube = cube_dict[standard_name, 'historicalAA']
-    ghg_cube = cube_dict[standard_name, 'historicalGHG']
+    aa_cube = cube_dict[long_name, 'historicalAA']
+    ghg_cube = cube_dict[long_name, 'historicalGHG']
 
     aa_time = aa_cube.coord('time').points
     ghg_time = ghg_cube.coord('time').points
@@ -71,12 +71,12 @@ def get_common_time_period(cube_dict, standard_name):
     return aa_cube, ghg_cube 
 
 
-def fake_ant(cube_dict, standard_name):
+def fake_ant(cube_dict, long_name):
     """Create a fake historicalAnt timeseries by adding the AA and GHG anomalies."""
 
     try:
-        aa_cube, ghg_cube = get_common_time_period(cube_dict, standard_name)
-        cube_dict[(standard_name, 'linear combination: AA, GHG')] = iris.analysis.maths.add(aa_cube, ghg_cube, in_place=True)
+        aa_cube, ghg_cube = get_common_time_period(cube_dict, long_name)
+        cube_dict[(long_name, 'linear combination: AA, GHG')] = iris.analysis.maths.add(aa_cube, ghg_cube, in_place=True)
     except KeyError:
         pass
 
@@ -104,10 +104,10 @@ def tas_plot(ax, cube_dict):
     """Plot the global mean temperature timeseries."""
     
     plt.sca(ax)
-    cube_dict = fake_ant(cube_dict, 'air_temperature')
+    cube_dict = fake_ant(cube_dict, 'Near-Surface Air Temperature')
     for experiment, color in experiments.iteritems():
         try:
-            cube = cube_dict['air_temperature', experiment]
+            cube = cube_dict['Near-Surface Air Temperature', experiment]
             iplt.plot(cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
@@ -127,9 +127,9 @@ def sos_plot(ax, cube_dict, so=False):
     
     plt.sca(ax)
     if so:
-        var = 'sea_water_salinity'
+        var = 'Sea Water Salinity'
     else:
-        var = 'sea_surface_salinity'
+        var = 'Sea Surface Salinity'
 
     cube_dict = fake_ant(cube_dict, var)
     for experiment, color in experiments.iteritems():
@@ -149,10 +149,10 @@ def pe_plot(ax, cube_dict):
     """Plot the precipiation minus evaproation timeseries."""
     
     plt.sca(ax)
-    cube_dict = fake_ant(cube_dict, 'precipitation_minus_evaporation_flux')
+    cube_dict = fake_ant(cube_dict, 'precipitation minus evaporation flux')
     for experiment, color in experiments.iteritems():
         try:
-            cube = cube_dict['precipitation_minus_evaporation_flux', experiment] * 86400
+            cube = cube_dict['precipitation minus evaporation flux', experiment] * 86400
             iplt.plot(cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
@@ -170,11 +170,10 @@ def main(inargs):
 
     cube_dict = {}
     for cube in cube_list:
-        standard_name = cube.standard_name #TODO: switch and use long name?
-        variables = ['air_temperature', 'sea_surface_salinity',
-                     'sea_water_salinity', 'precipitation_minus_evaporation_flux']
-        print standard_name
-        assert standard_name in variables
+        long_name = cube.long_name
+        variables = ['Near-Surface Air Temperature', 'Sea Surface Salinity',
+                     'Sea Water Salinity', 'precipitation minus evaporation flux']
+        assert long_name in variables
 
         experiment = cube.attributes['experiment_id']
         if experiment == 'historicalMisc':
@@ -186,8 +185,8 @@ def main(inargs):
                 experiment = 'historicalAnt'
         assert experiment in experiments.keys(), '%s is not an acceptable experiment name' %(experiment)
         
-        key = (standard_name, experiment)
-        assert key not in cube_dict.keys(), '%s, %s not in cube dict' %(standard_name, experiment)
+        key = (long_name, experiment)
+        assert key not in cube_dict.keys(), '%s, %s not in cube dict' %(long_name, experiment)
         cube_dict[key] = cube
 
     for key, cube in cube_dict.iteritems():
