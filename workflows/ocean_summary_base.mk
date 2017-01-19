@@ -53,9 +53,9 @@ GLOBAL_MEAN_EVSPSBL_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/y
 GLOBAL_MEAN_EVSPSBL_FILE=${GLOBAL_MEAN_EVSPSBL_DIR}/evspsbl-global-mean_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 PE_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/pe/${RUN}
-PE_FILE=${PE_DIR}/pe_Amon_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
-GLOBAL_ABS_PE_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/pe/${RUN}
-GLOBAL_ABS_PE_FILE=${GLOBAL_ABS_PE_DIR}/pe-global-abs_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+GLOBAL_PE_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/pe/${RUN}
+GLOBAL_ABS_PE_FILE=${GLOBAL_PE_DIR}/pe-global-abs_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+GLOBAL_AMP_PE_FILE=${GLOBAL_PE_DIR}/pe-global-amp_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 GLOBAL_INDICATORS_PLOT=${MY_DATA_DIR}/figures/global_indicators/global-indicators_${MODEL}_${EXPERIMENT}_${RUN}.png
 
@@ -141,9 +141,13 @@ ${PE_DIR} :
 	mkdir -p $@
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_pe.py ${PR_FILE} precipitation_flux ${EVSPSBL_DIR} water_evaporation_flux $@
 
-${GLOBAL_ABS_PE_FILE} : ${PE_DIR}
-	mkdir -p ${GLOBAL_ABS_PE_DIR}
+${GLOBAL_ABS_PE_FILE} :
+	mkdir -p ${GLOBAL_PE_DIR}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py $(wildcard ${PE_DIR}/pe_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc) precipitation_minus_evaporation_flux mean-abs $@ --area_file ${ATMOS_AREA_FILE} --smoothing annual
+
+${GLOBAL_AMP_PE_FILE} :
+	mkdir -p ${GLOBAL_PE_DIR}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py $(wildcard ${PE_DIR}/pe_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc) precipitation_minus_evaporation_flux amplification $@ --area_file ${ATMOS_AREA_FILE} --smoothing annual
 
 ${GLOBAL_AMP_SOS_FILE} :  
 	mkdir -p ${GLOBAL_AMP_SOS_DIR}
