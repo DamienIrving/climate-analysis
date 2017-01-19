@@ -99,8 +99,6 @@ def calc_amplification_metric(cube, grid_areas, atts):
 
     """
 
-    assert cube.standard_name in ['sea_surface_salinity', 'sea_water_salinity']
-
     fldmean = cube.collapsed(['longitude', 'latitude'], iris.analysis.MEAN, weights=grid_areas)
     cube_spatial_anom = cube - fldmean        
 
@@ -108,12 +106,7 @@ def calc_amplification_metric(cube, grid_areas, atts):
     ave_neg_anom = calc_mean_anomaly(cube_spatial_anom.copy(), 'negative', grid_areas)
 
     metric = ave_pos_anom - ave_neg_anom 
-
-    metric.var_name = cube.var_name
-    metric.standard_name = cube.standard_name
-    metric.long_name = cube.long_name
-    metric.units = cube.units
-    metric.attributes = atts
+    metric.metadata = cube.metadata
 
     return metric
 
