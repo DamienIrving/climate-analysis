@@ -145,6 +145,19 @@ def calc_global_mean(cube, grid_areas, atts):
     return global_mean
 
 
+def calc_mean_abs(cube, grid_areas, atts):
+    """Calculate the global mean absolute value"""
+
+    abs_val = (cube ** 2) ** 0.5
+    global_mean_abs = abs_val.collapsed(['longitude', 'latitude'], iris.analysis.MEAN, weights=grid_areas)
+    global_mean_abs.remove_coord('longitude')
+    global_mean_abs.remove_coord('latitude')
+
+    global_mean_abs.attributes = atts
+
+    return global_mean_abs 
+
+
 def smooth_data(cube, smooth_type):
     """Apply temporal smoothing to a data cube."""
 
@@ -165,8 +178,13 @@ def main(inargs):
         level_constraint = iris.Constraint(depth=inargs.depth)
     else:
         level_constraint = iris.Constraint()
+    
+    if inargs.var == 'precipitation_minus_evaporation_flux':
+        var = inargs.var.replace('_', ' ')
+    else:
+        var = inargs.var
 
-    cube = iris.load(inargs.infiles, inargs.var & level_constraint, callback=save_history)
+    cube = iris.load(inargs.infiles, var & level_constraint, callback=save_history)
     equalise_attributes(cube)
     iris.util.unify_time_units(cube)
     cube = cube.concatenate_cube()
@@ -184,6 +202,8 @@ def main(inargs):
         metric = calc_amplification_metric(cube, area_weights, atts)
     elif inargs.metric == 'mean':
         metric = calc_global_mean(cube, area_weights, atts)
+    elif inargs.metric == 'mean-abs':
+        metric = calc_mean_abs(cube, area_weights, atts)
 
     iris.save(metric, inargs.outfile)
 
@@ -204,7 +224,7 @@ author:
 
     parser.add_argument("infiles", type=str, nargs='*', help="Input data files (can merge on time)")
     parser.add_argument("var", type=str, help="Input variable name (i.e. the standard_name)")
-    parser.add_argument("metric", type=str, choices=('mean', 'amplification'), help="Metric to calculate")
+    parser.add_argument("metric", type=str, choices=('mean', 'amplification', 'mean-abs'), help="Metric to calculate")
     parser.add_argument("outfile", type=str, help="Output file name")
     
     parser.add_argument("--area_file", type=str, default=None, 
