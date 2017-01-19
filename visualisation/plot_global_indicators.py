@@ -47,16 +47,6 @@ experiments['linear combination: AA, GHG'] = 'purple'
 metadata_dict = {}
 
 
-def calc_pe(cube_dict, experiment):
-    """Calculate P-E."""
-
-    p_cube = cube_dict['precipitation_flux', experiment]
-    e_cube = cube_dict['water_evaporation_flux', experiment]
-    pe_cube = iris.analysis.maths.add(p_cube.copy(), e_cube, in_place=True) * 86400
-
-    return pe_cube
-
-
 def get_common_time_period(cube_dict, standard_name):
     """Select cubes of a common time period"""
 
@@ -159,10 +149,10 @@ def pe_plot(ax, cube_dict):
     """Plot the precipiation minus evaproation timeseries."""
     
     plt.sca(ax)
-    cube_dict = fake_ant(cube_dict, 'pe_flux')
+    cube_dict = fake_ant(cube_dict, 'precipitation_minus_evaporation_flux')
     for experiment, color in experiments.iteritems():
         try:
-            cube = cube_dict['pe_flux', experiment]
+            cube = cube_dict['precipitation_minus_evaporation_flux', experiment] * 86400
             iplt.plot(cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
@@ -180,10 +170,10 @@ def main(inargs):
 
     cube_dict = {}
     for cube in cube_list:
-        standard_name = cube.standard_name
+        standard_name = cube.standard_name #TODO: switch and use long name?
         variables = ['air_temperature', 'sea_surface_salinity',
-                     'sea_water_salinity', 'precipitation_flux',
-                     'water_evaporation_flux']
+                     'sea_water_salinity', 'precipitation_minus_evaporation_flux']
+        print standard_name
         assert standard_name in variables
 
         experiment = cube.attributes['experiment_id']
@@ -199,13 +189,6 @@ def main(inargs):
         key = (standard_name, experiment)
         assert key not in cube_dict.keys(), '%s, %s not in cube dict' %(standard_name, experiment)
         cube_dict[key] = cube
-
-    for experiment in experiments.keys():
-        if 'historical' in experiment:
-            try:
-                cube_dict['pe_flux', experiment] = calc_pe(cube_dict, experiment)
-            except KeyError:
-                pass
 
     for key, cube in cube_dict.iteritems():
         baseline = cube[0:10].data.mean()
@@ -234,7 +217,7 @@ note:
    
 """
 
-    description='Plot global mean surface temperature, salinity amplifcation and P-E'
+    description='Plot global mean surface temperature, salinity amplifcation and global mean P-E absolute value'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
