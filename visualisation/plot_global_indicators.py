@@ -145,7 +145,7 @@ def sos_plot(ax, cube_dict, so=False):
     plt.legend(fontsize='small', loc=2)
 
 
-def pe_plot(ax, cube_dict):
+def pe_plot(ax, cube_dict, data_type):
     """Plot the precipiation minus evaproation timeseries."""
     
     plt.sca(ax)
@@ -156,7 +156,11 @@ def pe_plot(ax, cube_dict):
             iplt.plot(cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
-    plt.title('Global mean $|P-E|$')
+
+    if data_type == 'amplification':
+        plt.title('P-E amplification')
+    elif data_type == 'mean-abs':
+        plt.title('Global mean $|P-E|$')
     plt.xlabel('Year')
     plt.ylabel('anomaly relative to first decade (mm/day)')
     plt.legend(fontsize='small', loc=2)
@@ -196,7 +200,7 @@ def main(inargs):
     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(20, 5))
     tas_plot(axes[0], cube_dict) 
     sos_plot(axes[1], cube_dict, so=inargs.so)
-    pe_plot(axes[2], cube_dict)
+    pe_plot(axes[2], cube_dict, inargs.pe_type)
         
     plt.savefig(inargs.outfile, bbox_inches='tight')
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)
@@ -232,6 +236,8 @@ note:
 
     parser.add_argument("--so", action="store_true", default=False,
                         help="so rather than sos used for salinity [default: False]")
+    parser.add_argument("--pe_type", type=str, choices=("amplification", "mean-abs"), default="amplification",
+                        help="specify which P-E metric is being plotted [default: False]")
 
     args = parser.parse_args()            
     main(args)

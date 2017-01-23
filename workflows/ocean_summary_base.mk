@@ -168,10 +168,10 @@ ${GLOBAL_MEAN_EVSPSBL_FILE} :
 	mkdir -p ${GLOBAL_MEAN_EVSPSBL_DIR}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py ${EVSPSBL_FILE} water_evaporation_flux mean $@ --area_file ${ATMOS_AREA_FILE} --smoothing annual
 
-${GLOBAL_INDICATORS_PLOT} : ${GLOBAL_MEAN_TAS_FILE} ${GLOBAL_AMP_SOS_FILE} ${GLOBAL_ABS_PE_FILE}
+${GLOBAL_INDICATORS_PLOT} : ${GLOBAL_MEAN_TAS_FILE} ${GLOBAL_AMP_SOS_FILE} ${GLOBAL_AMP_PE_FILE}
 	echo $@
 
-        ## e.g. python plot_global_indicators.py /g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/*/yr/ocean/sos/*/sos-global-amp_Oyr_IPSL-CM5A-LR_*_*_*.nc /g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/*/yr/*/*/*/*global-mean_Ayr_IPSL-CM5A-LR_*_*_*.nc /g/data/r87/dbi599/figures/global_indicators/global-indcators_yr_IPSL-CM5A-LR_historicalAll_r1i1_all.png --aa_physics 3 --ant_physics 2
+        ## e.g. python plot_global_indicators.py /g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/*/yr/ocean/sos/*/sos-global-amp_Oyr_IPSL-CM5A-LR_*_*_*.nc /g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/*/yr/*/*/*/*global-mean_Ayr_IPSL-CM5A-LR_*_*_*.nc /g/data/r87/dbi599/figures/global_indicators/global-indcators_yr_IPSL-CM5A-LR_historicalAll_r1i1_all.png --aa_physics 3 --ant_physics 2 --pe_type amplification
 
 # OHC metrics
 
