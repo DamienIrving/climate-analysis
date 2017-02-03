@@ -39,7 +39,8 @@ experiment_names = {('CanESM2', 'historicalMisc', 4): 'historicalAA',
                     ('CSIRO-Mk3-6-0', 'historicalMisc', 3): 'noAA',
                     ('CSIRO-Mk3-6-0', 'historicalMisc', 4): 'historicalAA',
                     ('IPSL-CM5A-LR', 'historicalMisc', 3): 'historicalAA',
-                    ('IPSL-CM5A-LR', 'historicalMisc', 4): 'noAA'}
+                    ('IPSL-CM5A-LR', 'historicalMisc', 4): 'noAA',
+                    ('GFDL-CM3', 'historicalMisc', 1): 'historicalAA'}
 
 experiment_colors = {'historicalGHG': 'r',
                      'noAA': 'g',
@@ -55,8 +56,21 @@ experiment_colors = {'historicalGHG': 'r',
 label_dict = {'sea_surface_salinity': 'Salinity amplification (g/kg)',
               'precipitation_flux': 'Global mean precipitation (mm/day)',
               'water_evaporation_flux': 'Global mean evaporation (mm/day)',
-              'air_temperature': 'Global mean temperature (K)',
-              'evaporation_minus_precipitation_flux': 'Global mean E-P (mm/day)'}
+              'air_temperature': 'Global mean temperature (K)'}
+
+def get_label(var, pe_metric):
+    """Get axis label"""
+
+    if var == 'precipitation minus evaporation flux':
+        if pe_metric == 'abs':
+            label = 'Global mean $|P-E|$ (mm/day)'
+        elif pe_metric == 'amp':
+            label = 'P-E amplification'
+
+    else:
+        label = label_dict[var]
+
+    return label
 
 
 def check_attributes(x_cube, y_cube):
@@ -104,29 +118,24 @@ def calc_trend(x_data, y_data, experiment):
 def get_data(data, var):
     """Adjust data units if required"""
 
-    if var in ['precipitation_flux', 'water_evaporation_flux', 'evaporation_minus_precipitation_flux']:
+    if var in ['precipitation_flux', 'water_evaporation_flux', 'precipitation minus evaporation flux']:
         data = data * 86400
 
     return data
 
 
-def calc_ep(efile, evar, pfile, pvar):
-    """Calculate E-P"""
+def fix_var_name(var):
+    """Fix variable name.
+
+    Iris won't accept a non-standard standard_name,
+      so you have to pass the long_name instead
+
+    """
+
+    if var == 'precipitation_minus_evaporation_flux':
+        var = 'precipitation minus evaporation flux'
     
-    assert evar == 'water_evaporation_flux'
-    e_cube = iris.load_cube(efile, evar)
-
-    assert pvar == 'precipitation_flux'
-    p_cube = iris.load_cube(pfile, pvar)
-
-    experiment, model = check_attributes(e_cube, p_cube)
-
-    y_cube = e_cube + p_cube
-
-    e_hist = e_cube.attributes['history']
-    p_hist = p_cube.attributes['history']
-
-    return y_cube, e_hist, p_hist, experiment, model
+    return var
 
 
 def main(inargs):
@@ -138,30 +147,17 @@ def main(inargs):
         data_dict[(experiment, 'y_data')] = numpy.array([])
 
     metadata_dict = {}
-    for file_group in inargs.file_group:       
-        assert len(file_group) in [4, 6]
-        if len(file_group) == 4:
-            xfile, xvar, yfile, yvar = file_group
-            x_cube = iris.load_cube(xfile, xvar)
-            y_cube = iris.load_cube(yfile, yvar)
-            experiment, model = check_attributes(x_cube, y_cube)
-            metadata_dict[xfile] = x_cube.attributes['history']
-            metadata_dict[yfile] = y_cube.attributes['history']
-        elif len(file_group) == 6:
-            if inargs.pe_axis == 'x':
-                efile, evar, pfile, pvar, yfile, yvar = file_group
-                y_cube = iris.load_cube(yfile, yvar)
-                x_cube, e_hist, p_hist, experiment, model = calc_ep(efile, evar, pfile, pvar)
-                xvar = 'evaporation_minus_precipitation_flux'
-                metadata_dict[yfile] = y_cube.attributes['history']
-            elif inargs.pe_axis == 'y':
-                xfile, xvar, efile, evar, pfile, pvar = file_group
-                x_cube = iris.load_cube(xfile, xvar)
-                y_cube, e_hist, p_hist, experiment, model = calc_ep(efile, evar, pfile, pvar)
-                yvar = 'evaporation_minus_precipitation_flux'
-                metadata_dict[xfile] = x_cube.attributes['history']
-            metadata_dict[efile] = e_hist
-            metadata_dict[pfile] = p_hist
+    for file_group in inargs.file_group:      
+        xfile, xvar, yfile, yvar = file_group
+        xvar = fix_var_name(xvar)
+        yvar = fix_var_name(yvar)
+
+        x_cube = iris.load_cube(xfile, xvar)
+        
+        y_cube = iris.load_cube(yfile, yvar)
+        experiment, model = check_attributes(x_cube, y_cube)
+        metadata_dict[xfile] = x_cube.attributes['history']
+        metadata_dict[yfile] = y_cube.attributes['history']
 
         data_dict[(experiment, 'x_data')] = numpy.append(data_dict[(experiment, 'x_data')], get_data(x_cube.data, xvar))
         data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], get_data(y_cube.data, yvar))
@@ -177,8 +173,8 @@ def main(inargs):
             plt.plot(x_trend, y_trend, color=color)
 
     plt.legend(loc=4)
-    plt.xlabel(label_dict[xvar])
-    plt.ylabel(label_dict[yvar])
+    plt.xlabel(get_label(xvar, inargs.pe_metric))
+    plt.ylabel(get_label(yvar, inargs.pe_metric))
     plt.title(model)
 
     # Write output
@@ -206,8 +202,8 @@ author:
                         help="list that goes file, var, file, var...")
     parser.add_argument("--thin", type=int, default=1,
                         help="Stride for thinning the data (e.g. 3 will keep one-third of the data) [default: 1]")
-    parser.add_argument("--pe_axis", type=str, default='x', choices=('x', 'y'),
-                        help="Axis for P-E data (if any)")
+    parser.add_argument("--pe_metric", type=str, choices=('amp', 'abs'), default='amp',
+                        help="Precipitation minus evaporation metric")
 
     args = parser.parse_args()            
     main(args)
