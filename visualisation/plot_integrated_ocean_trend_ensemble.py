@@ -112,7 +112,7 @@ def main(inargs):
     plt.legend(loc=8)
     plt.ylabel('1950-2000 trend ($10^{-3} \enspace K \enspace yr^{-1}$)')
     plt.xlabel('latitude')
-    plt.title('Zonal mean, vertical mean sea water potential temperature')
+    plt.title('Zonal mean, vertical mean sea water potential temperature (0-2000m)')
 
     plt.savefig(inargs.outfile, bbox_inches='tight')
     gio.write_metadata(inargs.outfile, file_info={filename: cube.attributes['history']})
