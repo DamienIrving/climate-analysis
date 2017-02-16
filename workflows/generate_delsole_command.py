@@ -18,7 +18,7 @@ var_names = {'tas': 'air_temperature',
              'sos': 'sea_surface_salinity',
              'pe': 'precipitation_minus_evaporation_flux',
              'pr': 'precipitation_flux',
-             'evspsbl': 'evaporation_flux'}
+             'evspsbl': 'water_evaporation_flux'}
 
 
 def variable_details(var):
@@ -51,11 +51,14 @@ def main(inargs):
 
     outfile = '/g/data/r87/dbi599/figures/delsole/delsole-%s-%s-%s-%s_yr_%s_%s_rall.png'  %(xvar_id, xmetric, yvar_id, ymetric, inargs.model, inargs.experiment_shorthand)
     command_list.insert(2, outfile)
+    if 'pe-amp' in [inargs.xvar, inargs.yvar]:
+        command_list.append('--pe_metric amp')
+    elif 'pe-abs' in [inargs.xvar, inargs.yvar]:
+        command_list.append('--pe_metric abs')
     command = " ".join(command_list)
 
     if inargs.execute:
         os.system(command)
-    
     print(command) 
 
 
@@ -75,7 +78,7 @@ author:
 
     parser.add_argument("model", type=str, help="Model name")
     parser.add_argument("xvar", type=str, choices=('tas-mean', 'pe-abs', 'pe-amp'), help="x-axis variable")
-    parser.add_argument("yvar", type=str, choices=('pe-abs', 'pe-amp', 'sos-amp'), help="y-axis variable")
+    parser.add_argument("yvar", type=str, choices=('pe-abs', 'pe-amp', 'sos-amp', 'pr-mean', 'evspsbl-mean'), help="y-axis variable")
     parser.add_argument("experiment_shorthand", type=str, help="for outfile name")
 
     parser.add_argument("--experiment", type=str, action='append', default=[], metavar=('EXPERIMENT', 'PHYSICS'), nargs=2,
