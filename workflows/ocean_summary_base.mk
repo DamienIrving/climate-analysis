@@ -58,6 +58,7 @@ GLOBAL_ABS_PE_FILE=${GLOBAL_PE_DIR}/pe-global-abs_Ayr_${MODEL}_${EXPERIMENT}_${R
 GLOBAL_AMP_PE_FILE=${GLOBAL_PE_DIR}/pe-global-amp_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
 
 GLOBAL_INDICATORS_PLOT=${MY_DATA_DIR}/figures/global_indicators/global-indicators_${MODEL}_${EXPERIMENT}_${RUN}.png
+GLOBAL_METRICS=global_metrics.nc
 
 VARIABLE_MAPS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/${VAR}-maps/${RUN}
 VARIABLE_MAPS_FILE=${VARIABLE_MAPS_DIR}/${VAR}-maps_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
@@ -168,8 +169,11 @@ ${GLOBAL_MEAN_EVSPSBL_FILE} :
 	mkdir -p ${GLOBAL_MEAN_EVSPSBL_DIR}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py ${EVSPSBL_FILE} water_evaporation_flux mean $@ --area_file ${ATMOS_AREA_FILE} --smoothing annual
 
-${GLOBAL_INDICATORS_PLOT} : ${GLOBAL_MEAN_TAS_FILE} ${GLOBAL_AMP_SOS_FILE} ${GLOBAL_AMP_PE_FILE}
-	echo $@
+${GLOBAL_METRICS} : ${GLOBAL_MEAN_TAS_FILE} ${GLOBAL_MEAN_PR_FILE} ${GLOBAL_MEAN_EVSPSBL_FILE} ${GLOBAL_AMP_SOS_FILE} ${GLOBAL_AMP_PE_FILE} ${GLOBAL_ABS_PE_FILE}
+	echo generate_delsole_command.py
+
+${GLOBAL_INDICATORS_PLOT} :
+	echo plot_global_indicators.py
 
         ## e.g. python plot_global_indicators.py /g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/*/yr/ocean/sos/*/sos-global-amp_Oyr_IPSL-CM5A-LR_*_*_*.nc /g/data/r87/dbi599/drstree/CMIP5/GCM/IPSL/IPSL-CM5A-LR/*/yr/*/*/*/*global-mean_Ayr_IPSL-CM5A-LR_*_*_*.nc /g/data/r87/dbi599/figures/global_indicators/global-indcators_yr_IPSL-CM5A-LR_historicalAll_r1i1_all.png --aa_physics 3 --ant_physics 2 --pe_type amplification
 
