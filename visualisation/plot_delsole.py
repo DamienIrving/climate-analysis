@@ -12,6 +12,7 @@ import argparse
 import numpy
 import matplotlib.pyplot as plt
 import seaborn
+seaborn.set_context("talk")   #, font_scale=1.4)
 import iris
 
 
