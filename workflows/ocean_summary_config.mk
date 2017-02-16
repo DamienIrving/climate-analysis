@@ -34,8 +34,8 @@ LONG_NAME=sea_water_salinity
 
 ORGANISATION=CCCMA
 MODEL=CanESM2
-EXPERIMENT=historicalGHG
-RUN=r3i1p1
+EXPERIMENT=historicalMisc
+RUN=r1i1p4
 CONTROL_RUN=r1i1p1
 FX_RUN=r0i0p0
 
@@ -55,7 +55,10 @@ VM_TICK_STEP=2
 SCALE_FACTOR=3
 PALETTE=BrBG_r
 
-TARGET=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/${VAR}-maps/${RUN}/${VAR}-maps-time-trend_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.nc
+TARGET=global_metrics.nc
+
+#global_metrics.nc
+#${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/pe/${RUN}
 
 # ${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/${VAR}-maps/${RUN}/${VAR}-maps-time-trend-vertical-mean_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.png
 # ${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/${VAR}-maps/${RUN}/${VAR}-maps-global-tas-trend-zonal-mean_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_${START_DATE}_${END_DATE}.png
