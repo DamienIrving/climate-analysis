@@ -54,7 +54,7 @@ experiment_colors = {'historicalGHG': 'r',
                      'rcp26': 'g'}
  
 
-label_dict = {'sea_surface_salinity': 'Salinity amplification (g/kg)',
+label_dict = {'sea_surface_salinity': 'Surface salinity amplification (g/kg)',
               'precipitation_flux': 'Global mean precipitation (mm/day)',
               'water_evaporation_flux': 'Global mean evaporation (mm/day)',
               'air_temperature': 'Global mean temperature (K)'}
