@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import iris
 import iris.plot as iplt
 import seaborn
+#seaborn.set_context("talk")   #, font_scale=1.4)
 from collections import OrderedDict
 
 # Import my modules
@@ -111,7 +112,7 @@ def tas_plot(ax, cube_dict):
             iplt.plot(cube, color=color, label=experiment, linestyle=get_linestyle(experiment))
         except KeyError:
             pass
-    plt.title('Global mean temperature')
+    plt.title('Global mean surface air temperature')
     plt.xlabel('Year')
     plt.ylabel('anomaly relative to first decade (%s)' %(str(cube.units)))
     plt.legend(fontsize='small', loc=2)
