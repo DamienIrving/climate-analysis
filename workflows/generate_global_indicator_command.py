@@ -22,11 +22,23 @@ def get_outfile(infile):
     return outfile
 
 
+def get_mkdir_command(filename):
+    """Get directory from path+filename."""
+
+    newdir = filename.split('/')
+    newdir.pop(-1)
+    newdir = "/".join(newdir)
+    mkdir_command = 'mkdir -p ' + newdir
+
+    return mkdir_command
+
+
 def get_runs_file_list(model, experiment, physics, metric):
     """Get a list of files."""
 
-    variable = metric.split('-')
-    file_list = glob.glob('/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/r*i1%s/%s_*.nc'  %(model, experiment, variable, physics, metric))
+    variable = metric.split('-')[0]
+    file_pattern = '/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/r*i1%s/%s_*.nc'  %(model, experiment, variable, physics, metric)
+    file_list = glob.glob(file_pattern)
     file_list.sort()
 
     return file_list
@@ -35,8 +47,9 @@ def get_runs_file_list(model, experiment, physics, metric):
 def get_ensemble_file(model, experiment, physics, metric):
     """Get the ensemble file name."""
 
-    variable = metric.split('-')
-    file_list = glob.glob('/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/ensmean-i1%s/%s_*.nc'  %(model, experiment, variable, physics, metric))
+    variable = metric.split('-')[0]
+    file_pattern = '/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/ensmean-i1%s/%s_*.nc'  %(model, experiment, variable, physics, metric)
+    file_list = glob.glob(file_pattern)
     
     assert len(file_list) == 1
     
@@ -49,10 +62,13 @@ def calc_ensmean(infiles, execute):
     outfile = get_outfile(infiles[0])
     infiles.insert(0, 'cdo ensmean')
     infiles.append(outfile)
-    command = " ".join(infiles)
 
+    command = " ".join(infiles)
+    mkdir_command = get_mkdir_command(outfile)
     if execute:
+        os.system(mkdir_command)
         os.system(command)
+    print(mkdir_command)
     print(command)
 
     return outfile
@@ -60,7 +76,7 @@ def calc_ensmean(infiles, execute):
 
 def main(inargs):
     """Run the program."""
-    
+
     command_list = ['python', '/home/599/dbi599/climate-analysis/visualisation/plot_global_indicators.py']
     experiments = [('historical', 'p1'), ('historicalGHG', 'p1'), ('historicalNat', 'p1')]
     if inargs.aa_physics:
@@ -74,8 +90,8 @@ def main(inargs):
             pe_infiles = get_runs_file_list(inargs.model, experiment, physics, 'pe-global-abs')
             sos_infiles = get_runs_file_list(inargs.model, experiment, physics, 'sos-global-amp')
             
-            assert tas_files 
-            assert len(tas_files) == len(pe_files) == len(sos_files)
+            assert tas_infiles 
+            assert len(tas_infiles) == len(pe_infiles) == len(sos_infiles)
 
             tas_outfile = calc_ensmean(tas_infiles, inargs.execute)
             pe_outfile = calc_ensmean(pe_infiles, inargs.execute)
@@ -90,14 +106,14 @@ def main(inargs):
         command_list.append(sos_outfile)
 
     outfile = '/g/data/r87/dbi599/figures/global_indicators/global-indcators_yr_%s_historicalAll_ensmean-i1_all.png'  %(inargs.model)
-
     command_list.append(outfile)
+    command_list.append('--pe_type mean-abs')
     if inargs.aa_physics:
         command_list.append('--aa_physics ' + inargs.aa_physics)
     if inargs.ant_physics:
         command_list.append('--ant_physics ' + inargs.ant_physics)
     command = " ".join(command_list)
-
+    mkdir_command = get_mkdir_command(outfile)
     if inargs.execute:
         os.system(command)
     print(command) 
