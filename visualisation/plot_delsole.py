@@ -69,7 +69,7 @@ def get_label(var, metric):
     if metric == 'mean':
         label = 'Global mean %s (%s)'  %(name, units)
     elif metric == 'abs':
-        label = 'Global mean |%s| (%s)'  %(name, units)
+        label = 'Global mean %s deviation (%s)'  %(name, units)
     elif metric == 'amp':
         label = '%s amplitude (%s)'  %(name, units)  
 
