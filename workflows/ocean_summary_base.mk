@@ -33,6 +33,11 @@ DEPTH_FILE=${ORIG_DEPTH_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/dep
 ATMOS_AREA_FILE=${ORIG_AREAA_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/atmos/areacella/${FX_RUN}/areacella_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
 OCEAN_AREA_FILE=${ORIG_AREAO_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/fx/ocean/areacello/${FX_RUN}/areacello_fx_${MODEL}_${EXPERIMENT}_${FX_RUN}.nc
 
+SO_FILE=$(wildcard ${ORIG_SO_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/ocean/so/${RUN}/so_Omon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
+GLOBAL_SO_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/ocean/so/${RUN}
+GLOBAL_MEAN_SO_FILE=${GLOBAL_SO_DIR}/so-global-mean_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+GLOBAL_ABS_SO_FILE=${GLOBAL_SO_DIR}/so-global-abs_Oyr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
+
 TAS_FILE=$(wildcard ${ORIG_TAS_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/mon/atmos/tas/${RUN}/tas_Amon_${MODEL}_${EXPERIMENT}_${RUN}_*.nc)
 GLOBAL_MEAN_TAS_DIR=${MY_CMIP5_DIR}/${ORGANISATION}/${MODEL}/${EXPERIMENT}/yr/atmos/tas/${RUN}
 GLOBAL_MEAN_TAS_FILE=${GLOBAL_MEAN_TAS_DIR}/tas-global-mean_Ayr_${MODEL}_${EXPERIMENT}_${RUN}_all.nc
@@ -168,9 +173,17 @@ ${GLOBAL_MEAN_EVSPSBL_FILE} :
 	mkdir -p ${GLOBAL_MEAN_EVSPSBL_DIR}
 	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_metric.py ${EVSPSBL_FILE} water_evaporation_flux mean $@ --area_file ${ATMOS_AREA_FILE} --smoothing annual
 
+${GLOBAL_MEAN_SO_FILE} :  
+	mkdir -p ${GLOBAL_SO_DIR}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_3D_metric.py ${DEDRIFTED_VARIABLE_FILES} sea_water_salinity mean $@ --volume_file ${VOLUME_FILE} --smoothing annual
+
+${GLOBAL_ABS_SO_FILE} :  
+	mkdir -p ${GLOBAL_SO_DIR}
+	${PYTHON} ${DATA_SCRIPT_DIR}/calc_global_3D_metric.py ${DEDRIFTED_VARIABLE_FILES} sea_water_salinity mean-abs $@ --volume_file ${VOLUME_FILE} --smoothing annual
+
 ${GLOBAL_METRICS} : ${GLOBAL_MEAN_TAS_FILE} ${GLOBAL_MEAN_PR_FILE} ${GLOBAL_MEAN_EVSPSBL_FILE} ${GLOBAL_AMP_SOS_FILE} ${GLOBAL_AMP_PE_FILE} ${GLOBAL_ABS_PE_FILE}
 	echo generate_delsole_command.py
-        echo generate_global_indicator_command.py
+	echo generate_global_indicator_command.py
 
 # OHC metrics
 
