@@ -86,27 +86,29 @@ def calc_global_mean(cube, grid_volumes, spatial_dims, atts):
     """Calculate global mean."""
 
     global_mean = cube.collapsed(spatial_dims, iris.analysis.MEAN, weights=grid_volumes)
-    for dim in spatial_dims:
-        global_mean.remove_coord(dim)
-
     global_mean.attributes = atts
 
     return global_mean
 
 
-def calc_mean_abs(cube, grid_volumes, spatial_dims, atts):
-    """Calculate the global mean absolute value"""
+def calc_mean_deviation(cube, global_mean, grid_volumes, spatial_dims, atts):
+    """Calculate the global mean deviation timeseries.
 
-    abs_val = (cube ** 2) ** 0.5
-    abs_val.metadata = cube.metadata
+    result is global mean of |X - Xave|
 
-    global_mean_abs = abs_val.collapsed(spatial_dims, iris.analysis.MEAN, weights=grid_volumes)
+    """
+
+    spatial_anomaly = cube - global_mean
+    abs_spatial_anomaly = (spatial_anomaly ** 2) ** 0.5
+    abs_spatial_anomaly.metadata = cube.metadata
+
+    global_mean_abs_spatial_anomaly = abs_spatial_anomaly.collapsed(spatial_dims, iris.analysis.MEAN, weights=grid_volumes)
     for dim in spatial_dims:
-        global_mean_abs.remove_coord(dim)
+        global_mean_abs_spatial_anomaly.remove_coord(dim)
     
-    global_mean_abs.attributes = atts
+    global_mean_abs_spatial_anomaly.attributes = atts
 
-    return global_mean_abs 
+    return global_mean_abs_spatial_anomaly 
 
 
 def smooth_data(cube, smooth_type):
@@ -148,16 +150,20 @@ def main(inargs):
             cube = smooth_data(cube, inargs.smoothing)
             volume_weights = get_volume_weights(cube, volume_cube)
 
-        if inargs.metric == 'mean':
-            metric = calc_global_mean(cube, volume_weights, spatial_dims, atts)
-        elif inargs.metric == 'mean-abs':
-            metric = calc_mean_abs(cube, volume_weights, spatial_dims, atts)
+        global_mean = calc_global_mean(cube, volume_weights, spatial_dims, atts)
+
+        if inargs.metric == 'mean-abs':
+            metric = calc_mean_deviation(cube, global_mean, volume_weights, spatial_dims, atts)
+        else:
+            for dim in spatial_dims:
+                global_mean.remove_coord(dim)
+            metric = global_mean
 
         out_cubes.append(metric)
 
     out_list = iris.cube.CubeList(out_cubes)     
     out_cube = out_list.concatenate_cube()
-    #cube = gio.check_time_units(cube)
+    cube = gio.check_time_units(cube)
 
     iris.save(out_cube, inargs.outfile)
 
