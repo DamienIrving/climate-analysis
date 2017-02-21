@@ -40,8 +40,8 @@ def main(inargs):
     command_list = ['python', '/home/599/dbi599/climate-analysis/visualisation/plot_delsole.py', xmetric, ymetric]
     experiment_list = []
     for experiment, physics in inargs.experiment:
-        xfiles = glob.glob('/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/r*i1%s/%s-global-%s_*.nc'  %(inargs.model, experiment, xvar_id, physics, xvar_id, xmetric))
-        yfiles = glob.glob('/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/r*i1%s/%s-global-%s_*.nc'  %(inargs.model, experiment, yvar_id, physics, yvar_id, ymetric))    
+        xfiles = glob.glob('/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/%si1%s/%s-global-%s_*.nc'  %(inargs.model, experiment, xvar_id, inargs.run, physics, xvar_id, xmetric))
+        yfiles = glob.glob('/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/%si1%s/%s-global-%s_*.nc'  %(inargs.model, experiment, yvar_id, inargs.run, physics, yvar_id, ymetric))    
         assert len(xfiles) == len(yfiles)
         for i in range(len(xfiles)):
             command_list.append('--file_group')
@@ -50,7 +50,11 @@ def main(inargs):
             command_list.append(yfiles[i])
             command_list.append(yname)
 
-    outfile = '/g/data/r87/dbi599/figures/delsole/delsole-%s-%s-%s-%s_yr_%s_%s_rall.png'  %(xvar_id, xmetric, yvar_id, ymetric, inargs.model, inargs.experiment_shorthand)
+    if inargs.run == 'r*':
+        run_label = 'rall'
+    else:
+        run_label = inargs.run
+    outfile = '/g/data/r87/dbi599/figures/delsole/delsole-%s-%s-%s-%s_yr_%s_%s_%s.png'  %(xvar_id, xmetric, yvar_id, ymetric, inargs.model, inargs.experiment_shorthand, run_label)
     command_list.insert(2, outfile)
     command = " ".join(command_list)
 
@@ -80,6 +84,8 @@ author:
 
     parser.add_argument("--experiment", type=str, action='append', default=[], metavar=('EXPERIMENT', 'PHYSICS'), nargs=2,
                         help="e.g. historicalMisc p4")
+    parser.add_argument("--run", type=str, default='r*',
+                        help="e.g. Limit to a particular single run (e.g. r1) [default: uses all runs]")
     parser.add_argument("--execute", action="store_true", default=False,
                         help="Switch for executing command rather than printing to screen")
 
