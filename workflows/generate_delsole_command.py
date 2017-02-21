@@ -18,7 +18,8 @@ var_names = {'tas': 'air_temperature',
              'sos': 'sea_surface_salinity',
              'pe': 'precipitation_minus_evaporation_flux',
              'pr': 'precipitation_flux',
-             'evspsbl': 'water_evaporation_flux'}
+             'evspsbl': 'water_evaporation_flux',
+             'so': 'sea_water_salinity'}
 
 
 def variable_details(var):
@@ -36,7 +37,7 @@ def main(inargs):
     xvar_id, xmetric, xname = variable_details(inargs.xvar)
     yvar_id, ymetric, yname = variable_details(inargs.yvar)
     
-    command_list = ['python', '/home/599/dbi599/climate-analysis/visualisation/plot_delsole.py']
+    command_list = ['python', '/home/599/dbi599/climate-analysis/visualisation/plot_delsole.py', xmetric, ymetric]
     experiment_list = []
     for experiment, physics in inargs.experiment:
         xfiles = glob.glob('/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/r*i1%s/%s-global-%s_*.nc'  %(inargs.model, experiment, xvar_id, physics, xvar_id, xmetric))
@@ -51,10 +52,6 @@ def main(inargs):
 
     outfile = '/g/data/r87/dbi599/figures/delsole/delsole-%s-%s-%s-%s_yr_%s_%s_rall.png'  %(xvar_id, xmetric, yvar_id, ymetric, inargs.model, inargs.experiment_shorthand)
     command_list.insert(2, outfile)
-    if 'pe-amp' in [inargs.xvar, inargs.yvar]:
-        command_list.append('--pe_metric amp')
-    elif 'pe-abs' in [inargs.xvar, inargs.yvar]:
-        command_list.append('--pe_metric abs')
     command = " ".join(command_list)
 
     if inargs.execute:
@@ -78,7 +75,7 @@ author:
 
     parser.add_argument("model", type=str, help="Model name")
     parser.add_argument("xvar", type=str, choices=('tas-mean', 'pe-abs', 'pe-amp'), help="x-axis variable")
-    parser.add_argument("yvar", type=str, choices=('pe-abs', 'pe-amp', 'sos-amp', 'pr-mean', 'evspsbl-mean'), help="y-axis variable")
+    parser.add_argument("yvar", type=str, choices=('pe-abs', 'pe-amp', 'sos-amp', 'pr-mean', 'evspsbl-mean', 'so-abs'), help="y-axis variable")
     parser.add_argument("experiment_shorthand", type=str, help="for outfile name")
 
     parser.add_argument("--experiment", type=str, action='append', default=[], metavar=('EXPERIMENT', 'PHYSICS'), nargs=2,

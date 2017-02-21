@@ -51,25 +51,27 @@ experiment_colors = {'historicalGHG': 'r',
                      '1pctCO2': 'k',
                      'rcp85': 'c',
                      'rcp45': 'm',
-                     'rcp26': 'g'}
- 
+                     'rcp26': 'g'} 
 
-label_dict = {'sea_surface_salinity': 'Surface salinity amplification (g/kg)',
-              'precipitation_flux': 'Global mean precipitation (mm/day)',
-              'water_evaporation_flux': 'Global mean evaporation (mm/day)',
-              'air_temperature': 'Global mean temperature (K)'}
+var_label_dict = {'sea_surface_salinity': ('surface salinity', 'g/kg'),
+                  'precipitation_flux': ('precipitation',  'mm/day'),
+                  'water_evaporation_flux': ('evaporation', 'mm/day'),
+                  'air_temperature': ('surface air temperature', 'K'),
+                  'sea_water_salinity': ('ocean salinity', 'g/kg'),
+                  'precipitation minus evaporation flux': ('P-E', 'mm/day')}
 
-def get_label(var, pe_metric):
+
+def get_label(var, metric):
     """Get axis label"""
 
-    if var == 'precipitation minus evaporation flux':
-        if pe_metric == 'abs':
-            label = 'Global mean $|P-E|$ (mm/day)'
-        elif pe_metric == 'amp':
-            label = 'P-E amplification'
+    name, units = var_label_dict[var]
 
-    else:
-        label = label_dict[var]
+    if metric == 'mean':
+        label = 'Global mean %s (%s)'  %(name, units)
+    elif metric == 'abs':
+        label = 'Global mean |%s| (%s)'  %(name, units)
+    elif metric == 'amp':
+        label = '%s amplitude (%s)'  %(name, units)  
 
     return label
 
@@ -174,8 +176,8 @@ def main(inargs):
             plt.plot(x_trend, y_trend, color=color)
 
     plt.legend(loc=4)
-    plt.xlabel(get_label(xvar, inargs.pe_metric))
-    plt.ylabel(get_label(yvar, inargs.pe_metric))
+    plt.xlabel(get_label(xvar, inargs.xmetric))
+    plt.ylabel(get_label(yvar, inargs.ymetric))
     plt.title(model)
 
     # Write output
@@ -198,13 +200,13 @@ author:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("outfile", type=str, help="Output file name")
+    parser.add_argument("xmetric", type=str, choices=('amp', 'abs', 'mean'), help="x-axis metric type")
+    parser.add_argument("ymetric", type=str, choices=('amp', 'abs', 'mean'), help="y-axis metric type")
 
     parser.add_argument("--file_group", type=str, action='append', default=[], nargs='*',
                         help="list that goes file, var, file, var...")
     parser.add_argument("--thin", type=int, default=1,
                         help="Stride for thinning the data (e.g. 3 will keep one-third of the data) [default: 1]")
-    parser.add_argument("--pe_metric", type=str, choices=('amp', 'abs'), default='amp',
-                        help="Precipitation minus evaporation metric")
 
     args = parser.parse_args()            
     main(args)
