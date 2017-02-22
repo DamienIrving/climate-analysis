@@ -96,8 +96,10 @@ def plot_distribution(data_cube, spatial_cube, period):
     assert len(spatial_dims) in [2, 3]
     if len(spatial_dims) == 2:
         axis_index = [1, 2]
+        spatial_type = 'area'
     elif len(spatial_dims) == 3:
         axis_index = [1, 3]
+        spatial_type = 'volume'
 
     broadcast_spatial_data = uconv.broadcast_array(spatial_cube.data, axis_index, data_cube.shape)
 
@@ -110,7 +112,9 @@ def plot_distribution(data_cube, spatial_cube, period):
     x = numpy.arange(27, 41, 0.25)
     y = pdf(x)
     plt.plot(x, y, color=color) #label='weighted kde'
-     
+    
+    return spatial_type
+ 
 
 def main(inargs):
     """Run the program."""
@@ -128,11 +132,11 @@ def main(inargs):
     
     spatial_cube = read_spatial_file(inargs.spatial_file)
     
-    plot_distribution(early_data_cube, spatial_cube, 'early')
-    plot_distribution(late_data_cube, spatial_cube, 'late')
+    spatial_type = plot_distribution(early_data_cube, spatial_cube, 'early')
+    spatial_type = plot_distribution(late_data_cube, spatial_cube, 'late')
     plt.title('Salinity distribution')
     plt.xlabel('Salinity (g/kg)')
-    plt.ylabel('Volume density')
+    plt.ylabel(spatial_type + ' density')
     plt.legend()
     plt.xlim(27, 41)
 
