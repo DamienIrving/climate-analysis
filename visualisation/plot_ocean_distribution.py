@@ -92,9 +92,14 @@ def plot_distribution(data_cube, spatial_cube, period):
     dim_coord_names = [coord.name() for coord in data_cube.dim_coords]
     assert dim_coord_names[0] == 'time'
     spatial_dims = dim_coord_names[1:]
-    assert len(spatial_dims) == 3
+  
+    assert len(spatial_dims) in [2, 3]
+    if len(spatial_dims) == 2:
+        axis_index = [1, 2]
+    elif len(spatial_dims) == 3:
+        axis_index = [1, 3]
 
-    broadcast_spatial_data = uconv.broadcast_array(spatial_cube.data, [1, 3], data_cube.shape)
+    broadcast_spatial_data = uconv.broadcast_array(spatial_cube.data, axis_index, data_cube.shape)
 
     bins = numpy.arange(27, 41, 0.25)
     plt.hist(data_cube.data.compressed(), weights=broadcast_spatial_data.compressed(),
