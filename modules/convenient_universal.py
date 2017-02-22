@@ -83,12 +83,12 @@ def broadcast_array(array, axis_index, shape):
     """Broadcast an array to a target shape.
     
     Args:
-      array (numpy.ndarray): One dimensional array
+      array (numpy.ndarray)
       axis_index (int or tuple): Postion in the target shape that the 
         axis/axes of the array corresponds to
-          e.g. if array corresponds to (lat, lon) in (time, depth lat, lon)
-          then axis_index = [2, 3]
-          e.g. if array corresponds to (lat) in (time, depth lat, lon)
+          e.g. if array corresponds to (depth, lat, lon) in (time, depth, lat, lon)
+          then axis_index = [1, 3]
+          e.g. if array corresponds to (lat) in (time, depth, lat, lon)
           then axis_index = 2
       shape (tuple): shape to broadcast to
       
