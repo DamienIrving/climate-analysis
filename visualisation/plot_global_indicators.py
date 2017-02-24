@@ -119,7 +119,7 @@ def tas_plot(ax, cube_dict):
 
 
 def sos_plot(ax, cube_dict, so=False):
-    """Plot the salinity amplification timeseries.
+    """Plot the salinity grid deviation timeseries.
 
     so: Sea water salinity (so) used for salinity data instead of 
       sea surface salinity (sos)  
@@ -140,7 +140,7 @@ def sos_plot(ax, cube_dict, so=False):
         except KeyError:
             pass
 
-    plt.title('Salinity amplification')
+    plt.title('Salinity deviation')
     plt.xlabel('Year')
     plt.ylabel('anomaly relative to first decade')
     plt.legend(fontsize='small', loc=2)
@@ -158,10 +158,7 @@ def pe_plot(ax, cube_dict, data_type):
         except KeyError:
             pass
 
-    if data_type == 'amplification':
-        plt.title('P-E amplification')
-    elif data_type == 'mean-abs':
-        plt.title('Global mean $|P-E|$')
+    plt.title('Global mean $|P-E|$')
     plt.xlabel('Year')
     plt.ylabel('anomaly relative to first decade (mm/day)')
     plt.legend(fontsize='small', loc=2)
@@ -201,7 +198,7 @@ def main(inargs):
     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(20, 5))
     tas_plot(axes[0], cube_dict) 
     sos_plot(axes[1], cube_dict, so=inargs.so)
-    pe_plot(axes[2], cube_dict, inargs.pe_type)
+    pe_plot(axes[2], cube_dict)
         
     plt.savefig(inargs.outfile, bbox_inches='tight')
     gio.write_metadata(inargs.outfile, file_info=metadata_dict)
@@ -221,7 +218,7 @@ note:
    
 """
 
-    description='Plot global mean surface temperature, salinity amplifcation and global mean P-E absolute value'
+    description='Plot global mean surface temperature, salinity deviation and P-E deviation'
     parser = argparse.ArgumentParser(description=description,
                                      epilog=extra_info, 
                                      argument_default=argparse.SUPPRESS,
@@ -237,8 +234,6 @@ note:
 
     parser.add_argument("--so", action="store_true", default=False,
                         help="so rather than sos used for salinity [default: False]")
-    parser.add_argument("--pe_type", type=str, choices=("amplification", "mean-abs"), default="amplification",
-                        help="specify which P-E metric is being plotted [default: False]")
 
     args = parser.parse_args()            
     main(args)

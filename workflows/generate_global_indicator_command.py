@@ -87,8 +87,8 @@ def main(inargs):
     for experiment, physics in experiments:
         if inargs.ensmean:
             tas_infiles = get_runs_file_list(inargs.model, experiment, physics, 'tas-global-mean')
-            pe_infiles = get_runs_file_list(inargs.model, experiment, physics, 'pe-global-abs')
-            sos_infiles = get_runs_file_list(inargs.model, experiment, physics, 'sos-global-amp')
+            pe_infiles = get_runs_file_list(inargs.model, experiment, physics, 'pe-global-griddev')
+            sos_infiles = get_runs_file_list(inargs.model, experiment, physics, 'sos-global-bulkdev')
             
             assert tas_infiles 
             assert len(tas_infiles) == len(pe_infiles) == len(sos_infiles)
@@ -98,8 +98,8 @@ def main(inargs):
             sos_outfile = calc_ensmean(sos_infiles, inargs.execute)
         else:
             tas_outfile = get_ensemble_file(inargs.model, experiment, physics, 'tas-global-mean')
-            pe_outfile = get_ensemble_file(inargs.model, experiment, physics, 'pe-global-abs')
-            sos_outfile = get_ensemble_file(inargs.model, experiment, physics, 'sos-global-amp')
+            pe_outfile = get_ensemble_file(inargs.model, experiment, physics, 'pe-global-griddev')
+            sos_outfile = get_ensemble_file(inargs.model, experiment, physics, 'sos-global-bulkdev')
 
         command_list.append(tas_outfile)
         command_list.append(pe_outfile)
@@ -107,7 +107,7 @@ def main(inargs):
 
     outfile = '/g/data/r87/dbi599/figures/global_indicators/global-indcators_yr_%s_historicalAll_ensmean-i1_all.png'  %(inargs.model)
     command_list.append(outfile)
-    command_list.append('--pe_type mean-abs')
+    command_list.append('--pe_type mean-griddev')
     if inargs.aa_physics:
         command_list.append('--aa_physics ' + inargs.aa_physics)
     if inargs.ant_physics:

@@ -91,8 +91,8 @@ def calc_global_mean(cube, grid_volumes, spatial_dims, atts):
     return global_mean
 
 
-def calc_mean_deviation(cube, global_mean, grid_volumes, spatial_dims, atts):
-    """Calculate the global mean deviation timeseries.
+def calc_grid_deviation(cube, global_mean, grid_volumes, spatial_dims, atts):
+    """Calculate the global mean grid deviation timeseries.
 
     result is global mean of |X - Xave|
 
@@ -152,8 +152,8 @@ def main(inargs):
 
         global_mean = calc_global_mean(cube, volume_weights, spatial_dims, atts)
 
-        if inargs.metric == 'mean-abs':
-            metric = calc_mean_deviation(cube, global_mean, volume_weights, spatial_dims, atts)
+        if inargs.metric == 'grid-deviation':
+            metric = calc_grid_deviation(cube, global_mean, volume_weights, spatial_dims, atts)
         else:
             for dim in spatial_dims:
                 global_mean.remove_coord(dim)
@@ -184,7 +184,7 @@ author:
 
     parser.add_argument("infiles", type=str, nargs='*', help="Input data files (can merge on time)")
     parser.add_argument("var", type=str, help="Input variable name (i.e. the standard_name)")
-    parser.add_argument("metric", type=str, choices=('mean', 'mean-abs'), help="Metric to calculate")
+    parser.add_argument("metric", type=str, choices=('mean', 'grid-deviation'), help="Metric to calculate")
     parser.add_argument("outfile", type=str, help="Output file name")
     
     parser.add_argument("--volume_file", type=str, default=None, 

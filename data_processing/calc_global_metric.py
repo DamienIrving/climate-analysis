@@ -88,8 +88,8 @@ def calc_mean_anomaly(cube, sign, grid_areas):
     return cube
 
 
-def calc_amplification_metric(cube, grid_areas, atts):
-    """Calculate amplification metric.
+def calc_bulk_deviation(cube, grid_areas, atts):
+    """Calculate bulk deviation metric.
 
     Usually used for sea surface salinity
       (e.g. Figure 3.21 of the IPCC AR5 report)
@@ -126,23 +126,36 @@ def get_area_weights(cube, area_cube):
     return area_weights
 
 
-def calc_global_mean(cube, grid_areas, atts):
+def calc_global_mean(cube, grid_areas, atts, remove_atts=True):
     """Calculate global mean."""
 
     global_mean = cube.collapsed(['longitude', 'latitude'], iris.analysis.MEAN, weights=grid_areas)
-    global_mean.remove_coord('longitude')
-    global_mean.remove_coord('latitude')
+
+    if remove_atts:
+        global_mean.remove_coord('longitude')
+        global_mean.remove_coord('latitude')
 
     global_mean.attributes = atts
 
     return global_mean
 
 
-def calc_mean_abs(cube, grid_areas, atts):
-    """Calculate the global mean absolute value"""
+def calc_grid_deviation(cube, var, grid_areas, atts):
+    """Calculate the global mean |x - x_spatial_mean|.
+  
+    Doesn't calculate the spatial mean for P-E 
+    (already centered on zero)
+
+    """
+
+    metadata = cube.metadata
+
+    if var != 'precipitation_minus_evaporation_flux':
+        global_mean = calc_global_mean(cube, grid_areas, atts, remove_atts=False)
+        cube = cube - global_mean        
 
     abs_val = (cube ** 2) ** 0.5
-    abs_val.metadata = cube.metadata
+    abs_val.metadata = metadata
 
     global_mean_abs = abs_val.collapsed(['longitude', 'latitude'], iris.analysis.MEAN, weights=grid_areas)
     global_mean_abs.remove_coord('longitude')
@@ -191,12 +204,12 @@ def main(inargs):
         cube = smooth_data(cube, inargs.smoothing)
     area_weights = get_area_weights(cube, area_cube)
 
-    if inargs.metric == 'amplification':
-        metric = calc_amplification_metric(cube, area_weights, atts)
+    if inargs.metric == 'bulk-deviation':
+        metric = calc_bulk_deviation(cube, area_weights, atts)
     elif inargs.metric == 'mean':
         metric = calc_global_mean(cube, area_weights, atts)
-    elif inargs.metric == 'mean-abs':
-        metric = calc_mean_abs(cube, area_weights, atts)
+    elif inargs.metric == 'grid-deviation':
+        metric = calc_grid_deviation(cube, inargs.var, area_weights, atts)
 
     iris.save(metric, inargs.outfile)
 
@@ -217,7 +230,7 @@ author:
 
     parser.add_argument("infiles", type=str, nargs='*', help="Input data files (can merge on time)")
     parser.add_argument("var", type=str, help="Input variable name (i.e. the standard_name)")
-    parser.add_argument("metric", type=str, choices=('mean', 'amplification', 'mean-abs'), help="Metric to calculate")
+    parser.add_argument("metric", type=str, choices=('mean', 'bulk-deviation', 'grid-deviation'), help="Metric to calculate")
     parser.add_argument("outfile", type=str, help="Output file name")
     
     parser.add_argument("--area_file", type=str, default=None, 
