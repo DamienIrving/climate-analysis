@@ -119,21 +119,18 @@ def plot_distribution(data_cube, spatial_cube, period):
 def main(inargs):
     """Run the program."""
 
-    early_time_constraint = gio.get_time_constraint(inargs.early_period)
-    late_time_constraint = gio.get_time_constraint(inargs.late_period)
-
-    with iris.FUTURE.context(cell_datetime_objects=True):
-        data_cubes = iris.load(inargs.infiles, inargs.var, callback=save_history)
-        equalise_attributes(data_cubes)
-        early_data_cube_list = data_cubes.extract(early_time_constraint)
-        late_data_cube_list = data_cubes.extract(late_time_constraint)
-    early_data_cube = concat_cubes(early_data_cube_list)
-    late_data_cube = concat_cubes(late_data_cube_list)
-    
     spatial_cube = read_spatial_file(inargs.spatial_file)
-    
-    spatial_type = plot_distribution(early_data_cube, spatial_cube, 'early')
-    spatial_type = plot_distribution(late_data_cube, spatial_cube, 'late')
+
+    for file_group in inargs.file_group:
+        with iris.FUTURE.context(cell_datetime_objects=True):
+            data_cubes = iris.load(file_group, inargs.var, callback=save_history)
+            equalise_attributes(data_cubes)
+            for period in inargs.period:
+                time_constraint = gio.get_time_constraint(period)
+                data_cube_list = data_cubes.extract(time_constraint)
+                data_cube = concat_cubes(data_cube_list)
+                spatial_type = plot_distribution(data_cube, spatial_cube, 'late')
+
     plt.title('Salinity distribution')
     plt.xlabel('Salinity (g/kg)')
     plt.ylabel(spatial_type + ' density')
@@ -141,7 +138,7 @@ def main(inargs):
     plt.xlim(27, 41)
 
     plt.savefig(inargs.outfile, bbox_inches='tight')
-    write_met_file(inargs, spatial_cube, inargs.outfile)
+    #write_met_file(inargs, spatial_cube, inargs.outfile)
 
 
 if __name__ == '__main__':
@@ -159,17 +156,15 @@ author:
                                      argument_default=argparse.SUPPRESS,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("infiles", type=str, nargs='*', help="Input data files")
-    parser.add_argument("var", type=str, help="Input variable name (the standard_name)")
     parser.add_argument("outfile", type=str, help="Output file name")
+    parser.add_argument("var", type=str, help="Input variable name (the standard_name)")
 
+    parser.add_argument("--file_group", type=str, nargs='*', action='append',
+                        help="Input data files")
     parser.add_argument("--spatial_file", type=str, default=None, 
                         help="Input volume file (or area file for surface variable)")
-
-    parser.add_argument("--early_period", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=('1850-01-01', '1869-12-31'),
-                        help="Time bounds for the early period")
-    parser.add_argument("--late_period", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=('1986-01-01', '2005-12-31'),
-                        help="Time period [default = entire]")
+    parser.add_argument("--period", type=str, nargs=2, action='append', metavar=('START_DATE', 'END_DATE'),
+                        help="Time bounds for a period")
 
         
     args = parser.parse_args()             
