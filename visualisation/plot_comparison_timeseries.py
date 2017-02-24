@@ -84,9 +84,9 @@ def plot_timeseries(pe_cube, sos_cube, tas_cube, window):
     sos_running_mean.data = normalise_data(sos_running_mean)
     tas_running_mean.data = normalise_data(tas_running_mean)
 
-    iplt.plot(pe_running_mean, label='P-E')
-    iplt.plot(sos_running_mean, label='salinity')
-    iplt.plot(tas_running_mean, label='surface temperature')
+    iplt.plot(pe_running_mean, label='P-E deviation')
+    iplt.plot(sos_running_mean, label='Surface salinity deviation')
+    iplt.plot(tas_running_mean, label='Surface temperature')
     
     plt.legend(loc=4)
     plt.title('running window: ' + str(window))
