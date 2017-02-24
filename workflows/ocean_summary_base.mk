@@ -184,6 +184,7 @@ ${GLOBAL_GRIDDEV_SO_FILE} :
 ${GLOBAL_METRICS} : ${GLOBAL_MEAN_TAS_FILE} ${GLOBAL_MEAN_PR_FILE} ${GLOBAL_MEAN_EVSPSBL_FILE} ${GLOBAL_BULKDEV_SOS_FILE} ${GLOBAL_GRIDDEV_SOS_FILE} ${GLOBAL_GRIDDEV_PE_FILE} 
 	echo generate_delsole_command.py
 	echo generate_global_indicator_command.py
+	echo plot_comparison_timeseries.py
 
 # OHC metrics
 
