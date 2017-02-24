@@ -112,6 +112,11 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p1 )  #r1i1p1
         organisation='CCCMA'
 
+
+    elif [[ ${model} == 'CanESM2' && ${experiment} == 'piControl' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1
+        organisation='CCCMA'
+
     # CCSM4 
     ## (No basin files)
 
