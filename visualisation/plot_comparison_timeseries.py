@@ -37,7 +37,6 @@ except ImportError:
 
 history = []
 
-
 def write_met_file(inargs, spatial_cube, outfile):
     """Write the output metadata file."""
     
@@ -53,44 +52,72 @@ def write_met_file(inargs, spatial_cube, outfile):
 def normalise_data(cube):
     """Normalise the data."""
 
-    mean = cube.data.mean()
-    std = cube.data.std()
+    #max_abs = numpy.abs(cube.data).max()
+    #norm = cube.data / max_abs
+
+    std = numpy.std(cube.data)
+    mean = numpy.mean(cube.data)
     norm = (cube.data - mean) / std
 
     return norm
 
 
+def running_mean(cube, window):
+    """Calculate the running mean."""
+
+    if window > 1:
+        runmean = cube.rolling_window('time', iris.analysis.MEAN, window)
+    else:
+        runmean = cube
+
+    return runmean
+
+
 def plot_timeseries(pe_cube, sos_cube, tas_cube, window):
     """Plot a timeseries."""
 
-    iplt.plot(pe_cube.rolling_window('time', iris.analysis.MEAN, window), label='P-E')
-    iplt.plot(sos_cube.rolling_window('time', iris.analysis.MEAN, window), label='salinity')
-    iplt.plot(sos_cube.rolling_window('time', iris.analysis.MEAN, window), label='surface temperature')
+    pe_running_mean = running_mean(pe_cube, window)
+    sos_running_mean = running_mean(sos_cube, window)
+    tas_running_mean = running_mean(tas_cube, window)
+
+    pe_running_mean.data = normalise_data(pe_running_mean)
+    sos_running_mean.data = normalise_data(sos_running_mean)
+    tas_running_mean.data = normalise_data(tas_running_mean)
+
+    iplt.plot(pe_running_mean, label='P-E')
+    iplt.plot(sos_running_mean, label='salinity')
+    iplt.plot(tas_running_mean, label='surface temperature')
     
+    plt.legend(loc=4)
+    plt.title('running window: ' + str(window))
+    plt.ylabel('normalised metric')
+
 
 def main(inargs):
     """Run the program."""
 
-    pe_cube = iris.load_cube(pe_file, 'precipitation minus evaporation flux')
-    sos_cube = iris.load_cube(sos_file, 'sea_surface_salinity')
-    tas_cube = iris.load_cube(sos_file, 'air_temperature')
+    pe_cube = iris.load_cube(inargs.pe_file, 'precipitation minus evaporation flux')
+    sos_cube = iris.load_cube(inargs.sos_file, 'sea_surface_salinity')
+    tas_cube = iris.load_cube(inargs.tas_file, 'air_temperature')
+
+    metadata_dict = {}
+    metadata_dict[inargs.pe_file] = pe_cube.attributes['history']
+    metadata_dict[inargs.sos_file] = sos_cube.attributes['history']
+    metadata_dict[inargs.tas_file] = tas_cube.attributes['history']
 
     pe_cube.data = pe_cube.data * 86400
-    
-    pe_cube.data = normalise_data(pe_cube)
-    sos_cube.data = normalise_data(sos_cube)
-    tas_cube.data = normalise_data(tas_cube)
 
-    fig = plt.figure() #figsize=
-    windows = [1, 5, 10, 20]
-    for pnum, window in enumerate(windows) :
-        ax = fig.add_subplot(4, 1, pnum)
+    fig = plt.figure(figsize=[15, 15])
+    windows = [1, 5, 10, 20, 30, 40]
+    for pnum, window in enumerate(windows):
+        pnum = pnum + 1
+        ax = fig.add_subplot(3, 2, pnum)
         plt.sca(ax)
         plot_timeseries(pe_cube, sos_cube, tas_cube, window)
 
-    plt.legend(loc=2)
+    fig.suptitle(inargs.experiment) #fontsize=title_size)
     plt.savefig(inargs.outfile, bbox_inches='tight')
-    #write_met_file(inargs, spatial_cube, inargs.outfile)
+    gio.write_metadata(inargs.outfile, file_info=metadata_dict)
 
 
 if __name__ == '__main__':
@@ -111,6 +138,7 @@ author:
     parser.add_argument("pe_file", type=str, help="P-E file")
     parser.add_argument("sos_file", type=str, help="surface salinity file")
     parser.add_argument("tas_file", type=str, help="surface air temperature file")
+    parser.add_argument("experiment", type=str, help="experiment")
     parser.add_argument("outfile", type=str, help="Output file")
         
     args = parser.parse_args()             
