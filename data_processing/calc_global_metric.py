@@ -181,24 +181,34 @@ def smooth_data(cube, smooth_type):
     return cube
 
 
-def area_info(atts, area_cube, mask, selected_region):
+def area_info(atts, area_cube, mask, selected_region, nonselected_region):
     """Determine the area of the ocean and land."""
 
+    area_cube.data = numpy.ma.asarray(area_cube.data)
+    area_cube.data.mask = mask
+    atts[selected_region + " area"] = area_cube.data.mean()
     
+    inverted_mask = numpy.invert(mask)
+    area_cube.data.mask = inverted_mask
+    atts[nonselected_region + " area"] = area_cube.data.mean()
 
+    return atts
 
 
 def create_mask(land_fraction_cube, selected_region, area_cube, atts):
     """Create a mask."""
 
-    assert selected_region in ['ocean', 'land']
+    regions = ['ocean', 'land']
+    assert selected_region in regions 
+    
     if selected_region == 'ocean':
         mask = numpy.where(land_fraction_cube.data < 50, False, True)
     elif selected_region == 'land':
         mask = numpy.where(land_fraction_cube.data > 50, False, True)
     
     if area_cube:
-        atts = area_info(atts, area_cube, mask, selected_region)
+        nonselected_region = regions.remove(selected_region)
+        atts = area_info(atts, area_cube, mask, selected_region, nonselected_region[0][)
 
     return mask, atts
 
@@ -229,7 +239,6 @@ def main(inargs):
         cube.data.mask = mask
         
     atts = set_attributes(inargs, cube, area_cube, sftlf_cube)
-    pdb.set_trace()
 
     if inargs.smoothing:
         cube = smooth_data(cube, inargs.smoothing)
