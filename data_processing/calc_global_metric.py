@@ -56,7 +56,7 @@ def read_optional(optional_file):
     return cube
 
 
-def set_attributes(inargs, data_cube, area_cube, sftlf_cube):
+def set_attributes(inargs, data_cube, area_cube, sftlf_cube, areas_dict):
     """Set the attributes for the output cube."""
     
     atts = data_cube.attributes
@@ -70,6 +70,8 @@ def set_attributes(inargs, data_cube, area_cube, sftlf_cube):
         infile_history[inargs.sftlf_file[0]] = sftlf_cube.attributes['history']
     
     atts['history'] = gio.write_metadata(file_info=infile_history)
+
+    atts.update(areas_dict)
 
     return atts
 
@@ -181,21 +183,26 @@ def smooth_data(cube, smooth_type):
     return cube
 
 
-def area_info(atts, area_cube, mask, selected_region, nonselected_region):
+def area_info(area_cube, mask, selected_region):
     """Determine the area of the ocean and land."""
+
+    areas_dict = {}
+
+    regions = ['ocean', 'land']
+    regions.remove(selected_region)
 
     area_cube.data = numpy.ma.asarray(area_cube.data)
     area_cube.data.mask = mask
-    atts[selected_region + " area"] = area_cube.data.mean()
+    areas_dict["area_" + selected_region] = area_cube.data.sum()
     
     inverted_mask = numpy.invert(mask)
     area_cube.data.mask = inverted_mask
-    atts[nonselected_region + " area"] = area_cube.data.mean()
+    areas_dict["area_" + regions[0]] = area_cube.data.sum()
 
-    return atts
+    return areas_dict
 
 
-def create_mask(land_fraction_cube, selected_region, area_cube, atts):
+def create_mask(land_fraction_cube, selected_region, area_cube):
     """Create a mask."""
 
     regions = ['ocean', 'land']
@@ -205,12 +212,8 @@ def create_mask(land_fraction_cube, selected_region, area_cube, atts):
         mask = numpy.where(land_fraction_cube.data < 50, False, True)
     elif selected_region == 'land':
         mask = numpy.where(land_fraction_cube.data > 50, False, True)
-    
-    if area_cube:
-        nonselected_region = regions.remove(selected_region)
-        atts = area_info(atts, area_cube, mask, selected_region, nonselected_region[0][)
 
-    return mask, atts
+    return mask
 
 
 def main(inargs):
@@ -234,11 +237,15 @@ def main(inargs):
     if inargs.sftlf_file:
         sftlf_file, selected_region = inargs.sftlf_file
         sftlf_cube = read_optional(sftlf_file)
-        mask, atts = create_mask(sftlf_cube, selected_region, area_cube, atts)
+        mask = create_mask(sftlf_cube, selected_region, area_cube)
         cube.data = numpy.ma.asarray(cube.data)
         cube.data.mask = mask
+        if area_cube:
+            areas_dict = area_info(area_cube, mask, selected_region)
+    else:
+        areas_dict = {}
         
-    atts = set_attributes(inargs, cube, area_cube, sftlf_cube)
+    atts = set_attributes(inargs, cube, area_cube, sftlf_cube, areas_dict)
 
     if inargs.smoothing:
         cube = smooth_data(cube, inargs.smoothing)
