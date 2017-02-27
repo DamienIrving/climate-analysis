@@ -181,7 +181,14 @@ def smooth_data(cube, smooth_type):
     return cube
 
 
-def create_mask(land_fraction_cube, selected_region):
+def area_info(atts, area_cube, mask, selected_region):
+    """Determine the area of the ocean and land."""
+
+    
+
+
+
+def create_mask(land_fraction_cube, selected_region, area_cube, atts):
     """Create a mask."""
 
     assert selected_region in ['ocean', 'land']
@@ -190,7 +197,10 @@ def create_mask(land_fraction_cube, selected_region):
     elif selected_region == 'land':
         mask = numpy.where(land_fraction_cube.data > 50, False, True)
     
-    return mask
+    if area_cube:
+        atts = area_info(atts, area_cube, mask, selected_region)
+
+    return mask, atts
 
 
 def main(inargs):
@@ -214,11 +224,12 @@ def main(inargs):
     if inargs.sftlf_file:
         sftlf_file, selected_region = inargs.sftlf_file
         sftlf_cube = read_optional(sftlf_file)
-        mask = create_mask(sftlf_cube, selected_region)
+        mask, atts = create_mask(sftlf_cube, selected_region, area_cube, atts)
         cube.data = numpy.ma.asarray(cube.data)
         cube.data.mask = mask
         
     atts = set_attributes(inargs, cube, area_cube, sftlf_cube)
+    pdb.set_trace()
 
     if inargs.smoothing:
         cube = smooth_data(cube, inargs.smoothing)
