@@ -45,18 +45,18 @@ def save_history(cube, field, filename):
     history.append(cube.attributes['history'])
 
 
-def read_area(area_file):
-    """Read the optional area file."""
+def read_optional(optional_file):
+    """Read an optional file (e.g. area, basin) file."""
 
-    if area_file:
-        area_cube = iris.load_cube(area_file)
+    if optional_file:
+        cube = iris.load_cube(optional_file)
     else:
-        area_cube = None
+        cube = None
 
-    return area_cube
+    return cube
 
 
-def set_attributes(inargs, data_cube, area_cube):
+def set_attributes(inargs, data_cube, area_cube, sftlf_cube):
     """Set the attributes for the output cube."""
     
     atts = data_cube.attributes
@@ -66,6 +66,8 @@ def set_attributes(inargs, data_cube, area_cube):
  
     if area_cube:                  
         infile_history[inargs.area_file] = area_cube.attributes['history']
+    if sftlf_cube:                  
+        infile_history[inargs.sftlf_file[0]] = sftlf_cube.attributes['history']
     
     atts['history'] = gio.write_metadata(file_info=infile_history)
 
@@ -179,6 +181,18 @@ def smooth_data(cube, smooth_type):
     return cube
 
 
+def create_mask(land_fraction_cube, selected_region):
+    """Create a mask."""
+
+    assert selected_region in ['ocean', 'land']
+    if selected_region == 'ocean':
+        mask = numpy.where(land_fraction_cube.data < 50, False, True)
+    elif selected_region == 'land':
+        mask = numpy.where(land_fraction_cube.data > 50, False, True)
+    
+    return mask
+
+
 def main(inargs):
     """Run the program."""
 
@@ -196,9 +210,15 @@ def main(inargs):
     cube = cube.concatenate_cube()
     cube = gio.check_time_units(cube)
 
-    area_cube = read_area(inargs.area_file) 
-
-    atts = set_attributes(inargs, cube, area_cube)
+    area_cube = read_optional(inargs.area_file)
+    if inargs.sftlf_file:
+        sftlf_file, selected_region = inargs.sftlf_file
+        sftlf_cube = read_optional(sftlf_file)
+        mask = create_mask(sftlf_cube, selected_region)
+        cube.data = numpy.ma.asarray(cube.data)
+        cube.data.mask = mask
+        
+    atts = set_attributes(inargs, cube, area_cube, sftlf_cube)
 
     if inargs.smoothing:
         cube = smooth_data(cube, inargs.smoothing)
@@ -235,6 +255,8 @@ author:
     
     parser.add_argument("--area_file", type=str, default=None, 
                         help="Input cell area file")
+    parser.add_argument("--sftlf_file", type=str, nargs=2, metavar=('FILE', 'SELECTION'), default=None, 
+                        help="Land surface fraction file used to generate mask (SELECTION = land or ocean)")
 
     parser.add_argument("--smoothing", type=str, choices=('annual', 'annual_running_mean'), default=None, 
                         help="Apply smoothing to data")
