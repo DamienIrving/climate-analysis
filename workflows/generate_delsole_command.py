@@ -25,36 +25,34 @@ var_names = {'tas': 'air_temperature',
 def variable_details(var):
     """Get the details for any given variable."""
 
-    var_id, metric = var.split('-')
+    var_id, region, metric = var.split('-')
     name = var_names[var_id]
 
-    return var_id, metric, name
+    return var_id, region, metric, name
 
 
 def main(inargs):
     """Run the program."""
 
-    xvar_id, xmetric, xname = variable_details(inargs.xvar)
-    yvar_id, ymetric, yname = variable_details(inargs.yvar)
+    xvar_id, xregion, xmetric, xname = variable_details(inargs.xvar)
+    yvar_id, xregion, ymetric, yname = variable_details(inargs.yvar)
     
-    command_list = ['python', '/home/599/dbi599/climate-analysis/visualisation/plot_delsole.py', xmetric, ymetric]
+    command_list = ['python', '/home/599/dbi599/climate-analysis/visualisation/plot_delsole.py', xname, yname, xmetric, ymetric]
     experiment_list = []
     for experiment, physics in inargs.experiment:
-        xfiles = glob.glob('/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/%si1%s/%s-global-%s_*.nc'  %(inargs.model, experiment, xvar_id, inargs.run, physics, xvar_id, xmetric))
-        yfiles = glob.glob('/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/%si1%s/%s-global-%s_*.nc'  %(inargs.model, experiment, yvar_id, inargs.run, physics, yvar_id, ymetric))    
+        xfiles = glob.glob('/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/%si1%s/%s-%s-%s_*.nc'  %(inargs.model, experiment, xvar_id, inargs.run, physics, xvar_id, xregion, xmetric))
+        yfiles = glob.glob('/g/data/r87/dbi599/drstree/CMIP5/GCM/*/%s/%s/yr/*/%s/%si1%s/%s-%s-%s_*.nc'  %(inargs.model, experiment, yvar_id, inargs.run, physics, yvar_id, yregion, ymetric))    
         assert len(xfiles) == len(yfiles)
         for i in range(len(xfiles)):
-            command_list.append('--file_group')
+            command_list.append('--file_pair')
             command_list.append(xfiles[i])
-            command_list.append(xname)
             command_list.append(yfiles[i])
-            command_list.append(yname)
 
     if inargs.run == 'r*':
         run_label = 'rall'
     else:
         run_label = inargs.run
-    outfile = '/g/data/r87/dbi599/figures/delsole/delsole-%s-%s-%s-%s_yr_%s_%s_%s.png'  %(xvar_id, xmetric, yvar_id, ymetric, inargs.model, inargs.experiment_shorthand, run_label)
+    outfile = '/g/data/r87/dbi599/figures/delsole/delsole-%s-%s-%s-%s-%s-%s_yr_%s_%s_%s.png'  %(xvar_id, xregion, xmetric, yvar_id, yregion, ymetric, inargs.model, inargs.experiment_shorthand, run_label)
     command_list.insert(2, outfile)
     command = " ".join(command_list)
 
@@ -78,8 +76,8 @@ author:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("model", type=str, help="Model name")
-    parser.add_argument("xvar", type=str, choices=('tas-mean', 'pe-abs', 'pe-amp'), help="x-axis variable")
-    parser.add_argument("yvar", type=str, choices=('pe-abs', 'pe-amp', 'sos-amp', 'pr-mean', 'evspsbl-mean', 'so-abs'), help="y-axis variable")
+    parser.add_argument("xvar", type=str, choices=('tas-global-mean', 'pe-global-griddev', 'pe-ocean-griddev'), help="x-axis variable")
+    parser.add_argument("yvar", type=str, choices=('pe-global-griddev', 'pe-ocean-griddev', 'pe-land-griddev', 'sos-global-griddev', 'sos-global-bulkdev', 'pr-global-mean', 'evspsbl-global-mean', 'so-global-griddev'), help="y-axis variable")
     parser.add_argument("experiment_shorthand", type=str, help="for outfile name")
 
     parser.add_argument("--experiment", type=str, action='append', default=[], metavar=('EXPERIMENT', 'PHYSICS'), nargs=2,
