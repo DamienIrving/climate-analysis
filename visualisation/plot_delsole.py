@@ -73,7 +73,7 @@ def get_label(var, metric):
     elif metric == 'bulk-deviation':
         label = 'Global mean %s bulk deviation (%s)'  %(name, units)  
 
-    return label
+    return label, units
 
 
 def check_attributes(x_cube, y_cube):
@@ -152,11 +152,11 @@ def main(inargs):
         data_dict[(experiment, 'x_data')] = numpy.array([]) 
         data_dict[(experiment, 'y_data')] = numpy.array([])
 
+    xvar = fix_var_name(inargs.xvar)
+    yvar = fix_var_name(inargs.yvar)
     metadata_dict = {}
-    for file_group in inargs.file_group:      
-        xfile, xvar, yfile, yvar = file_group
-        xvar = fix_var_name(xvar)
-        yvar = fix_var_name(yvar)
+    for file_pair in inargs.file_pair:      
+        xfile, yfile = file_pair
 
         x_cube = iris.load_cube(xfile, xvar)
         
@@ -168,6 +168,8 @@ def main(inargs):
         data_dict[(experiment, 'x_data')] = numpy.append(data_dict[(experiment, 'x_data')], get_data(x_cube.data, xvar))
         data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], get_data(y_cube.data, yvar))
 
+    xlabel, xunits = get_label(xvar, inargs.xmetric)
+    ylabel, yunits = get_label(yvar, inargs.ymetric)
     fig = plt.figure(figsize=(12,8))
     annotation_vertical_pos = 0.96
     for experiment, color in experiment_colors.iteritems():
@@ -179,13 +181,13 @@ def main(inargs):
             x_trend, y_trend, pct_change = calc_trend(x_data, y_data, experiment)
             plt.plot(x_trend, y_trend, color=color)
 
-            trend_annotation = 'Trend: '+ str(pct_change) + '%'
+            trend_annotation = str(round(pct_change, 2)) + '% $' + xunits +'^{-1}$' 
             plt.annotate(trend_annotation, xy=(0.02, annotation_vertical_pos), xycoords='axes fraction', color=color)
             annotation_vertical_pos = annotation_vertical_pos - 0.04 
 
     plt.legend(loc=4)
-    plt.xlabel(get_label(xvar, inargs.xmetric))
-    plt.ylabel(get_label(yvar, inargs.ymetric))
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
     plt.title(model)
 
     # Write output
@@ -208,11 +210,13 @@ author:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("outfile", type=str, help="Output file name")
+    parser.add_argument("xvar", type=str, help="x-axis variable")
+    parser.add_argument("yvar", type=str, help="y-axis variable")
     parser.add_argument("xmetric", type=str, choices=('bulk-deviation', 'grid-deviation', 'mean'), help="x-axis metric type")
     parser.add_argument("ymetric", type=str, choices=('bulk-deviation', 'grid-deviation', 'mean'), help="y-axis metric type")
 
-    parser.add_argument("--file_group", type=str, action='append', default=[], nargs='*',
-                        help="list that goes file, var, file, var...")
+    parser.add_argument("--file_pair", type=str, action='append', default=[], nargs=2, metavar=('XFILE', 'YFILE'),
+                        help="File pair")
     parser.add_argument("--thin", type=int, default=1,
                         help="Stride for thinning the data (e.g. 3 will keep one-third of the data) [default: 1]")
 
