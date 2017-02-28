@@ -181,9 +181,10 @@ def main(inargs):
             x_trend, y_trend, pct_change = calc_trend(x_data, y_data, experiment)
             plt.plot(x_trend, y_trend, color=color)
 
-            trend_annotation = str(round(pct_change, 2)) + '% $' + xunits +'^{-1}$' 
-            plt.annotate(trend_annotation, xy=(0.02, annotation_vertical_pos), xycoords='axes fraction', color=color)
-            annotation_vertical_pos = annotation_vertical_pos - 0.04 
+            if 'temperature' in xvar:
+                trend_annotation = str(round(pct_change, 2)) + '% $' + xunits +'^{-1}$' 
+                plt.annotate(trend_annotation, xy=(0.02, annotation_vertical_pos), xycoords='axes fraction', color=color)
+                annotation_vertical_pos = annotation_vertical_pos - 0.04 
 
     plt.legend(loc=4)
     plt.xlabel(xlabel)
