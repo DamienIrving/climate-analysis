@@ -68,10 +68,10 @@ def get_label(var, metric):
 
     if metric == 'mean':
         label = 'Global mean %s (%s)'  %(name, units)
-    elif metric == 'abs':
-        label = 'Global mean %s deviation (%s)'  %(name, units)
-    elif metric == 'amp':
-        label = '%s amplitude (%s)'  %(name, units)  
+    elif metric == 'grid-deviation':
+        label = 'Global mean %s grid deviation (%s)'  %(name, units)
+    elif metric == 'bulk-deviation':
+        label = 'Global mean %s bulk deviation (%s)'  %(name, units)  
 
     return label
 
@@ -115,7 +115,10 @@ def calc_trend(x_data, y_data, experiment):
     y_trend = a_coefficient + b_coefficient * x_trend
     print experiment, 'trend:', b_coefficient
 
-    return x_trend, y_trend
+    mean_value = y_data.mean()
+    pct_change = (b_coefficient / mean_value) * 100
+
+    return x_trend, y_trend, pct_change
 
 
 def get_data(data, var):
@@ -166,14 +169,19 @@ def main(inargs):
         data_dict[(experiment, 'y_data')] = numpy.append(data_dict[(experiment, 'y_data')], get_data(y_cube.data, yvar))
 
     fig = plt.figure(figsize=(12,8))
+    annotation_vertical_pos = 0.96
     for experiment, color in experiment_colors.iteritems():
         x_data = data_dict[(experiment, 'x_data')]
         y_data = data_dict[(experiment, 'y_data')]
 
         if numpy.any(x_data):
             plt.scatter(x_data[::inargs.thin], y_data[::inargs.thin], facecolors='none', edgecolors=color, label=experiment)
-            x_trend, y_trend = calc_trend(x_data, y_data, experiment)
+            x_trend, y_trend, pct_change = calc_trend(x_data, y_data, experiment)
             plt.plot(x_trend, y_trend, color=color)
+
+            trend_annotation = 'Trend: '+ str(pct_change) + '%'
+            plt.annotate(trend_annotation, xy=(0.02, annotation_vertical_pos), xycoords='axes fraction', color=color)
+            annotation_vertical_pos = annotation_vertical_pos - 0.04 
 
     plt.legend(loc=4)
     plt.xlabel(get_label(xvar, inargs.xmetric))
@@ -200,8 +208,8 @@ author:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument("outfile", type=str, help="Output file name")
-    parser.add_argument("xmetric", type=str, choices=('amp', 'abs', 'mean'), help="x-axis metric type")
-    parser.add_argument("ymetric", type=str, choices=('amp', 'abs', 'mean'), help="y-axis metric type")
+    parser.add_argument("xmetric", type=str, choices=('bulk-deviation', 'grid-deviation', 'mean'), help="x-axis metric type")
+    parser.add_argument("ymetric", type=str, choices=('bulk-deviation', 'grid-deviation', 'mean'), help="y-axis metric type")
 
     parser.add_argument("--file_group", type=str, action='append', default=[], nargs='*',
                         help="list that goes file, var, file, var...")
