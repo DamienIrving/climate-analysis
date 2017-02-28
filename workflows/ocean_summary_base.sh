@@ -174,6 +174,33 @@ for experiment in "${experiments[@]}"; do
         sosdir='r87/dbi599'
         evspsbldir='r87/dbi599'
 
+    elif [[ ${model} == 'CCSM4' && ${experiment} == '1pctCO2' ]] ; then
+        runs=( r1i1p1 ) # r1i1p1 r2i1p1
+        organisation='NCAR'
+        # areacella: need to download
+        # areacello: need to download
+        # sos: need to download
+        # evspsbl: need to download
+        # pr, tas, sftlf, so (r1): on ua6
+
+    elif [[ ${model} == 'CCSM4' && ${experiment} == 'rcp85' ]] ; then
+        runs=( r1i1p1 ) # r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
+        organisation='NCAR'
+        # areacello: need to download
+        # pr, tas, evspsbl, sos, sftlf, so, areacella: on ua6
+
+    elif [[ ${model} == 'CCSM4' && ${experiment} == 'rcp45' ]] ; then
+        runs=( r1i1p1 ) # r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
+        organisation='NCAR'
+        # areacello: need to download
+        # pr, tas, evspsbl, sos, sftlf, so, areacella: on ua6
+
+    elif [[ ${model} == 'CCSM4' && ${experiment} == 'rcp26' ]] ; then
+        runs=( r1i1p1 ) # r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1
+        organisation='NCAR'
+        # areacello, areacella: need to download
+        # pr, tas, evspsbl, sos, sftlf, so: on ua6
+
     # CSIRO-Mk3-6-0
         
     elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'historical' ]] ; then
@@ -205,6 +232,22 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p4 r2i1p4 r3i1p4 r4i1p4 r5i1p4 r6i1p4 r7i1p4 r8i1p4 r9i1p4 r10i1p4 ) #r1i1p4 r2i1p4 r3i1p4 r4i1p4 r5i1p4 r6i1p4 r7i1p4 r8i1p4 r9i1p4 r10i1p4
         organisation='CSIRO-QCCCE'
         fxrun='r0i0p4'
+
+    elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == '1pctCO2' ]] ; then
+        runs=( r1i1p1 ) #r1i1p1
+        organisation='CSIRO-QCCCE'
+
+    elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'rcp85' ]] ; then
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
+        organisation='CSIRO-QCCCE'
+
+    elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'rcp45' ]] ; then
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
+        organisation='CSIRO-QCCCE'
+
+    elif [[ ${model} == 'CSIRO-Mk3-6-0' && ${experiment} == 'rcp26' ]] ; then
+        runs=( r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1 ) #r1i1p1 r2i1p1 r3i1p1 r4i1p1 r5i1p1 r6i1p1 r7i1p1 r8i1p1 r9i1p1 r10i1p1
+        organisation='CSIRO-QCCCE'
 
     # FGOALS-g2
 
@@ -244,6 +287,13 @@ for experiment in "${experiments[@]}"; do
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
         evspsbldir='r87/dbi599'
+
+    elif [[ ${model} == 'FGOALS-g2' && ${experiment} == '1pctCO2' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1
+        organisation='LASG-CESS'
+        # areacella, areacello: need to download
+
+
 
     # GFDL-CM3
 
