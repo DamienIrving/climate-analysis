@@ -202,12 +202,12 @@ def area_info(area_cube, mask, selected_region):
     return areas_dict
 
 
-def create_mask(land_fraction_cube, selected_region, area_cube):
+def create_mask(land_fraction_cube, selected_region):
     """Create a mask."""
 
     regions = ['ocean', 'land']
     assert selected_region in regions 
-    
+
     if selected_region == 'ocean':
         mask = numpy.where(land_fraction_cube.data < 50, False, True)
     elif selected_region == 'land':
@@ -237,13 +237,14 @@ def main(inargs):
     if inargs.sftlf_file:
         sftlf_file, selected_region = inargs.sftlf_file
         sftlf_cube = read_optional(sftlf_file)
-        mask = create_mask(sftlf_cube, selected_region, area_cube)
+        mask = create_mask(sftlf_cube, selected_region)
         cube.data = numpy.ma.asarray(cube.data)
         cube.data.mask = mask
         if area_cube:
-            areas_dict = area_info(area_cube, mask, selected_region)
+            areas_dict = area_info(area_cube.copy(), mask, selected_region)
     else:
         areas_dict = {}
+        sftlf_cube = None
         
     atts = set_attributes(inargs, cube, area_cube, sftlf_cube, areas_dict)
 
