@@ -133,7 +133,6 @@ for experiment in "${experiments[@]}"; do
         evspsbldir='r87/dbi599'
         sosdir='r87/dbi599'
         voldir='r87/dbi599'
-        basindir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
         depthdir='r87/dbi599'
@@ -144,7 +143,6 @@ for experiment in "${experiments[@]}"; do
         evspsbldir='r87/dbi599'
         sosdir='r87/dbi599'
         voldir='r87/dbi599'
-        basindir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
 
@@ -154,7 +152,6 @@ for experiment in "${experiments[@]}"; do
         organisation='NCAR'
         vardir='r87/dbi599'
         voldir='r87/dbi599'
-        basindir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
         sosdir='r87/dbi599'
@@ -168,7 +165,6 @@ for experiment in "${experiments[@]}"; do
         organisation='NCAR'
         vardir='r87/dbi599'
         voldir='r87/dbi599'
-        basindir='r87/dbi599'
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
         sosdir='r87/dbi599'
@@ -293,6 +289,20 @@ for experiment in "${experiments[@]}"; do
         organisation='LASG-CESS'
         # areacella, areacello: need to download
 
+    elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'rcp26' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1
+        organisation='LASG-CESS'
+        # areacella, areacello, sos: need to download
+
+    elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'rcp45' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1
+        organisation='LASG-CESS'
+        # areacella, areacello, sos: need to download
+
+    elif [[ ${model} == 'FGOALS-g2' && ${experiment} == 'rcp85' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1
+        organisation='LASG-CESS'
+        # areacella, areacello, sos: need to download
 
 
     # GFDL-CM3
@@ -348,6 +358,26 @@ for experiment in "${experiments[@]}"; do
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
 
+    elif [[ ${model} == 'GFDL-CM3' && ${experiment} == '1pctCO2' ]] ; then
+        runs=( r1i1p1 ) #r1i1p1
+        organisation='NOAA-GFDL'
+        # evspsbl, sos, areacella, areacello: need to download 
+
+    elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'rcp26' ]] ; then
+        runs=( r1i1p1 ) #r1i1p1
+        organisation='NOAA-GFDL'
+        # areacella: need to download
+
+    elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'rcp45' ]] ; then
+        runs=( r1i1p1 ) #r1i1p1
+        organisation='NOAA-GFDL'
+        # areacella: need to download
+
+    elif [[ ${model} == 'GFDL-CM3' && ${experiment} == 'rcp85' ]] ; then
+        runs=( r1i1p1 ) #r1i1p1
+        organisation='NOAA-GFDL'
+        # areacella: need to download
+
     # GFDL-ESM2M
 
     elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'AA' ]] ; then
@@ -401,6 +431,26 @@ for experiment in "${experiments[@]}"; do
         areaadir='r87/dbi599'
         areaodir='r87/dbi599'
         sosdir='r87/dbi599'
+
+    elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == '1pctCO2' ]] ; then
+        runs=( r1i1p1 r1i1p2 )  # r1i1p1 r1i1p2
+        organisation='NOAA-GFDL'
+        # evspsbl, sos, areacella, areacello: need to download 
+
+    elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'rcp26' ]] ; then
+        runs=( r1i1p1 )  # r1i1p1
+        organisation='NOAA-GFDL'
+        # areacella, areacello: need to download
+
+    elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'rcp45' ]] ; then
+        runs=( r1i1p1 )  # r1i1p1
+        organisation='NOAA-GFDL'
+        # areacella, areacello: need to download
+
+    elif [[ ${model} == 'GFDL-ESM2M' && ${experiment} == 'rcp85' ]] ; then
+        runs=( r1i1p1 )  # r1i1p1
+        organisation='NOAA-GFDL'
+        # areacella, areacello: need to download
 
     # GISS-E2-H
 
@@ -486,6 +536,16 @@ for experiment in "${experiments[@]}"; do
         runs=( r1i1p109 r2i1p109 r3i1p109 r4i1p109 r5i1p109 )  #r1i1p109 r2i1p109 r3i1p109 r4i1p109 r5i1p109
         organisation='NASA-GISS'
         depthdir='r87/dbi599'
+
+    elif [[ ${model} == 'GISS-E2-H' && ${experiment} == '1pctCO2p1' ]] ; then
+        runs=( r1i1p1 )  #r1i1p1
+        organisation='NASA-GISS'
+        # evspsbl, sos, areacella, areacello, sftlf: need to download
+
+    elif [[ ${model} == 'GISS-E2-H' && ${experiment} == '1pctCO2p3' ]] ; then
+        runs=( r1i1p3 )  #r1i1p3
+        organisation='NASA-GISS'
+        # evspsbl, sos: need to download
 
 
     # GISS-E2-R
