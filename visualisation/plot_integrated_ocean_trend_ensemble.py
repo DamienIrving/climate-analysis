@@ -62,14 +62,21 @@ def fix_lats(lat_coord):
         pass
 
 
-def scale_data(cube):
+def scale_data(cube, xcoord):
     """Scale a cube."""
 
+    if xcoord == 'time':
+        scale_factor = 10**3
+        scale_label = '10^{-3}'
+    else:
+        scale_factor = 1
+        scale_label = ''
+    
     metadata = cube.metadata
-    cube = cube * 10**3
+    cube = cube * scale_factor
     cube.metadata = metadata
-
-    return cube
+    
+    return cube, scale_label
 
 
 def main(inargs):
@@ -84,7 +91,7 @@ def main(inargs):
     for filename, experiment in inargs.infile:
         assert experiment in experiment_colors.keys()
         cube = iris.load_cube(filename, var)
-        cube = scale_data(cube)
+        cube, scale_label = scale_data(cube, inargs.xcoord)
 
         color = experiment_colors[experiment]
         if not experiment in current_experiments:
@@ -109,8 +116,11 @@ def main(inargs):
         iplt.plot(ensemble_mean, color=color, linewidth=3.0, label='ensemble mean, %s' %(experiment))
     
     plt.xlim(-70, 70)
-    plt.legend(loc=8)
-    plt.ylabel('1950-2000 trend ($10^{-3} \enspace K \enspace yr^{-1}$)')
+    plt.legend(loc=inargs.legloc)
+    if inargs.xcoord == 'time':
+        plt.ylabel('1950-2000 trend ($%s \enspace K \enspace yr^{-1}$)' %(scale_label) )
+    elif inargs.xcoord == 'tas':
+        plt.ylabel('1950-2000 trend ($%s \enspace K \enspace K^{-1}$)' %(scale_label) )
     plt.xlabel('latitude')
     plt.title('Zonal mean, vertical mean sea water potential temperature (0-2000m)')
 
@@ -137,6 +147,11 @@ note:
     parser.add_argument("outfile", type=str, help="Output file name")
     parser.add_argument("--infile", type=str, action='append', default=[], nargs=2,
                         metavar=('FILENAME', 'EXPERIMENT'), help="Input file")
+
+    parser.add_argument("--xcoord", type=str, default='time', choices=('time', 'tas'),
+                        help="x coordinate for trend calculation")
+    parser.add_argument("--legloc", type=int, default=8,
+                        help="Legend location")
     
     args = parser.parse_args()            
     main(args)
