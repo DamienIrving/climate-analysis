@@ -17,8 +17,8 @@ physics=( $@ )
 
 ### Atmospheric global metrics
 
-experiments=(historical historicalNat historicalGHG)  # 
-variables=(pr evspsbl tas)
+experiments=(historical historicalNat historicalGHG)  # historical historicalNat historicalGHG
+variables=(pr evspsbl tas)   # pr evspsbl tas
 for exp in "${experiments[@]}"; do
     for var in "${variables[@]}"; do
 
@@ -34,7 +34,7 @@ for exp in "${experiments[@]}"; do
 done
 
 exp=historicalMisc
-variables=(pr evspsbl tas)
+variables=(pr evspsbl tas)  # pr evspsbl tas
 for phys in "${physics[@]}"; do
     for var in "${variables[@]}"; do
 
@@ -52,7 +52,7 @@ done
 
 ### Oceanic global metrics
 
-experiments=(historical historicalNat historicalGHG) #  
+experiments=(historical historicalNat historicalGHG)   # historical historicalNat historicalGHG
 for exp in "${experiments[@]}"; do
 
     outdir=/g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/sos/ensmean-i1p1
@@ -82,15 +82,15 @@ done
 
 ### Ocean maps
 
-experiments=(historical historicalGHG)  # 
-variables=(so thetao)
+experiments=(historical historicalGHG)  #historical historicalGHG 
+variables=(thetao so)  # so thetao
 for exp in "${experiments[@]}"; do
     for var in "${variables[@]}"; do
 
         outdir=/g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/ensmean-i1p1
         outfile=${outdir}/${var}-maps-time-trend_Oyr_${model}_${exp}_ensmean-i1p1_1950-01-01_2000-12-31.nc
         climfile=${outdir}/${var}-maps-clim_Oyr_${model}_${exp}_ensmean-i1p1_all.nc
-        tasfile=${outdir}/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_ensmean-i1p1_1950-01-01_2000-12-31.nc
+        tasfile=${outdir}/${var}-maps-tas-trend_Oyr_${model}_${exp}_ensmean-i1p1_1950-01-01_2000-12-31.nc
 
         mkdir -p ${outdir}
         cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p1/${var}-maps-time-trend_Oyr_${model}_${exp}_r*i1p1_1950-01-01_2000-12-31.nc ${outfile}
@@ -99,7 +99,7 @@ for exp in "${experiments[@]}"; do
         cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p1/${var}-maps-clim_Oyr_${model}_${exp}_r*i1p1_all.nc ${climfile}
         echo ${climfile}
 
-        cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p1/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_r*i1p1_1950-01-01_2000-12-31.nc ${tasfile}
+        cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p1/${var}-maps-tas-trend_Oyr_${model}_${exp}_r*i1p1_1950-01-01_2000-12-31.nc ${tasfile}
         echo ${tasfile}
 
     done
@@ -107,14 +107,14 @@ done
 
 
 exp=historicalMisc
-variables=(so thetao)
+variables=(thetao so)  # thetao so
 for phys in "${physics[@]}"; do
     for var in "${variables[@]}"; do
 
         outdir=/g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/ensmean-i1p${phys}
         outfile=${outdir}/${var}-maps-time-trend_Oyr_${model}_${exp}_ensmean-i1p${phys}_1950-01-01_2000-12-31.nc
         climfile=${outdir}/${var}-maps-clim_Oyr_${model}_${exp}_ensmean-i1p${phys}_all.nc
-        tasfile=${outdir}/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_ensmean-i1p${phys}_1950-01-01_2000-12-31.nc
+        tasfile=${outdir}/${var}-maps-tas-trend_Oyr_${model}_${exp}_ensmean-i1p${phys}_1950-01-01_2000-12-31.nc
 
         mkdir -p ${outdir}
         cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p${phys}/${var}-maps-time-trend_Oyr_${model}_${exp}_r*i1p${phys}_1950-01-01_2000-12-31.nc ${outfile}
@@ -123,7 +123,7 @@ for phys in "${physics[@]}"; do
         cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p${phys}/${var}-maps-clim_Oyr_${model}_${exp}_r*i1p${phys}_all.nc ${climfile}
         echo ${climfile}
 
-        cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p${phys}/${var}-maps-global-tas-trend_Oyr_${model}_${exp}_r*i1p${phys}_1950-01-01_2000-12-31.nc ${tasfile}
+        cdo ensmean /g/data/r87/dbi599/drstree/CMIP5/GCM/${institution}/${model}/${exp}/yr/ocean/${var}-maps/r*i1p${phys}/${var}-maps-tas-trend_Oyr_${model}_${exp}_r*i1p${phys}_1950-01-01_2000-12-31.nc ${tasfile}
         echo ${tasfile}
 
     done
