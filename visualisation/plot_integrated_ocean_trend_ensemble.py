@@ -118,9 +118,9 @@ def main(inargs):
     plt.xlim(-70, 70)
     plt.legend(loc=inargs.legloc)
     if inargs.xcoord == 'time':
-        plt.ylabel('1950-2000 trend ($%s \enspace K \enspace yr^{-1}$)' %(scale_label) )
+        plt.ylabel('1950-2000 linear trend ($%s \enspace K \enspace yr^{-1}$)' %(scale_label) )
     elif inargs.xcoord == 'tas':
-        plt.ylabel('1950-2000 trend ($%s \enspace K \enspace K^{-1}$)' %(scale_label) )
+        plt.ylabel('1950-2000 linear regression coefficient ($%s \enspace K \enspace K^{-1}$)' %(scale_label) )
     plt.xlabel('latitude')
     plt.title('Zonal mean, vertical mean sea water potential temperature (0-2000m)')
 
