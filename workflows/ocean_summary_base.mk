@@ -142,6 +142,7 @@ ${VARIABLE_MAPS_TAS_ZONAL_PLOT} : ${VARIABLE_MAPS_TAS_TREND} ${CLIMATOLOGY_MAPS_
 ## Use ocean_summary_ensembles.sh if more than one run
 ## Use plot_trend_comparison.sh to compare GHG to AA
 ## Use plot_ocean_trend_ensemble.sh to plot same basin for entire ensemble
+## Use plot_integrated_ocean_trend_ensemble.py for zonal mean, vertical mean trend comparison between GHG and AA
 
 # Global indicators
 
