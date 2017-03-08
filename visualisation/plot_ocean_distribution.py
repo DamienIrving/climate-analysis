@@ -36,11 +36,7 @@ except ImportError:
 
 # Define functions
 
-history = []
-
-plot_details = {}
-plot_details['early'] = 'blue'
-plot_details['late'] = 'red' 
+history = [] 
 
 def read_spatial_file(spatial_file):
     """Read a spatial file (i.e. area or volume file)."""
@@ -84,10 +80,28 @@ def concat_cubes(cube_list):
     return cube
 
 
-def plot_distribution(data_cube, spatial_cube, period):
-    """Plot the spatial cube."""
+def get_plot_characteristics(period_name, experiment):
+    """Get the legend labels and transparency"""
 
-    color = plot_details[period]
+    assert period_name in ['early', 'late', 'only']
+    if period_name == 'late':
+        alpha = 1.0
+        histtype = 'step' 
+        label = experiment + ', late'
+    elif period_name == 'early':
+        alpha = 0.3
+        histtype = 'bar'
+        label = experiment + ', early'
+    elif period_name == 'only':
+        alpha = 0.3
+        histtype = 'bar'
+        label = experiment
+
+    return alpha, histtype, label
+
+
+def plot_distribution(data_cube, spatial_cube, period_name, experiment, color, plot_kde=False):
+    """Plot the spatial cube."""
 
     dim_coord_names = [coord.name() for coord in data_cube.dim_coords]
     assert dim_coord_names[0] == 'time'
@@ -103,15 +117,17 @@ def plot_distribution(data_cube, spatial_cube, period):
 
     broadcast_spatial_data = uconv.broadcast_array(spatial_cube.data, axis_index, data_cube.shape)
 
+    alpha, histtype, label = get_plot_characteristics(period_name, experiment)
     bins = numpy.arange(27, 41, 0.25)
     plt.hist(data_cube.data.compressed(), weights=broadcast_spatial_data.compressed(),
              bins=bins, normed=True,
-             color=color, label=period, alpha=0.2)  # histtype='stepfilled'
+             color=color, label=label, alpha=alpha, histtype=histtype)
 
-    pdf = kde.gaussian_kde(data_cube.data.compressed(), weights=broadcast_spatial_data.compressed())
-    x = numpy.arange(27, 41, 0.25)
-    y = pdf(x)
-    plt.plot(x, y, color=color) #label='weighted kde'
+    if plot_kde:
+        pdf = kde.gaussian_kde(data_cube.data.compressed(), weights=broadcast_spatial_data.compressed())
+        x = numpy.arange(27, 41, 0.25)
+        y = pdf(x)
+        plt.plot(x, y, color=color)
     
     return spatial_type
  
@@ -119,17 +135,21 @@ def plot_distribution(data_cube, spatial_cube, period):
 def main(inargs):
     """Run the program."""
 
-    spatial_cube = read_spatial_file(inargs.spatial_file)
-
-    for file_group in inargs.file_group:
+    for group_num, file_info in enumerate(inargs.file_group):
+        files = file_info[0:-2]
+        experiment = file_info[-2]
+        color = file_info[-1]
+        spatial_cube = read_spatial_file(inargs.spatial_files[group_num])
         with iris.FUTURE.context(cell_datetime_objects=True):
-            data_cubes = iris.load(file_group, inargs.var, callback=save_history)
+            data_cubes = iris.load(files, inargs.var, callback=save_history)
             equalise_attributes(data_cubes)
-            for period in inargs.period:
-                time_constraint = gio.get_time_constraint(period)
+            for period_info in inargs.period:
+                period_dates = period_info[0:2]
+                period_name = period_info[2]
+                time_constraint = gio.get_time_constraint(period_dates)
                 data_cube_list = data_cubes.extract(time_constraint)
                 data_cube = concat_cubes(data_cube_list)
-                spatial_type = plot_distribution(data_cube, spatial_cube, 'late')
+                spatial_type = plot_distribution(data_cube, spatial_cube, period_name, experiment, color, plot_kde=inargs.kde)
 
     plt.title('Salinity distribution')
     plt.xlabel('Salinity (g/kg)')
@@ -160,12 +180,14 @@ author:
     parser.add_argument("var", type=str, help="Input variable name (the standard_name)")
 
     parser.add_argument("--file_group", type=str, nargs='*', action='append',
-                        help="Input data files")
-    parser.add_argument("--spatial_file", type=str, default=None, 
-                        help="Input volume file (or area file for surface variable)")
-    parser.add_argument("--period", type=str, nargs=2, action='append', metavar=('START_DATE', 'END_DATE'),
-                        help="Time bounds for a period")
+                        help="Input data files, followed by experiment name and color")
+    parser.add_argument("--spatial_files", type=str, nargs='*', default=None, 
+                        help="Input volume files (or area files for surface variable)")
+    parser.add_argument("--period", type=str, nargs=3, action='append', metavar=('START_DATE', 'END_DATE', 'NAME'),
+                        help="Time bounds for a period (name can be early, late or only")
 
-        
+    parser.add_argument("--kde", action="store_true", default=False,
+                        help="Plot the kernel density estimate")
+
     args = parser.parse_args()             
     main(args)
