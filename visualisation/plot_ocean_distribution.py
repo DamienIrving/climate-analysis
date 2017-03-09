@@ -61,14 +61,14 @@ def save_history(cube, field, filename):
     history.append(cube.attributes['history'])
 
 
-def write_met_file(inargs, spatial_cube, outfile):
+def write_met_file(inargs, spatial_cubes, outfile):
     """Write the output metadata file."""
     
     infile_history = {}
-    infile_history[inargs.infiles[0]] = history[0]
-
-    if spatial_cube:                  
-        infile_history[inargs.spatial_file] = spatial_cube.attributes['history']
+    infile_history[inargs.ghg_files[0]] = history[0]
+    infile_history[inargs.aa_files[-1]] = history[-1]
+    infile_history[inargs.ghg_spatial_file] = spatial_cubes['historicalGHG'].attributes['history']
+    infile_history[inargs.aa_spatial_file] = spatial_cubes['historicalAA'].attributes['history']
 
     gio.write_metadata(outfile, file_info=infile_history)
 
@@ -115,7 +115,9 @@ def create_upper_plot(ax, hist_dict, left_edges, experiment):
     ax.bar(left_edges, hist_dict[(experiment, 'late')],
            width=0.2, color='red', label='late', alpha=0.3)
 
-    #ax.title = experiment
+    ax.set_title(experiment)
+    ax.legend()
+    ax.set_ylabel('density')
  
 
 def create_lower_plot(ax, hist_dict, left_edges, experiment):
@@ -124,20 +126,23 @@ def create_lower_plot(ax, hist_dict, left_edges, experiment):
     ax.bar(left_edges, hist_dict[(experiment, 'diff')],
            width=0.2, color='black', label='late - early', alpha=0.3)
 
+    ax.legend()
+    ax.set_xlabel('Salinity (g/kg)')
+    ax.set_ylabel('density')
+
 
 def main(inargs):
     """Run the program."""
 
     data_files = {'historicalGHG': inargs.ghg_files,
                   'historicalAA': inargs.aa_files} 
-    spatial_files = {'historicalGHG': inargs.ghg_spatial_file,
-                     'historicalAA': inargs.aa_spatial_file}
+    spatial_cubes = {'historicalGHG': read_spatial_file(inargs.ghg_spatial_file),
+                     'historicalAA': read_spatial_file(inargs.aa_spatial_file)}
     time_periods = {'early': inargs.early_period,
                     'late': inargs.late_period}
 
     hist = {}
     for experiment in ['historicalGHG', 'historicalAA']:
-        spatial_cube = read_spatial_file(spatial_files[experiment])
         with iris.FUTURE.context(cell_datetime_objects=True):
             data_cubes = iris.load(data_files[experiment], inargs.var, callback=save_history)
             equalise_attributes(data_cubes)
@@ -145,15 +150,16 @@ def main(inargs):
                 time_constraint = gio.get_time_constraint(period_dates)
                 data_cube_list = data_cubes.extract(time_constraint)
                 data_cube = concat_cubes(data_cube_list)
-                hist[(experiment, period_name)], bin_edges = calc_histogram(data_cube, spatial_cube)
+                if inargs.annual_smoothing:
+                    data_cube = data_cube.rolling_window('time', iris.analysis.MEAN, 12)
+                    #data_cube = timeseries.convert_to_annual(data_cube)
+                hist[(experiment, period_name)], bin_edges = calc_histogram(data_cube, spatial_cubes[experiment])
         hist[(experiment, 'diff')] = hist[(experiment, 'late')] - hist[(experiment, 'early')]
 
-    
     fig = plt.figure(figsize=[15, 10])
     gs = gridspec.GridSpec(2, 2, height_ratios=[4,1])
 
     ax0 = plt.subplot(gs[0])
-    #plt.sca(ax0)
     create_upper_plot(ax0, hist, bin_edges[0:-1], 'historicalAA')
 
     ax1 = plt.subplot(gs[1])
@@ -165,14 +171,10 @@ def main(inargs):
     ax3 = plt.subplot(gs[3])
     create_lower_plot(ax3, hist, bin_edges[0:-1], 'historicalGHG')
 
-#    plt.title('Salinity distribution')
-#    plt.xlabel('Salinity (g/kg)')
-#    plt.ylabel(spatial_type + ' density')
-#    plt.legend()
-#    plt.xlim(27, 41)
+    fig.suptitle('Salinity distribution')
 
     plt.savefig(inargs.outfile, bbox_inches='tight')
-    #write_met_file(inargs, spatial_cube, inargs.outfile)
+    write_met_file(inargs, spatial_cubes, inargs.outfile)
 
 
 if __name__ == '__main__':
@@ -206,6 +208,9 @@ author:
                         help="Time bounds for the early period")
     parser.add_argument("--late_period", type=str, nargs=2, metavar=('START_DATE', 'END_DATE'), default=('1986-01-01', '2005-12-31'),
                         help="Time bounds for the late period")
+
+    parser.add_argument("--annual_smoothing", action="store_true", default=False,
+                        help="Apply a 12 month running mean to the data")
 
     args = parser.parse_args()             
     main(args)
