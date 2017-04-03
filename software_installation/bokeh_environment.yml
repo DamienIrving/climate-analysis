@@ -1,9 +1,0 @@
-name: bokeh
-dependencies:
-    - python=2.7
-    - jupyter
-    - netCDF4
-    - bokeh
-    - blaze
-    - pandas
-    - boto
