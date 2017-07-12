@@ -32,11 +32,14 @@ def main(inargs):
     level_constraint = iris.Constraint(air_pressure=50000)
 
     with iris.FUTURE.context(cell_datetime_objects=True):
-        cube = iris.load(inargs.infiles, level_constraint)
-        history = cube[0].attributes['history']
-        equalise_attributes(cube)
-        iris.util.unify_time_units(cube)
-        cube = cube.concatenate_cube()
+        cube_list = iris.load(inargs.infiles, level_constraint)
+        history = cube_list[0].attributes['history']
+        equalise_attributes(cube_list)
+        iris.util.unify_time_units(cube_list)
+        for cube in cube_list:
+            del cube.coord('time').attributes['MD5']
+
+        cube = cube_list.concatenate_cube()
         cube = gio.check_time_units(cube)
         cube = iris.util.squeeze(cube)
 
@@ -46,7 +49,7 @@ def main(inargs):
         cube.remove_coord('day_of_year')
         cube.remove_coord('year')
        
-    cube.attributes['history'] = gio.write_metadata(file_info={inargs.infile[0]: history})
+    cube.attributes['history'] = gio.write_metadata(file_info={inargs.infiles[0]: history})
     iris.save(cube, inargs.outfile, netcdf_format='NETCDF3_CLASSIC')
 
 
