@@ -12,7 +12,7 @@ $ python cmmt_date_list.py ellsworth_CMMTdatetimes.csv /g/data/r87/dbi599/data_e
 1. Select 500hPa level, calculate daily mean and merge files
 
 ```
-$ python preprocess_eraint_nci.py /g/data/ub4/erai/netcdf/6hr/atmos/oper_an_pl/v01/ua/ua_6hrs_ERAI_historical_an-pl_*.nc /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/ua_eraint_500hPa_daily_native.nc
+$ python preprocess_eraint_nci.py /g/data/ub4/erai/netcdf/6hr/atmos/oper_an_pl/v01/ua/ua_6hrs_ERAI_historical_an-pl_19*.nc /g/data/ub4/erai/netcdf/6hr/atmos/oper_an_pl/v01/ua/ua_6hrs_ERAI_historical_an-pl_200*.nc  /g/data/ub4/erai/netcdf/6hr/atmos/oper_an_pl/v01/ua/ua_6hrs_ERAI_historical_an-pl_201[0123456]*.nc  /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/ua_eraint_500hPa_daily_native.nc
 ```
 
 2. Invert the latitude dimension and make latitude [0, 360)
