@@ -32,7 +32,7 @@ $ cdo ydaysub /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/sf_eraint_500hPa_dai
 ### Calculate and plot composites
 
 ```
-$ python calc_composite.py /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/sf_eraint_500hPa_daily-anom-wrt-all_native-reoriented.nc sf /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/sf-composite_eraint_500hPa_daily-anom-wrt-all_native-reoriented_ellsworth.nc --date_file wisconsin_cmmt/ellsworth_CMMTdatetimes.txt
+$ python calc_composite.py /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/sf_eraint_500hPa_daily-anom-wrt-all_native-reoriented.nc sf /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/sf-composite_eraint_500hPa_daily-anom-wrt-all_native-reoriented_ellsworth.nc --date_file /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/ellsworth_CMMTdatetimes.txt
 ```
 
 ```
