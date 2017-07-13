@@ -18,7 +18,7 @@ $ python preprocess_eraint_nci.py /g/data/ub4/erai/netcdf/6hr/atmos/oper_an_pl/v
 2. Invert the latitude dimension and make latitude [0, 360)
 
 ```
-$ cdo invertlat -sellonlatbox,0,359.9,-90,90 /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/ua_eraint_500hPa_daily_native_1992-2012.nc /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/ua_eraint_500hPa_daily_native-reoriented.nc
+$ cdo invertlat -sellonlatbox,0,359.9,-90,90 /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/ua_eraint_500hPa_daily_native.nc /g/data/r87/dbi599/data_eraint/wisconsin_cmmt/ua_eraint_500hPa_daily_native-reoriented.nc
 ```
 
 3. Calculate streamfunction temporal anomaly
