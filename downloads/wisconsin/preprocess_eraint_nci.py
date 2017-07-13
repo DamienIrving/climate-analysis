@@ -31,25 +31,27 @@ def main(inargs):
 
     level_constraint = iris.Constraint(air_pressure=50000)
 
-    with iris.FUTURE.context(cell_datetime_objects=True):
-        cube_list = iris.load(inargs.infiles, level_constraint)
-        history = cube_list[0].attributes['history']
-        equalise_attributes(cube_list)
-        iris.util.unify_time_units(cube_list)
-        for cube in cube_list:
+    cube_list = iris.cube.CubeList([])
+    for infile in inargs.infiles:
+        with iris.FUTURE.context(cell_datetime_objects=True):
+            print(infile)
+            cube = iris.load_cube(infile, level_constraint)
+
+            history = cube.attributes['history']
             del cube.coord('time').attributes['MD5']
 
-        cube = cube_list.concatenate_cube()
-        cube = gio.check_time_units(cube)
-        cube = iris.util.squeeze(cube)
+            iris.coord_categorisation.add_day_of_year(cube, 'time')
+            iris.coord_categorisation.add_year(cube, 'time')
+            cube = cube.aggregated_by(['day_of_year', 'year'], iris.analysis.MEAN)
+            cube.remove_coord('day_of_year')
+            cube.remove_coord('year')
+        cube_list.append(cube)
 
-        iris.coord_categorisation.add_day_of_year(cube, 'time')
-        iris.coord_categorisation.add_year(cube, 'time')
-        cube = cube.aggregated_by(['day_of_year', 'year'], iris.analysis.MEAN)
-        cube.remove_coord('day_of_year')
-        cube.remove_coord('year')
-       
-    cube.attributes['history'] = gio.write_metadata(file_info={inargs.infiles[0]: history})
+    equalise_attributes(cube_list)
+    iris.util.unify_time_units(cube_list)
+    cube = cube_list.concatenate_cube()
+   
+    cube.attributes['history'] = gio.write_metadata(file_info={inargs.infiles[-1]: history})
     iris.save(cube, inargs.outfile, netcdf_format='NETCDF3_CLASSIC')
 
 
