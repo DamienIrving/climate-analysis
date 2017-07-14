@@ -51,6 +51,9 @@ def main(inargs):
     iris.util.unify_time_units(cube_list)
     cube = cube_list.concatenate_cube()
    
+    cube.coord('latitude').var_name = 'latitude'
+    cube.coord('longitude').var_name = 'longitude'
+
     cube.attributes['history'] = gio.write_metadata(file_info={inargs.infiles[-1]: history})
     iris.save(cube, inargs.outfile, netcdf_format='NETCDF3_CLASSIC')
 
