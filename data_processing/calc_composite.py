@@ -70,6 +70,7 @@ def calc_composites(darray, dtlist, sig_test=True):
     pval_atts = {}    
     for season, months in season_months.iteritems():
         if season == 'annual':
+            ntsteps = darray_selection['time'].shape[0]
             composite_means['annual'] = darray_selection.mean(dim='time').values
             
             if sig_test:
@@ -79,6 +80,7 @@ def calc_composites(darray, dtlist, sig_test=True):
             months_subset = pandas.to_datetime(darray_selection['time'].values).month
             bools_subset = (months_subset == season_months[season][0]) + (months_subset == season_months[season][1]) + (months_subset == season_months[season][2])
             data_subset = darray_selection.loc[bools_subset]
+            ntsteps = data_subset['time'].shape[0]
             composite_means[season] = data_subset.mean(dim='time').values
 
             if sig_test:
@@ -91,7 +93,7 @@ def calc_composites(darray, dtlist, sig_test=True):
         composite_mean_atts[season] = {'standard_name': standard_name+'_'+season,
                                        'long_name': standard_name+'_'+season,
                                        'units': darray.attrs['units'],
-                                       'notes': 'Composite mean for %s season' %(season)}
+                                       'notes': 'Composite mean for %s season. %s time steps included.' %(season, str(ntsteps))}
 
     return composite_means, composite_mean_atts, pvals, pval_atts
 
@@ -101,7 +103,7 @@ def main(inargs):
 
     # Read the data
     dset_in = xray.open_dataset(inargs.infile)
-    gio.check_xrayDataset(dset_in, inargs.var)
+    #gio.check_xrayDataset(dset_in, inargs.var)
 
     subset_dict = gio.get_subset_kwargs(inargs)
     darray = dset_in[inargs.var].sel(**subset_dict)
