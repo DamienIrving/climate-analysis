@@ -197,7 +197,8 @@ def fix_label(label):
                     'degE': '$^{\circ}$E',
                     'ms-1': '$m s^{-1}$',
                     'm.s-1': '$m s^{-1}$',
-                    '1000000 m2.s-1': '$10^6$m$^2$s$^{-1}$'
+                    '1000000 m2.s-1': '$10^6$m$^2$s$^{-1}$',
+                    'kgkg-1': '$kg \: kg^{-1}$'
                    } 
 
     for value, replacement in replace_dict.iteritems():
